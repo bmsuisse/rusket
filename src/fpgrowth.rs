@@ -134,25 +134,29 @@ impl FPTree {
 }
 
 // ─── Combinations ─────────────────────────────────────────────────────────────
-fn combinations(items: &[u32], size: usize) -> Vec<Vec<u32>> {
-    if size == 0 { return vec![vec![]]; }
-    if items.len() < size { return vec![]; }
+fn combinations<T: Copy>(items: &[T], size: usize) -> impl Iterator<Item = Vec<T>> + '_ {
     let n = items.len();
-    let mut result = Vec::new();
     let mut indices: Vec<usize> = (0..size).collect();
-    loop {
-        result.push(indices.iter().map(|&i| items[i]).collect());
-        let mut i = size as isize - 1;
-        while i >= 0 {
-            if indices[i as usize] < n - (size - i as usize) { break; }
-            i -= 1;
+    let mut first = size > 0 && n >= size;
+    
+    std::iter::from_fn(move || {
+        if size == 0 { return None; }
+        if n < size { return None; }
+        if !first {
+            let mut i = size as isize - 1;
+            while i >= 0 {
+                if indices[i as usize] < n - size + i as usize { break; }
+                i -= 1;
+            }
+            if i < 0 { return None; }
+            let idx = i as usize;
+            indices[idx] += 1;
+            for j in (idx + 1)..size { indices[j] = indices[j - 1] + 1; }
+        } else {
+            first = false;
         }
-        if i < 0 { break; }
-        let i = i as usize;
-        indices[i] += 1;
-        for j in (i + 1)..size { indices[j] = indices[j - 1] + 1; }
-    }
-    result
+        Some(indices.iter().map(|&i| items[i]).collect())
+    })
 }
 
 // ─── Core FP-Growth recursive step ───────────────────────────────────────────
@@ -166,7 +170,8 @@ pub(crate) fn fpg_step(
     let mut results: Vec<(u64, Vec<u32>)> = Vec::with_capacity(num_items.saturating_mul(2));
 
     if tree.is_path() {
-        let size_remain = max_len.map_or(num_items + 1, |ml| ml.saturating_sub(cond_len) + 1);
+        let max_size_from_len = max_len.map_or(num_items + 1, |ml| ml.saturating_sub(cond_len) + 1);
+        let size_remain = std::cmp::min(num_items + 1, max_size_from_len);
         for size in 1..size_remain {
             let local_ids: Vec<u32> = (0..num_items as u32).collect();
             for combo in combinations(&local_ids, size) {
