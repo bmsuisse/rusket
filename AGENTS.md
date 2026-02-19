@@ -108,6 +108,7 @@ uv run pyright
 
 ### Important CI/CD Rules
 - **Never commit `site/`** — it's the MkDocs build output and is in `.gitignore`. The `gh-deploy` command pushes it to the `gh-pages` branch automatically.
+- **GitHub Pages must be explicitly enabled** — `gh-deploy` creates the `gh-pages` branch but does NOT enable GitHub Pages serving. If the site is 404, run: `gh api repos/bmsuisse/rusket/pages --method POST -f 'source[branch]=gh-pages' -f 'source[path]=/'`
 - **All repo references must use `bmsuisse/rusket`** — the old name was `fpgrowth-pyo3`. Check `mkdocs.yml`, docs, and README if renaming.
 - **Action versions**: keep `actions/checkout`, `actions/setup-python`, `astral-sh/setup-uv` in sync across both workflows.
 - **uv consistency**: always use `uv run` — never `uv pip install --system` (deps won't be visible to `uv run`).
