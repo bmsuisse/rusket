@@ -2968,7 +2968,6 @@ dependencies = [
 [package.optional-dependencies]
 docs = [
     { name = "mkdocs" },
-    { name = "mkdocs-jupyter" },
     { name = "mkdocs-material" },
 ]
 pandas = [
@@ -3010,7 +3009,6 @@ dev = [
 requires-dist = [
     { name = "efficient-apriori", specifier = ">=2.0.6" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.5,<2" },
-    { name = "mkdocs-jupyter", marker = "extra == 'docs'", specifier = ">=0.24" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
     { name = "numpy", marker = "extra == 'pandas'", specifier = ">=1.24" },
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },

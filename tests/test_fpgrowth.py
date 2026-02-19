@@ -203,17 +203,17 @@ def test_spark_mllib_fpgrowth_int() -> None:
         frozenset(row["itemsets"]): row["support"] * len(df)
         for _, row in res3.iterrows()
     }
-    # Note: rusket backend currently casts columns to strings internally
+    # Column names stay as their original type (int here), so keys are int
     expected = {
-        frozenset(["1"]): 6,
-        frozenset(["2"]): 5,
-        frozenset(["3"]): 5,
-        frozenset(["4"]): 4,
-        frozenset(["1", "2"]): 4,
-        frozenset(["1", "3"]): 5,
-        frozenset(["2", "3"]): 4,
-        frozenset(["2", "4"]): 4,
-        frozenset(["1", "2", "3"]): 4,
+        frozenset([1]): 6,
+        frozenset([2]): 5,
+        frozenset([3]): 5,
+        frozenset([4]): 4,
+        frozenset([1, 2]): 4,
+        frozenset([1, 3]): 5,
+        frozenset([2, 3]): 4,
+        frozenset([2, 4]): 4,
+        frozenset([1, 2, 3]): 4,
     }
     assert freq_dict == expected
 

@@ -32,6 +32,19 @@ rusket is a blazing fast library and a drop-in replacement for `mlxtend`'s FP-Gr
 - **File Size Limit**: No file should exceed 1000 lines of code.
 - **Branching**: Create a branch for each feature.
 
+## YOLO
+
+**YOLO** means: `git add -A && git commit && git push origin main` **and** release a new version — all on the `main` branch in one go.
+
+Steps:
+1. `git add -A`
+2. `git commit -m "<message>"`
+3. Bump version in `Cargo.toml` and `pyproject.toml`, then `git commit -am "release: vX.Y.Z"`
+4. `git tag vX.Y.Z`
+5. `git push origin main && git push origin vX.Y.Z`
+
+CI takes it from there. 🚀
+
 ## Releasing a New Version
 
 The CI automatically builds wheels for all platforms, generates a changelog, and publishes to PyPI when a **git tag** is pushed.
