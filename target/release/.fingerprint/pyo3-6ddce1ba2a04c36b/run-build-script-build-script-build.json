@@ -1,0 +1,1 @@
+{"rustc":13850170861107434965,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[9971708383300469142,"build_script_build",false,1253696010141378844],[16550420230665005440,"build_script_build",false,10195009638048847242]],"local":[{"Precalculated":"0.28.2"}],"rustflags":["--cfg","pyo3_disable_reference_pool"],"config":0,"compile_kind":0}

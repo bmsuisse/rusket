@@ -1,0 +1,29 @@
+[package]
+name = "rusket"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+name = "_rusket"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.28.2", features = ["extension-module"] }
+ahash = "0.8.12"
+numpy = "0.28.0"
+rayon = "1.10"
+smallvec = { version = "1.13", features = ["union"] }
+mimalloc = { version = "0.1", default-features = false }
+
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.release.build-override]
+opt-level = 3
+

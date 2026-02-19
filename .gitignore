@@ -1,0 +1,36 @@
+# Rust build artifacts
+/target/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Distribution / packaging
+dist/
+*.egg-info/
+
+# maturin wheel output
+target/wheels/
+
+# Compiled extension modules (in-tree, rebuilt by maturin develop)
+python/rusket/_rusket*.so
+python/rusket/_rusket*.pyd
+
+# Benchmark artefacts
+tests/benchmark_report.html
+
+# IDEs
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# uv
+uv.lock

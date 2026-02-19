@@ -1,0 +1,43 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "rusket"
+version = "0.1.0"
+description = "Blazing-fast FP-Growth and Association Rules — pure Rust via PyO3"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+polars = ["polars>=0.20"]
+docs = ["mkdocs-material>=9.5", "mkdocs>=1.5,<2"]
+
+[tool.maturin]
+python-source = "python"
+module-name = "rusket._rusket"
+features = ["pyo3/extension-module"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8",
+    "mlxtend>=0.23",
+    "packaging>=23",
+    "scipy>=1.11",
+    "pytest-benchmark>=4",
+    "polars>=0.20",
+    "faker>=40.4.0",
+    "plotly>=6.5.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyright]
+pythonVersion = "3.14"
+include = ["python"]
+venvPath = "."
+venv = ".venv"
