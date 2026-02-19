@@ -88,7 +88,7 @@ def test_benchmark_medium(benchmark) -> None:
 
 
 @pytest.mark.benchmark(group="large")
-def test_benchmark_large(benchmark) -> None:
+def test_benchmark_large_skip(benchmark) -> None:
     result = benchmark(fpgrowth, DF_LARGE, min_support=0.05)
     assert result.shape[0] >= 0
 

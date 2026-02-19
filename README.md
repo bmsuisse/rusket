@@ -184,13 +184,14 @@ rusket/
 ├── src/                          # Rust (PyO3)
 │   ├── lib.rs                    # Module root & Python bindings
 │   ├── fpgrowth.rs               # FP-Tree construction + FP-Growth mining
-│   ├── association_rules.rs      # Rule generation + 12 metrics (Rayon parallel)
-│   └── common.rs                 # Shared helpers
+│   └── association_rules.rs      # Rule generation + 12 metrics (Rayon parallel)
 │
-└── python/rusket/               # Thin Python wrappers & validation
+└── rusket/                       # Thin Python wrappers & validation
+    ├── __init__.py               # Package root
     ├── fpgrowth.py               # Input dispatch (dense / sparse / Polars)
     ├── association_rules.py      # Label mapping + Rust call + result assembly
-    └── _validation.py            # Input validation
+    ├── _validation.py            # Input validation
+    └── _rusket.pyi               # Type stubs for Rust extension
 ```
 
 ### Data paths

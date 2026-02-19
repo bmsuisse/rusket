@@ -13,17 +13,31 @@ env/
 
 # Distribution / packaging
 dist/
+build/
 *.egg-info/
 
 # maturin wheel output
 target/wheels/
+wheels/
 
 # Compiled extension modules (in-tree, rebuilt by maturin develop)
-python/rusket/_rusket*.so
-python/rusket/_rusket*.pyd
+rusket/_rusket*.so
+rusket/_rusket*.pyd
+rusket/*.so
+rusket/*.pyd
 
-# Benchmark artefacts
+# Caches and tools
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright_cache/
+.coverage
+htmlcov/
+
+# Benchmark and Docs
+.benchmarks/
 tests/benchmark_report.html
+site/
 
 # IDEs
 .vscode/
@@ -31,6 +45,3 @@ tests/benchmark_report.html
 
 # macOS
 .DS_Store
-
-# uv
-uv.lock
