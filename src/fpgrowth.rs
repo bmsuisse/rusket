@@ -1,14 +1,10 @@
-use ahash::AHashMap;
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
-// ─── Parallelism cutoff ───────────────────────────────────────────────────────
-// Below this many items, use serial recursion to avoid Rayon spawn overhead.
 const PAR_ITEMS_CUTOFF: usize = 4;
 
-// ─── FP-Tree node ─────────────────────────────────────────────────────────────
 #[derive(Debug, Clone)]
 pub(crate) struct FPNode {
     pub item: u32,
@@ -33,12 +29,11 @@ impl FPNode {
     fn add_child(&mut self, item: u32, idx: usize) { self.children.push((item, idx)); }
 }
 
-// ─── FP-Tree ──────────────────────────────────────────────────────────────────
 pub(crate) struct FPTree {
     pub nodes: Vec<FPNode>,
-    pub item_nodes: Vec<Vec<usize>>, // Indexed by dense local ID
-    pub original_items: Vec<u32>,    // local_id -> global original item
-    pub cond_items: Vec<u32>,        // Prefix itemsets (global IDs)
+    pub item_nodes: Vec<Vec<usize>>,
+    pub original_items: Vec<u32>,
+    pub cond_items: Vec<u32>,
 }
 
 impl FPTree {
@@ -133,7 +128,6 @@ impl FPTree {
     }
 }
 
-// ─── Combinations ─────────────────────────────────────────────────────────────
 fn combinations<T: Copy>(items: &[T], size: usize) -> impl Iterator<Item = Vec<T>> + '_ {
     let n = items.len();
     let mut indices: Vec<usize> = (0..size).collect();
@@ -159,7 +153,6 @@ fn combinations<T: Copy>(items: &[T], size: usize) -> impl Iterator<Item = Vec<T
     })
 }
 
-// ─── Core FP-Growth recursive step ───────────────────────────────────────────
 pub(crate) fn fpg_step(
     tree: &FPTree,
     minsup: u64,
@@ -234,7 +227,51 @@ pub(crate) fn fpg_step(
     results
 }
 
-// ─── Dense mining ─────────────────────────────────────────────────────────────
+fn process_item_counts(
+    item_count: Vec<u64>,
+    min_count: u64,
+    n_cols: usize,
+) -> Option<(Vec<u32>, Vec<u32>, Vec<usize>, usize)> {
+    let mut frequent: Vec<(u32, u64)> = item_count
+        .iter().enumerate()
+        .filter(|(_, &c)| c >= min_count)
+        .map(|(col, &c)| (col as u32, c))
+        .collect();
+    if frequent.is_empty() { return None; }
+    frequent.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+
+    let mut global_to_local = vec![u32::MAX; n_cols];
+    let mut original_items = Vec::with_capacity(frequent.len());
+    let mut frequent_cols = Vec::with_capacity(frequent.len());
+    for (local_id, &(col, _)) in frequent.iter().enumerate() {
+        global_to_local[col as usize] = local_id as u32;
+        original_items.push(col);
+        frequent_cols.push(col as usize);
+    }
+    Some((global_to_local, original_items, frequent_cols, frequent.len()))
+}
+
+fn mine_itemsets(
+    mut itemsets: Vec<Vec<u32>>,
+    frequent_len: usize,
+    original_items: Vec<u32>,
+    min_count: u64,
+    max_len: Option<usize>,
+) -> PyResult<Vec<(u64, Vec<u32>)>> {
+    itemsets.par_sort_unstable();
+    let mut tree = FPTree::new(frequent_len, original_items);
+    let total = itemsets.len();
+    let mut i = 0;
+    while i < total {
+        let basket = &itemsets[i];
+        let mut j = i + 1;
+        while j < total && itemsets[j] == *basket { j += 1; }
+        tree.insert_itemset(basket, (j - i) as u64);
+        i = j;
+    }
+    Ok(fpg_step(&tree, min_count, max_len))
+}
+
 fn _mine_dense(
     flat: &[u8],
     n_cols: usize,
@@ -257,23 +294,13 @@ fn _mine_dense(
             |mut a, b| { for (x, y) in a.iter_mut().zip(b.iter()) { *x += y; } a },
         );
 
-    let mut frequent: Vec<(u32, u64)> = item_count
-        .iter().enumerate()
-        .filter(|(_, &c)| c >= min_count)
-        .map(|(col, &c)| (col as u32, c))
-        .collect();
-    if frequent.is_empty() { return Ok(vec![]); }
-    frequent.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    let (global_to_local, original_items, frequent_cols, frequent_len) = 
+        match process_item_counts(item_count, min_count, n_cols) {
+            Some(v) => v,
+            None => return Ok(vec![]),
+        };
 
-    let mut global_to_local = vec![u32::MAX; n_cols];
-    let mut original_items = Vec::with_capacity(frequent.len());
-    for (local_id, &(col, _)) in frequent.iter().enumerate() {
-        global_to_local[col as usize] = local_id as u32;
-        original_items.push(col);
-    }
-    let frequent_cols: Vec<usize> = frequent.iter().map(|&(col, _)| col as usize).collect();
-
-    let mut itemsets: Vec<Vec<u32>> = flat
+    let itemsets: Vec<Vec<u32>> = flat
         .par_chunks(n_cols)
         .filter_map(|row| {
             let mut items: Vec<u32> = frequent_cols
@@ -287,23 +314,9 @@ fn _mine_dense(
         })
         .collect();
 
-    itemsets.par_sort_unstable();
-
-    let mut tree = FPTree::new(frequent.len(), original_items);
-    let total = itemsets.len();
-    let mut i = 0;
-    while i < total {
-        let basket = &itemsets[i];
-        let mut j = i + 1;
-        while j < total && itemsets[j] == *basket { j += 1; }
-        tree.insert_itemset(basket, (j - i) as u64);
-        i = j;
-    }
-
-    Ok(fpg_step(&tree, min_count, max_len))
+    mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)
 }
 
-// ─── CSR mining ───────────────────────────────────────────────────────────────
 fn _mine_csr(
     indptr: &[i32],
     indices: &[i32],
@@ -332,22 +345,13 @@ fn _mine_csr(
             |mut a, b| { for (x, y) in a.iter_mut().zip(b.iter()) { *x += y; } a },
         );
 
-    let mut frequent: Vec<(u32, u64)> = item_count
-        .iter().enumerate()
-        .filter(|(_, &c)| c >= min_count)
-        .map(|(col, &c)| (col as u32, c))
-        .collect();
-    if frequent.is_empty() { return Ok(vec![]); }
-    frequent.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    let (global_to_local, original_items, _, frequent_len) = 
+        match process_item_counts(item_count, min_count, n_cols) {
+            Some(v) => v,
+            None => return Ok(vec![]),
+        };
 
-    let mut global_to_local = vec![u32::MAX; n_cols];
-    let mut original_items = Vec::with_capacity(frequent.len());
-    for (local_id, &(col, _)) in frequent.iter().enumerate() {
-        global_to_local[col as usize] = local_id as u32;
-        original_items.push(col);
-    }
-
-    let mut itemsets: Vec<Vec<u32>> = (0..n_rows)
+    let itemsets: Vec<Vec<u32>> = (0..n_rows)
         .into_par_iter()
         .filter_map(|row| {
             let start = indptr[row] as usize;
@@ -367,52 +371,7 @@ fn _mine_csr(
         })
         .collect();
 
-    itemsets.par_sort_unstable();
-
-    let mut tree = FPTree::new(frequent.len(), original_items);
-    let total = itemsets.len();
-    let mut i = 0;
-    while i < total {
-        let basket = &itemsets[i];
-        let mut j = i + 1;
-        while j < total && itemsets[j] == *basket { j += 1; }
-        tree.insert_itemset(basket, (j - i) as u64);
-        i = j;
-    }
-
-    Ok(fpg_step(&tree, min_count, max_len))
-}
-
-// ─── PyO3 exports ─────────────────────────────────────────────────────────────
-
-#[pyfunction]
-#[pyo3(signature = (rows, rank, min_count, max_len=None))]
-pub fn fpgrowth_inner(
-    _py: Python<'_>,
-    rows: Vec<Vec<u32>>,
-    mut rank: Vec<(u32, usize)>,
-    min_count: u64,
-    max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
-    rank.sort_unstable_by(|a, b| b.1.cmp(&a.1));
-    
-    let mut original_items = Vec::with_capacity(rank.len());
-    let mut global_to_local = AHashMap::default();
-    for (local_id, &(col, _)) in rank.iter().enumerate() {
-        global_to_local.insert(col, local_id as u32);
-        original_items.push(col);
-    }
-
-    let mut tree = FPTree::new(rank.len(), original_items);
-    for row in rows {
-        let mut itemset: Vec<u32> = row
-            .iter()
-            .filter_map(|i| global_to_local.get(i).copied())
-            .collect();
-        itemset.sort_unstable();
-        tree.insert_itemset(&itemset, 1);
-    }
-    Ok(fpg_step(&tree, min_count, max_len))
+    mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)
 }
 
 #[pyfunction]
@@ -427,8 +386,7 @@ pub fn fpgrowth_from_dense(
     let n_rows = arr.nrows();
     let n_cols = arr.ncols();
     if n_cols == 0 || n_rows == 0 { return Ok(vec![]); }
-    let flat: &[u8] = arr.as_slice()
-        .expect("array must be C-contiguous; call np.ascontiguousarray first");
+    let flat: &[u8] = arr.as_slice().unwrap();
     _mine_dense(flat, n_cols, min_count, max_len)
 }
 
