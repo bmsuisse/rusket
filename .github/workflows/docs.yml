@@ -28,7 +28,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install docs dependencies
-        run: uv pip install --system "mkdocs-material>=9.5" "mkdocs>=1.5,<2"
+        run: uv pip install --system "mkdocs-material>=9.5" "mkdocs>=1.5,<2" "mkdocs-jupyter>=0.25.1"
 
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force
