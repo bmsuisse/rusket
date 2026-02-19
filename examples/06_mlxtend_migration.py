@@ -44,7 +44,7 @@ freq = fpgrowth(df, min_support=0.4, use_colnames=True)
 # association_rules — add num_itemsets=len(df)
 rules = association_rules(
     freq,
-    num_itemsets=len(df),   # ← the one extra arg vs mlxtend
+    num_itemsets=len(df),  # ← the one extra arg vs mlxtend
     metric="confidence",
     min_threshold=0.6,
 )
@@ -53,7 +53,9 @@ print("Frequent itemsets:")
 print(freq.to_string(index=False))
 print()
 print("Rules:")
-print(rules[["antecedents", "consequents", "confidence", "lift"]].to_string(index=False))
+print(
+    rules[["antecedents", "consequents", "confidence", "lift"]].to_string(index=False)
+)
 
 # ── Gotchas ───────────────────────────────────────────────────────────────────
 #

@@ -16,6 +16,7 @@ from rusket import fpgrowth, association_rules
 
 # ── 1. Generate dataset with Faker ──────────────────────────────────────────
 
+
 def make_basket_df(
     n_transactions: int = 50_000,
     n_products: int = 200,
@@ -70,11 +71,9 @@ print(f"  Found {len(rules):,} rules\n")
 # ── 4. Top cross-sell opportunities ─────────────────────────────────────────
 
 top = (
-    rules
-    .query("confidence >= 0.5")
+    rules.query("confidence >= 0.5")
     .sort_values(["lift", "confidence"], ascending=False)
-    .head(10)
-    [["antecedents", "consequents", "support", "confidence", "lift"]]
+    .head(10)[["antecedents", "consequents", "support", "confidence", "lift"]]
     .reset_index(drop=True)
 )
 

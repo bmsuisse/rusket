@@ -47,7 +47,9 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
 
     # Fast path: all bool columns
     if null_values:
-        mask = df.apply(lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool)))
+        mask = df.apply(
+            lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool))
+        )
         if isinstance(mask, pd.Series):
             all_bools = bool(mask.all())
         else:

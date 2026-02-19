@@ -20,6 +20,7 @@ pandas_version = pd.__version__
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 @contextmanager
 def captured_output():
     new_out, new_err = io.StringIO(), io.StringIO()
@@ -31,7 +32,9 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
-def assert_raises(error_type: type, substr: str, func: Callable, *args, **kwargs) -> None:
+def assert_raises(
+    error_type: type, substr: str, func: Callable, *args, **kwargs
+) -> None:
     """Assert that *func* raises *error_type* with *substr* in its message."""
     try:
         func(*args, **kwargs)
@@ -60,6 +63,7 @@ def compare_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
 # Edge case tests
 # ---------------------------------------------------------------------------
 
+
 class FPTestEdgeCases:
     def setUp(self, fpalgo: Callable) -> None:
         self.fpalgo = fpalgo
@@ -79,6 +83,7 @@ class FPTestEdgeCases:
 # Error tests
 # ---------------------------------------------------------------------------
 
+
 class FPTestErrors:
     def setUp(self, fpalgo: Callable) -> None:
         self.one_ary = np.array(
@@ -91,8 +96,17 @@ class FPTestErrors:
             ]
         )
         self.cols = [
-            "Apple", "Corn", "Dill", "Eggs", "Ice cream",
-            "Kidney Beans", "Milk", "Nutmeg", "Onion", "Unicorn", "Yogurt",
+            "Apple",
+            "Corn",
+            "Dill",
+            "Eggs",
+            "Ice cream",
+            "Kidney Beans",
+            "Milk",
+            "Nutmeg",
+            "Onion",
+            "Unicorn",
+            "Yogurt",
         ]
         self.df = pd.DataFrame(self.one_ary, columns=self.cols).astype(bool)
         self.fpalgo = fpalgo
@@ -141,6 +155,7 @@ class FPTestErrors:
 # Example 1: grocery-style 5×11 dataset
 # ---------------------------------------------------------------------------
 
+
 class FPTestEx1:
     def setUp(self, fpalgo: Callable, one_ary: np.ndarray | None = None) -> None:
         if one_ary is None:
@@ -157,8 +172,17 @@ class FPTestEx1:
             self.one_ary = one_ary
 
         self.cols = [
-            "Apple", "Corn", "Dill", "Eggs", "Ice cream",
-            "Kidney Beans", "Milk", "Nutmeg", "Onion", "Unicorn", "Yogurt",
+            "Apple",
+            "Corn",
+            "Dill",
+            "Eggs",
+            "Ice cream",
+            "Kidney Beans",
+            "Milk",
+            "Nutmeg",
+            "Onion",
+            "Unicorn",
+            "Yogurt",
         ]
         self.df = pd.DataFrame(self.one_ary, columns=self.cols).astype(bool)
         self.fpalgo = fpalgo
@@ -166,14 +190,18 @@ class FPTestEx1:
     def test_frozenset_selection(self) -> None:
         res_df = self.fpalgo(self.df, use_colnames=True)
         assert res_df.values.shape == self.fpalgo(self.df).values.shape
-        
+
         # PyArrow list arrays don't support `== set` directly in pandas.
         # We need to map the items back to a Python set for row-wise filtering in the test.
         def has_items(row_items, expected):
             return set(row_items) == set(expected)
-            
-        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["nothing"]))].values.shape == (0, 2)
-        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["Milk", "Kidney Beans"]))].values.shape == (1, 2)
+
+        assert res_df[
+            res_df["itemsets"].apply(lambda x: has_items(x, ["nothing"]))
+        ].values.shape == (0, 2)
+        assert res_df[
+            res_df["itemsets"].apply(lambda x: has_items(x, ["Milk", "Kidney Beans"]))
+        ].values.shape == (1, 2)
 
     def test_sparse(self) -> None:
         def test_with_fill_values(fill_value: object) -> None:
@@ -183,7 +211,9 @@ class FPTestEx1:
                 warnings.simplefilter("ignore", DeprecationWarning)
                 res_df = self.fpalgo(sdf, use_colnames=True)
                 assert res_df.values.shape == self.fpalgo(self.df).values.shape
-            assert res_df[res_df["itemsets"].apply(lambda x: set(x) == {"Milk", "Kidney Beans"})].values.shape == (1, 2)
+            assert res_df[
+                res_df["itemsets"].apply(lambda x: set(x) == {"Milk", "Kidney Beans"})
+            ].values.shape == (1, 2)
 
         test_with_fill_values(0)
         test_with_fill_values(False)
@@ -239,6 +269,7 @@ class FPTestEx1All(FPTestEx1):
     def test_low_memory_flag(self) -> None:
         # We don't have a low_memory flag – just skip silently.
         import inspect
+
         if "low_memory" not in inspect.signature(self.fpalgo).parameters:
             assert True
 
@@ -247,9 +278,11 @@ class FPTestEx1All(FPTestEx1):
 # Example 2: single-item transactions (no pairs)
 # ---------------------------------------------------------------------------
 
+
 class FPTestEx2:
     def setUp(self) -> None:
         from mlxtend.preprocessing import TransactionEncoder
+
         database = [["a"], ["b"], ["c", "d"], ["e"]]
         te = TransactionEncoder()
         te_ary = te.fit(database).transform(database)
@@ -281,9 +314,11 @@ class FPTestEx2All(FPTestEx2):
 # Example 3: min_support=0.0 error
 # ---------------------------------------------------------------------------
 
+
 class FPTestEx3:
     def setUp(self) -> None:
         from mlxtend.preprocessing import TransactionEncoder
+
         database = [["a"], ["b"], ["c", "d"], ["e"]]
         te = TransactionEncoder()
         te_ary = te.fit(database).transform(database)

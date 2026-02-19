@@ -28,7 +28,7 @@ df_sparse = df_dense.astype(pd.SparseDtype("bool", fill_value=False))
 dense_mb = df_dense.memory_usage(deep=True).sum() / 1e6
 sparse_mb = df_sparse.memory_usage(deep=True).sum() / 1e6
 print(f"Dense  memory: {dense_mb:.1f} MB")
-print(f"Sparse memory: {sparse_mb:.1f} MB  ({dense_mb/sparse_mb:.1f}× smaller)\n")
+print(f"Sparse memory: {sparse_mb:.1f} MB  ({dense_mb / sparse_mb:.1f}× smaller)\n")
 
 
 # ── 2. fpgrowth on sparse DF — exact same API ───────────────────────────────

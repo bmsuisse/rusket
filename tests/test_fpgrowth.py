@@ -38,11 +38,47 @@ class TestEx1BoolInput(unittest.TestCase, FPTestEx1All):
     def setUp(self) -> None:
         one_ary = np.array(
             [
-                [False, False, False, True,  False, True,  True,  True,  True,  False, True],
-                [False, False, True,  True,  False, True,  False, True,  True,  False, True],
-                [True,  False, False, True,  False, True,  True,  False, False, False, False],
-                [False, True,  False, False, False, True,  True,  False, False, True,  True],
-                [False, True,  False, True,  True,  True,  False, False, True,  False, False],
+                [False, False, False, True, False, True, True, True, True, False, True],
+                [False, False, True, True, False, True, False, True, True, False, True],
+                [
+                    True,
+                    False,
+                    False,
+                    True,
+                    False,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                ],
+                [
+                    False,
+                    True,
+                    False,
+                    False,
+                    False,
+                    True,
+                    True,
+                    False,
+                    False,
+                    True,
+                    True,
+                ],
+                [
+                    False,
+                    True,
+                    False,
+                    True,
+                    True,
+                    True,
+                    False,
+                    False,
+                    True,
+                    False,
+                    False,
+                ],
             ]
         )
         FPTestEx1All.setUp(self, fpgrowth, one_ary=one_ary)
@@ -62,17 +98,23 @@ class TestEx3(unittest.TestCase, FPTestEx3All):
 # Performance test – must complete in 5 seconds on 10k × 400 sparse data
 # ---------------------------------------------------------------------------
 
+
 def _create_dataframe(n_rows: int = 10_000, n_cols: int = 400) -> pd.DataFrame:
     rng = np.random.default_rng(42)
     support_values = np.zeros(n_cols)
     n_very_low = int(n_cols * 0.9)
     support_values[:n_very_low] = rng.uniform(0.0001, 0.009, n_very_low)
     n_medium = int(n_cols * 0.06)
-    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(0.01, 0.1, n_medium)
+    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(
+        0.01, 0.1, n_medium
+    )
     n_high = n_cols - n_very_low - n_medium
     support_values[n_very_low + n_medium :] = rng.uniform(0.1, 0.65, n_high)
     return pd.DataFrame(
-        {f"feature_{i:04d}": rng.random(n_rows) < support_values[i] for i in range(n_cols)}
+        {
+            f"feature_{i:04d}": rng.random(n_rows) < support_values[i]
+            for i in range(n_cols)
+        }
     )
 
 
@@ -91,6 +133,7 @@ def test_fpgrowth_completes_within_5_seconds() -> None:
 # ---------------------------------------------------------------------------
 # Apache Spark MLlib Ported Tests
 # ---------------------------------------------------------------------------
+
 
 def _to_dataframe(transactions: list[list[str | int]]) -> pd.DataFrame:
     # Convert a list of transactions to a boolean one-hot encoded DataFrame
@@ -118,8 +161,11 @@ def test_spark_mllib_fpgrowth_string() -> None:
     # min_support = 0.5 -> 18 itemsets, verifiable frequencies
     res = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res) == 18
-    
-    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
+
+    freq_dict = {
+        frozenset(row["itemsets"]): row["support"] * len(df)
+        for _, row in res.iterrows()
+    }
     assert freq_dict[frozenset(["z"])] == 5
     assert freq_dict[frozenset(["x"])] == 4
     assert freq_dict[frozenset(["t", "x", "y", "z"])] == 3
@@ -153,12 +199,21 @@ def test_spark_mllib_fpgrowth_int() -> None:
     # min_support = 0.5 -> 9 itemsets
     res3 = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res3) == 9
-    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
+    freq_dict = {
+        frozenset(row["itemsets"]): row["support"] * len(df)
+        for _, row in res3.iterrows()
+    }
     # Note: rusket backend currently casts columns to strings internally
     expected = {
-        frozenset(['1']): 6, frozenset(['2']): 5, frozenset(['3']): 5, frozenset(['4']): 4,
-        frozenset(['1', '2']): 4, frozenset(['1', '3']): 5, frozenset(['2', '3']): 4,
-        frozenset(['2', '4']): 4, frozenset(['1', '2', '3']): 4
+        frozenset(["1"]): 6,
+        frozenset(["2"]): 5,
+        frozenset(["3"]): 5,
+        frozenset(["4"]): 4,
+        frozenset(["1", "2"]): 4,
+        frozenset(["1", "3"]): 5,
+        frozenset(["2", "3"]): 4,
+        frozenset(["2", "4"]): 4,
+        frozenset(["1", "2", "3"]): 4,
     }
     assert freq_dict == expected
 

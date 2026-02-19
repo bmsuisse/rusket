@@ -24,8 +24,17 @@ one_ary = np.array(
 )
 
 cols = [
-    "Apple", "Corn", "Dill", "Eggs", "Ice cream",
-    "Kidney Beans", "Milk", "Nutmeg", "Onion", "Unicorn", "Yogurt",
+    "Apple",
+    "Corn",
+    "Dill",
+    "Eggs",
+    "Ice cream",
+    "Kidney Beans",
+    "Milk",
+    "Nutmeg",
+    "Onion",
+    "Unicorn",
+    "Yogurt",
 ]
 
 df = pd.DataFrame(one_ary, columns=cols).astype(bool)
@@ -36,6 +45,7 @@ df_freq_items_with_colnames = fpgrowth(df, min_support=0.6, use_colnames=True)
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_default() -> None:
     res_df = association_rules(df_freq_items, len(df))
@@ -74,18 +84,26 @@ def test_empty_result() -> None:
 
 
 def test_leverage() -> None:
-    res_df = association_rules(df_freq_items, len(df), min_threshold=0.1, metric="leverage")
+    res_df = association_rules(
+        df_freq_items, len(df), min_threshold=0.1, metric="leverage"
+    )
     assert res_df.shape[0] == 6
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.1, metric="leverage")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=0.1, metric="leverage"
+    )
     assert res_df.shape[0] == 6
 
 
 def test_conviction() -> None:
-    res_df = association_rules(df_freq_items, len(df), min_threshold=1.5, metric="conviction")
+    res_df = association_rules(
+        df_freq_items, len(df), min_threshold=1.5, metric="conviction"
+    )
     assert res_df.shape[0] == 11
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=1.5, metric="conviction")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=1.5, metric="conviction"
+    )
     assert res_df.shape[0] == 11
 
 
@@ -93,47 +111,72 @@ def test_lift() -> None:
     res_df = association_rules(df_freq_items, len(df), min_threshold=1.1, metric="lift")
     assert res_df.shape[0] == 6
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=1.1, metric="lift")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=1.1, metric="lift"
+    )
     assert res_df.shape[0] == 6
 
 
 def test_confidence() -> None:
-    res_df = association_rules(df_freq_items, len(df), min_threshold=0.8, metric="confidence")
+    res_df = association_rules(
+        df_freq_items, len(df), min_threshold=0.8, metric="confidence"
+    )
     assert res_df.shape[0] == 9
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.8, metric="confidence")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=0.8, metric="confidence"
+    )
     assert res_df.shape[0] == 9
 
 
 def test_representativity() -> None:
-    res_df = association_rules(df_freq_items, len(df), min_threshold=1.0, metric="representativity")
+    res_df = association_rules(
+        df_freq_items, len(df), min_threshold=1.0, metric="representativity"
+    )
     assert res_df.shape[0] == 16
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=1.0, metric="representativity")
+    res_df = association_rules(
+        df_freq_items_with_colnames,
+        len(df),
+        min_threshold=1.0,
+        metric="representativity",
+    )
     assert res_df.shape[0] == 16
 
 
 def test_jaccard() -> None:
-    res_df = association_rules(df_freq_items, len(df), min_threshold=0.7, metric="jaccard")
+    res_df = association_rules(
+        df_freq_items, len(df), min_threshold=0.7, metric="jaccard"
+    )
     assert res_df.shape[0] == 8
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.7, metric="jaccard")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=0.7, metric="jaccard"
+    )
     assert res_df.shape[0] == 8
 
 
 def test_certainty() -> None:
-    res_df = association_rules(df_freq_items, len(df), metric="certainty", min_threshold=0.6)
+    res_df = association_rules(
+        df_freq_items, len(df), metric="certainty", min_threshold=0.6
+    )
     assert res_df.shape[0] == 3
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), metric="certainty", min_threshold=0.6)
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), metric="certainty", min_threshold=0.6
+    )
     assert res_df.shape[0] == 3
 
 
 def test_kulczynski() -> None:
-    res_df = association_rules(df_freq_items, len(df), metric="kulczynski", min_threshold=0.9)
+    res_df = association_rules(
+        df_freq_items, len(df), metric="kulczynski", min_threshold=0.9
+    )
     assert res_df.shape[0] == 2
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), metric="kulczynski", min_threshold=0.6)
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), metric="kulczynski", min_threshold=0.6
+    )
     assert res_df.shape[0] == 16
 
 
@@ -153,20 +196,37 @@ def test_override_metric_with_support() -> None:
     res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.8)
     assert res_df.shape[0] == 9
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.8, metric="support")
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=0.8, metric="support"
+    )
     assert res_df.shape[0] == 2
 
-    res_df = association_rules(df_freq_items_with_colnames, len(df), min_threshold=0.8, support_only=True)
+    res_df = association_rules(
+        df_freq_items_with_colnames, len(df), min_threshold=0.8, support_only=True
+    )
     assert res_df.shape[0] == 2
 
 
 def test_on_df_with_missing_entries() -> None:
     d = {
         "itemsets": [
-            [177, 176], [177, 179], [176, 178], [176, 179],
-            [93, 100], [177, 178], [177, 176, 178],
+            [177, 176],
+            [177, 179],
+            [176, 178],
+            [176, 179],
+            [93, 100],
+            [177, 178],
+            [177, 176, 178],
         ],
-        "support": [0.253623, 0.253623, 0.217391, 0.217391, 0.181159, 0.108696, 0.108696],
+        "support": [
+            0.253623,
+            0.253623,
+            0.217391,
+            0.217391,
+            0.181159,
+            0.108696,
+            0.108696,
+        ],
     }
     df_missing = pd.DataFrame(d)
     numpy_assert_raises(KeyError, association_rules, df_missing, len(df))
@@ -175,13 +235,28 @@ def test_on_df_with_missing_entries() -> None:
 def test_on_df_with_missing_entries_support_only() -> None:
     d = {
         "itemsets": [
-            [177, 176], [177, 179], [176, 178], [176, 179],
-            [93, 100], [177, 178], [177, 176, 178],
+            [177, 176],
+            [177, 179],
+            [176, 178],
+            [176, 179],
+            [93, 100],
+            [177, 178],
+            [177, 176, 178],
         ],
-        "support": [0.253623, 0.253623, 0.217391, 0.217391, 0.181159, 0.108696, 0.108696],
+        "support": [
+            0.253623,
+            0.253623,
+            0.217391,
+            0.217391,
+            0.181159,
+            0.108696,
+            0.108696,
+        ],
     }
     df_missing = pd.DataFrame(d)
-    df_result = association_rules(df_missing, len(df), support_only=True, min_threshold=0.1)
+    df_result = association_rules(
+        df_missing, len(df), support_only=True, min_threshold=0.1
+    )
     assert df_result["support"].shape == (18,)
     assert int(np.isnan(df_result["support"].values).any()) != 1
 
@@ -196,10 +271,12 @@ def test_with_empty_dataframe() -> None:
 # Apache Spark MLlib Ported Tests
 # ---------------------------------------------------------------------------
 
+
 def _to_dataframe(transactions: list[list[str]]) -> pd.DataFrame:
     items = sorted(set(item for t in transactions for item in t))
     data = [{item: (item in t) for item in items} for t in transactions]
     return pd.DataFrame(data)
+
 
 def test_spark_mllib_association_rules() -> None:
     # Ported from Spark MLlib: association rules using String type
@@ -212,10 +289,10 @@ def test_spark_mllib_association_rules() -> None:
         "x z y r q t p".split(" "),
     ]
     df = _to_dataframe(transactions)
-    
+
     # Fit FP-Growth first with min_support=0.5
     freq_items = fpgrowth(df, min_support=0.5, use_colnames=True)
-    
+
     # In Spark MLlib Association Rules test with minConfidence=0.9
     # generates 23 rules, 23 with confidence == 1.0 (with absolute tolerance 1e-6)
     ar = association_rules(freq_items, len(df), metric="confidence", min_threshold=0.9)
@@ -228,7 +305,9 @@ def test_spark_mllib_association_rules() -> None:
     assert (ar_single_cons["confidence"] >= 0.999999).sum() == 23
 
     # In Spark MLlib Association Rules test with minConfidence=0.0
-    ar_all = association_rules(freq_items, len(df), metric="confidence", min_threshold=0.0)
+    ar_all = association_rules(
+        freq_items, len(df), metric="confidence", min_threshold=0.0
+    )
     assert len(ar_all) == 50
     ar_all_single_cons = ar_all[ar_all["consequents"].apply(len) == 1]
     assert len(ar_all_single_cons) == 30

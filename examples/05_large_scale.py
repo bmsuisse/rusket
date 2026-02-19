@@ -32,7 +32,9 @@ def timed(label: str, fn, *args, **kwargs):
 N_ROWS, N_COLS = 100_000, 1_000
 MIN_SUPPORT = 0.05
 
-print(f"Dataset: {N_ROWS:,} rows × {N_COLS:,} items  ({N_ROWS*N_COLS/1e6:.0f} MB raw)\n")
+print(
+    f"Dataset: {N_ROWS:,} rows × {N_COLS:,} items  ({N_ROWS * N_COLS / 1e6:.0f} MB raw)\n"
+)
 
 rng = np.random.default_rng(42)
 rank = np.arange(1, N_COLS + 1, dtype=float)
@@ -42,7 +44,7 @@ print("Generating…")
 t0 = time.perf_counter()
 matrix = (rng.random((N_ROWS, N_COLS)) < sup).astype(bool)
 df = pd.DataFrame(matrix, columns=[f"item_{i:04d}" for i in range(N_COLS)])
-print(f"  Generated in {time.perf_counter()-t0:.2f}s\n")
+print(f"  Generated in {time.perf_counter() - t0:.2f}s\n")
 
 
 # ── 2. Mine ──────────────────────────────────────────────────────────────────
@@ -69,10 +71,8 @@ print(f"  → {len(rules):,} rules\n")
 # ── 4. Top rules ─────────────────────────────────────────────────────────────
 
 top = (
-    rules
-    .sort_values(["lift", "confidence"], ascending=False)
-    .head(10)
-    [["antecedents", "consequents", "support", "confidence", "lift"]]
+    rules.sort_values(["lift", "confidence"], ascending=False)
+    .head(10)[["antecedents", "consequents", "support", "confidence", "lift"]]
     .reset_index(drop=True)
 )
 print("Top rules by lift:")

@@ -3,17 +3,21 @@ import numpy as np
 import pandas as pd
 from rusket import fpgrowth
 
+
 def _make_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> pd.DataFrame:
     support_values = np.zeros(n_cols)
     n_very_low = int(n_cols * 0.9)
     support_values[:n_very_low] = rng.uniform(0.0001, 0.009, n_very_low)
     n_medium = int(n_cols * 0.06)
-    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(0.01, 0.1, n_medium)
+    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(
+        0.01, 0.1, n_medium
+    )
     n_high = n_cols - n_very_low - n_medium
     support_values[n_very_low + n_medium :] = rng.uniform(0.1, 0.65, n_high)
     return pd.DataFrame(
         {f"c{i}": (rng.random(n_rows) < support_values[i]) for i in range(n_cols)}
     )
+
 
 RNG = np.random.default_rng(42)
 

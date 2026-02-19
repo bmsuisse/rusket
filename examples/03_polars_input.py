@@ -24,9 +24,7 @@ products = [f"product_{i:03d}" for i in range(n_cols)]
 support = np.clip(0.5 / np.arange(1, n_cols + 1, dtype=float) ** 0.5, 0.005, 0.5)
 matrix = rng.random((n_rows, n_cols)) < support
 
-df_pl = pl.DataFrame(
-    {p: matrix[:, i].tolist() for i, p in enumerate(products)}
-)
+df_pl = pl.DataFrame({p: matrix[:, i].tolist() for i, p in enumerate(products)})
 
 print(f"Polars DataFrame: {df_pl.shape[0]:,} rows × {df_pl.shape[1]} columns")
 print(f"Schema: {dict(list(df_pl.schema.items())[:3])} …\n")
