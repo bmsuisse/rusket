@@ -100,7 +100,6 @@ pub fn association_rules_inner(
     let nan = f64::NAN;
     let n_ret = return_indices.len();
 
-    type RuleEntry = (Vec<u32>, Vec<u32>, Vec<f64>);
     let mut ant_out: Vec<Vec<u32>> = Vec::new();
     let mut con_out: Vec<Vec<u32>> = Vec::new();
     let mut metric_cols: Vec<Vec<f64>> = vec![Vec::new(); n_ret];
