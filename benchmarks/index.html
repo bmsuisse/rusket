@@ -581,6 +581,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../cookbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../polars/" class="md-nav__link">
         
   
@@ -752,10 +780,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memory-comparison" class="md-nav__link">
+  <a href="#memory-comparison-zero-copy-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Memory comparison
+        Memory comparison (Zero-Copy PyArrow)
       
     </span>
   </a>
@@ -1005,10 +1033,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#memory-comparison" class="md-nav__link">
+  <a href="#memory-comparison-zero-copy-pyarrow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Memory comparison
+        Memory comparison (Zero-Copy PyArrow)
       
     </span>
   </a>
@@ -1103,28 +1131,50 @@
 <h3 id="4-memory-efficiency">4. Memory efficiency<a class="headerlink" href="#4-memory-efficiency" title="Permanent link">&para;</a></h3>
 <p>The Rust implementation uses compact integer representations for itemsets internally, avoiding the overhead of Python <code>frozenset</code> objects during mining. Frozensets are only materialised by Python on output.</p>
 <hr />
-<h2 id="memory-comparison">Memory comparison<a class="headerlink" href="#memory-comparison" title="Permanent link">&para;</a></h2>
+<h2 id="memory-comparison-zero-copy-pyarrow">Memory comparison (Zero-Copy PyArrow)<a class="headerlink" href="#memory-comparison-zero-copy-pyarrow" title="Permanent link">&para;</a></h2>
+<p>With the new zero-copy PyArrow backend, <code>rusket</code> has effectively <strong>0 overhead</strong> beyond the input DataFrame size during materialization.</p>
 <table>
 <thead>
 <tr>
 <th>Dataset</th>
-<th>rusket peak RAM</th>
-<th>mlxtend peak RAM</th>
+<th>rusket Peak RAM</th>
+<th>mlxtend Peak RAM</th>
+<th>Speedup</th>
+<th>Itemsets Found</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Medium (10k × 400)</td>
-<td>~150 MB</td>
-<td>~1.2 GB</td>
+<td>100k × 2k (min_sup=0.001)</td>
+<td><strong>200 MB</strong></td>
+<td>1,164 MB</td>
+<td>~29×</td>
+<td>56k</td>
 </tr>
 <tr>
-<td>Large (100k × 1000)</td>
-<td>~600 MB</td>
-<td>OOM (&gt; 16 GB)</td>
+<td>100k × 2k (min_sup=0.0005)</td>
+<td><strong>200 MB</strong></td>
+<td>1,283 MB</td>
+<td>~42×</td>
+<td>179k</td>
+</tr>
+<tr>
+<td>100k × 2k (min_sup=0.0001)</td>
+<td><strong>200 MB</strong></td>
+<td>OOM</td>
+<td>∞</td>
+<td>2.8M</td>
+</tr>
+<tr>
+<td>100k × 2k (min_sup=0.00005)</td>
+<td><strong>200 MB</strong></td>
+<td>OOM</td>
+<td>∞</td>
+<td>10.2M</td>
 </tr>
 </tbody>
 </table>
+<p><em>Note: The input DataFrame occupies ~200MB. A peak RAM of 200MB means pattern mining and creating 10+ million itemsets via PyArrow PyO3 bindings added virtually no memory overhead in Python.</em></p>
 
 
 

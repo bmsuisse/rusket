@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <!-- Gradient representing fusion of Purple and Yellow -->
+    <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9333EA" /> <!-- Purple -->
+      <stop offset="100%" stop-color="#EAB308" /> <!-- Yellow -->
+    </linearGradient>
+    
+    <!-- Glowing Node Gradient (Yellow Accent) -->
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="100%" stop-color="#EAB308" />
+    </linearGradient>
+
+    <!-- Glowing Text Gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C084FC" />
+      <stop offset="100%" stop-color="#9333EA" />
+    </linearGradient>
+    
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <style>
+    /* Dark Purple Background */
+    .bg { fill: #1A1124; rx: 36px; }
+    
+    .link {
+      fill: none;
+      stroke: url(#edgeGrad);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 300;
+      stroke-dashoffset: 300;
+      animation: drawLine 3s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    }
+    
+    .link-delay-1 { animation-delay: 0.4s; }
+    .link-delay-2 { animation-delay: 0.8s; }
+    .link-delay-3 { animation-delay: 1.2s; }
+
+    /* Nodes with deeper purple to contrast the yellow glow */
+    .node {
+      fill: #3B2254;
+      stroke: url(#nodeGrad);
+      stroke-width: 4;
+      transition: all 0.3s ease;
+    }
+
+    .node-inner {
+      fill: url(#nodeGrad);
+      animation: pulse 2s infinite ease-in-out;
+    }
+    
+    .particle {
+      fill: #FFFFFF;
+      filter: url(#glow);
+    }
+
+    @keyframes drawLine {
+      0% { stroke-dashoffset: 300; opacity: 0.3; }
+      100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0% { r: 3; opacity: 0.6; }
+      50% { r: 6.5; opacity: 1; filter: drop-shadow(0 0 6px #FDE047); }
+      100% { r: 3; opacity: 0.6; }
+    }
+    
+    .title {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-weight: 800;
+      font-size: 72px;
+      fill: url(#textGrad);
+      letter-spacing: -2px;
+    }
+    
+    .subtitle {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-weight: 600;
+      font-size: 18px;
+      fill: #EAB308; /* Yellow for subtitle */
+      letter-spacing: 6px;
+      opacity: 0.9;
+    }
+  </style>
+  
+  <!-- Sleek Dark Purple Background -->
+  <rect width="100%" height="100%" class="bg" />
+  
+  <!-- FP-Tree Graphic -->
+  <g transform="translate(300, 210)">
+    
+    <!-- Tree Connections -->
+    <path id="p1" d="M 0,-90 L -120,10" class="link" />
+    <path id="p2" d="M 0,-90 L 120,10" class="link link-delay-1" />
+    
+    <path id="p3" d="M -120,10 L -170,100" class="link link-delay-2" />
+    <path id="p4" d="M -120,10 L -60,100" class="link link-delay-1" />
+    
+    <path id="p5" d="M 120,10 L 60,100" class="link link-delay-2" />
+    <path id="p6" d="M 120,10 L 170,100" class="link link-delay-3" />
+    
+    <!-- Data Particles Flowing -->
+    <circle r="6" class="particle">
+      <animateMotion dur="2.5s" repeatCount="indefinite">
+        <mpath href="#p1"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="2.5s" repeatCount="indefinite" />
+    </circle>
+    
+    <circle r="6" class="particle">
+      <animateMotion dur="3s" repeatCount="indefinite" begin="0.8s">
+        <mpath href="#p2"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="3s" repeatCount="indefinite" begin="0.8s"/>
+    </circle>
+    
+    <circle r="4" class="particle">
+      <animateMotion dur="2s" repeatCount="indefinite" begin="1.2s">
+        <mpath href="#p6"/>
+      </animateMotion>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="2s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>
+
+    <!-- Root Node -->
+    <circle cx="0" cy="-90" r="18" class="node" filter="url(#glow)"/>
+    <circle cx="0" cy="-90" r="6" class="node-inner" style="animation-duration: 2.5s" />
+    
+    <!-- Level 1 Nodes -->
+    <circle cx="-120" cy="10" r="14" class="node" />
+    <circle cx="-120" cy="10" r="5" class="node-inner" style="animation-delay: 0.3s; animation-duration: 1.8s" />
+    
+    <circle cx="120" cy="10" r="14" class="node" />
+    <circle cx="120" cy="10" r="5" class="node-inner" style="animation-delay: 0.6s; animation-duration: 2.2s" />
+    
+    <!-- Level 2 Nodes -->
+    <circle cx="-170" cy="100" r="12" class="node" />
+    <circle cx="-170" cy="100" r="4" class="node-inner" style="animation-delay: 0.2s" />
+    
+    <circle cx="-60" cy="100" r="12" class="node" />
+    <circle cx="-60" cy="100" r="4" class="node-inner" style="animation-delay: 0.8s" />
+    
+    <circle cx="60" cy="100" r="12" class="node" />
+    <circle cx="60" cy="100" r="4" class="node-inner" style="animation-delay: 0.5s" />
+    
+    <circle cx="170" cy="100" r="12" class="node" />
+    <circle cx="170" cy="100" r="4" class="node-inner" style="animation-delay: 0.1s; animation-duration: 1.5s" />
+  </g>
+  
+  <!-- Typography -->
+  <text x="300" y="460" text-anchor="middle" class="title">rusket</text>
+  <text x="300" y="500" text-anchor="middle" class="subtitle">FAST PATTERN MINING</text>
+
+</svg>
