@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/</loc>
+         <loc>https://bmsuisse.github.io/rusket/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/api-reference/</loc>
+         <loc>https://bmsuisse.github.io/rusket/api-reference/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/architecture/</loc>
+         <loc>https://bmsuisse.github.io/rusket/architecture/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/benchmarks/</loc>
+         <loc>https://bmsuisse.github.io/rusket/benchmarks/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/changelog/</loc>
+         <loc>https://bmsuisse.github.io/rusket/changelog/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/cookbook/</loc>
+         <loc>https://bmsuisse.github.io/rusket/cookbook/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/cookbook/</loc>
+         <loc>https://bmsuisse.github.io/rusket/cookbook/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/migration/</loc>
+         <loc>https://bmsuisse.github.io/rusket/migration/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/polars/</loc>
+         <loc>https://bmsuisse.github.io/rusket/polars/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
     <url>
-         <loc>https://bmsuisse.github.io/fpgrowth-pyo3/quickstart/</loc>
+         <loc>https://bmsuisse.github.io/rusket/quickstart/</loc>
          <lastmod>2026-02-19</lastmod>
     </url>
 </urlset>
