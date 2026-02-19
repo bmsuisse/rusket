@@ -104,8 +104,10 @@ def _build_result(
             pa.array(items_arr, type=pa.int32()),
             col_array
         )
+        item_type = col_array.type
     else:
         items_pa = pa.array(items_arr, type=pa.int32())
+        item_type = pa.int32()
 
     offsets_pa = pa.array(offsets_arr, type=pa.int32())
     list_arr = pa.ListArray.from_arrays(offsets_pa, items_pa)
@@ -114,7 +116,7 @@ def _build_result(
         "support": supports,
         "itemsets": pd.Series(
             list_arr, 
-            dtype=pd.ArrowDtype(pa.list_(pa.string())) if use_colnames else pd.ArrowDtype(pa.list_(pa.int32()))
+            dtype=pd.ArrowDtype(pa.list_(item_type))
         )
     })
 

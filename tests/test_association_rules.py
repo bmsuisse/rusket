@@ -190,3 +190,46 @@ def test_with_empty_dataframe() -> None:
     df_freq = df_freq_items_with_colnames.iloc[:0]
     with pytest.raises(ValueError):
         association_rules(df_freq, len(df))
+
+
+# ---------------------------------------------------------------------------
+# Apache Spark MLlib Ported Tests
+# ---------------------------------------------------------------------------
+
+def _to_dataframe(transactions: list[list[str]]) -> pd.DataFrame:
+    items = sorted(set(item for t in transactions for item in t))
+    data = [{item: (item in t) for item in items} for t in transactions]
+    return pd.DataFrame(data)
+
+def test_spark_mllib_association_rules() -> None:
+    # Ported from Spark MLlib: association rules using String type
+    transactions = [
+        "r z h k p".split(" "),
+        "z y x w v u t s".split(" "),
+        "s x o n r".split(" "),
+        "x z y m t s q e".split(" "),
+        ["z"],
+        "x z y r q t p".split(" "),
+    ]
+    df = _to_dataframe(transactions)
+    
+    # Fit FP-Growth first with min_support=0.5
+    freq_items = fpgrowth(df, min_support=0.5, use_colnames=True)
+    
+    # In Spark MLlib Association Rules test with minConfidence=0.9
+    # generates 23 rules, 23 with confidence == 1.0 (with absolute tolerance 1e-6)
+    ar = association_rules(freq_items, len(df), metric="confidence", min_threshold=0.9)
+    # rusket generates all possible combinations (like mlxtend), Spark only single consequents
+    assert len(ar) == 37
+    assert (ar["confidence"] >= 0.999999).sum() == 37
+    # Verify we matched Spark's 23 exactly
+    ar_single_cons = ar[ar["consequents"].apply(len) == 1]
+    assert len(ar_single_cons) == 23
+    assert (ar_single_cons["confidence"] >= 0.999999).sum() == 23
+
+    # In Spark MLlib Association Rules test with minConfidence=0.0
+    ar_all = association_rules(freq_items, len(df), metric="confidence", min_threshold=0.0)
+    assert len(ar_all) == 50
+    ar_all_single_cons = ar_all[ar_all["consequents"].apply(len) == 1]
+    assert len(ar_all_single_cons) == 30
+    assert (ar_all_single_cons["confidence"] >= 0.999999).sum() == 23

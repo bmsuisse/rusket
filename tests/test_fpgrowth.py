@@ -86,3 +86,86 @@ def test_fpgrowth_completes_within_5_seconds() -> None:
         f"and density {df.values.mean():.4f} with "
         f"{len(frequent_itemsets)} itemsets found"
     )
+
+
+# ---------------------------------------------------------------------------
+# Apache Spark MLlib Ported Tests
+# ---------------------------------------------------------------------------
+
+def _to_dataframe(transactions: list[list[str | int]]) -> pd.DataFrame:
+    # Convert a list of transactions to a boolean one-hot encoded DataFrame
+    items = sorted(set(item for t in transactions for item in t))
+    data = [{item: (item in t) for item in items} for t in transactions]
+    return pd.DataFrame(data)
+
+
+def test_spark_mllib_fpgrowth_string() -> None:
+    # Ported from Spark MLlib: FP-Growth using String type
+    transactions = [
+        "r z h k p".split(" "),
+        "z y x w v u t s".split(" "),
+        "s x o n r".split(" "),
+        "x z y m t s q e".split(" "),
+        ["z"],
+        "x z y r q t p".split(" "),
+    ]
+    df = _to_dataframe(transactions)
+
+    # min_support = 0.9 -> 0 itemsets
+    res = fpgrowth(df, min_support=0.9, use_colnames=True)
+    assert len(res) == 0
+
+    # min_support = 0.5 -> 18 itemsets, verifiable frequencies
+    res = fpgrowth(df, min_support=0.5, use_colnames=True)
+    assert len(res) == 18
+    
+    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
+    assert freq_dict[frozenset(["z"])] == 5
+    assert freq_dict[frozenset(["x"])] == 4
+    assert freq_dict[frozenset(["t", "x", "y", "z"])] == 3
+
+    # min_support = 0.3 -> 54 itemsets
+    res2 = fpgrowth(df, min_support=0.3, use_colnames=True)
+    assert len(res2) == 54
+
+    # min_support = 0.1 -> 625 itemsets
+    res1 = fpgrowth(df, min_support=0.1, use_colnames=True)
+    assert len(res1) == 625
+
+
+def test_spark_mllib_fpgrowth_int() -> None:
+    # Ported from Spark MLlib: FP-Growth using Int type
+    transactions = [
+        [1, 2, 3],
+        [1, 2, 3, 4],
+        [5, 4, 3, 2, 1],
+        [6, 5, 4, 3, 2, 1],
+        [2, 4],
+        [1, 3],
+        [1, 7],
+    ]
+    df = _to_dataframe(transactions)
+
+    # min_support = 0.9 -> 0 itemsets
+    res6 = fpgrowth(df, min_support=0.9, use_colnames=True)
+    assert len(res6) == 0
+
+    # min_support = 0.5 -> 9 itemsets
+    res3 = fpgrowth(df, min_support=0.5, use_colnames=True)
+    assert len(res3) == 9
+    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
+    # Note: rusket backend currently casts columns to strings internally
+    expected = {
+        frozenset(['1']): 6, frozenset(['2']): 5, frozenset(['3']): 5, frozenset(['4']): 4,
+        frozenset(['1', '2']): 4, frozenset(['1', '3']): 5, frozenset(['2', '3']): 4,
+        frozenset(['2', '4']): 4, frozenset(['1', '2', '3']): 4
+    }
+    assert freq_dict == expected
+
+    # min_support = 0.3 -> 15 itemsets
+    res2 = fpgrowth(df, min_support=0.3, use_colnames=True)
+    assert len(res2) == 15
+
+    # min_support = 0.1 -> 65 itemsets
+    res1 = fpgrowth(df, min_support=0.1, use_colnames=True)
+    assert len(res1) == 65

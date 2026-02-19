@@ -1,7 +1,7 @@
 # rusket
 
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="rusket logo" width="200" height="200" />
+  <img src="https://raw.githubusercontent.com/bmsuisse/rusket/main/docs/assets/logo.svg" alt="rusket logo" width="200" height="200" />
 </p>
 
 **Blazing fast FP-Growth and Association Rules for Python, powered by Rust.**
@@ -11,6 +11,7 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Rust](https://img.shields.io/badge/rust-1.83%2B-orange?logo=rust)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-green)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-MkDocs-blue)](https://bmsuisse.github.io/rusket/)
 
 ---
 

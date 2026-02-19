@@ -4,12 +4,17 @@ build-backend = "maturin"
 
 [project]
 name = "rusket"
-version = "0.1.1"
+version = "0.1.3"
 description = "Blazing-fast FP-Growth and Association Rules — pure Rust via PyO3"
 requires-python = ">=3.10"
 dependencies = [
+    "efficient-apriori>=2.0.6",
     "pyarrow>=23.0.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bmsuisse/rusket"
+Repository = "https://github.com/bmsuisse/rusket.git"
 
 [project.optional-dependencies]
 polars = ["polars>=0.20"]
