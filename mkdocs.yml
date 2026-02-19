@@ -52,6 +52,7 @@ nav:
     - Migration from mlxtend: migration.md
   - User Guide:
     - API Reference: api-reference.md
+    - Cookbook: cookbook.ipynb
     - Polars Support: polars.md
     - Benchmarks: benchmarks.md
     - Architecture: architecture.md
@@ -87,6 +88,8 @@ markdown_extensions:
 
 plugins:
   - search
+  - mkdocs-jupyter:
+      include_requirejs: true
 
 extra:
   social:

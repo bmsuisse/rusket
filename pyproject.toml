@@ -7,22 +7,20 @@ name = "rusket"
 version = "0.1.0"
 description = "Blazing-fast FP-Growth and Association Rules — pure Rust via PyO3"
 requires-python = ">=3.10"
-dependencies = [
-    "numpy>=1.24",
-    "pandas>=2.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
 polars = ["polars>=0.20"]
-docs = ["mkdocs-material>=9.5", "mkdocs>=1.5,<2"]
+pandas = ["numpy>=1.24", "pandas>=2.0"]
+docs = ["mkdocs-material>=9.5", "mkdocs>=1.5,<2", "mkdocs-jupyter>=0.24"]
 
 [tool.maturin]
 python-source = "python"
 module-name = "rusket._rusket"
 features = ["pyo3/extension-module"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8",
     "mlxtend>=0.23",
     "packaging>=23",
@@ -33,6 +31,11 @@ dev-dependencies = [
     "plotly>=6.5.2",
     "maturin>=1.12.3",
     "pyright>=1.1.408",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "jupytext>=1.19.1",
+    "jupyter>=1.1.1",
+    "mkdocs-jupyter>=0.25.1",
 ]
 
 [tool.pytest.ini_options]
