@@ -5,7 +5,7 @@ rusket is structured as a thin Python layer over a Rust core, compiled as a nati
 ## Repository layout
 
 ```
-fpgrowth-pyo3/
+rusket/
 ├── src/                          # Rust (PyO3)
 │   ├── lib.rs                    # Module root — exports to Python
 │   ├── fpgrowth.rs               # FP-Tree + FP-Growth algorithm

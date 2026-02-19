@@ -50,4 +50,4 @@ print(rules[["antecedents", "consequents", "confidence"]])
 
 [Get Started](quickstart.md){ .md-button .md-button--primary }
 [API Reference](api-reference.md){ .md-button }
-[View on GitHub](https://github.com/bmsuisse/fpgrowth-pyo3){ .md-button }
+[View on GitHub](https://github.com/bmsuisse/rusket){ .md-button }

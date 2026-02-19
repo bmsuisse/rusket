@@ -1,8 +1,8 @@
 site_name: rusket
 site_description: Blazing-fast FP-Growth and Association Rules for Python — pure Rust via PyO3.
-site_url: https://bmsuisse.github.io/fpgrowth-pyo3
-repo_url: https://github.com/bmsuisse/fpgrowth-pyo3
-repo_name: bmsuisse/fpgrowth-pyo3
+site_url: https://bmsuisse.github.io/rusket
+repo_url: https://github.com/bmsuisse/rusket
+repo_name: bmsuisse/rusket
 edit_uri: edit/main/docs/
 
 theme:
@@ -94,7 +94,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/bmsuisse/fpgrowth-pyo3
+      link: https://github.com/bmsuisse/rusket
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/rusket/
 
