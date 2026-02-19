@@ -1,6 +1,5 @@
 use ahash::AHashMap;
 use pyo3::prelude::*;
-use rayon::prelude::*;
 
 fn rule_combinations(itemset: &[u32]) -> Vec<(Vec<u32>, Vec<u32>)> {
     let n = itemset.len();
@@ -66,7 +65,6 @@ fn make_key(items: &[u32]) -> Vec<u32> {
     k
 }
 
-/// PyO3-exported: association rules from frequent itemsets. Parallel rule generation via rayon.
 #[pyfunction]
 #[pyo3(signature = (itemsets, supports, num_itemsets, metric, min_threshold, support_only, return_metrics))]
 pub fn association_rules_inner(
@@ -102,7 +100,6 @@ pub fn association_rules_inner(
     let nan = f64::NAN;
     let n_ret = return_indices.len();
 
-    // ── Rule generation (sequential for correct error propagation) ────────────
     type RuleEntry = (Vec<u32>, Vec<u32>, Vec<f64>);
     let mut ant_out: Vec<Vec<u32>> = Vec::new();
     let mut con_out: Vec<Vec<u32>> = Vec::new();

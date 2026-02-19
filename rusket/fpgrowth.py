@@ -60,12 +60,12 @@ def fpgrowth(
 
     return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
-def _fpgrowth_dense_pandas(df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None) -> list[tuple[int, list[int]]]:
+def _fpgrowth_dense_pandas(df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
     return _rust.fpgrowth_from_dense(data, min_count, max_len)
 
-def _fpgrowth_sparse_pandas(df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None) -> list[tuple[int, list[int]]]:
+def _fpgrowth_sparse_pandas(df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
     csr = df.sparse.to_coo().tocsr()
     csr.eliminate_zeros()
@@ -81,17 +81,43 @@ def _fpgrowth_polars(df: pl.DataFrame, min_support: float, use_colnames: bool, m
     raw = _rust.fpgrowth_from_dense(arr, min_count, max_len)
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
 
-def _build_result(raw: list[tuple[int, list[int]]], n_rows: int, min_support: float, col_names: list, use_colnames: bool) -> pd.DataFrame:
+def _build_result(
+    raw: tuple[np.ndarray, np.ndarray, np.ndarray],
+    n_rows: int,
+    min_support: float,
+    col_names: list | Any,
+    use_colnames: bool,
+) -> pd.DataFrame:
     import pandas as pd
-    if not raw:
+    import pyarrow as pa
+    
+    supports_arr, offsets_arr, items_arr = raw
+    
+    if len(supports_arr) == 0:
         return pd.DataFrame(columns=["support", "itemsets"])
 
-    supports = [count / n_rows for count, _ in raw]
-    itemsets = [frozenset(iset) for _, iset in raw]
+    supports = supports_arr / n_rows
 
     if use_colnames:
-        col_map = {idx: col for idx, col in enumerate(col_names)}
-        itemsets = [frozenset(col_map[i] for i in iset) for iset in itemsets]
+        col_array = pa.array(col_names)
+        items_pa = pa.DictionaryArray.from_arrays(
+            pa.array(items_arr, type=pa.int32()),
+            col_array
+        )
+    else:
+        items_pa = pa.array(items_arr, type=pa.int32())
 
-    result = pd.DataFrame({"support": supports, "itemsets": itemsets})
-    return result[result["support"] >= min_support].reset_index(drop=True)  # type: ignore[return-value]  # type: ignore
+    offsets_pa = pa.array(offsets_arr, type=pa.int32())
+    list_arr = pa.ListArray.from_arrays(offsets_pa, items_pa)
+
+    result = pd.DataFrame({
+        "support": supports,
+        "itemsets": pd.Series(
+            list_arr, 
+            dtype=pd.ArrowDtype(pa.list_(pa.string())) if use_colnames else pd.ArrowDtype(pa.list_(pa.int32()))
+        )
+    })
+
+    filtered_df = result[result["support"] >= min_support].reset_index(drop=True)
+    import typing
+    return typing.cast("pd.DataFrame", filtered_df)

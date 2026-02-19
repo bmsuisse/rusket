@@ -272,12 +272,36 @@ fn mine_itemsets(
     Ok(fpg_step(&tree, min_count, max_len))
 }
 
+use numpy::{IntoPyArray, PyArray1};
+
+// ... existing code ...
+
+fn flatten_results(
+    results: Vec<(u64, Vec<u32>)>
+) -> (Vec<u64>, Vec<u32>, Vec<u32>) {
+    let mut supports = Vec::with_capacity(results.len());
+    let mut offsets = Vec::with_capacity(results.len() + 1);
+    
+    // Calculate total items to pre-allocate
+    let total_items: usize = results.iter().map(|(_, items)| items.len()).sum();
+    let mut all_items = Vec::with_capacity(total_items);
+    
+    offsets.push(0);
+    for (support, mut items) in results {
+        supports.push(support);
+        all_items.append(&mut items);
+        offsets.push(all_items.len() as u32);
+    }
+    
+    (supports, offsets, all_items)
+}
+
 fn _mine_dense(
     flat: &[u8],
     n_cols: usize,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
+) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
     let item_count: Vec<u64> = flat
         .par_chunks(n_cols)
         .fold(
@@ -297,7 +321,7 @@ fn _mine_dense(
     let (global_to_local, original_items, frequent_cols, frequent_len) = 
         match process_item_counts(item_count, min_count, n_cols) {
             Some(v) => v,
-            None => return Ok(vec![]),
+            None => return Ok((vec![], vec![], vec![])),
         };
 
     let itemsets: Vec<Vec<u32>> = flat
@@ -314,7 +338,8 @@ fn _mine_dense(
         })
         .collect();
 
-    mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)
+    let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
+    Ok(flatten_results(results))
 }
 
 fn _mine_csr(
@@ -323,7 +348,7 @@ fn _mine_csr(
     n_cols: usize,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
+) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
     let n_rows = indptr.len() - 1;
 
     let item_count: Vec<u64> = (0..n_rows)
@@ -348,7 +373,7 @@ fn _mine_csr(
     let (global_to_local, original_items, _, frequent_len) = 
         match process_item_counts(item_count, min_count, n_cols) {
             Some(v) => v,
-            None => return Ok(vec![]),
+            None => return Ok((vec![], vec![], vec![])),
         };
 
     let itemsets: Vec<Vec<u32>> = (0..n_rows)
@@ -371,37 +396,66 @@ fn _mine_csr(
         })
         .collect();
 
-    mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)
+    let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
+    Ok(flatten_results(results))
 }
 
 #[pyfunction]
 #[pyo3(signature = (data, min_count, max_len=None))]
-pub fn fpgrowth_from_dense(
-    _py: Python<'_>,
+pub fn fpgrowth_from_dense<'py>(
+    py: Python<'py>,
     data: PyReadonlyArray2<u8>,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
+) -> PyResult<(Bound<'py, PyArray1<u64>>, Bound<'py, PyArray1<u32>>, Bound<'py, PyArray1<u32>>)> {
     let arr = data.as_array();
     let n_rows = arr.nrows();
     let n_cols = arr.ncols();
-    if n_cols == 0 || n_rows == 0 { return Ok(vec![]); }
+    
+    if n_cols == 0 || n_rows == 0 {
+        return Ok((
+            Vec::<u64>::new().into_pyarray(py),
+            Vec::<u32>::new().into_pyarray(py),
+            Vec::<u32>::new().into_pyarray(py),
+        ));
+    }
+    
     let flat: &[u8] = arr.as_slice().unwrap();
-    _mine_dense(flat, n_cols, min_count, max_len)
+    let (supports, offsets, items) = _mine_dense(flat, n_cols, min_count, max_len)?;
+    
+    Ok((
+        supports.into_pyarray(py),
+        offsets.into_pyarray(py),
+        items.into_pyarray(py),
+    ))
 }
 
 #[pyfunction]
 #[pyo3(signature = (indptr, indices, n_cols, min_count, max_len=None))]
-pub fn fpgrowth_from_csr(
-    _py: Python<'_>,
+pub fn fpgrowth_from_csr<'py>(
+    py: Python<'py>,
     indptr: PyReadonlyArray1<i32>,
     indices: PyReadonlyArray1<i32>,
     n_cols: usize,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
+) -> PyResult<(Bound<'py, PyArray1<u64>>, Bound<'py, PyArray1<u32>>, Bound<'py, PyArray1<u32>>)> {
     let ip = indptr.as_slice()?;
     let ix = indices.as_slice()?;
-    if ip.len() < 2 || n_cols == 0 { return Ok(vec![]); }
-    _mine_csr(ip, ix, n_cols, min_count, max_len)
+    
+    if ip.len() < 2 || n_cols == 0 {
+        return Ok((
+            Vec::<u64>::new().into_pyarray(py),
+            Vec::<u32>::new().into_pyarray(py),
+            Vec::<u32>::new().into_pyarray(py),
+        ));
+    }
+    
+    let (supports, offsets, items) = _mine_csr(ip, ix, n_cols, min_count, max_len)?;
+    
+    Ok((
+        supports.into_pyarray(py),
+        offsets.into_pyarray(py),
+        items.into_pyarray(py),
+    ))
 }

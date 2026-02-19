@@ -166,14 +166,14 @@ class FPTestEx1:
     def test_frozenset_selection(self) -> None:
         res_df = self.fpalgo(self.df, use_colnames=True)
         assert res_df.values.shape == self.fpalgo(self.df).values.shape
-        assert res_df[res_df["itemsets"] == "nothing"].values.shape == (0, 2)
-        assert res_df[res_df["itemsets"] == {"Milk", "Kidney Beans"}].values.shape == (1, 2)
-        assert res_df[
-            res_df["itemsets"] == frozenset(("Milk", "Kidney Beans"))
-        ].values.shape == (1, 2)
-        assert res_df[
-            res_df["itemsets"] == frozenset(("Kidney Beans", "Milk"))
-        ].values.shape == (1, 2)
+        
+        # PyArrow list arrays don't support `== set` directly in pandas.
+        # We need to map the items back to a Python set for row-wise filtering in the test.
+        def has_items(row_items, expected):
+            return set(row_items) == set(expected)
+            
+        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["nothing"]))].values.shape == (0, 2)
+        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["Milk", "Kidney Beans"]))].values.shape == (1, 2)
 
     def test_sparse(self) -> None:
         def test_with_fill_values(fill_value: object) -> None:
@@ -183,7 +183,7 @@ class FPTestEx1:
                 warnings.simplefilter("ignore", DeprecationWarning)
                 res_df = self.fpalgo(sdf, use_colnames=True)
                 assert res_df.values.shape == self.fpalgo(self.df).values.shape
-            assert res_df[res_df["itemsets"] == {"Milk", "Kidney Beans"}].values.shape == (1, 2)
+            assert res_df[res_df["itemsets"].apply(lambda x: set(x) == {"Milk", "Kidney Beans"})].values.shape == (1, 2)
 
         test_with_fill_values(0)
         test_with_fill_values(False)

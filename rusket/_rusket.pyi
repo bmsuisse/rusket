@@ -6,7 +6,7 @@ def fpgrowth_from_dense(
     data: npt.NDArray[np.uint8],
     min_count: int,
     max_len: Optional[int] = None
-) -> List[Tuple[int, List[int]]]: ...
+) -> Tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]: ...
 
 def fpgrowth_from_csr(
     indptr: npt.NDArray[np.int32],
@@ -14,7 +14,7 @@ def fpgrowth_from_csr(
     n_cols: int,
     min_count: int,
     max_len: Optional[int] = None
-) -> List[Tuple[int, List[int]]]: ...
+) -> Tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]: ...
 
 def association_rules_inner(
     itemsets: List[List[int]],
