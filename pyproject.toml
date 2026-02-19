@@ -39,6 +39,7 @@ dev = [
     "jupytext>=1.19.1",
     "jupyter>=1.1.1",
     "mkdocs-jupyter>=0.25.1",
+    "pyarrow>=23.0.1",
 ]
 
 [tool.pytest.ini_options]
