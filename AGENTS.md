@@ -91,3 +91,23 @@ uv run pyright
 - **Python Thin Wrappers**: `rusket/fpgrowth.py`, `rusket/association_rules.py`
 - **Type Stubs**: `rusket/_rusket.pyi`
 - **Data Flow**: Python inputs (Pandas/Polars) are validated and converted into raw NumPy/CSR arrays (`fpgrowth_from_dense` or `fpgrowth_from_csr`) allowing Rust to process them without round-trips or Python loops.
+
+## CI/CD Workflows (`.github/workflows/`)
+
+### `ci.yml` — Tests, Builds & PyPI Release
+- **Triggers**: push to `main`, tags (`v*`), PRs, manual dispatch.
+- **Test matrix**: Python 3.10–3.14 (including free-threaded `3.13t`/`3.14t`).
+- **Wheel builds** (linux, musllinux, windows, macos) only run on **tag pushes** or **workflow_dispatch**.
+- **PyPI publish** uses `PYPI_TOKEN` secret (already configured in repo settings).
+- **GitHub Release** is auto-created with a `git-cliff` changelog.
+
+### `docs.yml` — MkDocs → GitHub Pages
+- **Triggers**: push to `main` (only `docs/**` or `mkdocs.yml` changes), manual dispatch.
+- **Key**: uses `uv run --extra docs` to install mkdocs deps from `[project.optional-dependencies] docs` group, then `mkdocs gh-deploy --force`.
+- **Published at**: `https://bmsuisse.github.io/rusket`
+
+### Important CI/CD Rules
+- **Never commit `site/`** — it's the MkDocs build output and is in `.gitignore`. The `gh-deploy` command pushes it to the `gh-pages` branch automatically.
+- **All repo references must use `bmsuisse/rusket`** — the old name was `fpgrowth-pyo3`. Check `mkdocs.yml`, docs, and README if renaming.
+- **Action versions**: keep `actions/checkout`, `actions/setup-python`, `astral-sh/setup-uv` in sync across both workflows.
+- **uv consistency**: always use `uv run` — never `uv pip install --system` (deps won't be visible to `uv run`).
