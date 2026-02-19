@@ -3,7 +3,8 @@
 <p align="center">
   <img src="docs/assets/logo.svg" alt="rusket logo" width="200" height="200" />
 </p>
-> **Blazing fast FP-Growth and Association Rules for Python, powered by Rust.**
+
+**Blazing fast FP-Growth and Association Rules for Python, powered by Rust.**
 
 `rusket` is a suuuper fast library and a drop-in replacement for `mlxtend`'s `fpgrowth` and `association_rules` — with a Rust core that delivers blazing fast performance, 5–10× speed-ups, and dramatically lower memory usage.
 
