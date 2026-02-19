@@ -1529,7 +1529,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9c2e7790">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=cfe85063">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1548,24 +1548,24 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># # Market Basket Analysis Cookbook</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># Welcome to the `rusket` cookbook! This guide provides comprehensive examples on how to perform market basket analysis and generate recommendation rules efficiently.</span>
 <span class="c1"># We will use Plotly for visualizations to get insights into our frequent itemsets and association rules.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-1">
 # # Market Basket Analysis Cookbook
-# 
+#
 # Welcome to the `rusket` cookbook! This guide provides comprehensive examples on how to perform market basket analysis and generate recommendation rules efficiently.
 # We will use Plotly for visualizations to get insights into our frequent itemsets and association rules.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=94f9bb71">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=aac57c5a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1587,13 +1587,14 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.express</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">px</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.compute</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pc</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">fpgrowth</span><span class="p">,</span> <span class="n">association_rules</span>
 
 
 <span class="c1"># ## 1. Synthetic Dataset Generation</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># Let's start by generating a synthetic retail dataset. We'll simulate a supermarket where customers buy various categories of items.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">
 
@@ -1601,20 +1602,21 @@ import numpy as np
 import pandas as pd
 import polars as pl
 import plotly.express as px
+import pyarrow.compute as pc
 from rusket import fpgrowth, association_rules
 
 
 # ## 1. Synthetic Dataset Generation
-# 
+#
 # Let's start by generating a synthetic retail dataset. We'll simulate a supermarket where customers buy various categories of items.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ddbf6e97">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d5c3a7fb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1635,9 +1637,26 @@ from rusket import fpgrowth, association_rules
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
 <span class="n">items</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"Milk"</span><span class="p">,</span> <span class="s2">"Bread"</span><span class="p">,</span> <span class="s2">"Butter"</span><span class="p">,</span> <span class="s2">"Eggs"</span><span class="p">,</span> <span class="s2">"Cheese"</span><span class="p">,</span> <span class="s2">"Yogurt"</span><span class="p">,</span> <span class="s2">"Coffee"</span><span class="p">,</span> <span class="s2">"Tea"</span><span class="p">,</span> 
-    <span class="s2">"Sugar"</span><span class="p">,</span> <span class="s2">"Apples"</span><span class="p">,</span> <span class="s2">"Bananas"</span><span class="p">,</span> <span class="s2">"Oranges"</span><span class="p">,</span> <span class="s2">"Chicken"</span><span class="p">,</span> <span class="s2">"Beef"</span><span class="p">,</span> <span class="s2">"Fish"</span><span class="p">,</span>
-    <span class="s2">"Rice"</span><span class="p">,</span> <span class="s2">"Pasta"</span><span class="p">,</span> <span class="s2">"Tomato Sauce"</span><span class="p">,</span> <span class="s2">"Onions"</span><span class="p">,</span> <span class="s2">"Garlic"</span>
+    <span class="s2">"Milk"</span><span class="p">,</span>
+    <span class="s2">"Bread"</span><span class="p">,</span>
+    <span class="s2">"Butter"</span><span class="p">,</span>
+    <span class="s2">"Eggs"</span><span class="p">,</span>
+    <span class="s2">"Cheese"</span><span class="p">,</span>
+    <span class="s2">"Yogurt"</span><span class="p">,</span>
+    <span class="s2">"Coffee"</span><span class="p">,</span>
+    <span class="s2">"Tea"</span><span class="p">,</span>
+    <span class="s2">"Sugar"</span><span class="p">,</span>
+    <span class="s2">"Apples"</span><span class="p">,</span>
+    <span class="s2">"Bananas"</span><span class="p">,</span>
+    <span class="s2">"Oranges"</span><span class="p">,</span>
+    <span class="s2">"Chicken"</span><span class="p">,</span>
+    <span class="s2">"Beef"</span><span class="p">,</span>
+    <span class="s2">"Fish"</span><span class="p">,</span>
+    <span class="s2">"Rice"</span><span class="p">,</span>
+    <span class="s2">"Pasta"</span><span class="p">,</span>
+    <span class="s2">"Tomato Sauce"</span><span class="p">,</span>
+    <span class="s2">"Onions"</span><span class="p">,</span>
+    <span class="s2">"Garlic"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">n_transactions</span> <span class="o">=</span> <span class="mi">10_000</span>
@@ -1656,19 +1675,36 @@ from rusket import fpgrowth, association_rules
 
 
 <span class="c1"># ## 2. Frequent Pattern Mining</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># We'll extract frequent itemsets using the blazing-fast `fpgrowth` algorithm from `rusket`.</span>
 <span class="c1"># We set `min_support=0.05`, meaning an itemset must appear in at least 5% of all transactions.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">
 
 np.random.seed(42)
 
 items = [
-    "Milk", "Bread", "Butter", "Eggs", "Cheese", "Yogurt", "Coffee", "Tea", 
-    "Sugar", "Apples", "Bananas", "Oranges", "Chicken", "Beef", "Fish",
-    "Rice", "Pasta", "Tomato Sauce", "Onions", "Garlic"
+    "Milk",
+    "Bread",
+    "Butter",
+    "Eggs",
+    "Cheese",
+    "Yogurt",
+    "Coffee",
+    "Tea",
+    "Sugar",
+    "Apples",
+    "Bananas",
+    "Oranges",
+    "Chicken",
+    "Beef",
+    "Fish",
+    "Rice",
+    "Pasta",
+    "Tomato Sauce",
+    "Onions",
+    "Garlic",
 ]
 
 n_transactions = 10_000
@@ -1687,17 +1723,17 @@ df.head()
 
 
 # ## 2. Frequent Pattern Mining
-# 
+#
 # We'll extract frequent itemsets using the blazing-fast `fpgrowth` algorithm from `rusket`.
 # We set `min_support=0.05`, meaning an itemset must appear in at least 5% of all transactions.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4cd2a179">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=a1e23c41">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1723,9 +1759,9 @@ df.head()
 
 
 <span class="c1"># ### Visualizing Frequent Itemsets</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># Let's plot the top 20 most frequent itemsets to understand what items are bought together most often.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-4">
 
@@ -1737,16 +1773,16 @@ fi.sort_values(by="support", ascending=False).head(10)
 
 
 # ### Visualizing Frequent Itemsets
-# 
+#
 # Let's plot the top 20 most frequent itemsets to understand what items are bought together most often.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=fa477347">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=afead727">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1767,61 +1803,61 @@ fi.sort_values(by="support", ascending=False).head(10)
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Get top 20 itemsets</span>
 <span class="n">top_fi</span> <span class="o">=</span> <span class="n">fi</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="c1"># Format itemsets as strings</span>
-<span class="n">top_fi</span><span class="p">[</span><span class="s1">'itemsets_str'</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_fi</span><span class="p">[</span><span class="s1">'itemsets'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">" + "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="n">top_fi</span><span class="p">[</span><span class="s2">"itemsets_str"</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_fi</span><span class="p">[</span><span class="s2">"itemsets"</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">" + "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
 
 <span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
-    <span class="n">top_fi</span><span class="p">,</span> 
-    <span class="n">x</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span> 
-    <span class="n">y</span><span class="o">=</span><span class="s2">"itemsets_str"</span><span class="p">,</span> 
-    <span class="n">orientation</span><span class="o">=</span><span class="s1">'h'</span><span class="p">,</span>
+    <span class="n">top_fi</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">"itemsets_str"</span><span class="p">,</span>
+    <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Top 20 Frequent Itemsets by Support"</span><span class="p">,</span>
-    <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s1">'support'</span><span class="p">:</span> <span class="s1">'Support'</span><span class="p">,</span> <span class="s1">'itemsets_str'</span><span class="p">:</span> <span class="s1">'Itemset'</span><span class="p">},</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s2">"support"</span><span class="p">:</span> <span class="s2">"Support"</span><span class="p">,</span> <span class="s2">"itemsets_str"</span><span class="p">:</span> <span class="s2">"Itemset"</span><span class="p">},</span>
     <span class="n">color</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span>
     <span class="n">color_continuous_scale</span><span class="o">=</span><span class="s2">"Viridis"</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">yaxis</span><span class="o">=</span><span class="p">{</span><span class="s1">'categoryorder'</span><span class="p">:</span><span class="s1">'total ascending'</span><span class="p">})</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">yaxis</span><span class="o">=</span><span class="p">{</span><span class="s2">"categoryorder"</span><span class="p">:</span> <span class="s2">"total ascending"</span><span class="p">})</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 
 <span class="c1"># ## 3. Generating Association Rules</span>
-<span class="c1"># </span>
-<span class="c1"># Now that we have our frequent itemsets, we can generate association rules. </span>
+<span class="c1">#</span>
+<span class="c1"># Now that we have our frequent itemsets, we can generate association rules.</span>
 <span class="c1"># We'll use the fundamental `confidence` metric, setting a threshold to filter out weak rules.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">
 
 # Get top 20 itemsets
 top_fi = fi.sort_values(by="support", ascending=False).head(20).copy()
 # Format itemsets as strings
-top_fi['itemsets_str'] = top_fi['itemsets'].apply(lambda x: " + ".join(list(x)))
+top_fi["itemsets_str"] = top_fi["itemsets"].apply(lambda x: " + ".join(list(x)))
 
 fig = px.bar(
-    top_fi, 
-    x="support", 
-    y="itemsets_str", 
-    orientation='h',
+    top_fi,
+    x="support",
+    y="itemsets_str",
+    orientation="h",
     title="Top 20 Frequent Itemsets by Support",
-    labels={'support': 'Support', 'itemsets_str': 'Itemset'},
+    labels={"support": "Support", "itemsets_str": "Itemset"},
     color="support",
     color_continuous_scale="Viridis",
 )
-fig.update_layout(yaxis={'categoryorder':'total ascending'})
+fig.update_layout(yaxis={"categoryorder": "total ascending"})
 fig.show()
 
 
 # ## 3. Generating Association Rules
-# 
-# Now that we have our frequent itemsets, we can generate association rules. 
+#
+# Now that we have our frequent itemsets, we can generate association rules.
 # We'll use the fundamental `confidence` metric, setting a threshold to filter out weak rules.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e204ecaa">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b397f466">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1847,9 +1883,9 @@ fig.show()
 
 
 <span class="c1"># ### Filtering Rules</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># Often, we'll want to filter rules based on multiple metrics. For example, rules with high confidence *and* high lift. High lift (&gt; 1) indicates that the items are positively correlated.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6">
 
@@ -1861,16 +1897,16 @@ rules.sort_values(by="lift", ascending=False).head()
 
 
 # ### Filtering Rules
-# 
+#
 # Often, we'll want to filter rules based on multiple metrics. For example, rules with high confidence *and* high lift. High lift (&gt; 1) indicates that the items are positively correlated.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d9d72799">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=59447629">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1889,35 +1925,35 @@ rules.sort_values(by="lift", ascending=False).head()
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Filter for strong rules</span>
-<span class="n">strong_rules</span> <span class="o">=</span> <span class="n">rules</span><span class="p">[(</span><span class="n">rules</span><span class="p">[</span><span class="s1">'confidence'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.4</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">rules</span><span class="p">[</span><span class="s1">'lift'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="p">)]</span>
+<span class="n">strong_rules</span> <span class="o">=</span> <span class="n">rules</span><span class="p">[(</span><span class="n">rules</span><span class="p">[</span><span class="s2">"confidence"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.4</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">rules</span><span class="p">[</span><span class="s2">"lift"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="p">)]</span>
 <span class="n">strong_rules</span> <span class="o">=</span> <span class="n">strong_rules</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">"lift"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">strong_rules</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 
 
 <span class="c1"># ### Visualizing Association Rules</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># A scatter plot of Support vs. Confidence is great for identifying the most valuable rules. We'll use color to represent `lift`.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7">
 
 # Filter for strong rules
-strong_rules = rules[(rules['confidence'] &gt; 0.4) &amp; (rules['lift'] &gt; 1.2)]
+strong_rules = rules[(rules["confidence"] &gt; 0.4) &amp; (rules["lift"] &gt; 1.2)]
 strong_rules = strong_rules.sort_values(by="lift", ascending=False)
 strong_rules.head(10)
 
 
 # ### Visualizing Association Rules
-# 
+#
 # A scatter plot of Support vs. Confidence is great for identifying the most valuable rules. We'll use color to represent `lift`.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=bffb8348">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=e0b2dc5e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1936,47 +1972,47 @@ strong_rules.head(10)
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-    <span class="n">rules</span><span class="p">,</span> 
-    <span class="n">x</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span> 
-    <span class="n">y</span><span class="o">=</span><span class="s2">"confidence"</span><span class="p">,</span> 
+    <span class="n">rules</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="s2">"support"</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="s2">"confidence"</span><span class="p">,</span>
     <span class="n">color</span><span class="o">=</span><span class="s2">"lift"</span><span class="p">,</span>
     <span class="n">hover_data</span><span class="o">=</span><span class="p">[</span><span class="s2">"antecedents"</span><span class="p">,</span> <span class="s2">"consequents"</span><span class="p">],</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Association Rules: Support vs Confidence"</span><span class="p">,</span>
-    <span class="n">color_continuous_scale</span><span class="o">=</span><span class="s2">"Plasma"</span>
+    <span class="n">color_continuous_scale</span><span class="o">=</span><span class="s2">"Plasma"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
 
 <span class="c1"># ## 4. Seamless Polars Integration</span>
-<span class="c1"># </span>
-<span class="c1"># `rusket` works natively with `polars` without requiring expensive conversions. </span>
-<span class="c1"># </span>
+<span class="c1">#</span>
+<span class="c1"># `rusket` works natively with `polars` without requiring expensive conversions.</span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-8">
 
 fig = px.scatter(
-    rules, 
-    x="support", 
-    y="confidence", 
+    rules,
+    x="support",
+    y="confidence",
     color="lift",
     hover_data=["antecedents", "consequents"],
     title="Association Rules: Support vs Confidence",
-    color_continuous_scale="Plasma"
+    color_continuous_scale="Plasma",
 )
 fig.show()
 
 
 # ## 4. Seamless Polars Integration
-# 
-# `rusket` works natively with `polars` without requiring expensive conversions. 
-# </div>
+#
+# `rusket` works natively with `polars` without requiring expensive conversions.
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=98320a19">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=92dfbe8b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2003,15 +2039,15 @@ fig.show()
 
 
 <span class="c1"># ## 5. Working with PyArrow Outputs</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># To achieve blazing-fast performance, `rusket` returns itemsets as zero-copy **PyArrow `ListArray`** structures backed by Pandas.</span>
 <span class="c1"># This eliminates Python object overhead and allows you to process millions of rules with minimal memory.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 <span class="c1"># ### Querying PyArrow Itemsets</span>
-<span class="c1"># </span>
-<span class="c1"># Because the `itemsets` column uses `pd.ArrowDtype(pa.list_(pa.string()))`, standard Python `set` equality operations won't work perfectly out of the box. </span>
+<span class="c1">#</span>
+<span class="c1"># Because the `itemsets` column uses `pd.ArrowDtype(pa.list_(pa.string()))`, standard Python `set` equality operations won't work perfectly out of the box.</span>
 <span class="c1"># You should use PyArrow compute functions or cast them to Python sets when filtering row-by-row.</span>
-<span class="c1"># </span>
+<span class="c1">#</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-9">
 
@@ -2024,22 +2060,22 @@ rules_pl.head(5)
 
 
 # ## 5. Working with PyArrow Outputs
-# 
+#
 # To achieve blazing-fast performance, `rusket` returns itemsets as zero-copy **PyArrow `ListArray`** structures backed by Pandas.
 # This eliminates Python object overhead and allows you to process millions of rules with minimal memory.
-# 
+#
 # ### Querying PyArrow Itemsets
-# 
-# Because the `itemsets` column uses `pd.ArrowDtype(pa.list_(pa.string()))`, standard Python `set` equality operations won't work perfectly out of the box. 
+#
+# Because the `itemsets` column uses `pd.ArrowDtype(pa.list_(pa.string()))`, standard Python `set` equality operations won't work perfectly out of the box.
 # You should use PyArrow compute functions or cast them to Python sets when filtering row-by-row.
-# </div>
+#</div>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=5cc6eac6">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8c43b7b1">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2057,34 +2093,30 @@ rules_pl.head(5)
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.compute</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pc</span>
-
-<span class="c1"># Extract itemsets using PyArrow compute to find transactions containing a specific item</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Extract itemsets using PyArrow compute to find transactions containing a specific item</span>
 <span class="c1"># For example, let's find all itemsets that contain 'Milk'</span>
-<span class="n">contains_milk</span> <span class="o">=</span> <span class="n">pc</span><span class="o">.</span><span class="n">list_element</span><span class="p">(</span><span class="n">fi</span><span class="p">[</span><span class="s1">'itemsets'</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"Milk"</span>
+<span class="n">contains_milk</span> <span class="o">=</span> <span class="n">pc</span><span class="o">.</span><span class="n">list_element</span><span class="p">(</span><span class="n">fi</span><span class="p">[</span><span class="s2">"itemsets"</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"Milk"</span>
 
 <span class="c1"># Alternatively, if you need to do complex Python-native filtering, you can convert to sets:</span>
 <span class="c1"># (Note: this materializes Python objects, so only do this on filtered sub-sets!)</span>
 <span class="n">top_10</span> <span class="o">=</span> <span class="n">fi</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<span class="n">top_10</span><span class="p">[</span><span class="s1">'python_sets'</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_10</span><span class="p">[</span><span class="s1">'itemsets'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+<span class="n">top_10</span><span class="p">[</span><span class="s2">"python_sets"</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_10</span><span class="p">[</span><span class="s2">"itemsets"</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Zero-Copy PyArrow Array Dtype:"</span><span class="p">,</span> <span class="n">fi</span><span class="p">[</span><span class="s1">'itemsets'</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Zero-Copy PyArrow Array Dtype:"</span><span class="p">,</span> <span class="n">fi</span><span class="p">[</span><span class="s2">"itemsets"</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
 <span class="n">top_10</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-10">
 
-import pyarrow.compute as pc
-
 # Extract itemsets using PyArrow compute to find transactions containing a specific item
 # For example, let's find all itemsets that contain 'Milk'
-contains_milk = pc.list_element(fi['itemsets'].array, 0) == "Milk"
+contains_milk = pc.list_element(fi["itemsets"].array, 0) == "Milk"
 
 # Alternatively, if you need to do complex Python-native filtering, you can convert to sets:
 # (Note: this materializes Python objects, so only do this on filtered sub-sets!)
 top_10 = fi.head(10).copy()
-top_10['python_sets'] = top_10['itemsets'].apply(set)
+top_10["python_sets"] = top_10["itemsets"].apply(set)
 
-print("Zero-Copy PyArrow Array Dtype:", fi['itemsets'].dtype)
+print("Zero-Copy PyArrow Array Dtype:", fi["itemsets"].dtype)
 top_10.head()</div>
 </div>
 </div>
