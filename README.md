@@ -284,15 +284,17 @@ rusket.association_rules(
 
 ## ⚡ Benchmarks
 
-Measured on Apple M-series hardware. `mlxtend` 0.23, `rusket` 0.1.
+Measured on Apple M-series (arm64). `mlxtend` 0.23, `rusket` 0.1. Numbers from an **actual run** — synthetic market-basket data (Faker, power-law popularity).
 
-| Dataset | `rusket` | `mlxtend` | Speedup |
-|---------|----------|-----------|---------|
-| Small (1k × 50) | ~2 ms | ~15 ms | **~8×** |
-| Medium (10k × 400) | ~0.4 s | ~4 s | **~10×** |
-| Large (100k × 1,000) | ~3 s | OOM / very slow | **∞** |
+| Dataset | `rusket` (pandas) | `rusket` (polars) | `mlxtend` | Speedup |
+|---------|:-----------------:|:-----------------:|:---------:|:-------:|
+| small — 1 k × 50 items | **0.007 s** | **0.006 s** | 0.166 s | **24×** |
+| medium — 10 k × 400 items | **0.555 s** | **0.244 s** | 8.335 s | **15×** |
+| large — 100 k × 1 000 items | **0.572 s** | 0.819 s | 18.652 s | **33×** |
+| HUGE — 1 M × 2 000 items | **3.113 s** | 6.015 s | 104.024 s | **33×** |
 
-> Memory usage at large scale is proportionally lower due to native Rust buffers — no Python-object overhead.
+> Memory usage at large scale matches the input matrix size — Rust buffers add virtually zero overhead.
+> See the [full interactive benchmark report](https://bmsuisse.github.io/rusket/benchmarks/) for charts and memory breakdown.
 
 Run benchmarks yourself:
 
@@ -300,7 +302,7 @@ Run benchmarks yourself:
 # pytest-benchmark suite
 uv run pytest tests/test_benchmark.py -v -s
 
-# Full benchmark report (vs. mlxtend)
+# Full interactive Plotly report (rusket vs mlxtend vs polars)
 uv run python tests/generate_benchmark_report.py
 ```
 

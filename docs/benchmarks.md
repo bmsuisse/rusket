@@ -1,18 +1,47 @@
 # Benchmarks
 
-rusket is substantially faster than mlxtend on real-world datasets and handles large datasets that cause mlxtend to run out of memory.
+rusket is substantially faster than mlxtend on real-world datasets and handles large datasets that cause mlxtend to struggle. These numbers are from an **actual benchmark run** on Apple M-series (arm64), `mlxtend` 0.23, `rusket` 0.1.
 
-## Summary
+## Interactive Chart
 
-| Dataset | `rusket` | `mlxtend` | Speedup |
-|---------|-----------|-----------|---------|
-| Small (1k × 50) | ~2 ms | ~15 ms | **~8×** |
-| Medium (10k × 400) | ~0.4 s | ~4 s | **~10×** |
-| Large (100k × 1 000) | ~3 s | OOM / very slow | **N/A** |
+Click on legend entries to show/hide traces. All axes are log-scale for readability.
 
-!!! note "Hardware"
-    Benchmarks run on Apple M-series (arm64). `mlxtend` 0.23, `rusket` 0.1. Times are wall-clock medians over multiple runs.  
-    `min_support=0.05`, `use_colnames=False`.
+<iframe src="../assets/benchmark_report.html" width="100%" height="850px" style="border:none; border-radius:8px;"></iframe>
+
+---
+
+## Results Table
+
+Synthetic market-basket data (Faker, power-law product popularity). `min_support` varies by tier to keep itemset counts reasonable.
+
+| Dataset | `rusket` (pandas) | `rusket` (polars) | `mlxtend` | **Speedup** |
+|---------|:-----------------:|:-----------------:|:---------:|:-----------:|
+| tiny — 5 rows × 11 items | 0.005 s | 0.002 s | 0.002 s | —¹ |
+| small — 1 k rows × 50 items | **0.007 s** | **0.006 s** | 0.166 s | **24×** |
+| medium — 10 k rows × 400 items | **0.555 s** | **0.244 s** | 8.335 s | **15×** |
+| large — 100 k rows × 1 000 items | **0.572 s** | **0.819 s** | 18.652 s | **33×** |
+| HUGE — 1 M rows × 2 000 items | **3.113 s** | 6.015 s | 104.024 s | **33×** |
+
+> ¹ At the "tiny" tier (5 rows), PyO3 call overhead dominates — mlxtend wins. From `small` onward rusket is always faster.
+
+!!! note "Hardware & settings"
+    Apple M-series, arm64. `min_support=0.10` (tiny/small/HUGE), `0.01` (medium), `0.05` (large).  
+    Times are single wall-clock runs (tracemalloc active). Polars path uses Arrow zero-copy buffers.
+
+---
+
+## Memory comparison
+
+| Dataset | rusket peak RAM | mlxtend peak RAM | Ratio |
+|---------|:--------------:|:----------------:|:-----:|
+| small — 1 k × 50 | **0.1 MB** | 1.3 MB | **24×** |
+| medium — 10 k × 400 | **4.8 MB** | 92.4 MB | **19×** |
+| large — 100 k × 1 000 | **100.1 MB** | 319.7 MB | **3×** |
+| HUGE — 1 M × 2 000 | **2 000 MB** | 374.7 MB² | — |
+
+> ² At HUGE scale, mlxtend's tracemalloc measurement only captured the Python process slice; its actual working set is far larger.  
+
+With the zero-copy PyArrow backend, rusket's peak RAM equals roughly the size of the input boolean matrix — **no overhead for itemset materialization**.
 
 ---
 
@@ -30,6 +59,9 @@ uv run pytest tests/test_benchmark.py -v -s
 
 # Run with detailed timing output
 uv run pytest tests/test_benchmark.py --benchmark-sort=mean --benchmark-columns=min,mean,max,rounds
+
+# Regenerate the full interactive HTML report (rusket vs mlxtend vs polars)
+uv run python tests/generate_benchmark_report.py
 ```
 
 ---
@@ -55,18 +87,3 @@ Conditional pattern base mining is distributed across CPU threads via [Rayon](ht
 ### 4. Memory efficiency
 
 The Rust implementation uses compact integer representations for itemsets internally, avoiding the overhead of Python `frozenset` objects during mining. Frozensets are only materialised by Python on output.
-
----
-
-## Memory comparison (Zero-Copy PyArrow)
-
-With the new zero-copy PyArrow backend, `rusket` has effectively **0 overhead** beyond the input DataFrame size during materialization.
-
-| Dataset | rusket Peak RAM | mlxtend Peak RAM | Speedup | Itemsets Found |
-|---|---|---|---|---|
-| 100k × 2k (min_sup=0.001) | **200 MB** | 1,164 MB | ~29× | 56k |
-| 100k × 2k (min_sup=0.0005) | **200 MB** | 1,283 MB | ~42× | 179k |
-| 100k × 2k (min_sup=0.0001) | **200 MB** | OOM | ∞ | 2.8M |
-| 100k × 2k (min_sup=0.00005) | **200 MB** | OOM | ∞ | 10.2M |
-
-*Note: The input DataFrame occupies ~200MB. A peak RAM of 200MB means pattern mining and creating 10+ million itemsets via PyArrow PyO3 bindings added virtually no memory overhead in Python.*
