@@ -4,6 +4,8 @@ rustflags = [
     # cost on every Python↔Rust boundary crossing. Safe because all Py<T>
     # objects are dropped while attached to the interpreter in our code.
     "--cfg", "pyo3_disable_reference_pool",
-    # Use the host CPU's full instruction set (AVX2, NEON, etc.)
-    "-C", "target-cpu=native",
+    # Note: target-cpu=native is intentionally NOT set here because it causes
+    # SIGILL crashes in build scripts (e.g. pyo3-build-config) on CI runners
+    # whose CPU microarchitecture differs from the build machine. Add it locally
+    # via RUSTFLAGS env var or a gitignored .cargo/config.local.toml if needed.
 ]
