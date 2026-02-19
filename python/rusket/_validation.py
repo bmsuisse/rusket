@@ -47,13 +47,13 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
 
     # Fast path: all bool columns
     if null_values:
-        all_bools = (
-            df.apply(lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool)))
-            .all()
-            .all()
-        )
+        mask = df.apply(lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool)))
+        if isinstance(mask, pd.Series):
+            all_bools = bool(mask.all())
+        else:
+            all_bools = bool(mask.all().all())
     else:
-        all_bools = df.dtypes.apply(pd.api.types.is_bool_dtype).all()
+        all_bools = bool(df.dtypes.apply(pd.api.types.is_bool_dtype).all())
 
     if not all_bools:
         warnings.warn(

@@ -8,6 +8,7 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   favicon: assets/favicon.svg
+  logo: assets/logo.svg
   icon:
     repo: fontawesome/brands/github
   palette:

@@ -24,8 +24,8 @@ The core algorithm is implemented in **Rust** via [PyO3](https://pyo3.rs) and [m
 
 | Feature | rusket | mlxtend |
 |---|---|---|
-| Speed (medium dataset) | **< 1 s** | 3–8 s |
-| Memory (large dataset) | ✅ | OOM |
+| Speed (medium dataset) | **~0.4 s** | ~4 s |
+| Memory (large dataset) | ~3 s | OOM |
 | Polars support | ✅ | ❌ |
 | Sparse DataFrame support | ✅ | ⚠️ limited |
 | Zero Python dependencies | ✅ (`numpy`, `pandas`) | ❌ (many) |

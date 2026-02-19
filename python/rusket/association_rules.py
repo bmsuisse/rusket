@@ -7,7 +7,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from . import _rusket as _rust
+from . import _rusket as _rust  # type: ignore[import-untyped, import-not-found]
 
 _ALL_METRICS = [
     "antecedent support",

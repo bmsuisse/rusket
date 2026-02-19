@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from ._validation import valid_input_check
-from . import _rusket as _rust
+from . import _rusket as _rust  # type: ignore[import-untyped, import-not-found]
 
 if TYPE_CHECKING:
     import polars as pl
@@ -66,7 +66,7 @@ def fpgrowth(
                 "Make sure the dataset fits in local memory.",
                 stacklevel=2,
             )
-            df = df.toPandas()
+            df = df.toPandas()  # type: ignore[attr-defined]
             # fall through to the pandas branch below
     except ImportError:
         pass
@@ -200,4 +200,4 @@ def _build_result(
 
     result = pd.DataFrame({"support": supports, "itemsets": itemsets})
     result = result[result["support"] >= min_support].reset_index(drop=True)
-    return result
+    return result  # type: ignore[return-value]

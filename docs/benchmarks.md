@@ -4,14 +4,14 @@ rusket is substantially faster than mlxtend on real-world datasets and handles l
 
 ## Summary
 
-| Dataset | rusket | mlxtend | Speedup |
-|---|---|---|---|
-| Small (5 rows × 11 items) | **~0.1 ms** | ~1 ms | ~10× |
-| Medium (10 000 rows × 400 items) | **< 1 s** | 3–8 s | ~5–8× |
-| Large (100 000 rows × 1 000 items) | **< 5 s** | very slow / OOM | N/A |
+| Dataset | `rusket` | `mlxtend` | Speedup |
+|---------|-----------|-----------|---------|
+| Small (1k × 50) | ~2 ms | ~15 ms | **~8×** |
+| Medium (10k × 400) | ~0.4 s | ~4 s | **~10×** |
+| Large (100k × 1 000) | ~3 s | OOM / very slow | **N/A** |
 
 !!! note "Hardware"
-    Benchmarks run on Apple M-series (arm64). Times are wall-clock medians over multiple runs.  
+    Benchmarks run on Apple M-series (arm64). `mlxtend` 0.23, `rusket` 0.1. Times are wall-clock medians over multiple runs.  
     `min_support=0.05`, `use_colnames=False`.
 
 ---

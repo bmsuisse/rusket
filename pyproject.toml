@@ -31,6 +31,8 @@ dev-dependencies = [
     "polars>=0.20",
     "faker>=40.4.0",
     "plotly>=6.5.2",
+    "maturin>=1.12.3",
+    "pyright>=1.1.408",
 ]
 
 [tool.pytest.ini_options]
