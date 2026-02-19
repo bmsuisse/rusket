@@ -50,6 +50,12 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.pytest-benchmark]
+storage = "file://tests/benchmarks"
+disable_gc = true
+min_rounds = 3
+warmup = false
+
 [tool.pyright]
 pythonVersion = "3.14"
 include = ["rusket"]

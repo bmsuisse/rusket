@@ -74,7 +74,7 @@ def _timed(fn, *args, **kwargs) -> tuple[object, float, int]:
 # Tighten them as you collect CI timing data.
 # ---------------------------------------------------------------------------
 
-# (dataset, min_support, max_seconds, max_peak_mb)
+# (name, dataset, min_support, max_seconds, max_peak_mb)
 _SCENARIOS: list[tuple[str, pd.DataFrame, float, float, float]] = [
     ("small",  DF_SMALL,  0.10, 2.0,   100.0),
     ("medium", DF_MEDIUM, 0.01, 30.0,  512.0),
@@ -111,7 +111,6 @@ def test_fpgrowth_regression(
     assert peak_mb <= max_peak_mb, (
         f"[{name}] Memory regression: {peak_mb:.1f}MB > {max_peak_mb}MB limit"
     )
-    # Sanity: must return a valid result
     assert result is not None
     assert result.shape[0] >= 0
 
