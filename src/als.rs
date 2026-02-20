@@ -1,3 +1,4 @@
+use faer::{Mat, linalg::matmul::matmul, Accum, Par};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -20,34 +21,27 @@ fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
 // ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
-    let chunk = (n / rayon::current_num_threads().max(1)).max(64);
-    let parts: Vec<Vec<f32>> = (0..n)
-        .into_par_iter()
-        .step_by(chunk)
-        .map(|start| {
-            let end = (start + chunk).min(n);
-            let mut g = vec![0.0f32; k * k];
-            for row in start..end {
-                let f = &factors[row * k..(row + 1) * k];
-                for a in 0..k {
-                    for b in a..k {
-                        g[a * k + b] += f[a] * f[b];
-                    }
-                }
-            }
-            // symmetrise
-            for a in 0..k {
-                for b in 0..a {
-                    g[a * k + b] = g[b * k + a];
-                }
-            }
-            g
-        })
-        .collect();
+    // View factors as a faer matrix (n × k), column-major by building a Mat.
+    // faer's matmul computes Yᵀ · Y with SIMD blocking and Rayon parallelism.
+    let y: Mat<f32> = Mat::from_fn(n, k, |r, c| factors[r * k + c]);
+    let yt = y.transpose();
+
+    let mut g: Mat<f32> = Mat::zeros(k, k);
+    // g = Yᵀ · Y   (alpha=1, beta=0, parallel)
+    matmul(
+        g.as_mut(),
+        Accum::Replace,
+        yt,
+        y.as_ref(),
+        1.0f32,
+        Par::rayon(0), // use all available threads via Rayon
+    );
+
+    // Flatten to Vec<f32> in row-major order (matching our existing layout)
     let mut r = vec![0.0f32; k * k];
-    for p in &parts {
-        for i in 0..k * k {
-            r[i] += p[i];
+    for a in 0..k {
+        for b in 0..k {
+            r[a * k + b] = g[(a, b)];
         }
     }
     r
@@ -213,29 +207,86 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
 }
 
 fn als_train(
-    ui: &[i64],
-    ux: &[i32],
-    ud: &[f32],
-    ii: &[i64],
-    ix: &[i32],
-    id: &[f32],
+    indptr: &[i64],
+    indices: &[i32],
+    data: &[f32],
+    indptr_t: &[i64],
+    indices_t: &[i32],
+    data_t: &[f32],
     n_users: usize,
     n_items: usize,
     k: usize,
     lambda: f32,
     alpha: f32,
-    iters: usize,
+    iterations: usize,
     seed: u64,
+    verbose: bool,
 ) -> (Vec<f32>, Vec<f32>) {
-    let mut uf = random_factors(n_users, k, seed);
-    let mut itf = random_factors(n_items, k, seed.wrapping_add(1));
-    for _ in 0..iters {
-        let ytyt = gramian(&itf, n_items, k);
-        uf = solve_one_side_cg(ui, ux, ud, &itf, &ytyt, n_users, k, lambda, alpha);
-        let xtxt = gramian(&uf, n_users, k);
-        itf = solve_one_side_cg(ii, ix, id, &uf, &xtxt, n_items, k, lambda, alpha);
+    let mut user_factors = random_factors(n_users, k, seed);
+    let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
+
+    if verbose {
+        println!("  Optimizing {} latent factors using Conjugate Gradient.", k);
+        println!("  ITER | USER FACTORS | ITEM FACTORS | TOTAL TIME ");
+        println!("  ------------------------------------------------");
     }
-    (uf, itf)
+
+    let mut total_time = std::time::Duration::new(0, 0);
+
+    for iter in 0..iterations {
+        let iter_start = std::time::Instant::now();
+        
+        let start_u = std::time::Instant::now();
+        // 2) user_factors = solve(item_factors, data)
+        let g_item = gramian(&item_factors, n_items, k);
+        user_factors = solve_one_side_cg(
+            indptr,
+            indices,
+            data,
+            &item_factors,
+            &g_item,
+            n_users,
+            k,
+            lambda,
+            alpha,
+        );
+        let u_time = start_u.elapsed();
+
+        let start_i = std::time::Instant::now();
+        // 3) item_factors = solve(user_factors, data_t)
+        let g_user = gramian(&user_factors, n_users, k);
+        item_factors = solve_one_side_cg(
+            indptr_t,
+            indices_t,
+            data_t,
+            &user_factors,
+            &g_user,
+            n_items,
+            k,
+            lambda,
+            alpha,
+        );
+        let i_time = start_i.elapsed();
+        let iter_time = iter_start.elapsed();
+        total_time += iter_time;
+
+        if verbose {
+            println!(
+                "  {:>4} | {:>10.1}s | {:>10.1}s | {:>9.1}s ",
+                iter + 1,
+                u_time.as_secs_f64(),
+                i_time.as_secs_f64(),
+                iter_time.as_secs_f64()
+            );
+        }
+    }
+    
+    if verbose {
+        println!("  ------------------------------------------------");
+        println!("  Done in {:.1}s", total_time.as_secs_f64());
+    }
+
+    (user_factors, item_factors)
 }
 
 // ─── Top-N helpers ───────────────────────────────────────────────────────────
@@ -313,7 +364,7 @@ fn top_n_users(
 // ─── PyO3 exports ────────────────────────────────────────────────────────────
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -326,20 +377,26 @@ pub fn als_fit_implicit<'py>(
     alpha: f32,
     iterations: usize,
     seed: u64,
-) -> PyResult<(Bound<'py, PyArray2<f32>>, Bound<'py, PyArray2<f32>>)> {
+    verbose: bool,
+) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
     let ip = indptr.as_slice()?.to_vec();
     let ix = indices.as_slice()?.to_vec();
     let id = data.as_slice()?.to_vec();
+
+    // 1) Build transpose graph
     let (ti, tx, td) = csr_transpose(&ip, &ix, &id, n_users, n_items);
+
     let (uf, itf) = als_train(
         &ip, &ix, &id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-        alpha, iterations, seed,
+        alpha, iterations, seed, verbose,
     );
-    let ua = numpy::PyArray1::from_vec(py, uf);
-    let ia = numpy::PyArray1::from_vec(py, itf);
+
+    let ua = PyArray1::from_vec(py, uf);
+    let ia = PyArray1::from_vec(py, itf);
+
     Ok((
-        ua.reshape([n_users, factors])?,
-        ia.reshape([n_items, factors])?,
+        ua.reshape([n_users, factors])?.into(),
+        ia.reshape([n_items, factors])?.into(),
     ))
 }
 

@@ -4,11 +4,16 @@ This provides the high-level API for feeding billion-row datasets to Rust
 in memory-safe chunks without ever materialising the full dataset in Python.
 """
 
-t0 = 0.0
-
 from __future__ import annotations
 
+import time
+
+
+import time
+
+
 import typing
+import time
 from typing import TYPE_CHECKING, Any
 
 from . import _rusket as _rust  # type: ignore

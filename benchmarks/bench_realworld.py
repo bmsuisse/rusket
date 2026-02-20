@@ -7,7 +7,6 @@ Usage:
 
 from __future__ import annotations
 
-import os
 import signal
 import time
 import urllib.request
@@ -30,6 +29,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Timeout helper (POSIX only)
 # ---------------------------------------------------------------------------
+
 
 class _Timeout(Exception):
     pass
@@ -135,12 +135,12 @@ def run_benchmark(name: str) -> None:
     avg_basket = density * df.shape[1]
 
     print(
-        f"\n{'='*72}\n"
+        f"\n{'=' * 72}\n"
         f"  {name}\n"
         f"  {df.shape[0]:,} transactions × {df.shape[1]:,} items\n"
         f"  density={density:.4f}  avg items/basket={avg_basket:.1f}\n"
         f"  min_support={info['min_support']}  max_len={info['max_len']}\n"
-        f"{'='*72}"
+        f"{'=' * 72}"
     )
 
     timeout = info["timeout"]
@@ -149,24 +149,43 @@ def run_benchmark(name: str) -> None:
 
     # rusket fpgrowth
     n, t = timed_run(
-        fpgrowth, df, min_support=min_sup, use_colnames=True, max_len=max_len,
+        fpgrowth,
+        df,
+        min_support=min_sup,
+        use_colnames=True,
+        max_len=max_len,
         timeout_sec=timeout,
     )
     t_str = t if isinstance(t, str) else f"{t:.3f}s"
-    print(f"  rusket fpgrowth  : {t_str:>14}  ({n:>12,} itemsets)" if n else f"  rusket fpgrowth  : {t_str}")
+    print(
+        f"  rusket fpgrowth  : {t_str:>14}  ({n:>12,} itemsets)"
+        if n
+        else f"  rusket fpgrowth  : {t_str}"
+    )
 
     # rusket eclat
     n2, t2 = timed_run(
-        eclat, df, min_support=min_sup, use_colnames=True, max_len=max_len,
+        eclat,
+        df,
+        min_support=min_sup,
+        use_colnames=True,
+        max_len=max_len,
         timeout_sec=timeout,
     )
     t2_str = t2 if isinstance(t2, str) else f"{t2:.3f}s"
-    print(f"  rusket eclat     : {t2_str:>14}  ({n2:>12,} itemsets)" if n2 else f"  rusket eclat     : {t2_str}")
+    print(
+        f"  rusket eclat     : {t2_str:>14}  ({n2:>12,} itemsets)"
+        if n2
+        else f"  rusket eclat     : {t2_str}"
+    )
 
     # mlxtend
     if HAS_MLX:
         n3, t3 = timed_run(
-            mlx_fpgrowth, df, min_support=min_sup, use_colnames=True,
+            mlx_fpgrowth,
+            df,
+            min_support=min_sup,
+            use_colnames=True,
             max_len=max_len if max_len else 999,
             timeout_sec=timeout,
         )
@@ -178,7 +197,7 @@ def run_benchmark(name: str) -> None:
 
         # speedup
         if isinstance(t, (int, float)) and isinstance(t3, (int, float)):
-            print(f"\n  → rusket is {t3/t:.1f}× faster than mlxtend")
+            print(f"\n  → rusket is {t3 / t:.1f}× faster than mlxtend")
         elif isinstance(t3, str) and "TIMEOUT" in t3 and isinstance(t, (int, float)):
             print(f"\n  → mlxtend timed out, rusket finished in {t:.1f}s 🚀")
 

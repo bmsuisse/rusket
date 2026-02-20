@@ -47,3 +47,7 @@ site/
 .DS_Store
 benchdata/
 benchmarks/data/
+data/
+
+# Fix scripts
+fix_*

@@ -308,7 +308,9 @@ def test_spark_mllib_association_rules() -> None:
     ar_all = association_rules(
         freq_items, len(df), metric="confidence", min_threshold=0.0
     )
-    assert len(ar_all) == 52  # rusket generates all multi-consequent combos (Spark gives 50 single-only)
+    assert (
+        len(ar_all) == 52
+    )  # rusket generates all multi-consequent combos (Spark gives 50 single-only)
     ar_all_single_cons = ar_all[ar_all["consequents"].apply(len) == 1]
     assert len(ar_all_single_cons) == 30
     assert (ar_all_single_cons["confidence"] >= 0.999999).sum() == 23

@@ -25,5 +25,12 @@ def eclat(
     from ._core import dispatch
 
     return dispatch(
-        df, min_support, null_values, use_colnames, max_len, "eclat", column_names, verbose
+        df,
+        min_support,
+        null_values,
+        use_colnames,
+        max_len,
+        "eclat",
+        column_names,
+        verbose,
     )

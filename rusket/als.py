@@ -1,4 +1,5 @@
 """ALS (Alternating Least Squares) collaborative filtering recommender."""
+
 from __future__ import annotations
 import typing
 from typing import Any
@@ -29,20 +30,34 @@ class ALS:
         alpha: float = 40.0,
         iterations: int = 15,
         seed: int = 42,
+        verbose: bool = False,
     ) -> None:
+        """
+        Initialize the Implicit ALS recommender.
+        
+        Args:
+            factors: Number of latent factors
+            regularization: L2 regularization penalty
+            alpha: Confidence scaling factor (C_ui = 1 + alpha * R_ui)
+            iterations: Number of alternating least squares iterations
+            seed: Random seed for initialization
+            verbose: Whether to print optimization progress
+        """
         self.factors = factors
         self.regularization = float(regularization)
         self.alpha = float(alpha)
         self.iterations = iterations
         self.seed = seed
-        self._user_factors: Any = None
-        self._item_factors: Any = None
+        self.verbose = verbose
+        self.user_factors: Any = None
+        self.item_factors: Any = None
         self._n_users: int = 0
         self._n_items: int = 0
         self._fit_indptr: Any = None
         self._fit_indices: Any = None
         self._user_labels: list[Any] | None = None
         self._item_labels: list[Any] | None = None
+        self.fitted: bool = False
 
     def __repr__(self) -> str:
         return (
@@ -50,37 +65,62 @@ class ALS:
             f"alpha={self.alpha}, iterations={self.iterations})"
         )
 
-    def fit(self, user_item_matrix: Any) -> "ALS":
-        """Fit on a user-item interaction matrix (scipy sparse or numpy array)."""
+    def fit(self, interactions: Any) -> "ALS":
+        """
+        Fit the model to the user-item interaction matrix.
+        """
         import numpy as np
         from scipy import sparse as sp
 
-        if sp.issparse(user_item_matrix):
-            csr = sp.csr_matrix(user_item_matrix, dtype=np.float32)
-        elif isinstance(user_item_matrix, np.ndarray):
-            csr = sp.csr_matrix(user_item_matrix.astype(np.float32))
+        if self.fitted:
+            raise RuntimeError("Model is already fitted. Create a new instance to refit.")
+
+        if sp.issparse(interactions):
+            csr = sp.csr_matrix(interactions, dtype=np.float32)
+        elif isinstance(interactions, np.ndarray):
+            csr = sp.csr_matrix(interactions.astype(np.float32))
         else:
             raise TypeError(
-                f"Expected scipy sparse matrix or numpy array, got {type(user_item_matrix)}"
+                f"Expected scipy sparse matrix or numpy array, got {type(interactions)}"
             )
 
-        csr.eliminate_zeros()
+        # Only convert to CSR if it isn't one already (e.g. DOK or LIL)
+        if not isinstance(csr, sp.csr_matrix):
+            csr = csr.tocsr()
+
+        # For small matrices we can ensure canonical format.
+        # But for 1B ratings (>2.1B elements), SciPy's compiled C++ algorithms (like
+        # eliminate_zeros/has_canonical_format) overflow int32 downcasts and crash.
+        # So we skip them if nnz > 1 Billion or we trust the input.
+        if csr.nnz < 1_000_000_000:
+            if not csr.has_canonical_format:
+                csr.sum_duplicates()
+            csr.eliminate_zeros()
+
         n_users, n_items = typing.cast(tuple[int, int], csr.shape)
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)
         data = np.asarray(csr.data, dtype=np.float32)
 
-        uf, itf = _rust.als_fit_implicit(
-            indptr, indices, data, n_users, n_items,
-            self.factors, float(self.regularization),
-            float(self.alpha), self.iterations, self.seed,
+        # Call Rust Core
+        self._user_factors, self._item_factors = _rust.als_fit_implicit(
+            indptr,
+            indices,
+            data,
+            n_users,
+            n_items,
+            self.factors,
+            self.regularization,
+            self.alpha,
+            self.iterations,
+            self.seed,
+            self.verbose,
         )
-        self._user_factors = np.asarray(uf)
-        self._item_factors = np.asarray(itf)
         self._n_users = n_users
         self._n_items = n_items
         self._fit_indptr = indptr
         self._fit_indices = indices
+        self.fitted = True
         return self
 
     def fit_transactions(
@@ -134,25 +174,38 @@ class ALS:
     ) -> tuple[Any, Any]:
         """Top-N items for a user. Set exclude_seen=False to include already-seen items."""
         import numpy as np
+
         self._check_fitted()
-        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+        if (
+            exclude_seen
+            and self._fit_indptr is not None
+            and self._fit_indices is not None
+        ):
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices
         else:
             exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
             exc_indices = np.array([], dtype=np.int32)
         ids, scores = _rust.als_recommend_items(
-            self._user_factors, self._item_factors,
-            user_id, n, exc_indptr, exc_indices,
+            self._user_factors,
+            self._item_factors,
+            user_id,
+            n,
+            exc_indptr,
+            exc_indices,
         )
         return np.asarray(ids), np.asarray(scores)
 
     def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
         """Top-N users for an item."""
         import numpy as np
+
         self._check_fitted()
         ids, scores = _rust.als_recommend_users(
-            self._user_factors, self._item_factors, item_id, n,
+            self._user_factors,
+            self._item_factors,
+            item_id,
+            n,
         )
         return np.asarray(ids), np.asarray(scores)
 

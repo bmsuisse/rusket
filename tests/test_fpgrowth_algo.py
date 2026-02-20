@@ -23,10 +23,10 @@ fpgrowth_algo = functools.partial(fpgrowth, method="fpgrowth")
 eclat_algo = functools.partial(fpgrowth, method="eclat")
 
 
-
 class TestEdgeCases_FPGrowth(unittest.TestCase, FPTestEdgeCases):
     def setUp(self) -> None:
         FPTestEdgeCases.setUp(self, fpgrowth_algo)
+
 
 class TestEdgeCases_Eclat(unittest.TestCase, FPTestEdgeCases):
     def setUp(self) -> None:
@@ -37,6 +37,7 @@ class TestErrors_FPGrowth(unittest.TestCase, FPTestErrors):
     def setUp(self) -> None:
         FPTestErrors.setUp(self, fpgrowth_algo)
 
+
 class TestErrors_Eclat(unittest.TestCase, FPTestErrors):
     def setUp(self) -> None:
         FPTestErrors.setUp(self, eclat_algo)
@@ -45,6 +46,7 @@ class TestErrors_Eclat(unittest.TestCase, FPTestErrors):
 class TestEx1_FPGrowth(unittest.TestCase, FPTestEx1All):
     def setUp(self) -> None:
         FPTestEx1All.setUp(self, fpgrowth_algo)
+
 
 class TestEx1_Eclat(unittest.TestCase, FPTestEx1All):
     def setUp(self) -> None:
@@ -98,12 +100,15 @@ class Ex1BoolInputBase(unittest.TestCase, FPTestEx1All):
                 ],
             ]
         )
-        FPTestEx1All.setUp(self, getattr(self, 'method_func', fpgrowth_algo), one_ary=one_ary)
+        FPTestEx1All.setUp(
+            self, getattr(self, "method_func", fpgrowth_algo), one_ary=one_ary
+        )
 
 
 class TestEx2_FPGrowth(unittest.TestCase, FPTestEx2All):
     def setUp(self) -> None:
         FPTestEx2All.setUp(self, fpgrowth_algo)
+
 
 class TestEx2_Eclat(unittest.TestCase, FPTestEx2All):
     def setUp(self) -> None:
@@ -113,6 +118,7 @@ class TestEx2_Eclat(unittest.TestCase, FPTestEx2All):
 class TestEx3_FPGrowth(unittest.TestCase, FPTestEx3All):
     def setUp(self) -> None:
         FPTestEx3All.setUp(self, fpgrowth_algo)
+
 
 class TestEx3_Eclat(unittest.TestCase, FPTestEx3All):
     def setUp(self) -> None:
@@ -250,8 +256,10 @@ def test_spark_mllib_fpgrowth_int() -> None:
     res1 = fpgrowth(df, min_support=0.1, use_colnames=True)
     assert len(res1) == 65
 
+
 class TestEx1BoolInput_FPGrowth(Ex1BoolInputBase):
     method_func = staticmethod(fpgrowth_algo)
+
 
 class TestEx1BoolInput_Eclat(Ex1BoolInputBase):
     method_func = staticmethod(eclat_algo)

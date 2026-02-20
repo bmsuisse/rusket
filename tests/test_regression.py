@@ -76,9 +76,9 @@ def _timed(fn, *args, **kwargs) -> tuple[object, float, int]:
 
 # (name, dataset, min_support, max_seconds, max_peak_mb)
 _SCENARIOS: list[tuple[str, pd.DataFrame, float, float, float]] = [
-    ("small",  DF_SMALL,  0.10, 2.0,   100.0),
-    ("medium", DF_MEDIUM, 0.01, 30.0,  512.0),
-    ("large",  DF_LARGE,  0.05, 120.0, 2048.0),
+    ("small", DF_SMALL, 0.10, 2.0, 100.0),
+    ("medium", DF_MEDIUM, 0.01, 30.0, 512.0),
+    ("large", DF_LARGE, 0.05, 120.0, 2048.0),
 ]
 
 

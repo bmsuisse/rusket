@@ -202,9 +202,9 @@ df_res = pd.DataFrame(results)
 # ---------------------------------------------------------------------------
 
 RUSTKET_COLOR = "#6C63FF"
-FPTDA_COLOR   = "#FF9F43"
+FPTDA_COLOR = "#FF9F43"
 MLXTEND_COLOR = "#FF6584"
-POLARS_COLOR  = "#43C59E"
+POLARS_COLOR = "#43C59E"
 HUGE_GLOW = "#FFD166"
 BG = "#0A0A14"
 PANEL = "#12121F"
@@ -264,19 +264,30 @@ def add_bars(col_idx, y_col, name, color, text_fmt, row=1, showlegend=True):
 
 # Time (col 1)
 add_bars(1, "fpgrowth_time_s", "🦀 fpgrowth (pandas)", RUSTKET_COLOR, "{:.3f}s")
-add_bars(1, "fptda_time_s",    "🟠 fptda   (pandas)", FPTDA_COLOR,   "{:.3f}s")
+add_bars(1, "fptda_time_s", "🟠 fptda   (pandas)", FPTDA_COLOR, "{:.3f}s")
 if HAS_MLXTEND and "mlxtend_time_s" in df_res:
     add_bars(1, "mlxtend_time_s", "🐍 mlxtend", MLXTEND_COLOR, "{:.3f}s")
 if HAS_POLARS and "polars_time_s" in df_res:
     add_bars(1, "polars_time_s", "🐻‍❄️ fpgrowth (polars)", POLARS_COLOR, "{:.3f}s")
 
 # Memory (col 2)
-add_bars(2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False)
-add_bars(2, "fptda_mem_mb",    "🟠 fptda mem",    FPTDA_COLOR,   "{:.1f}MB", showlegend=False)
+add_bars(
+    2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False
+)
+add_bars(2, "fptda_mem_mb", "🟠 fptda mem", FPTDA_COLOR, "{:.1f}MB", showlegend=False)
 if HAS_MLXTEND and "mlxtend_mem_mb" in df_res:
-    add_bars(2, "mlxtend_mem_mb", "🐍 mlxtend mem", MLXTEND_COLOR, "{:.1f}MB", showlegend=False)
+    add_bars(
+        2,
+        "mlxtend_mem_mb",
+        "🐍 mlxtend mem",
+        MLXTEND_COLOR,
+        "{:.1f}MB",
+        showlegend=False,
+    )
 if HAS_POLARS and "polars_mem_mb" in df_res:
-    add_bars(2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False)
+    add_bars(
+        2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False
+    )
 
 # Speedup + memory ratio (row 2, only where mlxtend ran)
 if has_compare:

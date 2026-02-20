@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import time
+
+
 import typing
 from typing import TYPE_CHECKING, Any, Sequence
 
@@ -14,6 +17,14 @@ def from_transactions(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
     """Convert long-format transactional data to a one-hot boolean matrix.
 
     Parameters
@@ -83,6 +94,14 @@ def from_pandas(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     t0 = 0.0
     return from_transactions(
@@ -96,6 +115,14 @@ def from_polars(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     t0 = 0.0
     return from_transactions(
@@ -117,6 +144,14 @@ def _from_list(
     transactions: Sequence[Sequence[str | int]],
     verbose: int = 0,
 ) -> pd.DataFrame:
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
@@ -180,6 +215,14 @@ def _from_dataframe(
     item_col: str | None,
     verbose: int = 0,
 ) -> pd.DataFrame:
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
+    t0 = 0.0; t1 = 0.0
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp

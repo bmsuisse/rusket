@@ -60,9 +60,7 @@ class TestFromList:
 
 class TestFromPandas:
     def test_basic(self) -> None:
-        df = pd.DataFrame(
-            {"order_id": [1, 1, 1, 2, 2, 3], "item": [3, 4, 5, 3, 5, 8]}
-        )
+        df = pd.DataFrame({"order_id": [1, 1, 1, 2, 2, 3], "item": [3, 4, 5, 3, 5, 8]})
         result = from_transactions(df)
 
         assert isinstance(result, pd.DataFrame)
@@ -70,9 +68,7 @@ class TestFromPandas:
         assert result.dtypes.apply(pd.api.types.is_bool_dtype).all()
 
     def test_custom_columns(self) -> None:
-        df = pd.DataFrame(
-            {"product": ["a", "b", "a", "c"], "basket": [1, 1, 2, 2]}
-        )
+        df = pd.DataFrame({"product": ["a", "b", "a", "c"], "basket": [1, 1, 2, 2]})
         result = from_transactions(df, transaction_col="basket", item_col="product")
         assert result.shape == (2, 3)
 
@@ -106,9 +102,7 @@ class TestFromPandas:
 class TestFromPolars:
     def test_basic(self) -> None:
         pl = pytest.importorskip("polars")
-        df = pl.DataFrame(
-            {"order_id": [1, 1, 1, 2, 2, 3], "item": [3, 4, 5, 3, 5, 8]}
-        )
+        df = pl.DataFrame({"order_id": [1, 1, 1, 2, 2, 3], "item": [3, 4, 5, 3, 5, 8]})
         result = from_transactions(df)
 
         assert isinstance(result, pd.DataFrame)
