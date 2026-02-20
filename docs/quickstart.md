@@ -96,6 +96,23 @@ print(freq)
 
 ---
 
+## Step 2b — Or use Eclat
+
+`eclat` uses vertical bitset mining — same API, same results. It can be faster on certain data shapes.
+
+```python
+from rusket import eclat
+
+freq = eclat(df, min_support=0.5, use_colnames=True)
+print(freq)  # identical output to fpgrowth
+```
+
+!!! tip "When to use which?"
+    - **FP-Growth** — good default for all data shapes, excels on dense data
+    - **Eclat** — competitive alternative, especially on sparse retail basket data
+
+---
+
 ## Step 3 — Generate association rules
 
 ```python

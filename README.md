@@ -5,7 +5,7 @@
 <h1 align="center">rusket</h1>
 
 <p align="center">
-  <strong>Blazing-fast FP-Growth and Association Rules for Python, powered by Rust.</strong>
+  <strong>Blazing-fast FP-Growth, Eclat, and Association Rules for Python, powered by Rust.</strong>
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
 
 ---
 
-`rusket` is a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules` — backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **5–10× speed-ups** and dramatically lower memory usage. It natively supports **Pandas** (including the Arrow backend introduced in pandas 2.0), **Polars**, and **sparse DataFrames** out of the box.
+`rusket` is a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules` — backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage. It includes both **FP-Growth** (parallel via Rayon) and **Eclat** (vertical bitset mining) algorithms. Natively supports **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
 
 ---
 
@@ -27,6 +27,7 @@
 | | `rusket` | `mlxtend` |
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
+| **Algorithms** | FP-Growth + Eclat | FP-Growth only |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
 | **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
@@ -91,13 +92,36 @@ print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
       .sort_values("lift", ascending=False))
 ```
 
-Output looks exactly like `mlxtend`:
+---
 
+### ⚡ Eclat — Vertical Mining
+
+`eclat` uses vertical bitset representation + hardware `popcnt` for fast support counting. Ideal for **sparse retail basket** data.
+
+```python
+import pandas as pd
+from rusket import eclat, association_rules
+
+df = pd.DataFrame({
+    "bread":  [True, True, False, True, True],
+    "butter": [True, False, True, True, False],
+    "milk":   [True, True, True, False, True],
+    "eggs":   [False, True, True, False, True],
+})
+
+# Eclat — same API as fpgrowth
+freq = eclat(df, min_support=0.4, use_colnames=True)
+rules = association_rules(freq, num_itemsets=len(df), min_threshold=0.6)
+print(rules)
 ```
-     antecedents    consequents  support  confidence   lift
- (bread, butter)       (milk,)     0.07        0.92   2.41
-        (milk,)  (bread, eggs)     0.06        0.78   1.89
-```
+
+#### When to use which?
+
+| Scenario | Recommended |
+|---|---|
+| Very sparse data (retail baskets, e-commerce) | `eclat` or `fpgrowth` — both fast |
+| Dense data (many items per transaction) | `fpgrowth` |
+| General-purpose / don't know | `fpgrowth` (default) |
 
 ---
 
@@ -235,8 +259,26 @@ rusket.fpgrowth(
 | `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
 | `verbose` | `int` | Verbosity level (kept for API compatibility with mlxtend). |
 
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.  
-Each itemset is a `frozenset` of column indices (or names when `use_colnames=True`).
+**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
+
+---
+
+### `eclat`
+
+```python
+rusket.eclat(
+    df,
+    min_support: float = 0.5,
+    null_values: bool = False,
+    use_colnames: bool = False,
+    max_len: int | None = None,
+    verbose: int = 0,
+) -> pd.DataFrame
+```
+
+Same parameters as `fpgrowth`. Uses vertical bitset representation (Eclat algorithm) instead of FP-Tree.
+
+**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
 
 ---
 
@@ -285,17 +327,22 @@ rusket.association_rules(
 
 ## ⚡ Benchmarks
 
-Measured on Apple M-series (arm64). `mlxtend` 0.23, `rusket` 0.1. Numbers from an **actual run** — synthetic market-basket data (Faker, power-law popularity).
+### Synthetic Data
 
-| Dataset | `rusket` (pandas) | `rusket` (polars) | `mlxtend` | Speedup |
-|---------|:-----------------:|:-----------------:|:---------:|:-------:|
-| small — 1 k × 50 items | **0.007 s** | **0.006 s** | 0.166 s | **24×** |
-| medium — 10 k × 400 items | **0.555 s** | **0.244 s** | 8.335 s | **15×** |
-| large — 100 k × 1 000 items | **0.572 s** | 0.819 s | 18.652 s | **33×** |
-| HUGE — 1 M × 2 000 items | **3.113 s** | 6.015 s | 104.024 s | **33×** |
+| Dataset | `rusket` (fpgrowth) | `rusket` (eclat) | `mlxtend` | Speedup |
+|---------|:-------------------:|:----------------:|:---------:|:-------:|
+| 100k txns × 1k items | **0.4 s** | 1.1 s | 4.6 s | **12×** |
+| 100k txns × 5k items | **3.6 s** | 4.8 s | 6.4 s | **1.8×** |
+| 500k txns × 5k items | **27.7 s** | 31.2 s | 41.8 s | **1.5×** |
 
-> Memory usage at large scale matches the input matrix size — Rust buffers add virtually zero overhead.
-> See the [full interactive benchmark report](https://bmsuisse.github.io/rusket/benchmarks/) for charts and memory breakdown.
+### Real-World Datasets
+
+| Dataset | Transactions | Items | `rusket` | `mlxtend` | Speedup |
+|---------|:----------:|:-----:|:--------:|:---------:|:-------:|
+| [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) | **TIMEOUT** 💥 | ∞ |
+| [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** | 16.2 s | **2×** |
+
+> On dense real-world data, `mlxtend` can't even finish — `rusket` mines **22.8 million itemsets in under 10 seconds**.
 
 Run benchmarks yourself:
 
@@ -303,8 +350,8 @@ Run benchmarks yourself:
 # pytest-benchmark suite
 uv run pytest tests/test_benchmark.py -v -s
 
-# Full interactive Plotly report (rusket vs mlxtend vs polars)
-uv run python tests/generate_benchmark_report.py
+# Real-world dataset benchmark (auto-downloads data)
+uv run python benchmarks/bench_realworld.py
 ```
 
 ---
@@ -326,21 +373,22 @@ All mining and rule generation happens **inside Rust**. No Python loops, no roun
 ### Project Structure
 
 ```
-rusket/
 ├── src/                          # Rust core (PyO3)
 │   ├── lib.rs                    # Module root & Python bindings
-│   ├── fpgrowth.rs               # FP-Tree construction + FP-Growth mining
+│   ├── fpgrowth.rs               # FP-Tree construction + FP-Growth mining (Rayon parallel)
+│   ├── eclat.rs                  # Eclat vertical mining (bitset intersection + popcnt)
 │   └── association_rules.rs      # Rule generation + 12 metrics (Rayon parallel)
 │
 ├── rusket/                       # Python wrappers & validation
-│   ├── __init__.py               # Package root
-│   ├── fpgrowth.py               # Input dispatch (dense / sparse / Polars / ndarray)
+│   ├── __init__.py               # Package root (exports fpgrowth, eclat, association_rules)
+│   ├── fpgrowth.py               # FP-Growth input dispatch (dense / sparse / Polars)
+│   ├── eclat.py                  # Eclat input dispatch (dense / sparse / Polars)
 │   ├── association_rules.py      # Label mapping + Rust call + result assembly
 │   ├── _validation.py            # Input validation
 │   └── _rusket.pyi               # Type stubs for Rust extension
 │
 ├── tests/                        # Comprehensive test suite
-├── examples/                     # Runnable example scripts
+├── benchmarks/                   # Real-world benchmark scripts
 ├── docs/                         # MkDocs documentation
 └── pyproject.toml                # Build config (maturin)
 ```

@@ -79,6 +79,41 @@ Find frequent itemsets in a one-hot encoded transaction DataFrame using the **FP
 
 ---
 
+## `eclat`
+
+```python
+from rusket import eclat
+
+eclat(
+    df,
+    min_support=0.5,
+    null_values=False,
+    use_colnames=False,
+    max_len=None,
+    verbose=0,
+) -> pd.DataFrame
+```
+
+Find frequent itemsets using the **Eclat** algorithm (vertical bitset representation with hardware `popcnt` for support counting). Same parameters and return value as `fpgrowth`.
+
+### Parameters
+
+Same as `fpgrowth` — see above.
+
+### Returns
+
+`pandas.DataFrame` with columns `['support', 'itemsets']` — identical format to `fpgrowth`.
+
+### Examples
+
+```python
+import pandas as pd
+from rusket import eclat
+
+df = pd.DataFrame({"a": [True,True,False], "b": [True,False,True], "c": [False,True,True]})
+freq = eclat(df, min_support=0.5, use_colnames=True)
+```
+
 ## `association_rules`
 
 ```python
