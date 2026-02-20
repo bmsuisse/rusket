@@ -189,20 +189,44 @@ def from_spark(
 def _from_list(
     transactions: Sequence[Sequence[str | int]],
 ) -> pd.DataFrame:
-    """Convert a list of item-lists into a one-hot boolean DataFrame."""
-    import pandas as pd
+    """Convert a list of item-lists into a sparse boolean DataFrame (CSR-backed).
 
-    all_items: list[str | int] = sorted(
-        set(item for txn in transactions for item in txn),
-        key=lambda x: (isinstance(x, str), x),
+    Produces a ``pd.SparseDtype("bool", fill_value=False)`` DataFrame so that
+    even 100M+ transactions × 200k+ items fit in memory.
+    """
+    import pandas as pd
+    import numpy as np
+    from scipy import sparse as sp
+
+    # Build item vocabulary
+    all_items_set: set[str | int] = set()
+    for txn in transactions:
+        all_items_set.update(txn)
+    all_items = sorted(all_items_set, key=lambda x: (isinstance(x, str), x))
+    item_to_idx = {item: i for i, item in enumerate(all_items)}
+
+    n_txn = len(transactions)
+    n_items = len(all_items)
+
+    # Build COO data for the sparse matrix
+    row_idx: list[int] = []
+    col_idx: list[int] = []
+    for i, txn in enumerate(transactions):
+        for item in txn:
+            row_idx.append(i)
+            col_idx.append(item_to_idx[item])
+
+    data = np.ones(len(row_idx), dtype=bool)
+    csr = sp.csr_matrix(
+        (data, (np.array(row_idx, dtype=np.int64), np.array(col_idx, dtype=np.int64))),
+        shape=(n_txn, n_items),
     )
 
-    rows: list[dict[str | int, bool]] = []
-    for txn in transactions:
-        txn_set = set(txn)
-        rows.append({item: item in txn_set for item in all_items})
-
-    return pd.DataFrame(rows, dtype=bool)
+    # Convert CSR → sparse pandas DataFrame
+    return pd.DataFrame.sparse.from_spmatrix(
+        csr,
+        columns=[str(item) for item in all_items],
+    ).astype(pd.SparseDtype("bool", fill_value=False))
 
 
 def _from_dataframe(
@@ -210,7 +234,15 @@ def _from_dataframe(
     transaction_col: str | None,
     item_col: str | None,
 ) -> pd.DataFrame:
-    """Convert a 2-column long-format DataFrame to one-hot boolean."""
+    """Convert a 2-column long-format DataFrame to sparse one-hot boolean.
+
+    Uses vectorised groupby + COO→CSR conversion — no Python loops over rows.
+    Scales to 100M+ transactions × 200k+ items.
+    """
+    import numpy as np
+    import pandas as pd
+    from scipy import sparse as sp
+
     cols = list(df.columns)
 
     if len(cols) < 2:
@@ -233,6 +265,22 @@ def _from_dataframe(
             f"Available columns: {cols}"
         )
 
-    # Group items per transaction, then one-hot encode
-    grouped = df.groupby(txn_col)[itm_col].apply(list).reset_index(drop=True)
-    return _from_list(grouped.tolist())
+    # Encode transaction IDs and items as integers (no Python loops)
+    txn_cat = pd.Categorical(df[txn_col])
+    item_cat = pd.Categorical(df[itm_col])
+
+    row_idx = txn_cat.codes.astype(np.int64)
+    col_idx = item_cat.codes.astype(np.int64)
+    n_txn = len(txn_cat.categories)
+    n_items = len(item_cat.categories)
+
+    data = np.ones(len(row_idx), dtype=bool)
+    csr = sp.csr_matrix((data, (row_idx, col_idx)), shape=(n_txn, n_items))
+
+    # Build sparse DataFrame
+    item_names = [str(c) for c in item_cat.categories]
+    return pd.DataFrame.sparse.from_spmatrix(
+        csr,
+        columns=item_names,
+    ).astype(pd.SparseDtype("bool", fill_value=False))
+

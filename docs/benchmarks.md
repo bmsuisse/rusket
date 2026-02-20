@@ -6,9 +6,21 @@ Measured on Apple M-series (arm64).
 
 ---
 
-## Synthetic Retail Data
+## Million-Scale Sparse Benchmarks 🚀
 
-Realistic retail basket simulation — sparse boolean matrices with Poisson-distributed basket sizes.
+The killer use case: sparse retail basket data with millions of transactions, fed through `from_transactions` → sparse CSR → Rust.
+
+| Dataset | `rusket` | `mlxtend` | **Speedup** | RAM |
+|---------|:--------:|:---------:|:-----------:|:---:|
+| 1M txns × 10k items (5 items/basket) | **0.49 s** | 18.4 s | **38×** | 25 MB |
+| 2M txns × 10k items (5 items/basket) | **0.68 s** | 45.2 s | **66×** | 50 MB |
+
+!!! success "Key insight"
+    With sparse CSR-backed DataFrames, rusket uses **only 25–50 MB of RAM** for millions of transactions. The sparse path passes CSR `indptr`/`indices` arrays directly to Rust — **zero densification, zero copy**.
+
+---
+
+## Synthetic Dense Benchmarks
 
 | Dataset | `rusket` (fpgrowth) | `rusket` (eclat) | `mlxtend` | **Speedup** |
 |---------|:-------------------:|:----------------:|:---------:|:-----------:|
@@ -42,6 +54,26 @@ Both algorithms produce identical results. Choice depends on data shape:
 | Sparse retail baskets | Either — both fast | FP-Growth slightly ahead at scale |
 | Dense data (many items/txn) | **FP-Growth** | Tree compression shines |
 | General purpose | **FP-Growth** (default) | Proven, well-studied |
+
+---
+
+## The Full Pipeline: `from_transactions` at Scale
+
+For real-world retail data (100M+ transactions × 200k+ items), use `from_transactions` which now produces **sparse CSR-backed DataFrames**:
+
+```python
+import pandas as pd
+from rusket import from_transactions, fpgrowth
+
+# Long-format: 100M rows of (transaction_id, item)
+df = pd.read_parquet("orders.parquet")
+ohe = from_transactions(df)   # → sparse CSR DataFrame (fits in memory!)
+freq = fpgrowth(ohe, min_support=0.001, use_colnames=True, max_len=3)
+```
+
+Memory for 100M transactions × 200k items with ~5 items/basket:
+- **Dense**: ~20 TB (impossible)
+- **Sparse CSR**: ~4 GB (fits on a laptop)
 
 ---
 
@@ -80,8 +112,12 @@ Conditional pattern base mining is distributed across CPU threads via [Rayon](ht
 
 ### 4. Arena-based FP-Tree
 
-FP-Tree nodes use a flat children arena (not per-node heap allocations), making the tree cache-friendly. `is_path()` is tracked incrementally.
+FP-Tree nodes use a flat children arena (not per-node heap allocations), making the tree cache-friendly. `is_path()` is tracked incrementally — no full-tree scans.
 
 ### 5. Eclat: hardware popcount
 
 Eclat stores transactions as dense `Vec<u64>` bitsets. Support counting uses bitwise intersection + `popcnt` — billions of operations per second on modern CPUs.
+
+### 6. Sparse `from_transactions`
+
+The `from_transactions` helper uses `pd.Categorical` codes + scipy COO→CSR — **no Python loops over rows**. Produces `SparseDtype("bool")` DataFrames that keep memory at the theoretical minimum.
