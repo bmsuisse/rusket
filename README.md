@@ -2,8 +2,6 @@
   <img src="https://raw.githubusercontent.com/bmsuisse/rusket/main/docs/assets/logo.svg" alt="rusket logo" width="200" height="200" />
 </p>
 
-<h1 align="center">rusket</h1>
-
 <p align="center">
   <strong>Blazing-fast FP-Growth, Eclat, and Association Rules for Python, powered by Rust.</strong>
 </p>
