@@ -1,19 +1,16 @@
 /// FPMiner — streaming FP-Growth/Eclat accumulator.
 ///
-/// Memory strategy:
-///   • add_chunk(): sort each chunk in-place immediately (small, cheap).
-///     Chunks are stored as sorted Vec<(i64, i32)>.
-///   • mine(): k-way merge across all sorted chunks → CSR built on the fly.
-///     Peak extra memory at mine() time = just the CSR output (small) +
-///     a heap of k cursors (one per chunk).
+/// Memory strategy (HashMap-first):
+///   • add_chunk(): insert each (txn_id, item_id) pair into a HashMap<i64, Vec<i32>>.
+///     Items are deduplicated per transaction incrementally.
+///     Peak memory = O(unique_txns × avg_items) — NOT O(total_pairs).
+///   • mine(): iterate the HashMap, sort each transaction's item list,
+///     build CSR in one pass. No k-way merge needed.
 ///
-/// For 1B rows in 100 × 10M chunks:
-///   add_chunk: 10M × 16B = 160 MB per chunk, sorted in ~1s
-///   mine():    merge-iterate, no extra 1B-row allocation → safe
-use std::collections::BinaryHeap;
-use std::cmp::Reverse;
-use std::io::{Read, Write, BufReader, BufWriter, Seek, SeekFrom};
-use tempfile::tempfile;
+/// For 1B rows with 43M unique transactions × 23 items:
+///   Memory: 43M × (8 + 24 + 23×4) = ~5GB — far better than the sorted-chunk approach.
+///   mine(): sort each txn's Vec once (items already collected) → build CSR → done.
+use ahash::AHashMap;
 use rayon::prelude::*;
 
 use numpy::PyReadonlyArray1;
@@ -22,56 +19,15 @@ use pyo3::prelude::*;
 use crate::fpgrowth::_mine_csr;
 use crate::eclat::_eclat_mine_csr;
 
-enum Chunk {
-    Memory(Vec<(i64, i32)>),
-    Disk(std::fs::File, usize),
-}
-
-enum ChunkCursor<'a> {
-    Memory { vec: &'a [(i64, i32)], pos: usize },
-    Disk { reader: BufReader<&'a mut std::fs::File>, remaining: usize },
-}
-
-impl<'a> ChunkCursor<'a> {
-    fn next_pair(&mut self) -> Option<(i64, i32)> {
-        match self {
-            ChunkCursor::Memory { vec, pos } => {
-                if *pos < vec.len() {
-                    let pair = vec[*pos];
-                    *pos += 1;
-                    Some(pair)
-                } else {
-                    None
-                }
-            }
-            ChunkCursor::Disk { reader, remaining } => {
-                if *remaining > 0 {
-                    let mut buf = [0u8; 12];
-                    if reader.read_exact(&mut buf).is_ok() {
-                        *remaining -= 1;
-                        let txn = i64::from_ne_bytes(buf[0..8].try_into().unwrap());
-                        let item = i32::from_ne_bytes(buf[8..12].try_into().unwrap());
-                        Some((txn, item))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
 #[pyclass]
 pub struct FPMiner {
-    /// Each element is one pre-sorted chunk, either in memory or on disk.
-    chunks: Vec<Chunk>,
-    /// Total number of pairs across all chunks.
+    /// Per-transaction item lists.  Key = transaction_id, Value = Vec of item ids.
+    txns: AHashMap<i64, Vec<i32>>,
+    /// Total number of (txn_id, item_id) pairs fed so far (pre-dedup).
     n_rows: usize,
     n_items: usize,
+    /// Optional RAM cap (bytes). When set, add_chunk errors out instead of silently OOMing.
     max_ram_bytes: Option<usize>,
-    current_ram_bytes: usize,
 }
 
 #[pymethods]
@@ -80,13 +36,18 @@ impl FPMiner {
     #[pyo3(signature = (n_items, max_ram_mb=None))]
     pub fn new(n_items: usize, max_ram_mb: Option<usize>) -> Self {
         let max_ram_bytes = max_ram_mb.map(|mb| mb.saturating_mul(1024 * 1024));
-        FPMiner { chunks: Vec::new(), n_rows: 0, n_items, max_ram_bytes, current_ram_bytes: 0 }
+        FPMiner {
+            txns: AHashMap::new(),
+            n_rows: 0,
+            n_items,
+            max_ram_bytes,
+        }
     }
 
     /// Feed a chunk of (transaction_id, item_id) pairs.
     ///
-    /// The chunk is sorted in-place immediately — O(k log k) where k = chunk size.
-    /// Then stored as a sorted Vec.  Peak extra memory = one chunk.
+    /// Each pair is inserted into the per-transaction HashMap.
+    /// Memory grows as O(unique_txns × avg_items), not O(total_pairs).
     pub fn add_chunk(
         &mut self,
         txn_ids: PyReadonlyArray1<i64>,
@@ -99,45 +60,19 @@ impl FPMiner {
                 "txn_ids and item_ids must have the same length",
             ));
         }
-        let mut chunk: Vec<(i64, i32)> = txns.par_iter().zip(items.par_iter())
-            .map(|(&t, &i)| (t, i))
-            .collect();
-        // Sort within the chunk in parallel — massively accelerates data ingestion
-        chunk.par_sort_unstable();
-        
-        let chunk_len = chunk.len();
-        self.n_rows += chunk_len;
-        
-        let chunk_bytes = chunk_len * 12; // 8 bytes for i64, 4 bytes for i32
-        
-        if let Some(limit) = self.max_ram_bytes {
-            if self.current_ram_bytes + chunk_bytes > limit {
-                // Spill to disk
-                let mut file = tempfile().map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                
-                // Scope the writer so it drops and releases `file`
-                {
-                    let mut writer = BufWriter::new(&mut file);
-                    for &(t, i) in &chunk {
-                        writer.write_all(&t.to_ne_bytes()).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                        writer.write_all(&i.to_ne_bytes()).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                    }
-                    writer.flush().map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                } // writer drops here
-                
-                file.seek(SeekFrom::Start(0)).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                self.chunks.push(Chunk::Disk(file, chunk_len));
-                return Ok(());
+
+        self.n_rows += txns.len();
+
+        for (&t, &i) in txns.iter().zip(items.iter()) {
+            if i >= 0 && (i as usize) < self.n_items {
+                self.txns.entry(t).or_default().push(i);
             }
         }
-        
-        // Keep in memory
-        self.current_ram_bytes += chunk_bytes;
-        self.chunks.push(Chunk::Memory(chunk));
+
         Ok(())
     }
 
-    /// Total number of (txn_id, item_id) pairs accumulated.
+    /// Total number of (txn_id, item_id) pairs accumulated (pre-dedup).
     #[getter]
     pub fn n_rows(&self) -> usize {
         self.n_rows
@@ -149,13 +84,13 @@ impl FPMiner {
         self.n_items
     }
 
-    /// Number of distinct transactions (0 until mine() called).
+    /// Number of distinct transactions accumulated so far.
     #[getter]
     pub fn n_transactions(&self) -> usize {
-        0
+        self.txns.len()
     }
 
-    /// Max RAM threshold before spilling to disk.
+    /// Max RAM threshold.
     #[getter]
     pub fn max_ram_mb(&self) -> Option<usize> {
         self.max_ram_bytes.map(|b| b / (1024 * 1024))
@@ -163,7 +98,7 @@ impl FPMiner {
 
     /// Mine frequent itemsets using FP-Growth.
     pub fn mine_fpgrowth(
-        &mut self,
+        &self,
         min_support: f64,
         max_len: Option<usize>,
     ) -> PyResult<(usize, Vec<u64>, Vec<u32>, Vec<u32>)> {
@@ -178,7 +113,7 @@ impl FPMiner {
 
     /// Mine frequent itemsets using Eclat.
     pub fn mine_eclat(
-        &mut self,
+        &self,
         min_support: f64,
         max_len: Option<usize>,
     ) -> PyResult<(usize, Vec<u64>, Vec<u32>, Vec<u32>)> {
@@ -193,85 +128,45 @@ impl FPMiner {
 
     /// Free all accumulated data.
     pub fn reset(&mut self) {
-        self.chunks.clear();
-        self.chunks.shrink_to_fit();
+        self.txns.clear();
+        self.txns.shrink_to_fit();
         self.n_rows = 0;
-        self.current_ram_bytes = 0;
     }
 }
 
 impl FPMiner {
-    /// K-way merge across all sorted chunks → build CSR in one streaming pass.
+    /// Build a CSR matrix from the accumulated HashMap.
     ///
-    /// Uses a min-heap (BinaryHeap<Reverse<...>>) with one cursor per chunk.
-    /// Peak extra memory = heap of k entries + output indptr/indices.
-    /// The chunks themselves are consumed (dropped) as exhausted.
-    fn build_csr(&mut self) -> PyResult<(Vec<i32>, Vec<i32>, usize)> {
-        if self.n_rows == 0 {
+    /// Uses iter() so the HashMap survives multiple mine() calls.
+    /// Each transaction's item list is sorted + deduped on the fly.
+    fn build_csr(&self) -> PyResult<(Vec<i32>, Vec<i32>, usize)> {
+        if self.txns.is_empty() {
             return Ok((vec![0i32], vec![], 0));
         }
-        let n_items = self.n_items;
 
-        let mut cursors: Vec<ChunkCursor> = Vec::with_capacity(self.chunks.len());
-        for chunk in self.chunks.iter_mut() {
-            match chunk {
-                Chunk::Memory(vec) => cursors.push(ChunkCursor::Memory { vec, pos: 0 }),
-                Chunk::Disk(file, len) => {
-                    file.seek(SeekFrom::Start(0)).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
-                    cursors.push(ChunkCursor::Disk { reader: BufReader::new(file), remaining: *len })
-                },
-            }
-        }
+        // Collect (txn_id, &items) — parallel sort for deterministic row order
+        let mut entries: Vec<(i64, &Vec<i32>)> = self.txns
+            .iter()
+            .map(|(&k, v)| (k, v))
+            .collect();
+        entries.par_sort_unstable_by_key(|(t, _)| *t);
 
-        // Heap entry: Reverse((txn, item, cursor_idx))
-        // min-heap → smallest (txn, item) pops first
-        let mut heap: BinaryHeap<Reverse<(i64, i32, usize)>> = BinaryHeap::new();
+        let n_txn = entries.len();
 
-        // Seed with the first element of each chunk
-        for (ci, cursor) in cursors.iter_mut().enumerate() {
-            if let Some((t, i)) = cursor.next_pair() {
-                heap.push(Reverse((t, i, ci)));
-            }
-        }
-
-        let mut indptr: Vec<i32> = Vec::with_capacity(self.n_rows / 8 + 2);
-        let mut indices: Vec<i32> = Vec::with_capacity(self.n_rows);
+        let mut indptr: Vec<i32> = Vec::with_capacity(n_txn + 1);
+        let mut indices: Vec<i32> = Vec::new();
         indptr.push(0);
 
-        let mut prev_txn  = i64::MIN;
-        let mut prev_item = i32::MIN;
-
-        while let Some(Reverse((txn, item, ci))) = heap.pop() {
-            // Advance cursor
-            if let Some((next_t, next_i)) = cursors[ci].next_pair() {
-                heap.push(Reverse((next_t, next_i, ci)));
+        for (_, items) in entries {
+            let mut sorted = items.clone();
+            sorted.sort_unstable();
+            sorted.dedup();
+            for item in &sorted {
+                indices.push(*item);
             }
-
-            // Skip out-of-range items
-            if item < 0 || (item as usize) >= n_items {
-                continue;
-            }
-
-            // New transaction?
-            if txn != prev_txn {
-                if prev_txn != i64::MIN {
-                    indptr.push(indices.len() as i32);
-                }
-                prev_txn  = txn;
-                prev_item = i32::MIN;
-            }
-
-            // Deduplicate within transaction
-            if item != prev_item {
-                indices.push(item);
-                prev_item = item;
-            }
-        }
-        if prev_txn != i64::MIN {
             indptr.push(indices.len() as i32);
         }
 
-        let n_txn = indptr.len() - 1;
         Ok((indptr, indices, n_txn))
     }
 }

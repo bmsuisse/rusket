@@ -1,19 +1,17 @@
 """ALS benchmark using real-world MovieLens data.
 
 Auto-downloads MovieLens datasets on first run.
-Memory requirements by dataset:
-    1M  dataset: ~200 MB RAM   (6K × 3.7K,    1M ratings)
-    10M dataset: ~500 MB RAM   (69K × 10K,    10M ratings)
-    25M dataset: ~2 GB  RAM    (163K × 59K,   25M ratings)
-    1B  dataset: needs streaming — we sample 10% of users by default
-                 (~25M interactions, ~1.5 GB RAM)
 
 Usage:
-    uv run python benchmarks/bench_als.py             # 1M + 10M + 25M
-    uv run python benchmarks/bench_als.py --size 1m   # just MovieLens 1M
-    uv run python benchmarks/bench_als.py --size 25m  # full 25M
-    uv run python benchmarks/bench_als.py --size 1b   # MovieLens 1B (sampled)
-    uv run python benchmarks/bench_als.py --size 1b --sample 1.0  # full 1B (needs 8+ GB)
+    uv run python benchmarks/bench_als.py             # 1M + 10M + 25M (all three methods)
+    uv run python benchmarks/bench_als.py --size 25m  # just 25M
+    uv run python benchmarks/bench_als.py --size 200m # ~200M ratings from 1B dataset
+    uv run python benchmarks/bench_als.py --size 1b   # full 1B (needs 8+ GB RAM)
+
+Methods compared automatically:
+    rusket (cg_iters=3)  — fast, slight quality tradeoff at large scale
+    rusket (cg_iters=10) — default, best quality
+    implicit             — popular Python ALS library (if installed)
 """
 
 from __future__ import annotations
@@ -47,6 +45,7 @@ MOVIELENS_URLS = {
     "10m": "https://files.grouplens.org/datasets/movielens/ml-10m.zip",
     "25m": "https://files.grouplens.org/datasets/movielens/ml-25m.zip",
     "1b": "https://files.grouplens.org/datasets/movielens/ml-20mx16x32.tar",
+    "200m": "https://files.grouplens.org/datasets/movielens/ml-20mx16x32.tar",  # same source, sampled
 }
 
 FACTORS = 64
@@ -54,6 +53,9 @@ ITERS = 15
 ALPHA = 40.0
 REG = 0.01
 TOP_N = 200  # users to time for recommend latency
+
+# Target number of ratings for the 200M mode
+TARGET_200M = 200_000_000
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +100,52 @@ def download_movielens(size: str, data_dir: Path) -> Path:
             return Path(root)
 
     raise FileNotFoundError(f"No ratings file found after extracting {archive_path}")
+
+
+def load_ratings_sampled_200m(folder: Path) -> sparse.csr_matrix:
+    """Load ~200M ratings from the 1B dataset by reading the first N chunks.
+
+    Builds a proper in-memory CSR without mmap so the solver runs at full speed.
+    """
+    import pandas as pd
+
+    npz_files = sorted(folder.glob("train*.npz"))
+    all_u, all_i, all_r = [], [], []
+
+    print(f"  Sampling ~{TARGET_200M // 1_000_000}M ratings from 1B dataset...", flush=True)
+    total = 0
+    for npz in tqdm(npz_files, desc="  Reading NPZ files"):
+        data = np.load(npz)
+        arr = data["arr_0"]
+        data.close()
+        all_u.append(arr[:, 0].astype(np.int32))
+        all_i.append(arr[:, 1].astype(np.int32))
+        all_r.append(np.ones(len(arr), dtype=np.float32))
+        total += len(arr)
+        if total >= TARGET_200M:
+            break
+
+    uids = np.concatenate(all_u)
+    iids = np.concatenate(all_i)
+    vals = np.concatenate(all_r)
+    del all_u, all_i, all_r
+    gc.collect()
+
+    # Remap to contiguous 0-based IDs
+    u_map = {v: k for k, v in enumerate(np.unique(uids))}
+    i_map = {v: k for k, v in enumerate(np.unique(iids))}
+    u_idx = np.array([u_map[u] for u in uids], dtype=np.int32)
+    i_idx = np.array([i_map[i] for i in iids], dtype=np.int32)
+    n_users = len(u_map)
+    n_items = len(i_map)
+
+    mat = sparse.csr_matrix((vals, (u_idx, i_idx)), shape=(n_users, n_items))
+    mat.sum_duplicates()
+    print(
+        f"  Loaded {n_users:,} users × {n_items:,} movies, {mat.nnz:,} ratings",
+        flush=True,
+    )
+    return mat
 
 
 def load_ratings_stream(folder: Path) -> sparse.csr_matrix:
@@ -332,11 +380,88 @@ def load_ratings(
 # ---------------------------------------------------------------------------
 
 
+def _check_ram(fact_mb: float, csr_mb: float, is_mmap: bool) -> tuple[bool, str]:
+    """Return (ok, reason). Skips if not enough RAM."""
+    if fact_mb > 3_000:
+        return False, "factor matrices > 3 GB"
+    avail_mb = psutil.virtual_memory().available / 1e6
+    required_mb = fact_mb if is_mmap else (fact_mb + csr_mb)
+    if avail_mb - required_mb < 2_000:
+        return False, f"not enough RAM (need {required_mb:.0f} MB, have {avail_mb:.0f} MB)"
+    return True, ""
+
+
+def run_method_rusket(
+    mat: sparse.csr_matrix,
+    label: str,
+    cg_iters: int,
+    verbose: bool = True,
+) -> dict:
+    """Benchmark rusket ALS with given cg_iters."""
+    t0 = time.perf_counter()
+    model = rusket.ALS(
+        factors=FACTORS, regularization=REG, alpha=ALPHA,
+        iterations=ITERS, seed=42, verbose=verbose, cg_iters=cg_iters,
+    )
+    model.fit(mat)
+    fit_s = time.perf_counter() - t0
+
+    n_users = mat.shape[0]
+    n_rec = min(TOP_N, n_users)
+    t0 = time.perf_counter()
+    for uid in range(n_rec):
+        model.recommend_items(uid, n=10, exclude_seen=True)
+    rec_ms = (time.perf_counter() - t0) / n_rec * 1000
+
+    print(f"    fit: {fit_s:.1f}s  |  rec/user: {rec_ms:.2f}ms", flush=True)
+    del model
+    gc.collect()
+    return {"method": label, "fit_s": fit_s, "rec_ms": rec_ms}
+
+
+def run_method_implicit(mat: sparse.csr_matrix) -> dict | None:
+    """Benchmark the `implicit` library ALS (if installed)."""
+    try:
+        import implicit  # type: ignore[import-untyped]
+    except ImportError:
+        print("    ⚠️  `implicit` not installed — skipping (pip install implicit)", flush=True)
+        return None
+
+    # implicit expects item × user CSR
+    mat_T = mat.T.tocsr().astype(np.float32)
+    t0 = time.perf_counter()
+    model = implicit.als.AlternatingLeastSquares(
+        factors=FACTORS,
+        regularization=REG,
+        alpha=ALPHA,
+        iterations=ITERS,
+        calculate_training_loss=False,
+        use_gpu=False,
+    )
+    model.fit(mat_T, show_progress=True)
+    fit_s = time.perf_counter() - t0
+
+    # Latency: item recommendations per user
+    n_users = mat.shape[0]
+    n_rec = min(TOP_N, n_users)
+    t0 = time.perf_counter()
+    for uid in range(n_rec):
+        model.recommend(uid, mat_T.T.tocsr()[uid], N=10, filter_already_liked_items=True)
+    rec_ms = (time.perf_counter() - t0) / n_rec * 1000
+
+    print(f"    fit: {fit_s:.1f}s  |  rec/user: {rec_ms:.2f}ms", flush=True)
+    del model
+    gc.collect()
+    return {"method": "implicit", "fit_s": fit_s, "rec_ms": rec_ms}
+
+
 def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
+    """Run all methods against the same matrix and return combined results."""
     n_users, n_items = mat.shape
     nnz = mat.nnz
     csr_mb = (mat.data.nbytes + mat.indices.nbytes + mat.indptr.nbytes) / 1e6
     fact_mb = (n_users + n_items) * FACTORS * 4 / 1e6
+    is_mmap = isinstance(mat.data, np.memmap)
 
     print(f"\n  ─── {label} ───")
     print(
@@ -345,71 +470,36 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
         flush=True,
     )
 
-    if fact_mb > 3_000:
-        print("  ⚠️  Skipping: factor matrices > 3 GB")
-        return {
-            "label": label,
-            "n_users": n_users,
-            "n_items": n_items,
-            "nnz": nnz,
-            "fit_s": None,
-            "rec_ms": None,
-            "csr_mb": csr_mb,
-            "fact_mb": fact_mb,
-        }
+    ok, reason = _check_ram(fact_mb, csr_mb, is_mmap)
+    if not ok:
+        print(f"  ⚠️  Skipping: {reason}")
+        return {"label": label, "n_users": n_users, "n_items": n_items, "nnz": nnz,
+                "methods": [], "csr_mb": csr_mb, "fact_mb": fact_mb}
 
-    # SAFETY: Check available system RAM before allocating factors
-    avail_mb = psutil.virtual_memory().available / 1e6
-    is_mmap = isinstance(mat.data, np.memmap)
-    required_mb = fact_mb if is_mmap else (fact_mb + csr_mb)
+    method_results = []
 
-    if avail_mb - required_mb < 2_000:  # 2 GB safety margin
-        print(
-            f"  ⚠️  Skipping: Not enough free RAM (need {required_mb:.0f} MB, have {avail_mb:.0f} MB)"
-        )
-        return {
-            "label": label,
-            "n_users": n_users,
-            "n_items": n_items,
-            "nnz": nnz,
-            "fit_s": None,
-            "rec_ms": None,
-            "csr_mb": csr_mb,
-            "fact_mb": fact_mb,
-        }
+    print("\n  Method: rusket ALS  cg_iters=3  (fast)", flush=True)
+    r = run_method_rusket(mat, "rusket cg=3", cg_iters=3, verbose=False)
+    method_results.append(r)
 
-    model = rusket.ALS(
-        factors=FACTORS, regularization=REG, alpha=ALPHA, iterations=ITERS, seed=42,
-        verbose=True, cg_iters=3,
-    )
+    print("\n  Method: rusket ALS  cg_iters=10 (default)", flush=True)
+    r = run_method_rusket(mat, "rusket cg=10", cg_iters=10, verbose=False)
+    method_results.append(r)
 
-    t0 = time.perf_counter()
-    model.fit(mat)
-    fit_s = time.perf_counter() - t0
+    print("\n  Method: implicit ALS", flush=True)
+    r = run_method_implicit(mat)
+    if r:
+        method_results.append(r)
 
-    n_rec = min(TOP_N, n_users)
-    t0 = time.perf_counter()
-    for uid in range(n_rec):
-        model.recommend_items(uid, n=10, exclude_seen=True)
-    rec_ms = (time.perf_counter() - t0) / n_rec * 1000
+    # Summary
+    print(f"\n  {'Method':<20} {'Fit (s)':>10} {'Rec (ms)':>10}")
+    print(f"  {'-'*42}")
+    for m in method_results:
+        print(f"  {m['method']:<20} {m['fit_s']:>10.1f} {m['rec_ms']:>10.2f}")
 
-    spark_x = SPARK_REFERENCE / fit_s
-    print(
-        f"  fit: {fit_s:.1f}s  |  rec/user: {rec_ms:.2f}ms  |  "
-        f"vs Spark 25M ref: {spark_x:.1f}×",
-        flush=True,
-    )
-    del model
-    gc.collect()
     return {
-        "label": label,
-        "n_users": n_users,
-        "n_items": n_items,
-        "nnz": nnz,
-        "fit_s": fit_s,
-        "rec_ms": rec_ms,
-        "csr_mb": csr_mb,
-        "fact_mb": fact_mb,
+        "label": label, "n_users": n_users, "n_items": n_items, "nnz": nnz,
+        "methods": method_results, "csr_mb": csr_mb, "fact_mb": fact_mb,
     }
 
 
@@ -419,66 +509,60 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
 
 
 def make_chart(results: list[dict], output_dir: Path) -> None:
-    valid = [r for r in results if r["fit_s"] is not None]
+    valid = [r for r in results if r.get("methods")]
     if not valid:
         return
 
-    labels = [r["label"] for r in valid]
-    fit_times = [r["fit_s"] for r in valid]
-    rec_times = [r["rec_ms"] for r in valid]
+    # Gather all method names in order
+    method_names: list[str] = []
+    for r in valid:
+        for m in r["methods"]:
+            if m["method"] not in method_names:
+                method_names.append(m["method"])
+
+    colors = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4"]
+    dataset_labels = [r["label"] for r in valid]
 
     fig = make_subplots(
-        rows=1,
-        cols=2,
-        subplot_titles=("⚡ Fit Time", "🔍 Latency per Recommendation"),
+        rows=1, cols=2,
+        subplot_titles=("⚡ Fit Time (lower = faster)", "🔍 Rec Latency per User"),
         horizontal_spacing=0.14,
     )
 
-    fig.add_trace(
-        go.Bar(
-            x=labels,
-            y=fit_times,
-            name="rusket ALS fit",
-            marker_color="#6366f1",
-            text=[f"{t:.1f}s" for t in fit_times],
-            textposition="outside",
-        ),
-        row=1,
-        col=1,
-    )
+    for idx, method in enumerate(method_names):
+        fit_times = []
+        rec_times = []
+        for r in valid:
+            match = next((m for m in r["methods"] if m["method"] == method), None)
+            fit_times.append(match["fit_s"] if match else None)
+            rec_times.append(match["rec_ms"] if match else None)
 
-    # Spark MLlib reference line for MovieLens 25M
+        color = colors[idx % len(colors)]
+        fig.add_trace(go.Bar(
+            name=method, x=dataset_labels, y=fit_times,
+            marker_color=color,
+            text=[f"{t:.1f}s" if t else "N/A" for t in fit_times],
+            textposition="outside",
+            legendgroup=method,
+        ), row=1, col=1)
+        fig.add_trace(go.Bar(
+            name=method, x=dataset_labels, y=rec_times,
+            marker_color=color,
+            text=[f"{t:.2f}ms" if t else "N/A" for t in rec_times],
+            textposition="outside",
+            legendgroup=method, showlegend=False,
+        ), row=1, col=2)
+
     fig.add_hline(
-        y=SPARK_REFERENCE,
-        line_dash="dash",
-        line_color="#ef4444",
-        annotation_text=f"Spark MLlib ~{SPARK_REFERENCE}s (4-node, MovieLens 25M)",
-        annotation_position="top right",
-        row=1,
-        col=1,
-    )
-
-    fig.add_trace(
-        go.Bar(
-            x=labels,
-            y=rec_times,
-            name="rec/user",
-            marker_color="#22c55e",
-            text=[f"{t:.2f}ms" for t in rec_times],
-            textposition="outside",
-        ),
-        row=1,
-        col=2,
+        y=SPARK_REFERENCE, line_dash="dash", line_color="#ef4444",
+        annotation_text=f"Spark MLlib ~{SPARK_REFERENCE}s (4-node, ML-25M)",
+        annotation_position="top right", row=1, col=1,
     )
 
     fig.update_layout(
-        title=dict(text="rusket ALS — MovieLens Benchmark", font=dict(size=20)),
-        template="plotly_dark",
-        height=480,
-        width=1000,
-        legend=dict(
-            orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
-        ),
+        title=dict(text="rusket ALS — Multi-Method Benchmark", font=dict(size=20)),
+        template="plotly_dark", height=480, width=1100, barmode="group",
+        legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
         margin=dict(t=60, b=100),
     )
     fig.update_yaxes(title_text="seconds", row=1, col=1)
@@ -501,32 +585,23 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="ALS MovieLens benchmark")
+    parser = argparse.ArgumentParser(description="ALS MovieLens multi-method benchmark")
     parser.add_argument(
         "--size",
-        choices=["1m", "10m", "25m", "1b", "all"],
+        choices=["1m", "10m", "25m", "200m", "1b", "all"],
         default="all",
-        help="MovieLens dataset size (default: all = 1m + 10m + 25m)",
+        help="Dataset size (default: all = 1m + 10m + 25m)",
     )
-    parser.add_argument(
-        "--sample",
-        type=float,
-        default=0.1,
-        help="Fraction of users to sample for 1B dataset (default 0.1 = 10%% ≈ 100M ratings)",
-    )
-    parser.add_argument(
-        "--data-dir",
-        default="data/movielens",
-        help="Directory for downloaded data",
-    )
+    parser.add_argument("--data-dir", default="data/movielens", help="Data directory")
     args = parser.parse_args()
 
     sizes = ["1m", "10m", "25m"] if args.size == "all" else [args.size]
     data_dir = Path(args.data_dir)
 
     print("=" * 65)
-    print("  rusket ALS — MovieLens Benchmark")
+    print("  rusket ALS — Multi-Method MovieLens Benchmark")
     print(f"  factors={FACTORS}, iterations={ITERS}, alpha={ALPHA}, reg={REG}")
+    print("  Methods: rusket(cg=3), rusket(cg=10), implicit")
     print("=" * 65)
 
     results: list[dict] = []
@@ -534,16 +609,17 @@ def main() -> None:
         size_label = size.upper()
         print(f"\n{'=' * 65}\n  MovieLens {size_label}")
         try:
-            sample = args.sample if size == "1b" else 1.0
-            stream = size == "1b" and sample == 1.0
-            if size == "1b" and sample < 1.0:
-                print(f"  ⚠️  Sampling {sample * 100:.0f}% of users to fit in RAM")
-                print(
-                    "     Use --sample 1.0 for full 1B (via streaming memmaps, needs ~8GB SSD space)"
-                )
+            # 200M is a sampled subset of the 1B dataset 
+            dl_size = "1b" if size == "200m" else size
+            folder = download_movielens(dl_size, data_dir)
 
-            folder = download_movielens(size, data_dir)
-            mat = load_ratings(folder, sample=sample, stream=stream)
+            if size == "200m":
+                mat = load_ratings_sampled_200m(folder)
+            else:
+                sample = 1.0
+                stream = False
+                mat = load_ratings(folder, sample=sample, stream=stream)
+
             result = run_scenario(f"MovieLens {size_label}", mat)
             results.append(result)
             del mat
