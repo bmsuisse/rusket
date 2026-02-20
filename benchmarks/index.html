@@ -697,15 +697,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#scale-benchmarks-1m-200m-rows" class="md-nav__link">
+  <a href="#scale-benchmarks-1m-1b-rows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scale Benchmarks: 1M → 200M Rows 🚀
+        Scale Benchmarks: 1M → 1B Rows 🚀
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 200M Rows 🚀">
+    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 1B Rows 🚀">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -720,13 +720,41 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#two-input-paths" class="md-nav__link">
+  <a href="#three-input-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Two Input Paths
+        Three Input Paths
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Three Input Paths">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-memory-scale-fpgrowth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In-Memory Scale (fpgrowth)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#out-of-core-scale-fpminer-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Out-of-Core Scale (FPMiner Streaming)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -950,15 +978,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#scale-benchmarks-1m-200m-rows" class="md-nav__link">
+  <a href="#scale-benchmarks-1m-1b-rows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scale Benchmarks: 1M → 200M Rows 🚀
+        Scale Benchmarks: 1M → 1B Rows 🚀
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 200M Rows 🚀">
+    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 1B Rows 🚀">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -973,13 +1001,41 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#two-input-paths" class="md-nav__link">
+  <a href="#three-input-paths" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Two Input Paths
+        Three Input Paths
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Three Input Paths">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-memory-scale-fpgrowth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In-Memory Scale (fpgrowth)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#out-of-core-scale-fpminer-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Out-of-Core Scale (FPMiner Streaming)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1067,16 +1123,18 @@
 <p>rusket includes two mining algorithms (<strong>FP-Growth</strong> and <strong>Eclat</strong>), both implemented in Rust. These benchmarks compare rusket against <strong>mlxtend</strong> (pure Python) on synthetic and real-world datasets.</p>
 <p>Measured on Apple M-series (arm64).</p>
 <hr />
-<h2 id="scale-benchmarks-1m-200m-rows">Scale Benchmarks: 1M → 200M Rows 🚀<a class="headerlink" href="#scale-benchmarks-1m-200m-rows" title="Permanent link">&para;</a></h2>
+<h2 id="scale-benchmarks-1m-1b-rows">Scale Benchmarks: 1M → 1B Rows 🚀<a class="headerlink" href="#scale-benchmarks-1m-1b-rows" title="Permanent link">&para;</a></h2>
 <h3 id="interactive-chart">Interactive Chart<a class="headerlink" href="#interactive-chart" title="Permanent link">&para;</a></h3>
 <iframe src="../assets/scale_benchmark.html" width="100%" height="550px" style="border:none; border-radius:8px;"></iframe>
 
-<h3 id="two-input-paths">Two Input Paths<a class="headerlink" href="#two-input-paths" title="Permanent link">&para;</a></h3>
-<p>rusket supports two ways to ingest data at scale:</p>
+<h3 id="three-input-paths">Three Input Paths<a class="headerlink" href="#three-input-paths" title="Permanent link">&para;</a></h3>
+<p>rusket supports three ways to ingest data at scale:</p>
 <ol>
 <li><strong><code>from_transactions</code> → sparse DataFrame</strong> — returns a pandas DataFrame, easy API</li>
 <li><strong>Direct CSR → Rust</strong> — pass <code>scipy.sparse.csr_matrix</code> directly to <code>fpgrowth()</code>, skips pandas entirely</li>
+<li><strong><code>FPMiner</code> Streaming</strong> — memory-safe accumulator for 100M+ rows that don't fit in RAM</li>
 </ol>
+<h4 id="in-memory-scale-fpgrowth">In-Memory Scale (fpgrowth)<a class="headerlink" href="#in-memory-scale-fpgrowth" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -1124,6 +1182,50 @@
 <p>At 100M rows, direct CSR mining takes <strong>1.3 seconds</strong> — the bottleneck is entirely the CSR build (24.5s).
 Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sparse.to_coo().tocsr()</code> overhead.</p>
 </div>
+<h4 id="out-of-core-scale-fpminer-streaming">Out-of-Core Scale (FPMiner Streaming)<a class="headerlink" href="#out-of-core-scale-fpminer-streaming" title="Permanent link">&para;</a></h4>
+<p>For real-world retail datasets scaling to 1 Billion rows, <code>FPMiner</code> uses a memory-safe chunks approach (per-chunk sort + k-way merge).</p>
+<p><strong>Benchmark:</strong> 2,603 retail items, avg 4.4 items/basket, min_support = 0.1%</p>
+<table>
+<thead>
+<tr>
+<th>Scale</th>
+<th style="text-align: center;">add_chunk()</th>
+<th style="text-align: center;">mine()</th>
+<th style="text-align: center;">Total Time</th>
+<th style="text-align: center;">Itemsets Found</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>50M rows</td>
+<td style="text-align: center;">4.8s</td>
+<td style="text-align: center;">5.6s</td>
+<td style="text-align: center;"><strong>10.4s</strong></td>
+<td style="text-align: center;">1,260</td>
+</tr>
+<tr>
+<td>100M rows</td>
+<td style="text-align: center;">10.6s</td>
+<td style="text-align: center;">13.9s</td>
+<td style="text-align: center;"><strong>24.6s</strong></td>
+<td style="text-align: center;">1,254</td>
+</tr>
+<tr>
+<td>200M rows</td>
+<td style="text-align: center;">22.7s</td>
+<td style="text-align: center;">33.2s</td>
+<td style="text-align: center;"><strong>55.9s</strong></td>
+<td style="text-align: center;">1,261</td>
+</tr>
+<tr>
+<td>300M rows</td>
+<td style="text-align: center;">30.0s</td>
+<td style="text-align: center;">55.4s</td>
+<td style="text-align: center;"><strong>85.4s</strong></td>
+<td style="text-align: center;">1,259</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="vs-mlxtend">vs mlxtend<a class="headerlink" href="#vs-mlxtend" title="Permanent link">&para;</a></h2>
 <table>
