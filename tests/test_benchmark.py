@@ -1,4 +1,4 @@
-"""Benchmarks: fpgrowth-rs vs mlxtend at multiple data sizes + Polars input."""
+"""Benchmarks: fpgrowth-rs vs fptda-rs vs mlxtend at multiple data sizes + Polars input."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rusket import fpgrowth, association_rules
+from rusket import fpgrowth, fptda, association_rules
 
 try:
     import polars as pl
@@ -72,7 +72,7 @@ def _timed(fn, *args, **kwargs):
 
 
 # ---------------------------------------------------------------------------
-# pytest-benchmark suites (group per size)
+# pytest-benchmark suites — FP-Growth
 # ---------------------------------------------------------------------------
 
 
@@ -114,6 +114,83 @@ def test_benchmark_polars_large(benchmark) -> None:
     df_pl = pl.from_pandas(DF_LARGE)
     result = benchmark(fpgrowth, df_pl, min_support=0.05)
     assert result.shape[0] >= 0
+
+
+# ---------------------------------------------------------------------------
+# pytest-benchmark suites — FP-TDA (same groups, benchmarked in parallel)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.benchmark(group="tiny")
+def test_benchmark_fptda_tiny(benchmark) -> None:
+    result = benchmark(fptda, DF_TINY, min_support=0.5)
+    assert result.shape[0] > 0
+
+
+@pytest.mark.benchmark(group="small")
+def test_benchmark_fptda_small(benchmark) -> None:
+    result = benchmark(fptda, DF_SMALL, min_support=0.1)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="medium")
+def test_benchmark_fptda_medium(benchmark) -> None:
+    result = benchmark(fptda, DF_MEDIUM, min_support=0.01)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="large")
+def test_benchmark_fptda_large(benchmark) -> None:
+    result = benchmark(fptda, DF_LARGE, min_support=0.05)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
+@pytest.mark.benchmark(group="polars_medium")
+def test_benchmark_fptda_polars_medium(benchmark) -> None:
+    df_pl = pl.from_pandas(DF_MEDIUM)
+    result = benchmark(fptda, df_pl, min_support=0.01)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
+@pytest.mark.benchmark(group="polars_large")
+def test_benchmark_fptda_polars_large(benchmark) -> None:
+    df_pl = pl.from_pandas(DF_LARGE)
+    result = benchmark(fptda, df_pl, min_support=0.05)
+    assert result.shape[0] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Head-to-head: FP-TDA vs FP-Growth (internal)
+# ---------------------------------------------------------------------------
+
+
+def test_vs_fptda_small() -> None:
+    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_SMALL, min_support=0.1)
+    _, tda_t, tda_mem = _timed(fptda, DF_SMALL, min_support=0.1)
+    print(
+        f"\n[small  fp-tda] fpgrowth={fpg_t * 1000:.1f}ms  fptda={tda_t * 1000:.1f}ms  "
+        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e3:.0f}KB  tda={tda_mem / 1e3:.0f}KB"
+    )
+
+
+def test_vs_fptda_medium() -> None:
+    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_MEDIUM, min_support=0.01)
+    _, tda_t, tda_mem = _timed(fptda, DF_MEDIUM, min_support=0.01)
+    print(
+        f"\n[medium fp-tda] fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
+        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
+    )
+
+
+def test_vs_fptda_large() -> None:
+    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_LARGE, min_support=0.05)
+    _, tda_t, tda_mem = _timed(fptda, DF_LARGE, min_support=0.05)
+    print(
+        f"\n[large  fp-tda] fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
+        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
+    )
 
 
 # ---------------------------------------------------------------------------

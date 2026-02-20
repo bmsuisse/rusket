@@ -1,9 +1,12 @@
+"""FP-TDA: functional API and FPTda estimator class."""
+
 from __future__ import annotations
 
 import math
 from typing import TYPE_CHECKING, Any
 
 from . import _rusket as _rust  # type: ignore
+from ._fpbase import FPBase
 from .fpgrowth import _build_result  # reuse the same result builder
 
 if TYPE_CHECKING:
@@ -13,6 +16,11 @@ if TYPE_CHECKING:
 
     class _SparkDataFrame:
         def toPandas(self) -> pd.DataFrame: ...
+
+
+# ---------------------------------------------------------------------------
+# Module-level functional API (mirrors rusket.fpgrowth)
+# ---------------------------------------------------------------------------
 
 
 def fptda(
@@ -25,43 +33,13 @@ def fptda(
 ) -> pd.DataFrame:
     """Mine frequent itemsets with the FP-TDA algorithm.
 
-    FP-TDA (Frequent-Pattern Two-Dimensional Array) is an alternative to
-    FP-Growth that replaces the recursive conditional-subtree construction
-    with a 2-D matrix representation.  It produces the **same result** as
-    :func:`rusket.fpgrowth` but with a different internal algorithm.
+    FP-TDA (Frequent-Pattern Two-Dimensional Array) replaces the recursive
+    conditional-subtree construction of FP-Growth with a right-to-left
+    column projection on sorted transaction lists.  It produces the **same
+    result** as :func:`rusket.fpgrowth` but with a different internal
+    algorithm.
 
-    Parameters
-    ----------
-    df:
-        Boolean / 0-1 encoded input.  Accepts a pandas DataFrame, Polars
-        DataFrame, NumPy array (dtype uint8), or a PySpark DataFrame.
-    min_support:
-        Minimum support threshold as a fraction in ``(0, 1]``.
-    null_values:
-        When ``True``, ``NaN`` / ``None`` in a pandas DataFrame is treated
-        as ``False`` rather than raising an error.
-    use_colnames:
-        Replace integer column indices with the actual column names in the
-        output.
-    max_len:
-        Maximum length of frequent itemsets to return.  ``None`` means no
-        limit.
-    verbose:
-        Reserved for future use (currently unused).
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame with columns ``support`` (float) and ``itemsets``
-        (frozen-set-like ArrowDtype list of column indices or names).
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> from rusket import fptda
-    >>> df = pd.DataFrame({"a": [1,1,0], "b": [1,1,1], "c": [1,0,1]},
-    ...                   dtype=bool)
-    >>> fptda(df, min_support=0.5, use_colnames=True)
+    Parameters and return value are identical to :func:`rusket.fpgrowth`.
     """
     if min_support <= 0.0:
         raise ValueError(
@@ -141,3 +119,49 @@ def _fptda_polars(
     arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
     raw = _rust.fptda_from_dense(arr, min_count, max_len)
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
+
+
+# ---------------------------------------------------------------------------
+# OOP estimator — inherits all shared logic from FPBase
+# ---------------------------------------------------------------------------
+
+
+class FPTda(FPBase):
+    """FP-TDA estimator — same API as :class:`rusket.FPGrowth`.
+
+    Uses the Frequent-Pattern Two-Dimensional Array algorithm (IJISRT25NOV1256)
+    instead of the standard FP-Growth tree construction.  Both produce identical
+    results; FP-TDA trades tree memory for recursive column projections.
+
+    Parameters
+    ----------
+    min_support, min_confidence, items_col, use_colnames, max_len:
+        Same semantics as :class:`rusket.FPGrowth`.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        from rusket import FPTda
+
+        model = FPTda(min_support=0.3, min_confidence=0.6).fit(df)
+        freq  = model.freq_itemsets
+        rules = model.association_rules_
+
+        # Spark drop-in:
+        model = FPTda.from_spark(spark_df, min_support=0.3)
+
+        # Polars:
+        model = FPTda(min_support=0.3).fit(polars_df)
+    """
+
+    def _mine(
+        self,
+        df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
+    ) -> pd.DataFrame:
+        return fptda(
+            df,
+            min_support=self.min_support,
+            use_colnames=self.use_colnames,
+            max_len=self.max_len,
+        )

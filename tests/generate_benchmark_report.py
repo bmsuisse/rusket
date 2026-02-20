@@ -18,7 +18,7 @@ from faker import Faker
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from rusket import fpgrowth
+from rusket import fpgrowth, fptda
 
 try:
     from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
@@ -125,19 +125,26 @@ for label, n_rows, n_cols, min_sup in SIZES:
     df = _make_transaction_df(n_rows, products, RNG)
     print(f"{time.perf_counter() - t0:.2f}s  ({df.values.nbytes / 1e6:.0f} MB)")
 
-    # rusket (pandas dense)
-    print("  rusket (pandas)…", end=" ", flush=True)
+    # rusket fpgrowth (pandas dense)
+    print("  rusket fpgrowth (pandas)…", end=" ", flush=True)
     _, ours_t, ours_mem = _timed(fpgrowth, df, min_support=min_sup)
     n_fi = fpgrowth(df, min_support=min_sup).shape[0]
     print(f"{ours_t:.3f}s  peak={ours_mem / 1e6:.1f}MB  itemsets={n_fi:,}")
+
+    # rusket fptda (pandas dense)
+    print("  rusket fptda   (pandas)…", end=" ", flush=True)
+    _, tda_t, tda_mem = _timed(fptda, df, min_support=min_sup)
+    print(f"{tda_t:.3f}s  peak={tda_mem / 1e6:.1f}MB  ratio={tda_t / ours_t:.2f}×")
 
     row = {
         "label": label,
         "n_rows": n_rows,
         "n_cols": n_cols,
         "raw_mb": df.values.nbytes / 1e6,
-        "rusket_time_s": ours_t,
-        "rusket_mem_mb": ours_mem / 1e6,
+        "fpgrowth_time_s": ours_t,
+        "fpgrowth_mem_mb": ours_mem / 1e6,
+        "fptda_time_s": tda_t,
+        "fptda_mem_mb": tda_mem / 1e6,
         "n_itemsets": n_fi,
     }
 
@@ -195,8 +202,9 @@ df_res = pd.DataFrame(results)
 # ---------------------------------------------------------------------------
 
 RUSTKET_COLOR = "#6C63FF"
+FPTDA_COLOR   = "#FF9F43"
 MLXTEND_COLOR = "#FF6584"
-POLARS_COLOR = "#43C59E"
+POLARS_COLOR  = "#43C59E"
 HUGE_GLOW = "#FFD166"
 BG = "#0A0A14"
 PANEL = "#12121F"
@@ -255,34 +263,20 @@ def add_bars(col_idx, y_col, name, color, text_fmt, row=1, showlegend=True):
 
 
 # Time (col 1)
-add_bars(1, "rusket_time_s", "🦀 rusket (pandas)", RUSTKET_COLOR, "{:.3f}s")
+add_bars(1, "fpgrowth_time_s", "🦀 fpgrowth (pandas)", RUSTKET_COLOR, "{:.3f}s")
+add_bars(1, "fptda_time_s",    "🟠 fptda   (pandas)", FPTDA_COLOR,   "{:.3f}s")
 if HAS_MLXTEND and "mlxtend_time_s" in df_res:
     add_bars(1, "mlxtend_time_s", "🐍 mlxtend", MLXTEND_COLOR, "{:.3f}s")
 if HAS_POLARS and "polars_time_s" in df_res:
-    add_bars(1, "polars_time_s", "🐻‍❄️ rusket (polars)", POLARS_COLOR, "{:.3f}s")
+    add_bars(1, "polars_time_s", "🐻‍❄️ fpgrowth (polars)", POLARS_COLOR, "{:.3f}s")
 
 # Memory (col 2)
-add_bars(
-    2, "rusket_mem_mb", "🦀 rusket mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False
-)
+add_bars(2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False)
+add_bars(2, "fptda_mem_mb",    "🟠 fptda mem",    FPTDA_COLOR,   "{:.1f}MB", showlegend=False)
 if HAS_MLXTEND and "mlxtend_mem_mb" in df_res:
-    add_bars(
-        2,
-        "mlxtend_mem_mb",
-        "🐍 mlxtend mem",
-        MLXTEND_COLOR,
-        "{:.1f}MB",
-        showlegend=False,
-    )
+    add_bars(2, "mlxtend_mem_mb", "🐍 mlxtend mem", MLXTEND_COLOR, "{:.1f}MB", showlegend=False)
 if HAS_POLARS and "polars_mem_mb" in df_res:
-    add_bars(
-        2,
-        "polars_mem_mb",
-        "🐻‍❄️ rusket polars mem",
-        POLARS_COLOR,
-        "{:.1f}MB",
-        showlegend=False,
-    )
+    add_bars(2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False)
 
 # Speedup + memory ratio (row 2, only where mlxtend ran)
 if has_compare:
@@ -290,7 +284,7 @@ if has_compare:
     colors = [f"hsl({min(140, int(s * 6))},75%,55%)" for s in sub["speedup"]]
     fig.add_trace(
         go.Bar(
-            name="speedup",
+            name="speedup (fpgrowth)",
             x=[x_labels[i] for i in sub.index],
             y=sub["speedup"],
             marker=dict(color=colors, line_width=0),
@@ -344,7 +338,7 @@ if not huge_rows.empty:
     h = huge_rows.iloc[0]
     fig.add_annotation(
         x=x_labels[huge_rows.index[0]],
-        y=h["rusket_time_s"],
+        y=h["fpgrowth_time_s"],
         text=f"🚀 HUGE: {h['n_rows']:,} rows<br>{h['raw_mb']:.0f} MB input",
         showarrow=True,
         arrowhead=2,
@@ -358,7 +352,7 @@ if not huge_rows.empty:
 
 fig.update_layout(
     title=dict(
-        text="🦀 <b>rusket</b> — FP-Growth Benchmark (Faker synthetic market-basket data)",
+        text="🦀 <b>rusket</b> — FP-Growth vs FP-TDA Benchmark (Faker synthetic market-basket data)",
         font=dict(size=20, color=TEXT, family="'Courier New', monospace"),
         x=0.5,
     ),

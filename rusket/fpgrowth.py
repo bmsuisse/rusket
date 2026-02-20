@@ -4,11 +4,16 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from . import _rusket as _rust  # type: ignore
+from ._fpbase import FPBase
 
 if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     import polars as pl
+
+    # pyspark is an optional dependency — only used for type hints
+    class _SparkDataFrame:
+        def toPandas(self) -> pd.DataFrame: ...
 
 
 def fpgrowth(
@@ -140,3 +145,61 @@ def _build_result(
     import typing
 
     return typing.cast("pd.DataFrame", filtered_df)
+
+
+class FPGrowth(FPBase):
+    """Spark-compatible FP-Growth estimator.
+
+    Mirrors the ``pyspark.ml.fpm.FPGrowth`` API so you can swap between the
+    two backends with minimal code changes.
+
+    Parameters
+    ----------
+    min_support:
+        Minimum support threshold (fraction of transactions).  Same as
+        Spark's ``minSupport``.
+    min_confidence:
+        Minimum confidence for association rules.  Same as Spark's
+        ``minConfidence``.  Pass ``None`` (default) to skip rule generation.
+    items_col:
+        Name of the column that contains the item-set when the input is a
+        *list-of-items* Spark/Pandas DataFrame (e.g. ``[["milk", "bread"]]``).
+        Ignored when the input is a one-hot-encoded boolean DataFrame.
+    use_colnames:
+        Replace integer column indices with the actual column names in the
+        output (same semantics as :func:`rusket.fpgrowth`).
+    max_len:
+        Maximum length of frequent itemsets to return.  ``None`` means no
+        limit.
+
+    Examples
+    --------
+    **Drop-in replacement for Spark MLlib:**
+
+    .. code-block:: python
+
+        from rusket import FPGrowth
+
+        model = FPGrowth.from_spark(spark_df, min_support=0.3, min_confidence=0.6)
+        freq  = model.freq_itemsets
+        rules = model.association_rules_
+
+    **Works with any supported input type:**
+
+    .. code-block:: python
+
+        model = FPGrowth(min_support=0.3).fit(pandas_df)
+        model = FPGrowth(min_support=0.3).fit(polars_df)
+        model = FPGrowth(min_support=0.3).fit(numpy_array)
+    """
+
+    def _mine(
+        self,
+        df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
+    ) -> pd.DataFrame:
+        return fpgrowth(
+            df,
+            min_support=self.min_support,
+            use_colnames=self.use_colnames,
+            max_len=self.max_len,
+        )
