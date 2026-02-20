@@ -55,6 +55,7 @@ nav:
     - Cookbook: cookbook.md
     - Polars Support: polars.md
     - Benchmarks: benchmarks.md
+    - The 1B Challenge: 1b-challenge.md
     - Architecture: architecture.md
   - Reference:
     - Changelog: changelog.md

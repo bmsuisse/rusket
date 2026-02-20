@@ -21,7 +21,6 @@ _RUST_CSR = {"fpgrowth": _rust.fpgrowth_from_csr, "eclat": _rust.eclat_from_csr}
 
 
 def _build_result(
-    t0: float = 0.0, 
     raw: tuple[np.ndarray, np.ndarray, np.ndarray],
     n_rows: int,
     min_support: float,

@@ -49,8 +49,8 @@ class ALS:
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        self.user_factors: Any = None
-        self.item_factors: Any = None
+        self._user_factors: Any = None
+        self._item_factors: Any = None
         self._n_users: int = 0
         self._n_items: int = 0
         self._fit_indptr: Any = None

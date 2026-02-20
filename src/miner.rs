@@ -14,6 +14,7 @@ use std::collections::BinaryHeap;
 use std::cmp::Reverse;
 use std::io::{Read, Write, BufReader, BufWriter, Seek, SeekFrom};
 use tempfile::tempfile;
+use rayon::prelude::*;
 
 use numpy::PyReadonlyArray1;
 use pyo3::prelude::*;
@@ -98,11 +99,11 @@ impl FPMiner {
                 "txn_ids and item_ids must have the same length",
             ));
         }
-        let mut chunk: Vec<(i64, i32)> = txns.iter().zip(items.iter())
+        let mut chunk: Vec<(i64, i32)> = txns.par_iter().zip(items.par_iter())
             .map(|(&t, &i)| (t, i))
             .collect();
-        // Sort within the chunk — cheap, small allocation
-        chunk.sort_unstable();
+        // Sort within the chunk in parallel — massively accelerates data ingestion
+        chunk.par_sort_unstable();
         
         let chunk_len = chunk.len();
         self.n_rows += chunk_len;

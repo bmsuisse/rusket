@@ -86,13 +86,11 @@ def load_transactions(path: Path) -> tuple[np.ndarray, np.ndarray, int]:
     )
 
 
-def compute_item_probs(
-    txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int, n_txns: int
-) -> np.ndarray:
-    """Compute per-item occurrence probability from real data."""
+def compute_item_probs(txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int,
+                       n_txns: int) -> np.ndarray:
+    """Compute relative probability of each item being drawn."""
     counts = np.bincount(item_ids, minlength=n_items).astype(np.float64)
-    # Probability that a given item appears in a transaction
-    probs = counts / n_txns
+    probs = counts / counts.sum()
     return probs
 
 
