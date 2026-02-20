@@ -1,5 +1,3 @@
-"""Utilities for converting transactional data to one-hot boolean matrices."""
-
 from __future__ import annotations
 
 import typing
@@ -16,20 +14,6 @@ def from_transactions(
     item_col: str | None = None,
 ) -> pd.DataFrame:
     """Convert long-format transactional data to a one-hot boolean matrix.
-
-    Real-world data typically looks like this::
-
-        order_id  item
-        1         bread
-        1         butter
-        1         milk
-        2         bread
-        2         eggs
-        3         milk
-
-    This function groups items by transaction and pivots them into the
-    boolean matrix that :func:`rusket.fpgrowth` and :func:`rusket.eclat`
-    expect (rows = transactions, columns = items, values = ``True``/``False``).
 
     Parameters
     ----------
@@ -68,22 +52,18 @@ def from_transactions(
     """
     t = type(data).__name__
 
-    # --- Spark DataFrame → Pandas ------------------------------------------
     if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
         data = typing.cast(Any, data).toPandas()
         t = "DataFrame"
 
-    # --- Polars DataFrame → Pandas -----------------------------------------
     if t == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
         pl_df = typing.cast("pl.DataFrame", data)
         data = pl_df.to_pandas()
         t = "DataFrame"
 
-    # --- List of lists -----------------------------------------------------
     if isinstance(data, (list, tuple)):
         return _from_list(data)
 
-    # --- Pandas DataFrame --------------------------------------------------
     import pandas as _pd
 
     if not isinstance(data, _pd.DataFrame):
@@ -95,35 +75,12 @@ def from_transactions(
     return _from_dataframe(data, transaction_col, item_col)
 
 
-# ---------------------------------------------------------------------------
-# Explicit convenience wrappers
-# ---------------------------------------------------------------------------
-
-
 def from_pandas(
     df: pd.DataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
 ) -> pd.DataFrame:
-    """Convert a long-format Pandas DataFrame to a one-hot boolean matrix.
-
-    Shorthand for ``from_transactions(df, transaction_col, item_col)``.
-
-    Parameters
-    ----------
-    df
-        A Pandas DataFrame with (at least) two columns: one for the
-        transaction identifier and one for the item.
-    transaction_col
-        Name of the transaction-id column.  Defaults to the first column.
-    item_col
-        Name of the item column.  Defaults to the second column.
-
-    Returns
-    -------
-    pd.DataFrame
-        Boolean one-hot matrix.
-    """
+    """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
 
 
@@ -132,25 +89,7 @@ def from_polars(
     transaction_col: str | None = None,
     item_col: str | None = None,
 ) -> pd.DataFrame:
-    """Convert a long-format Polars DataFrame to a one-hot boolean matrix.
-
-    Shorthand for ``from_transactions(df, transaction_col, item_col)``.
-
-    Parameters
-    ----------
-    df
-        A Polars DataFrame with (at least) two columns: one for the
-        transaction identifier and one for the item.
-    transaction_col
-        Name of the transaction-id column.  Defaults to the first column.
-    item_col
-        Name of the item column.  Defaults to the second column.
-
-    Returns
-    -------
-    pd.DataFrame
-        Boolean one-hot matrix.
-    """
+    """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
 
 
@@ -159,46 +98,17 @@ def from_spark(
     transaction_col: str | None = None,
     item_col: str | None = None,
 ) -> pd.DataFrame:
-    """Convert a long-format Spark DataFrame to a one-hot boolean matrix.
-
-    Calls ``.toPandas()`` internally and then pivots to one-hot format.
-
-    Parameters
-    ----------
-    df
-        A PySpark DataFrame with (at least) two columns: one for the
-        transaction identifier and one for the item.
-    transaction_col
-        Name of the transaction-id column.  Defaults to the first column.
-    item_col
-        Name of the item column.  Defaults to the second column.
-
-    Returns
-    -------
-    pd.DataFrame
-        Boolean one-hot matrix.
-    """
+    """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
 
 
 def _from_list(
     transactions: Sequence[Sequence[str | int]],
 ) -> pd.DataFrame:
-    """Convert a list of item-lists into a sparse boolean DataFrame (CSR-backed).
-
-    Produces a ``pd.SparseDtype("bool", fill_value=False)`` DataFrame so that
-    even 100M+ transactions × 200k+ items fit in memory.
-    """
-    import pandas as pd
     import numpy as np
+    import pandas as pd
     from scipy import sparse as sp
 
-    # Build item vocabulary
     all_items_set: set[str | int] = set()
     for txn in transactions:
         all_items_set.update(txn)
@@ -208,7 +118,6 @@ def _from_list(
     n_txn = len(transactions)
     n_items = len(all_items)
 
-    # Build COO data for the sparse matrix
     row_idx: list[int] = []
     col_idx: list[int] = []
     for i, txn in enumerate(transactions):
@@ -222,7 +131,6 @@ def _from_list(
         shape=(n_txn, n_items),
     )
 
-    # Convert CSR → sparse pandas DataFrame
     return pd.DataFrame.sparse.from_spmatrix(
         csr,
         columns=[str(item) for item in all_items],
@@ -234,11 +142,6 @@ def _from_dataframe(
     transaction_col: str | None,
     item_col: str | None,
 ) -> pd.DataFrame:
-    """Convert a 2-column long-format DataFrame to sparse one-hot boolean.
-
-    Uses vectorised groupby + COO→CSR conversion — no Python loops over rows.
-    Scales to 100M+ transactions × 200k+ items.
-    """
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
@@ -256,36 +159,179 @@ def _from_dataframe(
 
     if txn_col not in df.columns:
         raise ValueError(
-            f"Transaction column '{txn_col}' not found. "
-            f"Available columns: {cols}"
+            f"Transaction column '{txn_col}' not found. Available columns: {cols}"
         )
     if itm_col not in df.columns:
         raise ValueError(
-            f"Item column '{itm_col}' not found. "
-            f"Available columns: {cols}"
+            f"Item column '{itm_col}' not found. Available columns: {cols}"
         )
 
-    # Encode transaction IDs and items as contiguous integers.
-    # pd.factorize is faster than pd.Categorical at billion scale.
     txn_codes, _txn_uniques = pd.factorize(df[txn_col], sort=False)
     item_codes, item_uniques = pd.factorize(df[itm_col], sort=True)
 
     n_txn = int(txn_codes.max()) + 1
     n_items = len(item_uniques)
 
-    # Build CSR directly from COO — single allocation, no Python loops
     data = np.ones(len(txn_codes), dtype=np.int8)
     csr = sp.csr_matrix(
         (data, (txn_codes.astype(np.int64), item_codes.astype(np.int64))),
         shape=(n_txn, n_items),
     )
-    # Deduplicate: clip to boolean (same item appearing twice in a txn)
     csr.data = np.minimum(csr.data, 1)
 
-    # Convert to sparse pandas DataFrame
     item_names = [str(c) for c in item_uniques]
     return pd.DataFrame.sparse.from_spmatrix(
         csr, columns=item_names,
     ).astype(pd.SparseDtype("bool", fill_value=False))
 
 
+def from_transactions_csr(
+    data: pd.DataFrame | pl.DataFrame | str | Any,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    chunk_size: int = 10_000_000,
+) -> tuple[Any, list[str]]:
+    """Convert long-format transactional data to a CSR matrix + column names.
+
+    Unlike :func:`from_transactions`, this returns a raw
+    ``scipy.sparse.csr_matrix`` that can be passed directly to
+    :func:`rusket.fpgrowth` or :func:`rusket.eclat` — **no pandas overhead**.
+
+    For billion-row datasets, this processes data in chunks of ``chunk_size``
+    rows, keeping peak memory to one chunk + the running CSR.
+
+    Parameters
+    ----------
+    data
+        One of:
+
+        - **Pandas DataFrame** with (at least) two columns.
+        - **Polars DataFrame** or **Spark DataFrame** (converted internally).
+        - **File path** (str / Path) to a Parquet file — read in chunks.
+
+    transaction_col
+        Name of the transaction-id column. Defaults to the first column.
+
+    item_col
+        Name of the item column. Defaults to the second column.
+
+    chunk_size
+        Number of rows per chunk. Lower values use less memory.
+        Default: 10 million rows.
+
+    Returns
+    -------
+    tuple[scipy.sparse.csr_matrix, list[str]]
+        A CSR matrix and the list of column (item) names.  Pass directly::
+
+            csr, names = from_transactions_csr(df)
+            freq = fpgrowth(csr, min_support=0.001,
+                            use_colnames=True, column_names=names)
+
+    Examples
+    --------
+    >>> import rusket
+    >>> csr, names = rusket.from_transactions_csr("orders.parquet")
+    >>> freq = rusket.fpgrowth(csr, min_support=0.001,
+    ...                        use_colnames=True, column_names=names)
+    """
+    import numpy as np
+    import pandas as pd
+    from pathlib import Path
+    from scipy import sparse as sp
+
+    t = type(data).__name__
+
+    if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
+        data = typing.cast(Any, data).toPandas()
+        t = "DataFrame"
+
+    if t == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
+        data = typing.cast(Any, data).to_pandas()
+        t = "DataFrame"
+
+    if isinstance(data, (str, Path)):
+        return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
+
+    df = typing.cast("pd.DataFrame", data)
+    cols = list(df.columns)
+    txn_col = transaction_col or str(cols[0])
+    itm_col = item_col or str(cols[1])
+
+    item_codes_global, item_uniques = pd.factorize(df[itm_col], sort=True)
+    n_items = len(item_uniques)
+    item_names = [str(c) for c in item_uniques]
+
+    n = len(df)
+    csr_parts: list[sp.csr_matrix] = []
+    txn_offset = 0
+
+    for start in range(0, n, chunk_size):
+        end = min(start + chunk_size, n)
+        chunk_txn = df[txn_col].iloc[start:end].values
+        chunk_item_codes = item_codes_global[start:end]
+
+        local_codes, _local_uniques = pd.factorize(chunk_txn, sort=False)
+        n_txn_chunk = int(local_codes.max()) + 1 if len(local_codes) > 0 else 0
+
+        data_arr = np.ones(len(local_codes), dtype=np.int8)
+        chunk_csr = sp.csr_matrix(
+            (data_arr,
+             (local_codes.astype(np.int64), chunk_item_codes.astype(np.int64))),
+            shape=(n_txn_chunk, n_items),
+        )
+        chunk_csr.data = np.minimum(chunk_csr.data, 1)
+        csr_parts.append(chunk_csr)
+        txn_offset += n_txn_chunk
+
+    final_csr = sp.vstack(csr_parts, format="csr")
+    return final_csr, item_names
+
+
+def _from_parquet_csr(
+    path: str,
+    transaction_col: str | None,
+    item_col: str | None,
+    chunk_size: int,
+) -> tuple[Any, list[str]]:
+    import numpy as np
+    import pandas as pd
+    import pyarrow.parquet as pq
+    from scipy import sparse as sp
+
+    table = pq.read_table(path)
+    cols = table.column_names
+    txn_col_name = transaction_col or cols[0]
+    itm_col_name = item_col or cols[1]
+
+    item_series = table.column(itm_col_name).to_pandas()
+    _item_codes_all, item_uniques = pd.factorize(item_series, sort=True)
+    n_items = len(item_uniques)
+    item_to_idx = {v: i for i, v in enumerate(item_uniques)}
+    item_names = [str(c) for c in item_uniques]
+    del item_series
+
+    df_full = table.select([txn_col_name, itm_col_name]).to_pandas()
+    del table
+
+    n = len(df_full)
+    csr_parts: list[sp.csr_matrix] = []
+
+    for start in range(0, n, chunk_size):
+        end = min(start + chunk_size, n)
+        chunk = df_full.iloc[start:end]
+
+        txn_codes, _txn_uniques = pd.factorize(chunk[txn_col_name], sort=False)
+        item_codes = chunk[itm_col_name].map(item_to_idx).values
+        n_txn_chunk = int(txn_codes.max()) + 1 if len(txn_codes) > 0 else 0
+
+        data_arr = np.ones(len(txn_codes), dtype=np.int8)
+        chunk_csr = sp.csr_matrix(
+            (data_arr, (txn_codes.astype(np.int64), item_codes.astype(np.int64))),
+            shape=(n_txn_chunk, n_items),
+        )
+        chunk_csr.data = np.minimum(chunk_csr.data, 1)
+        csr_parts.append(chunk_csr)
+
+    final_csr = sp.vstack(csr_parts, format="csr")
+    return final_csr, item_names

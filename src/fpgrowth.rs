@@ -323,8 +323,6 @@ fn mine_itemsets(
 
 use numpy::{IntoPyArray, PyArray1};
 
-// ... existing code ...
-
 pub(crate) fn flatten_results(
     results: Vec<(u64, Vec<u32>)>
 ) -> (Vec<u64>, Vec<u32>, Vec<u32>) {
@@ -391,7 +389,7 @@ fn _mine_dense(
     Ok(flatten_results(results))
 }
 
-fn _mine_csr(
+pub(crate) fn _mine_csr(
     indptr: &[i32],
     indices: &[i32],
     n_cols: usize,

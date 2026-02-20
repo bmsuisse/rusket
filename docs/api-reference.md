@@ -182,3 +182,120 @@ The `metric` parameter accepts any of:
 | `ValueError` | `df` is missing `'support'` or `'itemsets'` columns |
 | `ValueError` | `df` is empty |
 | `ValueError` | Unknown `metric` value and `support_only=False` |
+
+---
+
+## `FPMiner`
+
+```python
+from rusket import FPMiner
+
+miner = FPMiner(n_items=500_000)
+```
+
+**Streaming accumulator** for billion-scale datasets.  Accepts chunks of
+`(transaction_id, item_id)` integer arrays one at a time — Rust accumulates
+them in a `HashMap<i64, Vec<i32>>`.  Peak **Python** memory = one chunk.
+
+### Constructor
+
+| Parameter | Type | Description |
+|---|---|---|
+| `n_items` | `int` | Number of distinct items (column count). Item IDs must be in `[0, n_items)`. |
+
+### Methods
+
+#### `add_chunk(txn_ids, item_ids) → self`
+
+Feed a chunk of integer pairs into the accumulator.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `txn_ids` | `np.ndarray[int64]` | Transaction IDs (arbitrary integers). |
+| `item_ids` | `np.ndarray[int32]` | Item column indices `[0, n_items)`. |
+
+#### `mine(min_support, max_len, use_colnames, column_names, method) → pd.DataFrame`
+
+Mine frequent itemsets from all accumulated data.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `min_support` | `float` | `0.5` | Minimum support in `(0, 1]`. |
+| `max_len` | `int \| None` | `None` | Maximum itemset length. |
+| `use_colnames` | `bool` | `False` | Return column names instead of indices. |
+| `column_names` | `list[str] \| None` | `None` | Names for columns when `use_colnames=True`. |
+| `method` | `"fpgrowth" \| "eclat"` | `"fpgrowth"` | Mining algorithm. |
+
+#### `reset()`
+
+Free all accumulated data.
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `n_transactions` | `int` | Distinct transactions accumulated so far. |
+| `n_items` | `int` | Column count (set at construction). |
+
+### Example
+
+```python
+import numpy as np
+from rusket import FPMiner
+
+miner = FPMiner(n_items=500_000)
+
+# Process a Parquet file in 10M-row chunks
+for chunk in pd.read_parquet("orders.parquet", chunksize=10_000_000):
+    txn = chunk["txn_id"].to_numpy(dtype="int64")
+    item = chunk["item_idx"].to_numpy(dtype="int32")
+    miner.add_chunk(txn, item)
+
+freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+```
+
+---
+
+## `from_transactions_csr`
+
+```python
+from rusket import from_transactions_csr
+
+csr, column_names = from_transactions_csr(
+    data,
+    transaction_col=None,
+    item_col=None,
+    chunk_size=10_000_000,
+)
+```
+
+Converts long-format transactional data to a raw `scipy.sparse.csr_matrix`
+and a list of column names, for direct input into `fpgrowth()` or `eclat()`.
+
+Accepts the **same input types** as `from_transactions`, plus a **file path**
+to a Parquet file, which is read in chunks to avoid loading all data into
+memory at once.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `data` | `pd.DataFrame \| str \| Path` | — | A pandas/Polars/Spark DataFrame, or a file path to a Parquet file. |
+| `transaction_col` | `str \| None` | `None` | Transaction ID column name (defaults to first column). |
+| `item_col` | `str \| None` | `None` | Item column name (defaults to second column). |
+| `chunk_size` | `int` | `10_000_000` | Rows per chunk for large files. |
+
+### Returns
+
+`tuple[scipy.sparse.csr_matrix, list[str]]` — CSR matrix + column names.
+
+### Example
+
+```python
+from rusket import from_transactions_csr, fpgrowth
+
+# From Parquet — never loads entire file
+csr, names = from_transactions_csr("orders.parquet", chunk_size=10_000_000)
+freq = fpgrowth(csr, min_support=0.001, use_colnames=True, column_names=names)
+```
+

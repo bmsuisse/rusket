@@ -31,3 +31,29 @@ def association_rules_inner(
     support_only: bool,
     return_metrics: List[str],
 ) -> Tuple[List[List[int]], List[List[int]], List[List[float]]]: ...
+def als_fit_implicit(
+    indptr: npt.NDArray[np.int64],
+    indices: npt.NDArray[np.int32],
+    data: npt.NDArray[np.float32],
+    n_users: int,
+    n_items: int,
+    factors: int,
+    regularization: float,
+    alpha: float,
+    iterations: int,
+    seed: int,
+) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
+def als_recommend_items(
+    user_factors: npt.NDArray[np.float32],
+    item_factors: npt.NDArray[np.float32],
+    user_id: int,
+    n: int,
+    exclude_indptr: npt.NDArray[np.int64],
+    exclude_indices: npt.NDArray[np.int32],
+) -> Tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
+def als_recommend_users(
+    user_factors: npt.NDArray[np.float32],
+    item_factors: npt.NDArray[np.float32],
+    item_id: int,
+    n: int,
+) -> Tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...

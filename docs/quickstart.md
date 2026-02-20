@@ -132,6 +132,51 @@ print(rules[["antecedents", "consequents", "support", "confidence", "lift"]])
 
 ---
 
+## Billion-Scale Streaming
+
+For datasets with hundreds of millions or billions of rows, use ``FPMiner`` to
+stream data into Rust **one chunk at a time** — without ever holding the full
+dataset in memory.
+
+```python
+from rusket import FPMiner
+
+miner = FPMiner(n_items=500_000)  # total distinct items
+
+# Feed chunks — e.g. from a Parquet file, Spark, or a database cursor
+for chunk in pd.read_parquet("orders.parquet", chunksize=10_000_000):
+    txn = chunk["txn_id"].to_numpy(dtype="int64")   # arbitrary int IDs
+    item = chunk["item_idx"].to_numpy(dtype="int32") # 0-based item index
+    miner.add_chunk(txn, item)
+
+# Mine — all data in Rust, output is a normal pandas DataFrame
+freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+rules = association_rules(freq, num_itemsets=miner.n_transactions)
+```
+
+!!! tip "Peak memory"
+    Peak Python memory = one chunk (typically 1–2 GB).
+    Rust holds the per-transaction item lists (~5 GB for 200M transactions).
+    The final mining step passes CSR arrays directly — zero copies.
+
+### Direct CSR path
+
+If you already have integer arrays (e.g. from a database query), skip
+``from_transactions`` entirely:
+
+```python
+from scipy import sparse as sp
+from rusket import fpgrowth
+
+csr = sp.csr_matrix(
+    (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
+    shape=(n_transactions, n_items),
+)
+freq = fpgrowth(csr, min_support=0.001, column_names=item_names)
+```
+
+---
+
 ## What's Next?
 
 - [Migration from mlxtend](migration.md) — side-by-side comparison

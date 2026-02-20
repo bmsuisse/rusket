@@ -1,5 +1,3 @@
-"""Input validation utilities – ported from mlxtend.frequent_patterns.fpcommon."""
-
 from __future__ import annotations
 
 import warnings

@@ -40,8 +40,7 @@ impl BitSet {
     }
 }
 
-/// Recursive Eclat miner.
-fn eclat_mine(
+pub(crate) fn eclat_mine(
     prefix: &[u32],
     active_items: &[(u32, BitSet)],
     min_count: u64,
@@ -50,9 +49,6 @@ fn eclat_mine(
     let mut results = Vec::new();
     let new_len = prefix.len() + 1;
 
-    // We can parallelize the loop if the active set is large enough
-    // For simplicity, we just parallelize the top-level outer loop, 
-    // but here we do sequential to avoid excessive task spawning at bottom of tree.
     for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
         let count = bs_a.count_ones();
         if count < min_count { continue; }
@@ -102,8 +98,6 @@ pub fn eclat_from_dense(
     }
 
     let flat = array.as_slice().unwrap();
-
-    // 1. Count items
     let item_count = (0..n_cols)
         .into_par_iter()
         .map(|c| {
@@ -129,7 +123,6 @@ pub fn eclat_from_dense(
             }
         };
 
-    // 2. Build Transposed Bitsets
     let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
     for (r, row) in flat.chunks(n_cols).enumerate() {
         for &c in &frequent_cols {
@@ -140,13 +133,11 @@ pub fn eclat_from_dense(
         }
     }
 
-    // 3. Prepare initial active set
     let active_items: Vec<(u32, BitSet)> = original_items
         .into_iter()
         .zip(bitsets.into_iter())
         .collect();
 
-    // 4. Mine (Parallel top level)
     let results: Vec<(u64, Vec<u32>)> = active_items
         .par_iter()
         .enumerate()
@@ -204,8 +195,6 @@ pub fn eclat_from_csr(
             vec![].into_pyarray(py).into(),
         ));
     }
-
-    // 1. Count items
     let mut item_count = vec![0u64; n_cols];
     for &col in indices {
         if (col as usize) < n_cols {
@@ -225,7 +214,6 @@ pub fn eclat_from_csr(
             }
         };
 
-    // 2. Build Transposed Bitsets directly from CSR
     let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
     for r in 0..n_rows {
         let start = indptr[r] as usize;
@@ -281,4 +269,82 @@ pub fn eclat_from_csr(
         flat_offsets.into_pyarray(py).into(),
         flat_items.into_pyarray(py).into(),
     ))
+}
+
+/// Internal (non-pyfunction) Eclat implementation on raw CSR slices.
+/// Used by FPMiner to avoid re-entering Python.
+pub(crate) fn _eclat_mine_csr(
+    indptr: &[i32],
+    indices: &[i32],
+    n_cols: usize,
+    min_count: u64,
+    max_len: Option<usize>,
+) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
+    use crate::fpgrowth::{process_item_counts, flatten_results};
+
+    let n_rows = indptr.len().saturating_sub(1);
+    if n_rows == 0 || n_cols == 0 {
+        return Ok((vec![], vec![], vec![]));
+    }
+
+    let mut item_count = vec![0u64; n_cols];
+    for &col in indices {
+        if (col as usize) < n_cols {
+            item_count[col as usize] += 1;
+        }
+    }
+
+    let (global_to_local, original_items, _frequent_cols, frequent_len) =
+        match process_item_counts(item_count, min_count, n_cols) {
+            Some(v) => v,
+            None => return Ok((vec![], vec![], vec![])),
+        };
+
+    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+    for r in 0..n_rows {
+        let start = indptr[r] as usize;
+        let end = indptr[r + 1] as usize;
+        for &col in &indices[start..end] {
+            if (col as usize) < n_cols {
+                let local_id = global_to_local[col as usize];
+                if local_id != u32::MAX {
+                    bitsets[local_id as usize].set(r);
+                }
+            }
+        }
+    }
+
+    let active_items: Vec<(u32, BitSet)> = original_items
+        .into_iter()
+        .zip(bitsets.into_iter())
+        .collect();
+
+    use rayon::prelude::*;
+    let results: Vec<(u64, Vec<u32>)> = active_items
+        .par_iter()
+        .enumerate()
+        .flat_map(|(i, (item_a, bs_a))| {
+            let mut sub_results = Vec::new();
+            let count = bs_a.count_ones();
+            if count >= min_count {
+                let iset = vec![*item_a];
+                sub_results.push((count, iset.clone()));
+                if max_len.map_or(true, |ml| ml > 1) {
+                    let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                    for (item_b, bs_b) in &active_items[i + 1..] {
+                        let new_bs = bs_a.intersect(bs_b);
+                        if new_bs.count_ones() >= min_count {
+                            next_active.push((*item_b, new_bs));
+                        }
+                    }
+                    if !next_active.is_empty() {
+                        sub_results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
+                    }
+                }
+            }
+            sub_results
+        })
+        .collect();
+
+    Ok(flatten_results(results))
 }

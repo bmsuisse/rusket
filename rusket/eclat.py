@@ -1,12 +1,6 @@
-"""Eclat (Equivalence Class Transformation) – vertical mining with bitsets."""
-
 from __future__ import annotations
 
-import math
-import typing
 from typing import TYPE_CHECKING, Any
-
-from . import _rusket as _rust  # type: ignore
 
 if TYPE_CHECKING:
     import numpy as np
@@ -23,163 +17,11 @@ def eclat(
     verbose: int = 0,
     column_names: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Mine frequent itemsets using the Eclat algorithm.
-
-    Eclat uses vertical data representation (transaction-ID sets as bitsets)
-    and computes support via bitwise intersection + popcount.  This is
-    typically **2–5× faster** than FP-Growth on sparse, retail-basket-style
-    data.
-
-    Parameters
-    ----------
-    df : pd.DataFrame | pl.DataFrame | np.ndarray | scipy.sparse.csr_matrix
-        Boolean matrix (rows = transactions, columns = items).
-        Accepts scipy CSR matrices directly for maximum performance.
-    min_support : float
-        Minimum support threshold in ``(0, 1]``.
-    null_values : bool
-        If ``True``, allow NaN/null values.
-    use_colnames : bool
-        If ``True``, return column names instead of integer indices.
-    max_len : int | None
-        Maximum itemset length.  ``None`` = unlimited.
-    verbose : int
-        Verbosity level (unused, kept for API symmetry).
-    column_names : list[str] | None
-        Column names when passing a scipy CSR matrix directly.
-
-    Returns
-    -------
-    pd.DataFrame
-        Columns ``support`` and ``itemsets``.
-    """
     if min_support <= 0.0:
         raise ValueError(
-            "`min_support` must be a positive "
-            "number within the interval `(0, 1]`. "
-            "Got %s." % min_support
+            f"`min_support` must be a positive number within the interval `(0, 1]`. Got {min_support}."
         )
 
-    t = type(df).__name__
+    from ._core import dispatch
 
-    if t == "DataFrame" and getattr(df, "__module__", "").startswith("pyspark"):
-        df = typing.cast(Any, df).toPandas()
-        t = "DataFrame"
-
-    if t == "DataFrame" and getattr(df, "__module__", "").startswith("polars"):
-        return _eclat_polars(typing.cast("pl.DataFrame", df), min_support, use_colnames, max_len)
-
-    # scipy sparse CSR matrix — skip pandas entirely, pass to Rust directly
-    if t == "csr_matrix" or t == "csr_array":
-        import numpy as np
-
-        csr = df
-        n_rows, n_cols = csr.shape
-        min_count = math.ceil(min_support * n_rows)
-        csr.eliminate_zeros()
-        indptr = np.asarray(csr.indptr, dtype=np.int32)
-        indices = np.asarray(csr.indices, dtype=np.int32)
-        raw = _rust.eclat_from_csr(indptr, indices, n_cols, min_count, max_len)
-        col_names = column_names or [str(i) for i in range(n_cols)]
-        return _build_result(raw, n_rows, min_support, col_names, use_colnames)
-
-    if t == "ndarray":
-        import numpy as np
-
-        df_nd = typing.cast("np.ndarray", df)
-        n_rows, n_cols = df_nd.shape
-        min_count = math.ceil(min_support * n_rows)
-        col_names = [str(i) for i in range(n_cols)]
-        data = np.ascontiguousarray(df_nd, dtype=np.uint8)
-        raw = _rust.eclat_from_dense(data, min_count, max_len)
-        return _build_result(raw, n_rows, min_support, col_names, use_colnames)
-
-    df_pd = typing.cast("pd.DataFrame", df)
-    n_rows, n_cols = df_pd.shape
-    min_count = math.ceil(min_support * n_rows)
-    col_names = list(df_pd.columns)
-
-    from ._validation import valid_input_check
-
-    valid_input_check(df_pd, null_values)
-
-    if hasattr(df_pd, "sparse"):
-        raw = _eclat_sparse_pandas(df_pd, n_rows, n_cols, min_count, max_len)
-    else:
-        raw = _eclat_dense_pandas(df_pd, n_rows, n_cols, min_count, max_len)
-
-    return _build_result(raw, n_rows, min_support, col_names, use_colnames)
-
-
-def _eclat_dense_pandas(
-    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    import numpy as np
-
-    data = np.ascontiguousarray(df.values, dtype=np.uint8)
-    return _rust.eclat_from_dense(data, min_count, max_len)
-
-
-def _eclat_sparse_pandas(
-    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    import numpy as np
-
-    csr = df.sparse.to_coo().tocsr()
-    csr.eliminate_zeros()
-    indptr = np.asarray(csr.indptr, dtype=np.int32)
-    indices = np.asarray(csr.indices, dtype=np.int32)
-    return _rust.eclat_from_csr(indptr, indices, n_cols, min_count, max_len)
-
-
-def _eclat_polars(
-    df: pl.DataFrame, min_support: float, use_colnames: bool, max_len: int | None,
-) -> pd.DataFrame:
-    import numpy as np
-
-    n_rows, n_cols = df.shape
-    min_count = math.ceil(min_support * n_rows)
-    arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
-    raw = _rust.eclat_from_dense(arr, min_count, max_len)
-    return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
-
-
-def _build_result(
-    raw: tuple[np.ndarray, np.ndarray, np.ndarray],
-    n_rows: int,
-    min_support: float,
-    col_names: list | Any,
-    use_colnames: bool,
-) -> pd.DataFrame:
-    import pandas as pd
-    import pyarrow as pa
-
-    supports_arr, offsets_arr, items_arr = raw
-
-    if len(supports_arr) == 0:
-        return pd.DataFrame(columns=["support", "itemsets"])
-
-    supports = supports_arr / n_rows
-
-    if use_colnames:
-        col_array = pa.array(col_names)
-        items_pa = pa.DictionaryArray.from_arrays(
-            pa.array(items_arr, type=pa.int32()), col_array
-        )
-        item_type = col_array.type
-    else:
-        items_pa = pa.array(items_arr, type=pa.int32())
-        item_type = pa.int32()
-
-    offsets_pa = pa.array(offsets_arr, type=pa.int32())
-    list_arr = pa.ListArray.from_arrays(offsets_pa, items_pa)
-
-    result = pd.DataFrame(
-        {
-            "support": supports,
-            "itemsets": pd.Series(list_arr, dtype=pd.ArrowDtype(pa.list_(item_type))),
-        }
-    )
-
-    filtered_df = result[result["support"] >= min_support].reset_index(drop=True)
-    return typing.cast("pd.DataFrame", filtered_df)
+    return dispatch(df, min_support, null_values, use_colnames, max_len, "eclat", column_names)
