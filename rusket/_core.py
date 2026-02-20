@@ -69,6 +69,8 @@ def _run_dense(
     verbose: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
+    t0 = 0.0
+    t1 = 0.0
 
     if verbose:
         print(
@@ -102,6 +104,8 @@ def _run_sparse(
     verbose: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
+    t0 = 0.0
+    t1 = 0.0
 
     if verbose:
         print(
@@ -141,6 +145,8 @@ def _run_polars(
     verbose: int = 0,
 ) -> pd.DataFrame:
     import numpy as np
+    t0 = 0.0
+    t1 = 0.0
 
     if verbose:
         print(
@@ -182,6 +188,8 @@ def dispatch(
 ) -> pd.DataFrame:
     import math
     import numpy as np
+    t0 = 0.0
+    t1 = 0.0
 
     if verbose:
         print(f"[{time.strftime('%X')}] Analyzing input data type...")
