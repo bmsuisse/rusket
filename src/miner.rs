@@ -169,7 +169,7 @@ impl FPMiner {
             .filter(|(_, &f)| f >= min_count)
             .map(|(id, &f)| (f, id))
             .collect();
-        freq_items.sort_unstable_by(|a, b| b.0.cmp(&a.0)); // descending by freq
+        freq_items.sort_unstable_by(|a, b| a.0.cmp(&b.0)); // ascending by freq → small tidlists first (Eclat-optimal)
 
         let mut remap: Vec<u32> = vec![u32::MAX; self.n_items];
         let n_frequent = freq_items.len();
