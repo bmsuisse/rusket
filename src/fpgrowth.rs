@@ -227,7 +227,7 @@ pub(crate) fn fpg_step(
     results
 }
 
-fn process_item_counts(
+pub(crate) fn process_item_counts(
     item_count: Vec<u64>,
     min_count: u64,
     n_cols: usize,
@@ -276,7 +276,7 @@ use numpy::{IntoPyArray, PyArray1};
 
 // ... existing code ...
 
-fn flatten_results(
+pub(crate) fn flatten_results(
     results: Vec<(u64, Vec<u32>)>
 ) -> (Vec<u64>, Vec<u32>, Vec<u32>) {
     let mut supports = Vec::with_capacity(results.len());
