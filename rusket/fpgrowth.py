@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import typing
 from typing import TYPE_CHECKING, Any
 
 from . import _rusket as _rust  # type: ignore
@@ -17,8 +18,11 @@ def fpgrowth(
     null_values: bool = False,
     use_colnames: bool = False,
     max_len: int | None = None,
+    method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
     verbose: int = 0,
 ) -> pd.DataFrame:
+    if method not in ["fpgrowth", "eclat"]:
+        raise ValueError(f"`method` must be 'fpgrowth' or 'eclat'. Got: {method}")
     if min_support <= 0.0:
         raise ValueError(
             "`min_support` must be a positive "
@@ -35,7 +39,7 @@ def fpgrowth(
 
     if t == "DataFrame" and getattr(df, "__module__", "").startswith("polars"):
         return _fpgrowth_polars(
-            typing.cast("pl.DataFrame", df), min_support, use_colnames, max_len
+            typing.cast("pl.DataFrame", df), min_support, use_colnames, max_len, method
         )
 
     if t == "ndarray":
@@ -59,24 +63,27 @@ def fpgrowth(
     valid_input_check(df_pd, null_values)
 
     if hasattr(df_pd, "sparse"):
-        raw = _fpgrowth_sparse_pandas(df_pd, n_rows, n_cols, min_count, max_len)
+        raw = _fpgrowth_sparse_pandas(df_pd, n_rows, n_cols, min_count, max_len, method)
     else:
-        raw = _fpgrowth_dense_pandas(df_pd, n_rows, n_cols, min_count, max_len)
+        raw = _fpgrowth_dense_pandas(df_pd, n_rows, n_cols, min_count, max_len, method)
 
     return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
 
 def _fpgrowth_dense_pandas(
-    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None
+    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None, method: str
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
 
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
-    return _rust.fpgrowth_from_dense(data, min_count, max_len)
+    if method == "fpgrowth":
+        return _rust.fpgrowth_from_dense(data, min_count, max_len)
+    else: # method == "eclat"
+        return _rust.eclat_from_dense(data, min_count, max_len)
 
 
 def _fpgrowth_sparse_pandas(
-    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None
+    df: pd.DataFrame, n_rows: int, n_cols: int, min_count: int, max_len: int | None, method: str
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     import numpy as np
 
@@ -84,18 +91,24 @@ def _fpgrowth_sparse_pandas(
     csr.eliminate_zeros()
     indptr = np.asarray(csr.indptr, dtype=np.int32)
     indices = np.asarray(csr.indices, dtype=np.int32)
-    return _rust.fpgrowth_from_csr(indptr, indices, n_cols, min_count, max_len)
+    if method == "fpgrowth":
+        return _rust.fpgrowth_from_csr(indptr, indices, n_cols, min_count, max_len)
+    else: # method == "eclat"
+        return _rust.eclat_from_csr(indptr, indices, n_cols, min_count, max_len)
 
 
 def _fpgrowth_polars(
-    df: pl.DataFrame, min_support: float, use_colnames: bool, max_len: int | None
+    df: pl.DataFrame, min_support: float, use_colnames: bool, max_len: int | None, method: str
 ) -> pd.DataFrame:
     import numpy as np
 
     n_rows, n_cols = df.shape
     min_count = math.ceil(min_support * n_rows)
     arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
-    raw = _rust.fpgrowth_from_dense(arr, min_count, max_len)
+    if method == "fpgrowth":
+        raw = _rust.fpgrowth_from_dense(arr, min_count, max_len)
+    else: # method == "eclat"
+        raw = _rust.eclat_from_dense(arr, min_count, max_len)
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
 
 

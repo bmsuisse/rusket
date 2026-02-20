@@ -54,6 +54,10 @@ DF_SMALL = _make_df(1_000, 50, RNG)
 DF_MEDIUM = _make_df(10_000, 400, RNG)
 DF_LARGE = _make_df(100_000, 1_000, RNG)
 
+DF_SPARSE_SMALL = _make_df(5_000, 200, RNG)
+DF_SPARSE_MEDIUM = _make_df(10_000, 400, RNG)
+DF_SPARSE_LARGE = _make_df(50_000, 500, RNG)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -115,6 +119,45 @@ def test_benchmark_polars_large(benchmark) -> None:
     result = benchmark(fpgrowth, df_pl, min_support=0.05)
     assert result.shape[0] >= 0
 
+
+
+# ---------------------------------------------------------------------------
+# Sparse "retail basket" benchmarks
+# ---------------------------------------------------------------------------
+
+_SPARSE_SMALL_SUP  = 0.01
+_SPARSE_MEDIUM_SUP = 0.01
+_SPARSE_LARGE_SUP  = 0.005
+
+@pytest.mark.benchmark(group="sparse_small")
+def test_benchmark_fpgrowth_sparse_small(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_SMALL, min_support=_SPARSE_SMALL_SUP, method="fpgrowth", max_len=3)
+    assert result.shape[0] >= 0
+
+@pytest.mark.benchmark(group="sparse_small")
+def test_benchmark_eclat_sparse_small(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_SMALL, min_support=_SPARSE_SMALL_SUP, method="eclat", max_len=3)
+    assert result.shape[0] >= 0
+
+@pytest.mark.benchmark(group="sparse_medium")
+def test_benchmark_fpgrowth_sparse_medium(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_MEDIUM, min_support=_SPARSE_MEDIUM_SUP, method="fpgrowth", max_len=3)
+    assert result.shape[0] >= 0
+
+@pytest.mark.benchmark(group="sparse_medium")
+def test_benchmark_eclat_sparse_medium(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_MEDIUM, min_support=_SPARSE_MEDIUM_SUP, method="eclat", max_len=3)
+    assert result.shape[0] >= 0
+
+@pytest.mark.benchmark(group="sparse_large")
+def test_benchmark_fpgrowth_sparse_large(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_LARGE, min_support=_SPARSE_LARGE_SUP, method="fpgrowth", max_len=3)
+    assert result.shape[0] >= 0
+
+@pytest.mark.benchmark(group="sparse_large")
+def test_benchmark_eclat_sparse_large(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_LARGE, min_support=_SPARSE_LARGE_SUP, method="eclat", max_len=3)
+    assert result.shape[0] >= 0
 
 # ---------------------------------------------------------------------------
 # Head-to-head comparisons vs mlxtend
