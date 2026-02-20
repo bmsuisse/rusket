@@ -86,8 +86,9 @@ def load_transactions(path: Path) -> tuple[np.ndarray, np.ndarray, int]:
     )
 
 
-def compute_item_probs(txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int,
-                       n_txns: int) -> np.ndarray:
+def compute_item_probs(
+    txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int, n_txns: int
+) -> np.ndarray:
     """Compute per-item occurrence probability from real data."""
     counts = np.bincount(item_ids, minlength=n_items).astype(np.float64)
     # Probability that a given item appears in a transaction
@@ -98,6 +99,7 @@ def compute_item_probs(txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int,
 # ---------------------------------------------------------------------------
 # Bootstrap chunk generator
 # ---------------------------------------------------------------------------
+
 
 def generate_chunk(
     rng: np.random.Generator,
@@ -140,18 +142,22 @@ def run_dataset(name: str) -> None:
     info = DATASETS[name]
     path = download_if_missing(name)
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  Dataset: {name}")
     txn_ids_real, item_ids_real, n_items = load_transactions(path)
     n_txns_real = int(txn_ids_real.max()) + 1
     avg_items = len(txn_ids_real) / n_txns_real
     item_probs = compute_item_probs(txn_ids_real, item_ids_real, n_items, n_txns_real)
-    print(f"  Real: {n_txns_real:,} txns × {n_items} items, avg {avg_items:.1f} items/txn")
+    print(
+        f"  Real: {n_txns_real:,} txns × {n_items} items, avg {avg_items:.1f} items/txn"
+    )
     print(f"  min_support={info['min_support']}, max_len={info['max_len']}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     del txn_ids_real, item_ids_real
 
-    print(f"\n  {'target_rows':>14}  {'add_t':>8}  {'mine_t':>8}  {'total':>8}  {'itemsets':>10}")
+    print(
+        f"\n  {'target_rows':>14}  {'add_t':>8}  {'mine_t':>8}  {'total':>8}  {'itemsets':>10}"
+    )
 
     for target_rows in TARGETS:
         # Derive target transaction count from target rows
@@ -168,7 +174,8 @@ def run_dataset(name: str) -> None:
             )
             miner.add_chunk(txn_ids, item_ids)
             txn_offset += chunk_size
-            del txn_ids, item_ids; gc.collect()
+            del txn_ids, item_ids
+            gc.collect()
         add_t = time.perf_counter() - t_add_start
         actual_rows = miner.n_rows
 
@@ -181,13 +188,14 @@ def run_dataset(name: str) -> None:
             mine_t = time.perf_counter() - t0
             print(
                 f"  {actual_rows:>14,}  {add_t:>7.1f}s  {mine_t:>7.1f}s  "
-                f"{add_t+mine_t:>7.1f}s  {len(freq):>10,}",
+                f"{add_t + mine_t:>7.1f}s  {len(freq):>10,}",
                 flush=True,
             )
         except Exception as e:
             print(f"  {actual_rows:>14,}  {add_t:>7.1f}s  ERROR: {e}", flush=True)
 
-        del miner; gc.collect()
+        del miner
+        gc.collect()
 
 
 def main() -> None:

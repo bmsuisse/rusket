@@ -12,6 +12,8 @@
 ///   mine():    merge-iterate, no extra 1B-row allocation → safe
 use std::collections::BinaryHeap;
 use std::cmp::Reverse;
+use std::io::{Read, Write, BufReader, BufWriter, Seek, SeekFrom};
+use tempfile::tempfile;
 
 use numpy::PyReadonlyArray1;
 use pyo3::prelude::*;
@@ -19,20 +21,65 @@ use pyo3::prelude::*;
 use crate::fpgrowth::_mine_csr;
 use crate::eclat::_eclat_mine_csr;
 
+enum Chunk {
+    Memory(Vec<(i64, i32)>),
+    Disk(std::fs::File, usize),
+}
+
+enum ChunkCursor<'a> {
+    Memory { vec: &'a [(i64, i32)], pos: usize },
+    Disk { reader: BufReader<&'a mut std::fs::File>, remaining: usize },
+}
+
+impl<'a> ChunkCursor<'a> {
+    fn next_pair(&mut self) -> Option<(i64, i32)> {
+        match self {
+            ChunkCursor::Memory { vec, pos } => {
+                if *pos < vec.len() {
+                    let pair = vec[*pos];
+                    *pos += 1;
+                    Some(pair)
+                } else {
+                    None
+                }
+            }
+            ChunkCursor::Disk { reader, remaining } => {
+                if *remaining > 0 {
+                    let mut buf = [0u8; 12];
+                    if reader.read_exact(&mut buf).is_ok() {
+                        *remaining -= 1;
+                        let txn = i64::from_ne_bytes(buf[0..8].try_into().unwrap());
+                        let item = i32::from_ne_bytes(buf[8..12].try_into().unwrap());
+                        Some((txn, item))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 #[pyclass]
 pub struct FPMiner {
-    /// Each element is one pre-sorted chunk of (txn_id, item_id) pairs.
-    chunks: Vec<Vec<(i64, i32)>>,
+    /// Each element is one pre-sorted chunk, either in memory or on disk.
+    chunks: Vec<Chunk>,
     /// Total number of pairs across all chunks.
     n_rows: usize,
     n_items: usize,
+    max_ram_bytes: Option<usize>,
+    current_ram_bytes: usize,
 }
 
 #[pymethods]
 impl FPMiner {
     #[new]
-    pub fn new(n_items: usize) -> Self {
-        FPMiner { chunks: Vec::new(), n_rows: 0, n_items }
+    #[pyo3(signature = (n_items, max_ram_mb=None))]
+    pub fn new(n_items: usize, max_ram_mb: Option<usize>) -> Self {
+        let max_ram_bytes = max_ram_mb.map(|mb| mb.saturating_mul(1024 * 1024));
+        FPMiner { chunks: Vec::new(), n_rows: 0, n_items, max_ram_bytes, current_ram_bytes: 0 }
     }
 
     /// Feed a chunk of (transaction_id, item_id) pairs.
@@ -56,8 +103,36 @@ impl FPMiner {
             .collect();
         // Sort within the chunk — cheap, small allocation
         chunk.sort_unstable();
-        self.n_rows += chunk.len();
-        self.chunks.push(chunk);
+        
+        let chunk_len = chunk.len();
+        self.n_rows += chunk_len;
+        
+        let chunk_bytes = chunk_len * 12; // 8 bytes for i64, 4 bytes for i32
+        
+        if let Some(limit) = self.max_ram_bytes {
+            if self.current_ram_bytes + chunk_bytes > limit {
+                // Spill to disk
+                let mut file = tempfile().map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                
+                // Scope the writer so it drops and releases `file`
+                {
+                    let mut writer = BufWriter::new(&mut file);
+                    for &(t, i) in &chunk {
+                        writer.write_all(&t.to_ne_bytes()).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                        writer.write_all(&i.to_ne_bytes()).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                    }
+                    writer.flush().map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                } // writer drops here
+                
+                file.seek(SeekFrom::Start(0)).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                self.chunks.push(Chunk::Disk(file, chunk_len));
+                return Ok(());
+            }
+        }
+        
+        // Keep in memory
+        self.current_ram_bytes += chunk_bytes;
+        self.chunks.push(Chunk::Memory(chunk));
         Ok(())
     }
 
@@ -77,6 +152,12 @@ impl FPMiner {
     #[getter]
     pub fn n_transactions(&self) -> usize {
         0
+    }
+
+    /// Max RAM threshold before spilling to disk.
+    #[getter]
+    pub fn max_ram_mb(&self) -> Option<usize> {
+        self.max_ram_bytes.map(|b| b / (1024 * 1024))
     }
 
     /// Mine frequent itemsets using FP-Growth.
@@ -114,6 +195,7 @@ impl FPMiner {
         self.chunks.clear();
         self.chunks.shrink_to_fit();
         self.n_rows = 0;
+        self.current_ram_bytes = 0;
     }
 }
 
@@ -129,15 +211,25 @@ impl FPMiner {
         }
         let n_items = self.n_items;
 
-        // Heap entry: Reverse((txn, item, chunk_idx, row_within_chunk))
+        let mut cursors: Vec<ChunkCursor> = Vec::with_capacity(self.chunks.len());
+        for chunk in self.chunks.iter_mut() {
+            match chunk {
+                Chunk::Memory(vec) => cursors.push(ChunkCursor::Memory { vec, pos: 0 }),
+                Chunk::Disk(file, len) => {
+                    file.seek(SeekFrom::Start(0)).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+                    cursors.push(ChunkCursor::Disk { reader: BufReader::new(file), remaining: *len })
+                },
+            }
+        }
+
+        // Heap entry: Reverse((txn, item, cursor_idx))
         // min-heap → smallest (txn, item) pops first
-        let mut heap: BinaryHeap<Reverse<(i64, i32, usize, usize)>> = BinaryHeap::new();
+        let mut heap: BinaryHeap<Reverse<(i64, i32, usize)>> = BinaryHeap::new();
 
         // Seed with the first element of each chunk
-        for (ci, chunk) in self.chunks.iter().enumerate() {
-            if !chunk.is_empty() {
-                let (t, i) = chunk[0];
-                heap.push(Reverse((t, i, ci, 0)));
+        for (ci, cursor) in cursors.iter_mut().enumerate() {
+            if let Some((t, i)) = cursor.next_pair() {
+                heap.push(Reverse((t, i, ci)));
             }
         }
 
@@ -148,12 +240,10 @@ impl FPMiner {
         let mut prev_txn  = i64::MIN;
         let mut prev_item = i32::MIN;
 
-        while let Some(Reverse((txn, item, ci, ri))) = heap.pop() {
-            // Advance cursor in this chunk
-            let next_ri = ri + 1;
-            if next_ri < self.chunks[ci].len() {
-                let (t, i) = self.chunks[ci][next_ri];
-                heap.push(Reverse((t, i, ci, next_ri)));
+        while let Some(Reverse((txn, item, ci))) = heap.pop() {
+            // Advance cursor
+            if let Some((next_t, next_i)) = cursors[ci].next_pair() {
+                heap.push(Reverse((next_t, next_i, ci)));
             }
 
             // Skip out-of-range items

@@ -18,6 +18,7 @@ _RUST_CSR = {"fpgrowth": _rust.fpgrowth_from_csr, "eclat": _rust.eclat_from_csr}
 
 
 def _build_result(
+    t0: float = 0.0, 
     raw: tuple[np.ndarray, np.ndarray, np.ndarray],
     n_rows: int,
     min_support: float,
@@ -59,22 +60,31 @@ def _build_result(
 
 
 def _run_dense(
-    df: pd.DataFrame, min_count: int, max_len: int | None, method: Method, verbose: int = 0
+    df: pd.DataFrame,
+    min_count: int,
+    max_len: int | None,
+    method: Method,
+    verbose: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    import time
     import numpy as np
 
     if verbose:
-        print(f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array...")
+        print(
+            f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array..."
+        )
         t0 = time.perf_counter()
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
     if verbose:
         t1 = time.perf_counter()
-        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+        print(
+            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
+        )
         t0 = t1
     raw = _RUST_DENSE[method](data, min_count, max_len)
     if verbose:
-        print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
+        print(
+            f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s."
+        )
     return raw
 
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
@@ -82,13 +92,19 @@ def _run_dense(
 
 
 def _run_sparse(
-    df: pd.DataFrame, n_cols: int, min_count: int, max_len: int | None, method: Method, verbose: int = 0
+    df: pd.DataFrame,
+    n_cols: int,
+    min_count: int,
+    max_len: int | None,
+    method: Method,
+    verbose: int = 0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    import time
     import numpy as np
 
     if verbose:
-        print(f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array...")
+        print(
+            f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array..."
+        )
         t0 = time.perf_counter()
     csr = df.sparse.to_coo().tocsr()
     csr.eliminate_zeros()
@@ -96,11 +112,15 @@ def _run_sparse(
     indices = np.asarray(csr.indices, dtype=np.int32)
     if verbose:
         t1 = time.perf_counter()
-        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+        print(
+            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
+        )
         t0 = t1
     raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
     if verbose:
-        print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
+        print(
+            f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s."
+        )
     return raw
 
     csr = df.sparse.to_coo().tocsr()
@@ -111,24 +131,34 @@ def _run_sparse(
 
 
 def _run_polars(
-    df: pl.DataFrame, min_support: float, use_colnames: bool, max_len: int | None, method: Method, verbose: int = 0
+    df: pl.DataFrame,
+    min_support: float,
+    use_colnames: bool,
+    max_len: int | None,
+    method: Method,
+    verbose: int = 0,
 ) -> pd.DataFrame:
-    import time
     import numpy as np
 
     if verbose:
-        print(f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array...")
+        print(
+            f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array..."
+        )
         t0 = time.perf_counter()
     n_rows, n_cols = df.shape
     min_count = math.ceil(min_support * n_rows)
     arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
     if verbose:
         t1 = time.perf_counter()
-        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+        print(
+            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
+        )
         t0 = t1
     raw = _RUST_DENSE[method](arr, min_count, max_len)
     if verbose:
-        print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame...")
+        print(
+            f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
+        )
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
 
     n_rows, n_cols = df.shape
@@ -149,9 +179,8 @@ def dispatch(
     verbose: int = 0,
 ) -> pd.DataFrame:
     import math
-    import time
     import numpy as np
-    
+
     if verbose:
         print(f"[{time.strftime('%X')}] Analyzing input data type...")
 
@@ -162,7 +191,14 @@ def dispatch(
         t = "DataFrame"
 
     if t == "DataFrame" and getattr(df, "__module__", "").startswith("polars"):
-        return _run_polars(typing.cast("pl.DataFrame", df), min_support, use_colnames, max_len, method, verbose)
+        return _run_polars(
+            typing.cast("pl.DataFrame", df),
+            min_support,
+            use_colnames,
+            max_len,
+            method,
+            verbose,
+        )
 
     if t in ("csr_matrix", "csr_array"):
         csr: Any = df
@@ -176,11 +212,15 @@ def dispatch(
         indices = np.asarray(csr.indices, dtype=np.int32)  # type: ignore[misc]
         if verbose:
             t1 = time.perf_counter()
-            print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+            print(
+                f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
+            )
             t0 = t1
         raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
         if verbose:
-            print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame...")
+            print(
+                f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
+            )
         col_names = column_names or [str(i) for i in range(n_cols)]
         return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
@@ -190,16 +230,22 @@ def dispatch(
         min_count = math.ceil(min_support * n_rows)
         col_names = [str(i) for i in range(n_cols)]
         if verbose:
-            print(f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8...")
+            print(
+                f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8..."
+            )
             t0 = time.perf_counter()
         data = np.ascontiguousarray(df_nd, dtype=np.uint8)
         if verbose:
             t1 = time.perf_counter()
-            print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+            print(
+                f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
+            )
             t0 = t1
         raw = _RUST_DENSE[method](data, min_count, max_len)
         if verbose:
-            print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame...")
+            print(
+                f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
+            )
         return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
     df_pd = typing.cast("pd.DataFrame", df)

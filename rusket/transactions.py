@@ -51,6 +51,7 @@ def from_transactions(
     >>> ohe = rusket.from_transactions(df)
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
+    t0 = 0.0
     t = type(data).__name__
 
     if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
@@ -83,7 +84,10 @@ def from_pandas(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
+    t0 = 0.0
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
+    )
 
 
 def from_polars(
@@ -93,7 +97,10 @@ def from_polars(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
+    t0 = 0.0
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
+    )
 
 
 def from_spark(
@@ -102,6 +109,7 @@ def from_spark(
     item_col: str | None = None,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
+    t0 = 0.0
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
 
 
@@ -109,11 +117,10 @@ def _from_list(
     transactions: Sequence[Sequence[str | int]],
     verbose: int = 0,
 ) -> pd.DataFrame:
-    import time
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
-    
+
     if verbose:
         print(f"[{time.strftime('%X')}] Extracting unique items from list of lists...")
         t0 = time.perf_counter()
@@ -128,7 +135,9 @@ def _from_list(
     n_items = len(all_items)
 
     if verbose:
-        print(f"[{time.strftime('%X')}] Found {n_items:,} unique items. Building COO coordinates...")
+        print(
+            f"[{time.strftime('%X')}] Found {n_items:,} unique items. Building COO coordinates..."
+        )
 
     row_idx: list[int] = []
     col_idx: list[int] = []
@@ -136,6 +145,7 @@ def _from_list(
     if verbose:
         try:
             from tqdm.auto import tqdm
+
             iterator = tqdm(iterator, total=n_txn, desc="Transactions")
         except ImportError:
             pass
@@ -157,8 +167,10 @@ def _from_list(
     ).astype(pd.SparseDtype("bool", fill_value=False))
 
     if verbose:
-        print(f"[{time.strftime('%X')}] CSR generation completed in {time.perf_counter() - t0:.2f}s.")
-        
+        print(
+            f"[{time.strftime('%X')}] CSR generation completed in {time.perf_counter() - t0:.2f}s."
+        )
+
     return sparse_df
 
 
@@ -168,13 +180,14 @@ def _from_dataframe(
     item_col: str | None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    import time
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
-    
+
     if verbose:
-        print(f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})...")
+        print(
+            f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})..."
+        )
         t0 = time.perf_counter()
 
     cols = list(df.columns)
@@ -212,11 +225,14 @@ def _from_dataframe(
 
     item_names = [str(c) for c in item_uniques]
     res = pd.DataFrame.sparse.from_spmatrix(
-        csr, columns=item_names,
+        csr,
+        columns=item_names,
     ).astype(pd.SparseDtype("bool", fill_value=False))
 
     if verbose:
-        print(f"[{time.strftime('%X')}] DataFrame parameterization completed in {time.perf_counter() - t0:.2f}s.")
+        print(
+            f"[{time.strftime('%X')}] DataFrame parameterization completed in {time.perf_counter() - t0:.2f}s."
+        )
 
     return res
 
@@ -271,6 +287,7 @@ def from_transactions_csr(
     >>> freq = rusket.fpgrowth(csr, min_support=0.001,
     ...                        use_colnames=True, column_names=names)
     """
+    t0 = 0.0
     import numpy as np
     import pandas as pd
     from pathlib import Path
@@ -312,8 +329,10 @@ def from_transactions_csr(
 
         data_arr = np.ones(len(local_codes), dtype=np.int8)
         chunk_csr = sp.csr_matrix(
-            (data_arr,
-             (local_codes.astype(np.int64), chunk_item_codes.astype(np.int64))),
+            (
+                data_arr,
+                (local_codes.astype(np.int64), chunk_item_codes.astype(np.int64)),
+            ),
             shape=(n_txn_chunk, n_items),
         )
         chunk_csr.data = np.minimum(chunk_csr.data, 1)

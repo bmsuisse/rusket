@@ -82,9 +82,9 @@ def run_all() -> list[dict]:
     results: list[dict] = []
 
     for label, n_rows, n_txns, n_items in SCENARIOS:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  {label}: {n_rows:,} rows → ~{n_txns:,} txns × {n_items:,} items")
-        print(f"{'='*60}", flush=True)
+        print(f"{'=' * 60}", flush=True)
 
         # Generate data
         t0 = time.perf_counter()
@@ -108,6 +108,31 @@ def run_all() -> list[dict]:
             f"  from_transactions: {conv_time:.1f}s → {actual_txns:,} × {actual_items:,}, {mem_mb:.0f} MB",
             flush=True,
         )
+
+        import psutil
+
+        avail_mb = psutil.virtual_memory().available / 1e6
+        if avail_mb - mem_mb < 2_000:
+            print(
+                f"  ⚠️  Skipping: Not enough free RAM for fpgrowth (have {avail_mb:.0f} MB)",
+                flush=True,
+            )
+            t_fpg, n, t_mlx = None, None, None
+            results.append(
+                {
+                    "label": label,
+                    "n_rows": n_rows,
+                    "n_txns": actual_txns,
+                    "n_items": actual_items,
+                    "conv_time": conv_time,
+                    "fpg_time": t_fpg,
+                    "mlx_time": t_mlx,
+                    "mem_mb": mem_mb,
+                }
+            )
+            del ohe
+            gc.collect()
+            continue
 
         # rusket fpgrowth
         n, t_fpg = timed_run(
@@ -210,7 +235,7 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
         # Only plot up to the last non-None
         valid_x = [x for x, t in zip(n_rows, mlx_times) if t is not None]
         valid_y = [t for t in mlx_times if t is not None]
-        valid_labels = [l for l, t in zip(labels, mlx_times) if t is not None]
+        valid_labels = [lbl for lbl, t in zip(labels, mlx_times) if t is not None]
         fig.add_trace(
             go.Scatter(
                 x=valid_x,

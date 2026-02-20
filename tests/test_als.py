@@ -1,4 +1,5 @@
 """Tests for rusket.ALS — mirrors key tests from implicit library's test suite."""
+
 from __future__ import annotations
 import numpy as np
 import pytest
@@ -12,34 +13,52 @@ def get_checker_board(n: int) -> csr_matrix:
     for i in range(n):
         for j in range(n):
             if i % 2 == j % 2:
-                row.append(i); col.append(j)
+                row.append(i)
+                col.append(j)
     return csr_matrix((np.ones(len(row), dtype=np.float32), (row, col)), shape=(n, n))
 
 
 @pytest.mark.parametrize("factors", [6])
 def test_factorize_reconstruction(factors: int) -> None:
-    counts = csr_matrix([
-        [1,1,0,1,0,0],[0,1,1,1,0,0],[1,0,1,0,0,0],
-        [1,1,0,0,0,0],[0,0,1,1,0,1],[0,1,0,0,0,1],[0,0,0,0,1,1],
-    ], dtype=np.float32)
-    model = rusket.ALS(factors=factors, regularization=0.0, alpha=2.0, iterations=50, seed=42)
+    counts = csr_matrix(
+        [
+            [1, 1, 0, 1, 0, 0],
+            [0, 1, 1, 1, 0, 0],
+            [1, 0, 1, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0],
+            [0, 0, 1, 1, 0, 1],
+            [0, 1, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 1],
+        ],
+        dtype=np.float32,
+    )
+    model = rusket.ALS(
+        factors=factors, regularization=0.0, alpha=2.0, iterations=50, seed=42
+    )
     model.fit(counts)
     reconstructed = model.user_factors @ model.item_factors.T
     for i in range(counts.shape[0]):
         for j in range(counts.shape[1]):
             expected = 1.0 if counts[i, j] > 0 else 0.0
-            assert reconstructed[i, j] == pytest.approx(expected, abs=0.15), \
+            assert reconstructed[i, j] == pytest.approx(expected, abs=0.15), (
                 f"row={i}, col={j}, got={reconstructed[i, j]:.4f}"
+            )
 
 
 def test_no_nan_in_factors() -> None:
     raw = [
-        [0,2,1.5,1.33,1.25,1.2,0,0,0,0,0,0],[0,0,2,1.5,1.33,1.25,0,0,0,0,0,0],
-        [0,0,0,2,1.5,1.33,0,0,0,0,0,0],[0,0,0,0,2,1.5,0,0,0,0,0,0],
-        [0,0,0,0,0,2,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,2,1.5,1.33,1.25,1.2],[0,0,0,0,0,0,0,0,2,1.5,1.33,1.25],
-        [0,0,0,0,0,0,0,0,0,2,1.5,1.33],[0,0,0,0,0,0,0,0,0,0,2,1.5],
-        [0,0,0,0,0,0,0,0,0,0,0,2],[0,0,0,0,0,0,0,0,0,0,0,0],
+        [0, 2, 1.5, 1.33, 1.25, 1.2, 0, 0, 0, 0, 0, 0],
+        [0, 0, 2, 1.5, 1.33, 1.25, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 2, 1.5, 1.33, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 2, 1.5, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 2, 1.5, 1.33, 1.25, 1.2],
+        [0, 0, 0, 0, 0, 0, 0, 0, 2, 1.5, 1.33, 1.25],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1.5, 1.33],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1.5],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ]
     model = rusket.ALS(factors=3, regularization=0.01, iterations=15, seed=23)
     model.fit(csr_matrix(raw, dtype=np.float32))
@@ -48,7 +67,9 @@ def test_no_nan_in_factors() -> None:
 
 
 def test_no_nan_sparse() -> None:
-    Ciu = sparse.random(100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42)
+    Ciu = sparse.random(
+        100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42
+    )
     model = rusket.ALS(factors=32, regularization=10.0, iterations=10, seed=23)
     model.fit(Ciu)
     assert np.isfinite(model.user_factors).all()
@@ -56,7 +77,9 @@ def test_no_nan_sparse() -> None:
 
 
 def test_small_identity_no_nan() -> None:
-    user_item = coo_matrix((np.ones(10, dtype=np.float32), (np.arange(10), np.arange(10)))).tocsr()
+    user_item = coo_matrix(
+        (np.ones(10, dtype=np.float32), (np.arange(10), np.arange(10)))
+    ).tocsr()
     model = rusket.ALS(factors=15, iterations=10, seed=42)
     model.fit(user_item)
     ids, scores = model.recommend_items(0, n=10, exclude_seen=False)
@@ -105,7 +128,13 @@ def test_checker_board_recommendations() -> None:
 
 def test_fit_transactions_pandas() -> None:
     import pandas as pd
-    df = pd.DataFrame({"user":[0,0,0,1,1,2,2,2],"item":["a","b","c","b","c","a","c","d"]})
+
+    df = pd.DataFrame(
+        {
+            "user": [0, 0, 0, 1, 1, 2, 2, 2],
+            "item": ["a", "b", "c", "b", "c", "a", "c", "d"],
+        }
+    )
     model = rusket.ALS(factors=4, iterations=5, seed=42)
     model.fit_transactions(df, user_col="user", item_col="item")
     assert model.user_factors.shape == (3, 4)
@@ -114,7 +143,10 @@ def test_fit_transactions_pandas() -> None:
 
 def test_fit_transactions_polars() -> None:
     import polars as pl
-    df = pl.DataFrame({"user_id":[0,0,1,1,2,2],"product":["x","y","y","z","x","z"]})
+
+    df = pl.DataFrame(
+        {"user_id": [0, 0, 1, 1, 2, 2], "product": ["x", "y", "y", "z", "x", "z"]}
+    )
     model = rusket.ALS(factors=4, iterations=5, seed=42)
     model.fit_transactions(df)
     assert model.user_factors.shape == (3, 4)
@@ -122,7 +154,14 @@ def test_fit_transactions_polars() -> None:
 
 def test_fit_transactions_with_ratings() -> None:
     import pandas as pd
-    df = pd.DataFrame({"user":[0,0,1,1,2],"item":["a","b","a","c","b"],"rating":[5.0,3.0,4.0,1.0,2.0]})
+
+    df = pd.DataFrame(
+        {
+            "user": [0, 0, 1, 1, 2],
+            "item": ["a", "b", "a", "c", "b"],
+            "rating": [5.0, 3.0, 4.0, 1.0, 2.0],
+        }
+    )
     model = rusket.ALS(factors=4, iterations=5, seed=42)
     model.fit_transactions(df, rating_col="rating")
     assert model.user_factors.shape == (3, 4)
@@ -130,7 +169,7 @@ def test_fit_transactions_with_ratings() -> None:
 
 def test_single_user() -> None:
     model = rusket.ALS(factors=4, iterations=5, seed=42)
-    model.fit(csr_matrix([[1,0,1,0,1]], dtype=np.float32))
+    model.fit(csr_matrix([[1, 0, 1, 0, 1]], dtype=np.float32))
     assert model.user_factors.shape == (1, 4)
     assert model.item_factors.shape == (5, 4)
     ids, _ = model.recommend_items(0, n=3, exclude_seen=True)
@@ -139,7 +178,7 @@ def test_single_user() -> None:
 
 def test_single_item() -> None:
     model = rusket.ALS(factors=4, iterations=5, seed=42)
-    model.fit(csr_matrix([[1],[0],[1]], dtype=np.float32))
+    model.fit(csr_matrix([[1], [0], [1]], dtype=np.float32))
     assert model.user_factors.shape == (3, 4)
     assert model.item_factors.shape == (1, 4)
 
@@ -151,16 +190,20 @@ def test_not_fitted_raises() -> None:
 
 def test_deterministic_seed() -> None:
     mat = get_checker_board(20)
-    m1 = rusket.ALS(factors=8, iterations=5, seed=123); m1.fit(mat)
-    m2 = rusket.ALS(factors=8, iterations=5, seed=123); m2.fit(mat)
+    m1 = rusket.ALS(factors=8, iterations=5, seed=123)
+    m1.fit(mat)
+    m2 = rusket.ALS(factors=8, iterations=5, seed=123)
+    m2.fit(mat)
     np.testing.assert_array_equal(m1.user_factors, m2.user_factors)
     np.testing.assert_array_equal(m1.item_factors, m2.item_factors)
 
 
 def test_different_seed_different_factors() -> None:
     mat = get_checker_board(20)
-    m1 = rusket.ALS(factors=8, iterations=5, seed=1); m1.fit(mat)
-    m2 = rusket.ALS(factors=8, iterations=5, seed=2); m2.fit(mat)
+    m1 = rusket.ALS(factors=8, iterations=5, seed=1)
+    m1.fit(mat)
+    m2 = rusket.ALS(factors=8, iterations=5, seed=2)
+    m2.fit(mat)
     assert not np.allclose(m1.user_factors, m2.user_factors)
 
 
@@ -238,7 +281,9 @@ def test_exclude_seen_false_returns_seen_items() -> None:
         seen = set(mat[user_id].indices.tolist())
         ids_incl, _ = model.recommend_items(user_id, n=20, exclude_seen=False)
         has_seen = any(item in seen for item in ids_incl)
-        assert has_seen, f"User {user_id}: expected at least one seen item with exclude_seen=False"
+        assert has_seen, (
+            f"User {user_id}: expected at least one seen item with exclude_seen=False"
+        )
 
 
 def test_exclude_seen_count_reduced() -> None:

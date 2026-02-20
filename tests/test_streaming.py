@@ -41,8 +41,13 @@ def _cmp(a: pd.DataFrame, b: pd.DataFrame) -> None:
     )
 
 
-def _build_reference(txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int,
-                     min_support: float, max_len: int | None) -> pd.DataFrame:
+def _build_reference(
+    txn_ids: np.ndarray,
+    item_ids: np.ndarray,
+    n_items: int,
+    min_support: float,
+    max_len: int | None,
+) -> pd.DataFrame:
     """Build reference result using from_transactions + fpgrowth."""
     df = pd.DataFrame({"t": txn_ids, "i": item_ids})
     ohe = from_transactions(df)
@@ -60,53 +65,53 @@ class TestFPMinerCorrectness:
     def test_tiny_manual(self) -> None:
         """Hand-crafted example from the docs."""
         # txn 0: {0,1,2}, txn 1: {0,1,3}, txn 2: {0,2,3}, txn 3: {0,1}, txn 4: {1,2}
-        txn_ids  = np.array([0,0,0, 1,1,1, 2,2,2, 3,3, 4,4], dtype=np.int64)
-        item_ids = np.array([0,1,2, 0,1,3, 0,2,3, 0,1, 1,2], dtype=np.int32)
+        txn_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4], dtype=np.int64)
+        item_ids = np.array([0, 1, 2, 0, 1, 3, 0, 2, 3, 0, 1, 1, 2], dtype=np.int32)
 
         n_items = 4
         miner = FPMiner(n_items=n_items)
         miner.add_chunk(txn_ids, item_ids)
 
         for min_support in [0.4, 0.6, 0.8]:
-            result  = miner.mine(min_support=min_support)
-            ref     = _build_reference(txn_ids, item_ids, n_items, min_support, None)
+            result = miner.mine(min_support=min_support)
+            ref = _build_reference(txn_ids, item_ids, n_items, min_support, None)
             _cmp(result, ref)
 
     def test_tiny_with_max_len(self) -> None:
         """With max_len=1, only singletons should appear."""
-        txn_ids  = np.array([0,0,0, 1,1,1, 2,2,2, 3,3, 4,4], dtype=np.int64)
-        item_ids = np.array([0,1,2, 0,1,3, 0,2,3, 0,1, 1,2], dtype=np.int32)
+        txn_ids = np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4], dtype=np.int64)
+        item_ids = np.array([0, 1, 2, 0, 1, 3, 0, 2, 3, 0, 1, 1, 2], dtype=np.int32)
         n_items = 4
         miner = FPMiner(n_items=n_items)
         miner.add_chunk(txn_ids, item_ids)
         result = miner.mine(min_support=0.4, max_len=1)
-        ref    = _build_reference(txn_ids, item_ids, n_items, 0.4, 1)
+        ref = _build_reference(txn_ids, item_ids, n_items, 0.4, 1)
         _cmp(result, ref)
 
     def test_duplicates_in_same_transaction(self) -> None:
         """Duplicate (txn, item) pairs must be deduplicated."""
-        txn_ids  = np.array([0,0,0, 0,0,  1,1, 1],   dtype=np.int64)
-        item_ids = np.array([0,1,2, 0,1,  0,1, 0],   dtype=np.int32)  # 0 repeated
+        txn_ids = np.array([0, 0, 0, 0, 0, 1, 1, 1], dtype=np.int64)
+        item_ids = np.array([0, 1, 2, 0, 1, 0, 1, 0], dtype=np.int32)  # 0 repeated
         n_items = 3
         miner = FPMiner(n_items=n_items)
         miner.add_chunk(txn_ids, item_ids)
         result = miner.mine(min_support=0.5)
-        ref    = _build_reference(txn_ids, item_ids, n_items, 0.5, None)
+        ref = _build_reference(txn_ids, item_ids, n_items, 0.5, None)
         _cmp(result, ref)
 
     def test_single_transaction(self) -> None:
-        txn_ids  = np.array([0, 0, 0], dtype=np.int64)
+        txn_ids = np.array([0, 0, 0], dtype=np.int64)
         item_ids = np.array([0, 1, 2], dtype=np.int32)
         n_items = 3
         miner = FPMiner(n_items=n_items)
         miner.add_chunk(txn_ids, item_ids)
         result = miner.mine(min_support=1.0)
-        ref    = _build_reference(txn_ids, item_ids, n_items, 1.0, None)
+        ref = _build_reference(txn_ids, item_ids, n_items, 1.0, None)
         _cmp(result, ref)
 
     def test_all_below_threshold(self) -> None:
         """When nothing meets min_support, both should return empty DataFrames."""
-        txn_ids  = np.array([0, 1, 2, 3], dtype=np.int64)
+        txn_ids = np.array([0, 1, 2, 3], dtype=np.int64)
         item_ids = np.array([0, 1, 2, 3], dtype=np.int32)  # each item in only 1 txn
         n_items = 4
         miner = FPMiner(n_items=n_items)
@@ -119,7 +124,7 @@ class TestFPMinerCorrectness:
         rng = np.random.default_rng(0)
         n_items = 20
         n_txns = 500
-        txn_ids  = rng.integers(0, n_txns, size=5_000, dtype=np.int64)
+        txn_ids = rng.integers(0, n_txns, size=5_000, dtype=np.int64)
         item_ids = rng.integers(0, n_items, size=5_000, dtype=np.int32)
 
         # Single chunk
@@ -131,27 +136,56 @@ class TestFPMinerCorrectness:
         miner3 = FPMiner(n_items=n_items)
         chunk = len(txn_ids) // 3
         for start in range(0, len(txn_ids), chunk):
-            miner3.add_chunk(txn_ids[start:start+chunk], item_ids[start:start+chunk])
+            miner3.add_chunk(
+                txn_ids[start : start + chunk], item_ids[start : start + chunk]
+            )
         result3 = miner3.mine(min_support=0.1, max_len=3)
 
         _cmp(result1, result3)
+
+    def test_disk_spilling(self) -> None:
+        """When max_ram_mb is small, FPMiner should safely spill to disk and return same results."""
+        rng = np.random.default_rng(1)
+        n_items = 50
+        n_txns = 1_000
+        txn_ids = rng.integers(0, n_txns, size=15_000, dtype=np.int64)
+        item_ids = rng.integers(0, n_items, size=15_000, dtype=np.int32)
+
+        # In-memory miner
+        miner_mem = FPMiner(n_items=n_items)
+        miner_mem.add_chunk(txn_ids, item_ids)
+        result_mem = miner_mem.mine(min_support=0.1, max_len=3)
+
+        # OOC miner (1MB limit ensures multiple chunks flush to tempfiles)
+        miner_disk = FPMiner(n_items=n_items, max_ram_mb=1)
+
+        # Add data in heavily fragmented loops to rapidly exceed 1MB and trigger spills
+        chunk_size = 3000
+        for start in range(0, len(txn_ids), chunk_size):
+            miner_disk.add_chunk(
+                txn_ids[start : start + chunk_size],
+                item_ids[start : start + chunk_size],
+            )
+
+        result_disk = miner_disk.mine(min_support=0.1, max_len=3)
+        _cmp(result_mem, result_disk)
 
     def test_eclat_method(self) -> None:
         """FPMiner with method='eclat' must match fpgrowth results."""
         rng = np.random.default_rng(99)
         n_items = 15
         n_txns = 200
-        txn_ids  = rng.integers(0, n_txns, size=2000, dtype=np.int64)
+        txn_ids = rng.integers(0, n_txns, size=2000, dtype=np.int64)
         item_ids = rng.integers(0, n_items, size=2000, dtype=np.int32)
 
         miner = FPMiner(n_items=n_items)
         miner.add_chunk(txn_ids, item_ids)
-        result_eclat   = miner.mine(min_support=0.1, max_len=3, method="eclat")
+        result_eclat = miner.mine(min_support=0.1, max_len=3, method="eclat")
         result_fpgrowth = miner.mine(min_support=0.1, max_len=3, method="fpgrowth")
         _cmp(result_eclat, result_fpgrowth)
 
     def test_n_rows_property(self) -> None:
-        txn_ids  = np.array([0, 0, 1], dtype=np.int64)
+        txn_ids = np.array([0, 0, 1], dtype=np.int64)
         item_ids = np.array([0, 1, 0], dtype=np.int32)
         miner = FPMiner(n_items=3)
         miner.add_chunk(txn_ids, item_ids)
@@ -160,7 +194,7 @@ class TestFPMinerCorrectness:
         assert miner.n_rows == 6
 
     def test_reset(self) -> None:
-        txn_ids  = np.array([0, 0, 1], dtype=np.int64)
+        txn_ids = np.array([0, 0, 1], dtype=np.int64)
         item_ids = np.array([0, 1, 0], dtype=np.int32)
         miner = FPMiner(n_items=3)
         miner.add_chunk(txn_ids, item_ids)
@@ -175,24 +209,26 @@ class TestFPMinerCorrectness:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("seed,n_txns,n_items,n_rows,min_support,max_len", [
-    (1,  1_000, 50, 20_000, 0.05, 3),
-    (2,  5_000, 30, 50_000, 0.05, 2),
-    (3, 10_000, 20,100_000, 0.1,  3),
-])
+@pytest.mark.parametrize(
+    "seed,n_txns,n_items,n_rows,min_support,max_len",
+    [
+        (1, 1_000, 50, 20_000, 0.05, 3),
+        (2, 5_000, 30, 50_000, 0.05, 2),
+        (3, 10_000, 20, 100_000, 0.1, 3),
+    ],
+)
 def test_fpminer_matches_fpgrowth_random(
-    seed: int, n_txns: int, n_items: int, n_rows: int,
-    min_support: float, max_len: int
+    seed: int, n_txns: int, n_items: int, n_rows: int, min_support: float, max_len: int
 ) -> None:
     """FPMiner must produce same result as fpgrowth on random data."""
     rng = np.random.default_rng(seed)
-    txn_ids  = rng.integers(0, n_txns,  size=n_rows, dtype=np.int64)
+    txn_ids = rng.integers(0, n_txns, size=n_rows, dtype=np.int64)
     item_ids = rng.integers(0, n_items, size=n_rows, dtype=np.int32)
 
     miner = FPMiner(n_items=n_items)
     miner.add_chunk(txn_ids, item_ids)
     result = miner.mine(min_support=min_support, max_len=max_len)
-    ref    = _build_reference(txn_ids, item_ids, n_items, min_support, max_len)
+    ref = _build_reference(txn_ids, item_ids, n_items, min_support, max_len)
     _cmp(result, ref)
 
 
@@ -237,7 +273,9 @@ class TestFPMinerResultValidation:
         result = miner.mine(min_support=min_support, max_len=3)
 
         assert len(result) > 0, "Expected some itemsets with retail distribution"
-        assert (result["support"] >= min_support - 1e-9).all(), "Support below threshold found"
+        assert (result["support"] >= min_support - 1e-9).all(), (
+            "Support below threshold found"
+        )
         assert (result["support"] <= 1.0 + 1e-9).all(), "Support above 1.0 found"
 
     def test_support_monotone_with_subset(self) -> None:
@@ -279,13 +317,17 @@ class TestFPMinerResultValidation:
         n_txns = 2_000
         avg_basket = 5.0
         probs = self._retail_probs(n_items)
-        txn_ids, item_ids = _make_realistic_data(rng, n_txns, n_items, avg_basket, probs)
+        txn_ids, item_ids = _make_realistic_data(
+            rng, n_txns, n_items, avg_basket, probs
+        )
 
         # Run FPMiner in 3 chunks
         miner = FPMiner(n_items=n_items)
         chunk = len(txn_ids) // 3
         for start in range(0, len(txn_ids), chunk):
-            miner.add_chunk(txn_ids[start:start + chunk], item_ids[start:start + chunk])
+            miner.add_chunk(
+                txn_ids[start : start + chunk], item_ids[start : start + chunk]
+            )
         result = miner.mine(min_support=0.05, max_len=3)
 
         # Reference
@@ -297,7 +339,7 @@ class TestFPMinerResultValidation:
         rng = np.random.default_rng(11)
         n_items = 15
         n_txns = 500
-        txn_ids  = rng.integers(0, n_txns, size=5_000, dtype=np.int64)
+        txn_ids = rng.integers(0, n_txns, size=5_000, dtype=np.int64)
         item_ids = rng.integers(0, n_items, size=5_000, dtype=np.int32)
 
         miner = FPMiner(n_items=n_items)

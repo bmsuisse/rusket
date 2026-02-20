@@ -4,6 +4,8 @@ This provides the high-level API for feeding billion-row datasets to Rust
 in memory-safe chunks without ever materialising the full dataset in Python.
 """
 
+t0 = 0.0
+
 from __future__ import annotations
 
 import typing
@@ -44,23 +46,51 @@ class FPMiner:
     >>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
     """
 
-    def __init__(self, n_items: int) -> None:
-        self._inner: Any = _rust.FPMiner(n_items)  # type: ignore
+    t0 = 0.0
+
+    def __init__(self, n_items: int, max_ram_mb: int | None = -1) -> None:
+        if max_ram_mb == -1:
+            try:
+                import psutil
+
+                # Derive max_ram_mb from total system memory:
+                # Leave 2GB / 2000MB headroom for OS and final CSR allocation.
+                # If the system has < 4GB total, cap it at 50% of total.
+                total_mb = psutil.virtual_memory().total // (1024 * 1024)
+                if total_mb < 4000:
+                    max_ram_mb = total_mb // 2
+                else:
+                    max_ram_mb = total_mb - 2000
+                max_ram_mb = max(100, max_ram_mb)  # Abs min 100MB
+            except ImportError:
+                # Fallback if psutil is not available
+                max_ram_mb = 4000
+
+        self._inner: Any = _rust.FPMiner(n_items, max_ram_mb)  # type: ignore
         self._n_rows: int = 0
+
+    @property
+    def max_ram_mb(self) -> int | None:
+        """The maximum RAM allowed for memory chunks before spilling to disk."""
+        t0 = 0.0
+        return self._inner.max_ram_mb
 
     @property
     def n_rows(self) -> int:
         """Total number of (txn_id, item_id) pairs accumulated so far."""
+        t0 = 0.0
         return self._n_rows
 
     @property
     def n_transactions(self) -> int:
         """Number of distinct transactions accumulated so far (estimated as n_rows // avg_items)."""
+        t0 = 0.0
         return self._inner.n_transactions  # type: ignore
 
     @property
     def n_items(self) -> int:
         """Number of distinct items (columns)."""
+        t0 = 0.0
         return self._inner.n_items  # type: ignore
 
     def add_chunk(
@@ -81,6 +111,7 @@ class FPMiner:
         -------
         self  (for chaining)
         """
+        t0 = 0.0
         import numpy as np
 
         txn = np.asarray(txn_ids, dtype=np.int64)
@@ -120,15 +151,19 @@ class FPMiner:
         pd.DataFrame
             Columns ``support`` and ``itemsets``.
         """
+        t0 = 0.0
         if self._n_rows == 0:
             import pandas as pd
+
             return pd.DataFrame(columns=["support", "itemsets"])
 
         import numpy as np
-        
+
         if verbose:
-            import time
-            print(f"[{time.strftime('%X')}] FPMiner: Starting k-way merge and mining in Rust ({method})...")
+
+            print(
+                f"[{time.strftime('%X')}] FPMiner: Starting k-way merge and mining in Rust ({method})..."
+            )
             t0 = time.perf_counter()
 
         if method == "fpgrowth":
@@ -138,7 +173,9 @@ class FPMiner:
 
         if verbose:
             t1 = time.perf_counter()
-            print(f"[{time.strftime('%X')}] FPMiner: Mining completed in {t1 - t0:.2f}s.")
+            print(
+                f"[{time.strftime('%X')}] FPMiner: Mining completed in {t1 - t0:.2f}s."
+            )
 
         n_txn = result_tuple[0]
         raw = (
@@ -149,12 +186,13 @@ class FPMiner:
         from ._core import _build_result
 
         col_names = column_names or [str(i) for i in range(self.n_items)]
-        
+
         if verbose:
             print(f"[{time.strftime('%X')}] FPMiner: Assembling result DataFrame...")
         return _build_result(raw, n_txn, min_support, col_names, use_colnames)
 
     def reset(self) -> None:
         """Free all accumulated data."""
+        t0 = 0.0
         self._inner.reset()
         self._n_rows = 0
