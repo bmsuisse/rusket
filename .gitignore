@@ -45,3 +45,5 @@ site/
 
 # macOS
 .DS_Store
+benchdata/
+benchmarks/data/
