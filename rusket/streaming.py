@@ -45,7 +45,7 @@ class FPMiner:
     """
 
     def __init__(self, n_items: int) -> None:
-        self._inner: Any = _rust.FPMiner(n_items)
+        self._inner: Any = _rust.FPMiner(n_items)  # type: ignore
         self._n_rows: int = 0
 
     @property

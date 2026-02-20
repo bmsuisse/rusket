@@ -65,15 +65,15 @@ class ALS:
             )
 
         csr.eliminate_zeros()
-        n_users, n_items = csr.shape
+        n_users, n_items = typing.cast(tuple[int, int], csr.shape)
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)
         data = np.asarray(csr.data, dtype=np.float32)
 
         uf, itf = _rust.als_fit_implicit(
             indptr, indices, data, n_users, n_items,
-            self.factors, np.float32(self.regularization),
-            np.float32(self.alpha), self.iterations, self.seed,
+            self.factors, float(self.regularization),
+            float(self.alpha), self.iterations, self.seed,
         )
         self._user_factors = np.asarray(uf)
         self._item_factors = np.asarray(itf)
