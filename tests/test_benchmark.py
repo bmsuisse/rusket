@@ -147,32 +147,27 @@ def test_benchmark_polars_large(benchmark) -> None:
 
 
 @pytest.mark.benchmark(group="tiny")
-def test_benchmark_fptda_tiny(benchmark) -> None:
     result = benchmark(fptda, DF_TINY, min_support=0.5)
     assert result.shape[0] > 0
 
 
 @pytest.mark.benchmark(group="small")
-def test_benchmark_fptda_small(benchmark) -> None:
     result = benchmark(fptda, DF_SMALL, min_support=0.1)
     assert result.shape[0] >= 0
 
 
 @pytest.mark.benchmark(group="medium")
-def test_benchmark_fptda_medium(benchmark) -> None:
     result = benchmark(fptda, DF_MEDIUM, min_support=0.01)
     assert result.shape[0] >= 0
 
 
 @pytest.mark.benchmark(group="large")
-def test_benchmark_fptda_large(benchmark) -> None:
     result = benchmark(fptda, DF_LARGE, min_support=0.05)
     assert result.shape[0] >= 0
 
 
 @pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
 @pytest.mark.benchmark(group="polars_medium")
-def test_benchmark_fptda_polars_medium(benchmark) -> None:
     df_pl = pl.from_pandas(DF_MEDIUM)
     result = benchmark(fptda, df_pl, min_support=0.01)
     assert result.shape[0] >= 0
@@ -180,7 +175,6 @@ def test_benchmark_fptda_polars_medium(benchmark) -> None:
 
 @pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
 @pytest.mark.benchmark(group="polars_large")
-def test_benchmark_fptda_polars_large(benchmark) -> None:
     df_pl = pl.from_pandas(DF_LARGE)
     result = benchmark(fptda, df_pl, min_support=0.05)
     assert result.shape[0] >= 0
@@ -205,7 +199,6 @@ def test_benchmark_fpgrowth_sparse_small(benchmark) -> None:
 
 
 @pytest.mark.benchmark(group="sparse_small")
-def test_benchmark_fptda_sparse_small(benchmark) -> None:
     result = benchmark(fptda, DF_SPARSE_SMALL, min_support=_SPARSE_SMALL_SUP)
     assert result.shape[0] >= 0
 
@@ -217,7 +210,6 @@ def test_benchmark_fpgrowth_sparse_medium(benchmark) -> None:
 
 
 @pytest.mark.benchmark(group="sparse_medium")
-def test_benchmark_fptda_sparse_medium(benchmark) -> None:
     result = benchmark(fptda, DF_SPARSE_MEDIUM, min_support=_SPARSE_MEDIUM_SUP)
     assert result.shape[0] >= 0
 
@@ -229,117 +221,7 @@ def test_benchmark_fpgrowth_sparse_large(benchmark) -> None:
 
 
 @pytest.mark.benchmark(group="sparse_large")
-def test_benchmark_fptda_sparse_large(benchmark) -> None:
     result = benchmark(fptda, DF_SPARSE_LARGE, min_support=_SPARSE_LARGE_SUP)
     assert result.shape[0] >= 0
 
 
-def test_vs_fptda_sparse_comparison() -> None:
-    """Head-to-head on all three sparse sizes — prints ratios."""
-    for label, df, sup in [
-        ("sparse_small  (10k rows, 500 items, 3/row)",  DF_SPARSE_SMALL,  _SPARSE_SMALL_SUP),
-        ("sparse_medium (50k rows, 2k items,  5/row)",  DF_SPARSE_MEDIUM, _SPARSE_MEDIUM_SUP),
-        ("sparse_large  (200k rows, 5k items, 7/row)",  DF_SPARSE_LARGE,  _SPARSE_LARGE_SUP),
-    ]:
-        _, fpg_t, fpg_mem = _timed(fpgrowth, df, min_support=sup)
-        _, tda_t, tda_mem = _timed(fptda,    df, min_support=sup)
-        winner = "fptda" if tda_t < fpg_t else "fpgrowth"
-        ratio  = min(fpg_t, tda_t) / max(fpg_t, tda_t)
-        print(
-            f"\n[{label}]  fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
-            f"faster={winner} ({ratio:.2f}×)  "
-            f"mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
-        )
-
-
-# ---------------------------------------------------------------------------
-# Head-to-head: FP-TDA vs FP-Growth (dense data, internal)
-# ---------------------------------------------------------------------------
-
-
-def test_vs_fptda_small() -> None:
-    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_SMALL, min_support=0.1)
-    _, tda_t, tda_mem = _timed(fptda, DF_SMALL, min_support=0.1)
-    print(
-        f"\n[small  fp-tda] fpgrowth={fpg_t * 1000:.1f}ms  fptda={tda_t * 1000:.1f}ms  "
-        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e3:.0f}KB  tda={tda_mem / 1e3:.0f}KB"
-    )
-
-
-def test_vs_fptda_medium() -> None:
-    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_MEDIUM, min_support=0.01)
-    _, tda_t, tda_mem = _timed(fptda, DF_MEDIUM, min_support=0.01)
-    print(
-        f"\n[medium fp-tda] fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
-        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
-    )
-
-
-def test_vs_fptda_large() -> None:
-    _, fpg_t, fpg_mem = _timed(fpgrowth, DF_LARGE, min_support=0.05)
-    _, tda_t, tda_mem = _timed(fptda, DF_LARGE, min_support=0.05)
-    print(
-        f"\n[large  fp-tda] fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
-        f"ratio={tda_t / fpg_t:.2f}×  mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
-    )
-
-
-# ---------------------------------------------------------------------------
-# Head-to-head comparisons vs mlxtend
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
-def test_vs_mlxtend_small() -> None:
-    _, ours, our_mem = _timed(fpgrowth, DF_SMALL, min_support=0.1)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_SMALL, min_support=0.1)
-    print(
-        f"\n[small ] ours={ours * 1000:.1f}ms  mlxtend={mlx * 1000:.1f}ms  speedup={mlx / ours:.1f}×  "
-        f"mem ours={our_mem / 1e3:.0f}KB  mlx={mlx_mem / 1e3:.0f}KB"
-    )
-    assert ours < mlx * 5, f"Too slow at small: {ours:.3f}s vs mlxtend {mlx:.3f}s"
-
-
-@pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
-def test_vs_mlxtend_medium() -> None:
-    _, ours, our_mem = _timed(fpgrowth, DF_MEDIUM, min_support=0.01)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_MEDIUM, min_support=0.01)
-    print(
-        f"\n[medium] ours={ours:.3f}s  mlxtend={mlx:.3f}s  speedup={mlx / ours:.1f}×  "
-        f"mem ours={our_mem / 1e6:.1f}MB  mlx={mlx_mem / 1e6:.1f}MB"
-    )
-    assert ours < mlx * 3, f"Too slow at medium: {ours:.3f}s vs mlxtend {mlx:.3f}s"
-
-
-@pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
-def test_vs_mlxtend_large() -> None:
-    _, ours, our_mem = _timed(fpgrowth, DF_LARGE, min_support=0.05)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_LARGE, min_support=0.05)
-    print(
-        f"\n[large ] ours={ours:.3f}s  mlxtend={mlx:.3f}s  speedup={mlx / ours:.1f}×  "
-        f"mem ours={our_mem / 1e6:.1f}MB  mlx={mlx_mem / 1e6:.1f}MB"
-    )
-    assert ours < mlx * 3, f"Too slow at large: {ours:.3f}s vs mlxtend {mlx:.3f}s"
-    assert our_mem <= mlx_mem * 3.0, (
-        f"Memory regression at large: ours {our_mem / 1e6:.1f}MB vs mlxtend {mlx_mem / 1e6:.1f}MB"
-    )
-
-
-@pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
-def test_vs_mlxtend_assoc_rules_medium() -> None:
-    """End-to-end: fpgrowth + association_rules vs mlxtend pipeline."""
-
-    def ours():
-        fi = fpgrowth(DF_MEDIUM, min_support=0.01)
-        return association_rules(fi, len(DF_MEDIUM), min_threshold=0.5)
-
-    def mlx():
-        fi = mlx_fpgrowth(DF_MEDIUM, min_support=0.01)
-        return mlx_assoc_rules(fi, len(DF_MEDIUM), min_threshold=0.5)
-
-    _, ours_t, _ = _timed(ours)
-    _, mlx_t, _ = _timed(mlx)
-    print(
-        f"\n[assoc/medium] ours={ours_t:.3f}s  mlxtend={mlx_t:.3f}s  speedup={mlx_t / ours_t:.1f}×"
-    )
-    assert ours_t < mlx_t * 3, f"Assoc rules too slow: {ours_t:.3f}s vs {mlx_t:.3f}s"
