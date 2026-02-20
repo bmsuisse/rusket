@@ -94,6 +94,42 @@ print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
 
 ---
 
+### 🛒 Transaction Data (Long Format)
+
+Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices. Use the built-in helpers to convert:
+
+```python
+import pandas as pd
+from rusket import from_transactions, fpgrowth
+
+# Long-format transactional data
+df = pd.DataFrame({
+    "order_id": [1, 1, 1, 2, 2, 3],
+    "item":     [3, 4, 5, 3, 5, 8],
+})
+
+# Convert to one-hot boolean matrix
+ohe = from_transactions(df)
+
+# Mine!
+freq = fpgrowth(ohe, min_support=0.3, use_colnames=True)
+print(freq)
+```
+
+Or use the explicit helpers for type clarity:
+
+```python
+from rusket import from_pandas, from_polars
+
+ohe = from_pandas(df)                      # Pandas DataFrame
+ohe = from_polars(pl_df)                   # Polars DataFrame
+ohe = from_transactions([[3, 4], [3, 5]])  # list of lists
+```
+
+> **Spark** is also supported: `from_spark(spark_df)` calls `.toPandas()` internally.
+
+---
+
 ### ⚡ Eclat — Vertical Mining
 
 `eclat` uses vertical bitset representation + hardware `popcnt` for fast support counting. Ideal for **sparse retail basket** data.
@@ -325,6 +361,30 @@ rusket.association_rules(
 
 ---
 
+### `from_transactions`
+
+```python
+rusket.from_transactions(
+    data,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+) -> pd.DataFrame
+```
+
+Converts long-format transactional data to a one-hot boolean matrix. Accepts Pandas DataFrames, Polars DataFrames, Spark DataFrames, or `list[list[...]]`.
+
+### `from_pandas` / `from_polars` / `from_spark`
+
+Explicit typed variants of `from_transactions` for specific DataFrame types:
+
+```python
+rusket.from_pandas(df, transaction_col=None, item_col=None) -> pd.DataFrame
+rusket.from_polars(df, transaction_col=None, item_col=None) -> pd.DataFrame
+rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
+```
+
+---
+
 ## ⚡ Benchmarks
 
 ### Synthetic Data
@@ -380,10 +440,11 @@ All mining and rule generation happens **inside Rust**. No Python loops, no roun
 │   └── association_rules.rs      # Rule generation + 12 metrics (Rayon parallel)
 │
 ├── rusket/                       # Python wrappers & validation
-│   ├── __init__.py               # Package root (exports fpgrowth, eclat, association_rules)
+│   ├── __init__.py               # Package root
 │   ├── fpgrowth.py               # FP-Growth input dispatch (dense / sparse / Polars)
 │   ├── eclat.py                  # Eclat input dispatch (dense / sparse / Polars)
 │   ├── association_rules.py      # Label mapping + Rust call + result assembly
+│   ├── transactions.py           # from_transactions / from_pandas / from_polars / from_spark
 │   ├── _validation.py            # Input validation
 │   └── _rusket.pyi               # Type stubs for Rust extension
 │

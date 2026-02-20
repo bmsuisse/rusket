@@ -1,5 +1,10 @@
 /* rustket docs — extra styles */
 
+/* Hide redundant site name next to logo (logo already shows "rusket") */
+.md-header__topic .md-ellipsis {
+  display: none;
+}
+
 /* Hero buttons on the home page */
 .md-content .md-button {
   margin-right: 0.5rem;

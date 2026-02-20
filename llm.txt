@@ -1,0 +1,22 @@
+# rusket
+
+rusket is a fast FP-Growth and Association Rules library for Python, powered by a Rust core via PyO3. It serves as a drop-in replacement for `mlxtend`'s FP-growth tools, but accelerates them 5-10x natively supporting Pandas (dense/sparse) and Polars.
+
+## Core Rules for LLMs/Agents
+1. **Always use `uv`**: All python scripts, tests, and tools must be run with `uv run`. Never use `python` or `pip` directly.
+   - Tests: `uv run pytest tests/ -x -q`
+   - Benchmarks: `uv run pytest tests/test_benchmark.py -v -s`
+   - Type Checking: `uv run pyright`
+2. **Build the Extension**: If Rust code or bindings change, build the extension using `uv run maturin develop --release` and resolve errors by first running `cargo check`.
+3. **Pre-commit Checklist**:
+   - `cargo check` (Rust checks)
+   - `uv run maturin develop --release` (Recompiles extension for testing)
+   - `uv run pytest tests/ -x -q` (Python tests)
+   - `uv run pyright` (Type checks)
+4. **Project Structure Limit**: No codebase file should exceed 1000 lines. Create feature branches for new features. Keep the code focused and split logically.
+5. **YOLO Releases**: If requested to "YOLO release", bump the version in `Cargo.toml` and `pyproject.toml`, commit with `release: vX.Y.Z`, tag with `vX.Y.Z`, and push to origin `main` and the tag. CI will automatically publish to PyPI.
+
+## Architecture
+- Rust Core (`src/`): Implements the FP-tree generation (`src/fpgrowth.rs`) and rule metrics generation (`src/association_rules.rs`), parallelized with `rayon`. Outputs raw data straight back to Python.
+- Python Wrapper (`rusket/`): A thin API that mimics `mlxtend` while validating and zero-copy converting dense numpy, sparse pandas (CSR/COO), and Polars Arrow arrays directly to Rust representations.
+- Benchmarks (`tests/test_benchmark.py` & `tests/generate_benchmark_report.py`): Interactive Plotly reports are generated based on performance metrics. Always ensure performance hasn't degraded when modifying Rust code.

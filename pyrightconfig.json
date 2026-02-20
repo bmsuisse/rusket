@@ -1,0 +1,6 @@
+{
+  "include": ["rusket"],
+  "exclude": ["tests", "benchmarks"],
+  "reportMissingModuleSource": false,
+  "reportMissingTypeStubs": false
+}
