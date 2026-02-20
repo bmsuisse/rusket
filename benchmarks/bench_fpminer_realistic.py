@@ -181,11 +181,25 @@ def run_dataset(name: str) -> None:
     print(HDR)
     print(f"  {SEP}")
 
-    for method in ["fpgrowth", "eclat"]:
+    for method in ["eclat", "fpgrowth"]:
         r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
                     n_items=n_items, target_rows=200_000_000,
                     chunk_txns=500_000, method=method)
         r["method"] = method
+        r["chunk"] = "500k"
+        print(ROW.format(**r), flush=True)
+
+    # ── Scale-up to 1B using Eclat (the winner) ───────────────────────────
+    print(f"\n  ▶ Scale-up to 1B — Eclat (winner from iteration)")
+    print(f"  {SEP}")
+    print(HDR)
+    print(f"  {SEP}")
+
+    for target in TARGETS:
+        r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
+                    n_items=n_items, target_rows=target,
+                    chunk_txns=500_000, method="eclat")
+        r["method"] = "eclat"
         r["chunk"] = "500k"
         print(ROW.format(**r), flush=True)
 
