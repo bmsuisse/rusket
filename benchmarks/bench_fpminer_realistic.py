@@ -159,9 +159,9 @@ def run_dataset(name: str) -> None:
 
     # ── Fast iteration on 100M ─────────────────────────────────────────────
     print(f"\n  ▶ Iteration phase — 100M rows")
-    print(f"  {-*88}")
+    print("  " + SEP)
     print(HDR)
-    print(f"  {-*88}")
+    print("  " + SEP)
 
     results_100m: list[dict] = []
     for method in ["fpgrowth", "eclat"]:
@@ -180,9 +180,9 @@ def run_dataset(name: str) -> None:
 
     # ── Validate best + all methods at 200M ────────────────────────────────
     print(f"\n  ▶ Validation phase — 200M rows")
-    print(f"  {-*88}")
+    print("  " + SEP)
     print(HDR)
-    print(f"  {-*88}")
+    print("  " + SEP)
 
     for method in ["eclat", "fpgrowth"]:
         r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
@@ -194,9 +194,9 @@ def run_dataset(name: str) -> None:
 
     # ── Scale-up to 1B using Eclat (the winner) ───────────────────────────
     print(f"\n  ▶ Scale-up to 1B — Eclat (winner from iteration)")
-    print(f"  {-*88}")
+    print("  " + SEP)
     print(HDR)
-    print(f"  {-*88}")
+    print("  " + SEP)
 
     for target in SCALE_TARGETS:
         r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
