@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Blazing-fast FP-Growth, Eclat, and Association Rules for Python, powered by Rust.</strong>
+  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, FP-Growth, Eclat) for Python, powered by Rust.</strong>
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ---
 
-`rusket` is a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules` — backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage. It includes both **FP-Growth** (parallel via Rayon) and **Eclat** (vertical bitset mining) algorithms. Natively supports **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
+`rusket` is a high-performance library for **Market Basket Analysis** and **Recommender Engines**, backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage. It includes **Alternating Least Squares (ALS)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon) and **Eclat** (vertical bitset mining) for frequent pattern mining. It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules`, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
 
 ---
 
@@ -25,7 +25,7 @@
 | | `rusket` | `mlxtend` |
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
-| **Algorithms** | FP-Growth + Eclat | FP-Growth only |
+| **Algorithms** | ALS + FP-Growth + Eclat | FP-Growth only |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
 | **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
@@ -242,6 +242,34 @@ print(f"Frequent itemsets: {len(freq):,}")
 
 > **How it works under the hood:**  
 > Sparse DataFrame → COO → CSR → `(indptr, indices)` → Rust `fpgrowth_from_csr`
+
+---
+
+### 🌊 Out-of-Core Processing (FPMiner Streaming)
+
+For datasets scaling to **Billion-row** sizes that don't fit in memory, use the `FPMiner` accumulator. It accepts chunks of `(txn_id, item_id)` pairs, sorting them in-place immediately, and uses a memory-safe **k-way merge** across all chunks to build the CSR matrix on the fly avoiding massive memory spikes.
+
+```python
+import numpy as np
+from rusket import FPMiner
+
+n_items = 5_000
+miner = FPMiner(n_items=n_items)
+
+# Feed chunks incrementally (e.g. from Parquet/CSV/SQL)
+for chunk in dataset:
+    txn_ids = chunk["txn_id"].to_numpy(dtype=np.int64)
+    item_ids = chunk["item_id"].to_numpy(dtype=np.int32)
+    
+    # Fast O(k log k) per-chunk sort
+    miner.add_chunk(txn_ids, item_ids)
+
+# Stream k-way merge and mine in one pass!
+# Returns a DataFrame with 'support' and 'itemsets' just like fpgrowth()
+freq = miner.mine(min_support=0.001, max_len=3)
+```
+
+**Memory efficiency:** The peak memory overhead at `mine()` time is just $O(k)$ for the cursors (where $k$ is the number of chunks), plus the final compressed CSR allocation. 
 
 ---
 

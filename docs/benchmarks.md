@@ -6,18 +6,21 @@ Measured on Apple M-series (arm64).
 
 ---
 
-## Scale Benchmarks: 1M → 200M Rows 🚀
+## Scale Benchmarks: 1M → 1B Rows 🚀
 
 ### Interactive Chart
 
 <iframe src="../assets/scale_benchmark.html" width="100%" height="550px" style="border:none; border-radius:8px;"></iframe>
 
-### Two Input Paths
+### Three Input Paths
 
-rusket supports two ways to ingest data at scale:
+rusket supports three ways to ingest data at scale:
 
 1. **`from_transactions` → sparse DataFrame** — returns a pandas DataFrame, easy API
 2. **Direct CSR → Rust** — pass `scipy.sparse.csr_matrix` directly to `fpgrowth()`, skips pandas entirely
+3. **`FPMiner` Streaming** — memory-safe accumulator for 100M+ rows that don't fit in RAM
+
+#### In-Memory Scale (fpgrowth)
 
 | Scale | `from_transactions` → fpgrowth | Direct CSR → fpgrowth | **Speedup** |
 |---|:---:|:---:|:---:|
@@ -30,6 +33,19 @@ rusket supports two ways to ingest data at scale:
 !!! success "Direct CSR is the power-user path"
     At 100M rows, direct CSR mining takes **1.3 seconds** — the bottleneck is entirely the CSR build (24.5s).
     Compare to the pandas sparse path where mining alone takes 30.4s due to `sparse.to_coo().tocsr()` overhead.
+
+#### Out-of-Core Scale (FPMiner Streaming)
+
+For real-world retail datasets scaling to 1 Billion rows, `FPMiner` uses a memory-safe chunks approach (per-chunk sort + k-way merge).
+
+**Benchmark:** 2,603 retail items, avg 4.4 items/basket, min_support = 0.1%
+
+| Scale | add_chunk() | mine() | Total Time | Itemsets Found |
+|---|:---:|:---:|:---:|:---:|
+| 50M rows | 4.8s | 5.6s | **10.4s** | 1,260 |
+| 100M rows | 10.6s | 13.9s | **24.6s** | 1,254 |
+| 200M rows | 22.7s | 33.2s | **55.9s** | 1,261 |
+| 300M rows | 30.0s | 55.4s | **85.4s** | 1,259 |
 
 ---
 
