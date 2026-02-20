@@ -161,7 +161,8 @@ def run_dataset(name: str) -> None:
         # Derive target transaction count from target rows
         target_txns = int(target_rows / avg_items)
         rng = np.random.default_rng(42)
-        miner = FPMiner(n_items=n_items)
+        # Use up to 8GB in-memory; only spill to disk beyond that.
+        miner = FPMiner(n_items=n_items, max_ram_mb=8_000)
 
         t_add_start = time.perf_counter()
         txn_offset = 0
