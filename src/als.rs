@@ -324,6 +324,141 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     out
 }
 
+// ─── Anderson Acceleration for the outer ALS fixed-point loop ───────────────
+//
+// After each ALS iteration x_{k+1} = F(x_k) we treat the full
+// (user_factors ∥ item_factors) vector as the iterate and apply Anderson
+// mixing over a window of m previous residuals f_k = x_{k+1} - x_k.
+//
+// The mixing solves:  min ||F_m θ||₂  s.t. Σθ_i = 1
+// then sets:  x_aa = X_m θ
+// which is equivalent to a small (m×m) least-squares system on the
+// *difference* form typically used in the Anderson/Pulay literature.
+
+struct AndersonAccel {
+    m: usize,
+    // Each column is one iterate x_k (length = n_users*k + n_items*k)
+    x_hist: Vec<Vec<f32>>,
+    // Each column is one residual f_k = x_{k+1} - x_k
+    f_hist: Vec<Vec<f32>>,
+}
+
+impl AndersonAccel {
+    fn new(m: usize) -> Self {
+        Self { m, x_hist: Vec::new(), f_hist: Vec::new() }
+    }
+
+    /// Push x_old (before the ALS step) and f = x_new - x_old.
+    /// Returns the Anderson-mixed iterate (replacing x_new in-place).
+    fn push_and_mix(&mut self, x_old: Vec<f32>, f: Vec<f32>) -> Vec<f32> {
+        let dim = x_old.len();
+
+        // Slide window
+        if self.x_hist.len() == self.m {
+            self.x_hist.remove(0);
+            self.f_hist.remove(0);
+        }
+        self.x_hist.push(x_old);
+        self.f_hist.push(f.clone());
+
+        let h = self.f_hist.len(); // current window size, 1..=m
+
+        if h == 1 {
+            // No history yet — just return x_old + f = x_new
+            let mut out = self.x_hist[0].clone();
+            for (o, &fi) in out.iter_mut().zip(&f) {
+                *o += fi;
+            }
+            return out;
+        }
+
+        // Build Gram matrix G[i,j] = dot(f_hist[i], f_hist[j])  (h×h)
+        let mut g = vec![0.0f32; h * h];
+        for i in 0..h {
+            for j in i..h {
+                let d: f32 = self.f_hist[i].iter().zip(&self.f_hist[j]).map(|(a, b)| a * b).sum();
+                g[i * h + j] = d;
+                g[j * h + i] = d;
+            }
+        }
+
+        // Solve the constrained LS problem via the unconstrained form:
+        // Minimise ||F θ||² subject to Σθ = 1
+        // Append a row/col of ones (Lagrange multiplier for the constraint):
+        //   [G  1] [θ]   [0]
+        //   [1ᵀ 0] [λ] = [1]
+        // Size is (h+1)×(h+1)
+        let n = h + 1;
+        let mut mat = vec![0.0f32; n * n];
+        for i in 0..h {
+            for j in 0..h {
+                mat[i * n + j] = g[i * h + j];
+            }
+            mat[i * n + h] = 1.0;
+            mat[h * n + i] = 1.0;
+        }
+        // mat[h*n+h] = 0  (already zero)
+
+        let mut rhs = vec![0.0f32; n];
+        rhs[h] = 1.0;
+
+        // Gaussian elimination with partial pivoting (small h, no faer needed)
+        if !gauss_solve_inplace(&mut mat, &mut rhs, n) {
+            // Fallback: plain step (no mixing)
+            let mut out = self.x_hist[h - 1].clone();
+            for (o, &fi) in out.iter_mut().zip(&self.f_hist[h - 1]) {
+                *o += fi;
+            }
+            return out;
+        }
+
+        // θ = rhs[0..h]
+        let mut out = vec![0.0f32; dim];
+        for i in 0..h {
+            let theta = rhs[i];
+            // x_aa = Σ θ_i (x_hist[i] + f_hist[i])
+            for d in 0..dim {
+                out[d] += theta * (self.x_hist[i][d] + self.f_hist[i][d]);
+            }
+        }
+        out
+    }
+}
+
+/// In-place Gaussian elimination with partial pivoting.
+/// Solves mat * x = rhs.  mat is n×n row-major.  Returns false if singular.
+fn gauss_solve_inplace(mat: &mut Vec<f32>, rhs: &mut Vec<f32>, n: usize) -> bool {
+    for col in 0..n {
+        // Find pivot
+        let mut max_row = col;
+        let mut max_val = mat[col * n + col].abs();
+        for row in (col + 1)..n {
+            let v = mat[row * n + col].abs();
+            if v > max_val { max_val = v; max_row = row; }
+        }
+        if max_val < 1e-12 { return false; }
+        if max_row != col {
+            for j in 0..n { mat.swap(col * n + j, max_row * n + j); }
+            rhs.swap(col, max_row);
+        }
+        let pivot = mat[col * n + col];
+        for row in (col + 1)..n {
+            let factor = mat[row * n + col] / pivot;
+            for j in col..n { let v = factor * mat[col * n + j]; mat[row * n + j] -= v; }
+            rhs[row] -= factor * rhs[col];
+        }
+    }
+    // Back substitution
+    for col in (0..n).rev() {
+        rhs[col] /= mat[col * n + col];
+        for row in 0..col {
+            let v = mat[row * n + col] * rhs[col];
+            rhs[row] -= v;
+        }
+    }
+    true
+}
+
 fn als_train(
     indptr: &[i64],
     indices: &[i32],
@@ -341,6 +476,7 @@ fn als_train(
     verbose: bool,
     cg_iters: usize,
     use_cholesky: bool,
+    anderson_m: usize,
 ) -> (Vec<f32>, Vec<f32>) {
     let mut user_factors = random_factors(n_users, k, seed);
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
@@ -353,12 +489,12 @@ fn als_train(
     }
 
     let mut total_time = std::time::Duration::new(0, 0);
+    let use_aa = anderson_m > 0;
+    let mut accel = AndersonAccel::new(anderson_m);
 
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
-        
-        let start_u = std::time::Instant::now();
-        // 2) user_factors = solve(item_factors, data)
+
         let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], n: usize| {
             if use_cholesky {
                 solve_one_side_cholesky(ip, ix, d, other, gram, n, k, lambda, alpha)
@@ -367,6 +503,16 @@ fn als_train(
             }
         };
 
+        // ── Save pre-step state for Anderson ──────────────────────────────────
+        let x_old: Vec<f32> = if use_aa {
+            let mut v = user_factors.clone();
+            v.extend_from_slice(&item_factors);
+            v
+        } else {
+            Vec::new()
+        };
+
+        let start_u = std::time::Instant::now();
         let g_item = gramian(&item_factors, n_items, k);
         user_factors = solve(indptr, indices, data, &item_factors, &g_item, n_users);
         let u_time = start_u.elapsed();
@@ -375,13 +521,28 @@ fn als_train(
         let g_user = gramian(&user_factors, n_users, k);
         item_factors = solve(indptr_t, indices_t, data_t, &user_factors, &g_user, n_items);
         let i_time = start_i.elapsed();
+
+        // ── Anderson mixing ───────────────────────────────────────────────────
+        if use_aa {
+            let mut x_new: Vec<f32> = user_factors.clone();
+            x_new.extend_from_slice(&item_factors);
+            let f: Vec<f32> = x_new.iter().zip(&x_old).map(|(a, b)| a - b).collect();
+            let x_mixed = accel.push_and_mix(x_old, f);
+            // Write mixed factors back
+            let uf_len = n_users * k;
+            user_factors.copy_from_slice(&x_mixed[..uf_len]);
+            item_factors.copy_from_slice(&x_mixed[uf_len..]);
+        }
+
         let iter_time = iter_start.elapsed();
         total_time += iter_time;
 
         if verbose {
+            let aa_tag = if use_aa { " AA" } else { "   " };
             println!(
-                "  {:>4} | {:>10.1}s | {:>10.1}s | {:>9.1}s ",
+                "  {:>4}{} | {:>10.1}s | {:>10.1}s | {:>9.1}s ",
                 iter + 1,
+                aa_tag,
                 u_time.as_secs_f64(),
                 i_time.as_secs_f64(),
                 iter_time.as_secs_f64()
@@ -472,7 +633,7 @@ fn top_n_users(
 // ─── PyO3 exports ────────────────────────────────────────────────────────────
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -488,6 +649,7 @@ pub fn als_fit_implicit<'py>(
     verbose: bool,
     cg_iters: usize,
     use_cholesky: bool,
+    anderson_m: usize,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
     let ip = indptr.as_slice()?.to_vec();
     let ix = indices.as_slice()?.to_vec();
@@ -497,7 +659,7 @@ pub fn als_fit_implicit<'py>(
 
     let (uf, itf) = als_train(
         &ip, &ix, &id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-        alpha, iterations, seed, verbose, cg_iters, use_cholesky,
+        alpha, iterations, seed, verbose, cg_iters, use_cholesky, anderson_m,
     );
 
     let ua = PyArray1::from_vec(py, uf);
