@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusket"
-version = "0.1.10"
+version = "0.1.11"
 description = "Blazing-fast FP-Growth and Association Rules — pure Rust via PyO3"
 readme = "README.md"
 license = "MIT"
