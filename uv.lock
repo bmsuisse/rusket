@@ -2958,7 +2958,7 @@ wheels = [
 
 [[package]]
 name = "rusket"
-version = "0.1.10"
+version = "0.1.11"
 source = { editable = "." }
 dependencies = [
     { name = "efficient-apriori" },

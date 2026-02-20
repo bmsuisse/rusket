@@ -10,6 +10,10 @@ Measured on Apple M-series (arm64).
 
 The killer use case: sparse retail basket data with millions of transactions, fed through `from_transactions` → sparse CSR → Rust.
 
+### Interactive Chart
+
+<iframe src="../assets/scale_benchmark.html" width="100%" height="550px" style="border:none; border-radius:8px;"></iframe>
+
 | Dataset | `rusket` | `mlxtend` | **Speedup** | RAM |
 |---------|:--------:|:---------:|:-----------:|:---:|
 | 1M txns × 10k items (5 items/basket) | **0.49 s** | 18.4 s | **38×** | 25 MB |
