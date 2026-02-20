@@ -18,7 +18,7 @@ def fpgrowth(
     null_values: bool = False,
     use_colnames: bool = False,
     max_len: int | None = None,
-    method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
+    method: typing.Literal["fpgrowth", "eclat"] = "eclat",
     verbose: int = 0,
 ) -> pd.DataFrame:
     if method not in ["fpgrowth", "eclat"]:
