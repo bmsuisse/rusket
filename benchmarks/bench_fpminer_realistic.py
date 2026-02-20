@@ -140,6 +140,9 @@ HDR = "  " + f"{'rows':>14}  {'method':>10}  {'chunk':>6}  {'add_t':>8}  {'mine_
 SEP = "─" * 88
 
 
+SCALE_TARGETS = [100_000_000, 200_000_000, 500_000_000, 1_000_000_000]
+
+
 def run_dataset(name: str) -> None:
     info = DATASETS[name]
     path = download_if_missing(name)
@@ -156,9 +159,9 @@ def run_dataset(name: str) -> None:
 
     # ── Fast iteration on 100M ─────────────────────────────────────────────
     print(f"\n  ▶ Iteration phase — 100M rows")
-    print(f"  {SEP}")
+    print(f"  {-*88}")
     print(HDR)
-    print(f"  {SEP}")
+    print(f"  {-*88}")
 
     results_100m: list[dict] = []
     for method in ["fpgrowth", "eclat"]:
@@ -177,9 +180,9 @@ def run_dataset(name: str) -> None:
 
     # ── Validate best + all methods at 200M ────────────────────────────────
     print(f"\n  ▶ Validation phase — 200M rows")
-    print(f"  {SEP}")
+    print(f"  {-*88}")
     print(HDR)
-    print(f"  {SEP}")
+    print(f"  {-*88}")
 
     for method in ["eclat", "fpgrowth"]:
         r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
@@ -191,11 +194,11 @@ def run_dataset(name: str) -> None:
 
     # ── Scale-up to 1B using Eclat (the winner) ───────────────────────────
     print(f"\n  ▶ Scale-up to 1B — Eclat (winner from iteration)")
-    print(f"  {SEP}")
+    print(f"  {-*88}")
     print(HDR)
-    print(f"  {SEP}")
+    print(f"  {-*88}")
 
-    for target in TARGETS:
+    for target in SCALE_TARGETS:
         r = run_one(info=info, item_probs=item_probs, avg_items=avg_items,
                     n_items=n_items, target_rows=target,
                     chunk_txns=500_000, method="eclat")

@@ -32,6 +32,7 @@ class ALS:
         seed: int = 42,
         verbose: bool = False,
         cg_iters: int = 10,
+        use_cholesky: bool = False,
     ) -> None:
         """Implicit ALS model.
 
@@ -45,6 +46,8 @@ class ALS:
             cg_iters: CG solver iterations per ALS step.
                 Reduce to 3 for massive datasets (>100M ratings) — 3x speedup
                 with minimal quality loss on large sparse problems.
+            use_cholesky: Use direct Cholesky solve instead of CG.
+                Exact solution (no iterations). Faster when avg items/user >> factors.
         """
         self.factors = factors
         self.regularization = float(regularization)
@@ -53,6 +56,7 @@ class ALS:
         self.seed = seed
         self.verbose = verbose
         self.cg_iters = cg_iters
+        self.use_cholesky = use_cholesky
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -120,6 +124,7 @@ class ALS:
             self.seed,
             self.verbose,
             self.cg_iters,
+            self.use_cholesky,
         )
         self._n_users = n_users
         self._n_items = n_items

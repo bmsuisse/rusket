@@ -162,6 +162,118 @@ fn solve_one_side_cg(
     out
 }
 
+// ─── Cholesky solver for implicit ALS ────────────────────────────────────────
+//
+// Direct approach: form A = (YᵀY + λI) + Σᵢ(cᵢ-1)yᵢyᵢᵀ  (k×k)
+//                  b = Σᵢ cᵢ yᵢ                             (k)
+// Then solve Ax = b via Cholesky. O(k³ + nnz_u·k) per user.
+// Exact solution — no iterations. Wins when avg nnz_u >> k.
+//
+// Cholesky: we do the LL' factorisation in-place (lower-triangular).
+
+fn cholesky_solve_inplace(a: &mut [f32], b: &mut [f32], k: usize) {
+    // LL' factorisation of a (column-major k×k, lower triangle overwritten)
+    for j in 0..k {
+        // Compute diagonal
+        let mut sum = a[j * k + j];
+        for p in 0..j {
+            sum -= a[j * k + p] * a[j * k + p];
+        }
+        if sum <= 0.0 {
+            sum = 1e-8; // numerical guard
+        }
+        let ljj = sum.sqrt();
+        a[j * k + j] = ljj;
+        let inv_ljj = 1.0 / ljj;
+
+        // Fill column j below diagonal
+        for i in (j + 1)..k {
+            let mut s = a[i * k + j];
+            for p in 0..j {
+                s -= a[i * k + p] * a[j * k + p];
+            }
+            a[i * k + j] = s * inv_ljj;
+        }
+    }
+
+    // Forward substitution: L·y = b
+    for i in 0..k {
+        let mut s = b[i];
+        for j in 0..i {
+            s -= a[i * k + j] * b[j];
+        }
+        b[i] = s / a[i * k + i];
+    }
+
+    // Backward substitution: L'·x = y
+    for i in (0..k).rev() {
+        let mut s = b[i];
+        for j in (i + 1)..k {
+            s -= a[j * k + i] * b[j];
+        }
+        b[i] = s / a[i * k + i];
+    }
+}
+
+thread_local! {
+    static SCRATCH_CHOL: RefCell<(Vec<f32>, Vec<f32>)> =
+        RefCell::new((Vec::new(), Vec::new()));
+}
+
+fn solve_one_side_cholesky(
+    indptr: &[i64],
+    indices: &[i32],
+    data: &[f32],
+    other: &[f32],
+    gram: &[f32],
+    n: usize,
+    k: usize,
+    lambda: f32,
+    alpha: f32,
+) -> Vec<f32> {
+    let eff_lambda = lambda.max(1e-6);
+    let mut out = vec![0.0f32; n * k];
+
+    out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
+        let start = indptr[u] as usize;
+        let end   = indptr[u + 1] as usize;
+
+        SCRATCH_CHOL.with(|cell| {
+            let mut borrow = cell.borrow_mut();
+            let (ref mut a_buf, ref mut b_buf) = *borrow;
+            // a_buf = k×k matrix A (row-major), b_buf = rhs of length k
+            a_buf.clear(); a_buf.extend_from_slice(gram); // start with YᵀY
+            b_buf.clear(); b_buf.resize(k, 0.0);
+
+            // Add λI to diagonal
+            for j in 0..k { a_buf[j * k + j] += eff_lambda; }
+
+            // Add sparse part: Σᵢ (cᵢ-1) yᵢ yᵢᵀ  and accumulate rhs
+            for idx in start..end {
+                let i = indices[idx] as usize;
+                let ci = 1.0 + alpha * data[idx];
+                let yi = &other[i * k..(i + 1) * k];
+
+                // rhs: b += ci * yi
+                axpy(ci, yi, b_buf);
+
+                // matrix: A += (ci-1) * yi * yi'
+                let w = ci - 1.0;
+                for r in 0..k {
+                    axpy(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
+                }
+            }
+
+            if b_buf.iter().all(|&v| v == 0.0) { return; }
+
+            cholesky_solve_inplace(a_buf, b_buf, k);
+            xu.copy_from_slice(b_buf);
+        });
+    });
+
+    out
+}
+
 // ─── CSR transpose ───────────────────────────────────────────────────────────
 
 fn csr_transpose(
@@ -228,12 +340,14 @@ fn als_train(
     seed: u64,
     verbose: bool,
     cg_iters: usize,
+    use_cholesky: bool,
 ) -> (Vec<f32>, Vec<f32>) {
     let mut user_factors = random_factors(n_users, k, seed);
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
 
     if verbose {
-        println!("  Optimizing {} latent factors using Conjugate Gradient.", k);
+        let solver_name = if use_cholesky { "Cholesky" } else { &format!("CG(iters={})", cg_iters) };
+        println!("  Solver: {}  factors={}", solver_name, k);
         println!("  ITER | USER FACTORS | ITEM FACTORS | TOTAL TIME ");
         println!("  ------------------------------------------------");
     }
@@ -245,36 +359,21 @@ fn als_train(
         
         let start_u = std::time::Instant::now();
         // 2) user_factors = solve(item_factors, data)
+        let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], n: usize| {
+            if use_cholesky {
+                solve_one_side_cholesky(ip, ix, d, other, gram, n, k, lambda, alpha)
+            } else {
+                solve_one_side_cg(ip, ix, d, other, gram, n, k, lambda, alpha, cg_iters)
+            }
+        };
+
         let g_item = gramian(&item_factors, n_items, k);
-        user_factors = solve_one_side_cg(
-            indptr,
-            indices,
-            data,
-            &item_factors,
-            &g_item,
-            n_users,
-            k,
-            lambda,
-            alpha,
-            cg_iters,
-        );
+        user_factors = solve(indptr, indices, data, &item_factors, &g_item, n_users);
         let u_time = start_u.elapsed();
 
         let start_i = std::time::Instant::now();
-        // 3) item_factors = solve(user_factors, data_t)
         let g_user = gramian(&user_factors, n_users, k);
-        item_factors = solve_one_side_cg(
-            indptr_t,
-            indices_t,
-            data_t,
-            &user_factors,
-            &g_user,
-            n_items,
-            k,
-            lambda,
-            alpha,
-            cg_iters,
-        );
+        item_factors = solve(indptr_t, indices_t, data_t, &user_factors, &g_user, n_items);
         let i_time = start_i.elapsed();
         let iter_time = iter_start.elapsed();
         total_time += iter_time;
@@ -373,7 +472,7 @@ fn top_n_users(
 // ─── PyO3 exports ────────────────────────────────────────────────────────────
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=3))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -388,6 +487,7 @@ pub fn als_fit_implicit<'py>(
     seed: u64,
     verbose: bool,
     cg_iters: usize,
+    use_cholesky: bool,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
     let ip = indptr.as_slice()?.to_vec();
     let ix = indices.as_slice()?.to_vec();
@@ -397,7 +497,7 @@ pub fn als_fit_implicit<'py>(
 
     let (uf, itf) = als_train(
         &ip, &ix, &id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-        alpha, iterations, seed, verbose, cg_iters,
+        alpha, iterations, seed, verbose, cg_iters, use_cholesky,
     );
 
     let ua = PyArray1::from_vec(py, uf);
