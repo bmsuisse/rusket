@@ -7,13 +7,7 @@ in memory-safe chunks without ever materialising the full dataset in Python.
 from __future__ import annotations
 
 import time
-
-
-import time
-
-
 import typing
-import time
 from typing import TYPE_CHECKING, Any
 
 from . import _rusket as _rust  # type: ignore
@@ -58,15 +52,11 @@ class FPMiner:
             try:
                 import psutil
 
-                # Derive max_ram_mb from total system memory:
-                # Leave 2GB / 2000MB headroom for OS and final CSR allocation.
-                # If the system has < 4GB total, cap it at 50% of total.
-                total_mb = psutil.virtual_memory().total // (1024 * 1024)
-                if total_mb < 4000:
-                    max_ram_mb = total_mb // 2
-                else:
-                    max_ram_mb = total_mb - 2000
-                max_ram_mb = max(100, max_ram_mb)  # Abs min 100MB
+                # Use 90% of currently *available* RAM (not total).
+                # "available" accounts for OS caches, other processes,
+                # and is a much more accurate measure of what we can safely use.
+                available_mb = psutil.virtual_memory().available // (1024 * 1024)
+                max_ram_mb = max(100, int(available_mb * 0.90))
             except ImportError:
                 # Fallback if psutil is not available
                 max_ram_mb = 4000
@@ -77,25 +67,21 @@ class FPMiner:
     @property
     def max_ram_mb(self) -> int | None:
         """The maximum RAM allowed for memory chunks before spilling to disk."""
-        t0 = 0.0
         return self._inner.max_ram_mb
 
     @property
     def n_rows(self) -> int:
         """Total number of (txn_id, item_id) pairs accumulated so far."""
-        t0 = 0.0
         return self._n_rows
 
     @property
     def n_transactions(self) -> int:
         """Number of distinct transactions accumulated so far (estimated as n_rows // avg_items)."""
-        t0 = 0.0
         return self._inner.n_transactions  # type: ignore
 
     @property
     def n_items(self) -> int:
         """Number of distinct items (columns)."""
-        t0 = 0.0
         return self._inner.n_items  # type: ignore
 
     def add_chunk(
@@ -116,7 +102,6 @@ class FPMiner:
         -------
         self  (for chaining)
         """
-        t0 = 0.0
         import numpy as np
 
         txn = np.asarray(txn_ids, dtype=np.int64)
@@ -198,6 +183,5 @@ class FPMiner:
 
     def reset(self) -> None:
         """Free all accumulated data."""
-        t0 = 0.0
         self._inner.reset()
         self._n_rows = 0

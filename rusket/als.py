@@ -31,17 +31,18 @@ class ALS:
         iterations: int = 15,
         seed: int = 42,
         verbose: bool = False,
+        cg_iters: int = 3,
     ) -> None:
-        """
-        Initialize the Implicit ALS recommender.
-        
+        """Implicit ALS model.
+
         Args:
-            factors: Number of latent factors
-            regularization: L2 regularization penalty
-            alpha: Confidence scaling factor (C_ui = 1 + alpha * R_ui)
-            iterations: Number of alternating least squares iterations
-            seed: Random seed for initialization
-            verbose: Whether to print optimization progress
+            factors: Latent factor count.
+            regularization: L2 regularisation weight.
+            alpha: Confidence scaling ``C = 1 + alpha * r``.
+            iterations: Number of ALS alternating steps.
+            seed: Random seed.
+            verbose: Print per-iteration timing.
+            cg_iters: CG solver iterations per ALS step (3 is usually enough).
         """
         self.factors = factors
         self.regularization = float(regularization)
@@ -49,6 +50,7 @@ class ALS:
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
+        self.cg_iters = cg_iters
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -115,6 +117,7 @@ class ALS:
             self.iterations,
             self.seed,
             self.verbose,
+            self.cg_iters,
         )
         self._n_users = n_users
         self._n_items = n_items

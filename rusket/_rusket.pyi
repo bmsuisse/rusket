@@ -43,6 +43,7 @@ def als_fit_implicit(
     iterations: int,
     seed: int,
     verbose: bool,
+    cg_iters: int = 3,
 ) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
 def als_recommend_items(
     user_factors: npt.NDArray[np.float32],

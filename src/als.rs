@@ -1,7 +1,8 @@
-use faer::{Mat, linalg::matmul::matmul, Accum, Par};
+use faer::{MatRef, linalg::matmul::matmul, Accum, Par};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::cell::RefCell;
 
 // ─── Dot / axpy helpers ──────────────────────────────────────────────────────
 
@@ -13,31 +14,49 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
 
 #[inline(always)]
 fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
-    for (yi, xi) in y.iter_mut().zip(x) {
-        *yi += alpha * xi;
+    // 8-wide manual unroll — compiler can auto-vectorize with -C opt-level=3
+    let n = x.len();
+    let chunks = n / 8 * 8;
+    let mut i = 0;
+    while i < chunks {
+        y[i]   += alpha * x[i];
+        y[i+1] += alpha * x[i+1];
+        y[i+2] += alpha * x[i+2];
+        y[i+3] += alpha * x[i+3];
+        y[i+4] += alpha * x[i+4];
+        y[i+5] += alpha * x[i+5];
+        y[i+6] += alpha * x[i+6];
+        y[i+7] += alpha * x[i+7];
+        i += 8;
+    }
+    while i < n {
+        y[i] += alpha * x[i];
+        i += 1;
     }
 }
 
 // ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
-    // View factors as a faer matrix (n × k), column-major by building a Mat.
-    // faer's matmul computes Yᵀ · Y with SIMD blocking and Rayon parallelism.
-    let y: Mat<f32> = Mat::from_fn(n, k, |r, c| factors[r * k + c]);
+    // Build a zero-copy faer MatRef using raw pointer + explicit strides.
+    // factors is row-major: element (r,c) = factors[r*k + c].
+    // faer from_raw_parts(ptr, nrows, ncols, row_stride, col_stride)
+    // SAFETY: factors has n*k f32 elements, lifetime scoped to this function.
+    let y: faer::MatRef<f32> = unsafe {
+        faer::mat::from_raw_parts(factors.as_ptr(), n, k, k as isize, 1isize)
+    };
     let yt = y.transpose();
 
-    let mut g: Mat<f32> = Mat::zeros(k, k);
-    // g = Yᵀ · Y   (alpha=1, beta=0, parallel)
+    let mut g = faer::Mat::<f32>::zeros(k, k);
     matmul(
         g.as_mut(),
         Accum::Replace,
         yt,
-        y.as_ref(),
+        y,
         1.0f32,
-        Par::rayon(0), // use all available threads via Rayon
+        Par::rayon(0),
     );
 
-    // Flatten to Vec<f32> in row-major order (matching our existing layout)
     let mut r = vec![0.0f32; k * k];
     for a in 0..k {
         for b in 0..k {
@@ -57,7 +76,11 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
 //
 // This is O(k × nnz_per_row) per CG iteration, and we need only ~3 iterations.
 
-const CG_ITERS: usize = 10;
+// Thread-local scratch buffers — allocated once per thread, reused across users.
+thread_local! {
+    static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
+        RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new()));
+}
 
 fn solve_one_side_cg(
     indptr: &[i64],
@@ -69,6 +92,7 @@ fn solve_one_side_cg(
     k: usize,
     lambda: f32,
     alpha: f32,
+    cg_iters: usize,
 ) -> Vec<f32> {
     let eff_lambda = lambda.max(1e-6);
     let mut out = vec![0.0f32; n * k];
@@ -78,8 +102,7 @@ fn solve_one_side_cg(
         let end = indptr[u + 1] as usize;
         let nnz_u = end - start;
 
-        // Pre-collect sparse data for this user
-        // (item_index, confidence) pairs
+        // Pre-collect (item, confidence) pairs
         let mut sparse: Vec<(usize, f32)> = Vec::with_capacity(nnz_u);
         for idx in start..end {
             let i = indices[idx] as usize;
@@ -87,70 +110,58 @@ fn solve_one_side_cg(
             sparse.push((i, c));
         }
 
-        // Compute RHS: b = Σᵢ cᵢ yᵢ
-        let mut b = vec![0.0f32; k];
-        for &(i, c) in &sparse {
-            let yi = &other[i * k..(i + 1) * k];
-            axpy(c, yi, &mut b);
-        }
+        // Use thread-local scratch to avoid heap alloc per user
+        SCRATCH.with(|cell| {
+            let mut borrow = cell.borrow_mut();
+            let (ref mut b, ref mut r, ref mut p, ref mut ap) = *borrow;
+            b.clear(); b.resize(k, 0.0);
+            r.clear(); r.resize(k, 0.0);
+            p.clear(); p.resize(k, 0.0);
+            ap.clear(); ap.resize(k, 0.0);
 
-        // ── CG iteration ─────────────────────────────────────────
-        // x₀ = 0, r₀ = b - A·x₀ = b, p₀ = r₀
-
-        // A·v helper (inline closure): computes A·v = (YᵀY + λI)·v + Σᵢ(cᵢ-1)(yᵢᵀv)yᵢ
-        let apply_a = |v: &[f32], out: &mut [f32]| {
-            // out = (YᵀY) · v
-            for a in 0..k {
-                let mut s = 0.0f32;
-                for b in 0..k {
-                    s += gram[a * k + b] * v[b];
-                }
-                out[a] = s + eff_lambda * v[a];
-            }
-            // Add sparse part: Σᵢ(cᵢ-1)(yᵢᵀv)yᵢ
+            // Compute RHS: b = Σᵢ cᵢ yᵢ
             for &(i, c) in &sparse {
                 let yi = &other[i * k..(i + 1) * k];
-                let w = (c - 1.0) * dot(yi, v);
-                axpy(w, yi, out);
+                axpy(c, yi, b);
             }
-        };
 
-        // x = 0
-        xu.fill(0.0);
-        let mut r = b.clone(); // r = b (since x=0)
-        let mut p = r.clone(); // p = r
-        let mut rsold = dot(&r, &r);
+            // A·v helper: A·v = (YᵀY + λI)·v + Σᵢ(cᵢ-1)(yᵢᵀv)yᵢ
+            let apply_a = |v: &[f32], out: &mut [f32]| {
+                for a in 0..k {
+                    let mut s = 0.0f32;
+                    for bb in 0..k { s += gram[a * k + bb] * v[bb]; }
+                    out[a] = s + eff_lambda * v[a];
+                }
+                for &(i, c) in &sparse {
+                    let yi = &other[i * k..(i + 1) * k];
+                    let w = (c - 1.0) * dot(yi, v);
+                    axpy(w, yi, out);
+                }
+            };
 
-        if rsold < 1e-20 {
-            return; // zero RHS means zero solution
-        }
+            xu.fill(0.0);
+            r.copy_from_slice(b);
+            p.copy_from_slice(b);
+            let mut rsold = dot(r, r);
 
-        let mut ap = vec![0.0f32; k];
+            if rsold < 1e-20 { return; }
 
-        for _ in 0..CG_ITERS {
-            apply_a(&p, &mut ap);
-            let pap = dot(&p, &ap);
-            if pap <= 0.0 {
-                break;
+            for _ in 0..cg_iters {
+                apply_a(p, ap);
+                let pap = dot(p, ap);
+                if pap <= 0.0 { break; }
+                let ak = rsold / pap;
+
+                axpy(ak, p, xu);
+                axpy(-ak, ap, r);
+
+                let rsnew = dot(r, r);
+                if rsnew < 1e-20 { break; }
+                let beta = rsnew / rsold;
+                for j in 0..k { p[j] = r[j] + beta * p[j]; }
+                rsold = rsnew;
             }
-            let ak = rsold / pap;
-
-            // x += ak * p
-            axpy(ak, &p, xu);
-            // r -= ak * Ap
-            axpy(-ak, &ap, &mut r);
-
-            let rsnew = dot(&r, &r);
-            if rsnew < 1e-20 {
-                break;
-            }
-            let beta = rsnew / rsold;
-            // p = r + beta * p
-            for j in 0..k {
-                p[j] = r[j] + beta * p[j];
-            }
-            rsold = rsnew;
-        }
+        }); // end SCRATCH.with
     });
 
     out
@@ -221,6 +232,7 @@ fn als_train(
     iterations: usize,
     seed: u64,
     verbose: bool,
+    cg_iters: usize,
 ) -> (Vec<f32>, Vec<f32>) {
     let mut user_factors = random_factors(n_users, k, seed);
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
@@ -249,6 +261,7 @@ fn als_train(
             k,
             lambda,
             alpha,
+            cg_iters,
         );
         let u_time = start_u.elapsed();
 
@@ -265,6 +278,7 @@ fn als_train(
             k,
             lambda,
             alpha,
+            cg_iters,
         );
         let i_time = start_i.elapsed();
         let iter_time = iter_start.elapsed();
@@ -364,7 +378,7 @@ fn top_n_users(
 // ─── PyO3 exports ────────────────────────────────────────────────────────────
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=3))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -378,17 +392,17 @@ pub fn als_fit_implicit<'py>(
     iterations: usize,
     seed: u64,
     verbose: bool,
+    cg_iters: usize,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
     let ip = indptr.as_slice()?.to_vec();
     let ix = indices.as_slice()?.to_vec();
     let id = data.as_slice()?.to_vec();
 
-    // 1) Build transpose graph
     let (ti, tx, td) = csr_transpose(&ip, &ix, &id, n_users, n_items);
 
     let (uf, itf) = als_train(
         &ip, &ix, &id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-        alpha, iterations, seed, verbose,
+        alpha, iterations, seed, verbose, cg_iters,
     );
 
     let ua = PyArray1::from_vec(py, uf);
