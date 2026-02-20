@@ -145,8 +145,7 @@ fn _mine_fptda_dense(
         .collect();
 
     // 3. Mine.
-    let mut results = Vec::new();
-    mine_projection(&itemsets, frequent_len, &[], min_count, max_len, &original_items, &mut results);
+    let results = mine_tda_iterative(itemsets, &original_items, min_count, max_len, frequent_len);
 
     Ok(flatten_results(results))
 }
@@ -208,8 +207,7 @@ fn _mine_fptda_csr(
         .collect();
 
     // 3. Mine.
-    let mut results = Vec::new();
-    mine_projection(&itemsets, frequent_len, &[], min_count, max_len, &original_items, &mut results);
+    let results = mine_tda_iterative(itemsets, &original_items, min_count, max_len, frequent_len);
 
     Ok(flatten_results(results))
 }
