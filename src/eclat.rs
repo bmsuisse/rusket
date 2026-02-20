@@ -1,7 +1,7 @@
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use smallvec::SmallVec;
+
 
 use crate::fpgrowth::{process_item_counts, flatten_results};
 

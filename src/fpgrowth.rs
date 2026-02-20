@@ -1,39 +1,38 @@
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use smallvec::SmallVec;
+
 
 const PAR_ITEMS_CUTOFF: usize = 4;
 
-#[derive(Debug, Clone)]
+/// Compact FP-tree node – children are stored in a separate flat arena
+/// so that nodes are small (32 bytes) and cache-friendly.
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct FPNode {
     pub item: u32,
     pub count: u64,
-    pub parent: usize,
-    pub children: SmallVec<[(u32, usize); 4]>,
+    pub parent: u32,
+    /// Range [children_start..children_end) into FPTree::children_arena
+    pub children_start: u32,
+    pub children_end: u32,
 }
 
 impl FPNode {
-    #[inline]
-    fn new(item: u32, count: u64, parent: usize) -> Self {
-        FPNode { item, count, parent, children: SmallVec::new() }
+    #[inline(always)]
+    fn new(item: u32, count: u64, parent: u32) -> Self {
+        FPNode { item, count, parent, children_start: 0, children_end: 0 }
     }
-
-    #[inline]
-    fn find_child(&self, item: u32) -> Option<usize> {
-        for &(k, v) in &self.children { if k == item { return Some(v); } }
-        None
-    }
-
-    #[inline]
-    fn add_child(&mut self, item: u32, idx: usize) { self.children.push((item, idx)); }
 }
 
 pub(crate) struct FPTree {
     pub nodes: Vec<FPNode>,
-    pub item_nodes: Vec<Vec<usize>>,
+    /// Flat arena of (item, child_node_idx) pairs.
+    children_arena: Vec<(u32, u32)>,
+    pub item_nodes: Vec<Vec<u32>>,
     pub original_items: Vec<u32>,
     pub cond_items: Vec<u32>,
+    /// Tracked incrementally: false once any node gets >1 child.
+    single_path: bool,
 }
 
 impl FPTree {
@@ -43,32 +42,81 @@ impl FPTree {
         nodes.push(root);
         FPTree {
             nodes,
+            children_arena: Vec::with_capacity(256),
             item_nodes: vec![Vec::new(); num_items],
             original_items,
             cond_items: Vec::new(),
+            single_path: true,
         }
     }
 
+    #[inline(always)]
     pub fn is_path(&self) -> bool {
-        for node in &self.nodes {
-            if node.children.len() > 1 { return false; }
+        self.single_path
+    }
+
+    #[inline]
+    fn find_child(&self, node_idx: u32, item: u32) -> Option<u32> {
+        let node = &self.nodes[node_idx as usize];
+        let start = node.children_start as usize;
+        let end = node.children_end as usize;
+        for i in start..end {
+            let (k, v) = self.children_arena[i];
+            if k == item {
+                return Some(v);
+            }
         }
-        true
+        None
+    }
+
+    #[inline]
+    fn add_child(&mut self, parent_idx: u32, item: u32, child_idx: u32) {
+        let parent = &self.nodes[parent_idx as usize];
+        let n_children = parent.children_end - parent.children_start;
+
+        if n_children == 0 {
+            // First child: point to end of arena
+            let pos = self.children_arena.len() as u32;
+            self.children_arena.push((item, child_idx));
+            let parent = &mut self.nodes[parent_idx as usize];
+            parent.children_start = pos;
+            parent.children_end = pos + 1;
+        } else if parent.children_end as usize == self.children_arena.len() {
+            // Children are at the tail of the arena, just append
+            self.children_arena.push((item, child_idx));
+            self.nodes[parent_idx as usize].children_end += 1;
+            if n_children >= 1 {
+                self.single_path = false;
+            }
+        } else {
+            // Children are in the middle — relocate to end
+            let old_start = parent.children_start as usize;
+            let old_end = parent.children_end as usize;
+            let new_start = self.children_arena.len() as u32;
+            for i in old_start..old_end {
+                self.children_arena.push(self.children_arena[i]);
+            }
+            self.children_arena.push((item, child_idx));
+            let parent = &mut self.nodes[parent_idx as usize];
+            parent.children_start = new_start;
+            parent.children_end = new_start + (old_end - old_start) as u32 + 1;
+            self.single_path = false;
+        }
     }
 
     pub fn insert_itemset(&mut self, itemset: &[u32], count: u64) {
         self.nodes[0].count += count;
         if itemset.is_empty() { return; }
-        let mut node_idx = 0usize;
+        let mut node_idx = 0u32;
         for &item in itemset {
-            if let Some(child_idx) = self.nodes[node_idx].find_child(item) {
-                self.nodes[child_idx].count += count;
+            if let Some(child_idx) = self.find_child(node_idx, item) {
+                self.nodes[child_idx as usize].count += count;
                 node_idx = child_idx;
             } else {
-                let new_idx = self.nodes.len();
+                let new_idx = self.nodes.len() as u32;
                 let new_node = FPNode::new(item, count, node_idx);
                 self.nodes.push(new_node);
-                self.nodes[node_idx].add_child(item, new_idx);
+                self.add_child(node_idx, item, new_idx);
                 self.item_nodes[item as usize].push(new_idx);
                 node_idx = new_idx;
             }
@@ -79,18 +127,20 @@ impl FPTree {
         let node_indices = &self.item_nodes[item as usize];
         let mut counts = vec![0u64; item as usize];
 
+        // Collect branches with a reusable buffer
         let mut branches: Vec<(Vec<u32>, u64)> = Vec::with_capacity(node_indices.len());
+        let mut branch_buf = Vec::with_capacity(32);
         for &ni in node_indices {
-            let mut branch = Vec::new();
-            let mut idx = self.nodes[ni].parent;
-            while self.nodes[idx].item != u32::MAX {
-                branch.push(self.nodes[idx].item);
-                idx = self.nodes[idx].parent;
+            branch_buf.clear();
+            let mut idx = self.nodes[ni as usize].parent;
+            while self.nodes[idx as usize].item != u32::MAX {
+                branch_buf.push(self.nodes[idx as usize].item);
+                idx = self.nodes[idx as usize].parent;
             }
-            branch.reverse();
-            let node_count = self.nodes[ni].count;
-            for &i in &branch { counts[i as usize] += node_count; }
-            branches.push((branch, node_count));
+            branch_buf.reverse();
+            let node_count = self.nodes[ni as usize].count;
+            for &i in &branch_buf { counts[i as usize] += node_count; }
+            branches.push((branch_buf.clone(), node_count));
         }
 
         let mut valid_items: Vec<(u32, u64)> = counts
@@ -112,14 +162,13 @@ impl FPTree {
         cond_tree.cond_items = self.cond_items.clone();
         cond_tree.cond_items.push(self.original_items[item as usize]);
 
+        let mut filtered = Vec::with_capacity(32);
         for (branch, branch_count) in branches {
-            let mut filtered: Vec<u32> = branch
-                .into_iter()
-                .filter_map(|i| {
-                    let new_id = old_to_new[i as usize];
-                    if new_id != u32::MAX { Some(new_id) } else { None }
-                })
-                .collect();
+            filtered.clear();
+            for i in branch {
+                let new_id = old_to_new[i as usize];
+                if new_id != u32::MAX { filtered.push(new_id); }
+            }
             if filtered.is_empty() { continue; }
             filtered.sort_unstable();
             cond_tree.insert_itemset(&filtered, branch_count);
@@ -170,7 +219,7 @@ pub(crate) fn fpg_step(
             for combo in combinations(&local_ids, size) {
                 let support = combo
                     .iter()
-                    .map(|&local_id| tree.nodes[tree.item_nodes[local_id as usize][0]].count)
+                    .map(|&local_id| tree.nodes[tree.item_nodes[local_id as usize][0] as usize].count)
                     .min()
                     .unwrap_or(0);
                 let mut iset = tree.cond_items.clone();
@@ -186,7 +235,7 @@ pub(crate) fn fpg_step(
             .map(|local_id| {
                 let support: u64 = tree.item_nodes[local_id as usize]
                     .iter()
-                    .map(|&ni| tree.nodes[ni].count)
+                    .map(|&ni| tree.nodes[ni as usize].count)
                     .sum();
                 let cond_tree = tree.conditional_tree(local_id, minsup);
                 (local_id, support, cond_tree)
