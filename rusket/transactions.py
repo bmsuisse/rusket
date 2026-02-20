@@ -265,22 +265,27 @@ def _from_dataframe(
             f"Available columns: {cols}"
         )
 
-    # Encode transaction IDs and items as integers (no Python loops)
-    txn_cat = pd.Categorical(df[txn_col])
-    item_cat = pd.Categorical(df[itm_col])
+    # Encode transaction IDs and items as contiguous integers.
+    # pd.factorize is faster than pd.Categorical at billion scale.
+    txn_codes, _txn_uniques = pd.factorize(df[txn_col], sort=False)
+    item_codes, item_uniques = pd.factorize(df[itm_col], sort=True)
 
-    row_idx = txn_cat.codes.astype(np.int64)
-    col_idx = item_cat.codes.astype(np.int64)
-    n_txn = len(txn_cat.categories)
-    n_items = len(item_cat.categories)
+    n_txn = int(txn_codes.max()) + 1
+    n_items = len(item_uniques)
 
-    data = np.ones(len(row_idx), dtype=bool)
-    csr = sp.csr_matrix((data, (row_idx, col_idx)), shape=(n_txn, n_items))
+    # Build CSR directly from COO — single allocation, no Python loops
+    data = np.ones(len(txn_codes), dtype=np.int8)
+    csr = sp.csr_matrix(
+        (data, (txn_codes.astype(np.int64), item_codes.astype(np.int64))),
+        shape=(n_txn, n_items),
+    )
+    # Deduplicate: clip to boolean (same item appearing twice in a txn)
+    csr.data = np.minimum(csr.data, 1)
 
-    # Build sparse DataFrame
-    item_names = [str(c) for c in item_cat.categories]
+    # Convert to sparse pandas DataFrame
+    item_names = [str(c) for c in item_uniques]
     return pd.DataFrame.sparse.from_spmatrix(
-        csr,
-        columns=item_names,
+        csr, columns=item_names,
     ).astype(pd.SparseDtype("bool", fill_value=False))
+
 

@@ -385,15 +385,33 @@ rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 
 ## ⚡ Benchmarks
 
-### Synthetic Data
+### Scale Benchmarks (1M → 200M rows)
 
-| Dataset | `rusket` (fpgrowth) | `rusket` (eclat) | `mlxtend` | Speedup | RAM |
-|---------|:-------------------:|:----------------:|:---------:|:-------:|:---:|
-| 100k txns × 1k items | **0.4 s** | 1.1 s | 4.6 s | **12×** | — |
-| 100k txns × 5k items | **3.6 s** | 4.8 s | 6.4 s | **1.8×** | — |
-| 500k txns × 5k items | **27.7 s** | 31.2 s | 41.8 s | **1.5×** | — |
-| **1M txns × 10k items** (sparse) | **0.49 s** | 0.43 s | 18.4 s | **38×** | 25 MB |
-| **2M txns × 10k items** (sparse) | **0.68 s** | 0.72 s | 45.2 s | **66×** | 50 MB |
+| Scale | `from_transactions` → fpgrowth | Direct CSR → Rust | **Speedup** |
+|---|:---:|:---:|:---:|
+| 1M rows | 5.0s | **0.1s** | **50×** |
+| 10M rows | 24.4s | **1.7s** | **14×** |
+| 50M rows | 63.1s | **10.9s** | **6×** |
+| 100M rows (20M txns × 200k items) | 134.2s | **25.9s** | **5×** |
+| 200M rows (40M txns × 200k items) | 246.8s | **73.1s** | **3×** |
+
+#### Power-user path: Direct CSR → Rust
+
+```python
+import numpy as np
+from scipy import sparse as sp
+from rusket import fpgrowth
+
+# Build CSR directly from integer IDs (no pandas!)
+csr = sp.csr_matrix(
+    (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
+    shape=(n_transactions, n_items),
+)
+freq = fpgrowth(csr, min_support=0.001, max_len=3,
+                use_colnames=True, column_names=item_names)
+```
+
+> At 100M rows, the mining step takes **1.3 seconds** — the bottleneck is entirely the CSR build.
 
 ### Real-World Datasets
 
@@ -402,18 +420,12 @@ rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 | [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) | **TIMEOUT** 💥 | ∞ |
 | [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** | 16.2 s | **2×** |
 
-> On dense real-world data, `mlxtend` can't even finish — `rusket` mines **22.8 million itemsets in under 10 seconds**.
->
-> At million scale with sparse CSR input, `rusket` uses **only 25–50 MB of RAM** and finishes in under a second — **66× faster** than `mlxtend`.
-
 Run benchmarks yourself:
 
 ```bash
-# pytest-benchmark suite
-uv run pytest tests/test_benchmark.py -v -s
-
-# Real-world dataset benchmark (auto-downloads data)
-uv run python benchmarks/bench_realworld.py
+uv run python benchmarks/bench_scale.py       # Scale benchmark + Plotly chart
+uv run python benchmarks/bench_realworld.py   # Real-world datasets
+uv run pytest tests/test_benchmark.py -v -s   # pytest-benchmark
 ```
 
 ---

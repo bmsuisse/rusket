@@ -20,6 +20,7 @@ def fpgrowth(
     max_len: int | None = None,
     method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
     verbose: int = 0,
+    column_names: list[str] | None = None,
 ) -> pd.DataFrame:
     if method not in ["fpgrowth", "eclat"]:
         raise ValueError(f"`method` must be 'fpgrowth' or 'eclat'. Got: {method}")
@@ -41,6 +42,23 @@ def fpgrowth(
         return _fpgrowth_polars(
             typing.cast("pl.DataFrame", df), min_support, use_colnames, max_len, method
         )
+
+    # scipy sparse CSR matrix — skip pandas entirely, pass to Rust directly
+    if t == "csr_matrix" or t == "csr_array":
+        import numpy as np
+
+        csr = df
+        n_rows, n_cols = csr.shape
+        min_count = math.ceil(min_support * n_rows)
+        csr.eliminate_zeros()
+        indptr = np.asarray(csr.indptr, dtype=np.int32)
+        indices = np.asarray(csr.indices, dtype=np.int32)
+        if method == "fpgrowth":
+            raw = _rust.fpgrowth_from_csr(indptr, indices, n_cols, min_count, max_len)
+        else:
+            raw = _rust.eclat_from_csr(indptr, indices, n_cols, min_count, max_len)
+        col_names = column_names or [str(i) for i in range(n_cols)]
+        return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
     if t == "ndarray":
         import numpy as np
