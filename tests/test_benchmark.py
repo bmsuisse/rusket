@@ -48,11 +48,36 @@ def _make_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> pd.DataFrame
     )
 
 
+def _make_sparse_df(
+    n_rows: int, n_cols: int, items_per_row: int, rng: np.random.Generator
+) -> pd.DataFrame:
+    """Real retail-basket style: each transaction contains only a handful of items.
+
+    Each row selects exactly `items_per_row` distinct columns uniformly at
+    random — giving a density of items_per_row/n_cols per cell (often < 1%).
+    This is the regime where FP-TDA should shine vs FP-Growth.
+    """
+    data = np.zeros((n_rows, n_cols), dtype=np.uint8)
+    for i in range(n_rows):
+        cols = rng.choice(n_cols, size=items_per_row, replace=False)
+        data[i, cols] = 1
+    return pd.DataFrame(data, columns=[f"i{c}" for c in range(n_cols)])
+
+
 RNG = np.random.default_rng(0)
 DF_TINY = _make_df(5, 11, RNG)  # correctness / smoke
 DF_SMALL = _make_df(1_000, 50, RNG)
 DF_MEDIUM = _make_df(10_000, 400, RNG)
 DF_LARGE = _make_df(100_000, 1_000, RNG)
+
+# Sparse "retail basket" datasets — 2-8 items per transaction, large catalogue
+RNG_SP = np.random.default_rng(42)
+# ~3 items / transaction across 500 items  →  density ≈ 0.6%
+DF_SPARSE_SMALL  = _make_sparse_df(10_000,  500,  3, RNG_SP)
+# ~5 items / transaction across 1000 items →  density ≈ 0.5%
+DF_SPARSE_MEDIUM = _make_sparse_df(30_000,  1_000, 5, RNG_SP)
+# ~7 items / transaction across 2000 items →  density ≈ 0.35%
+DF_SPARSE_LARGE  = _make_sparse_df(100_000, 2_000, 7, RNG_SP)
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +187,73 @@ def test_benchmark_fptda_polars_large(benchmark) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Head-to-head: FP-TDA vs FP-Growth (internal)
+# Sparse "retail basket" benchmarks — the regime where FP-TDA is designed for
+# (very few items per transaction, large catalogue)
+# ---------------------------------------------------------------------------
+
+# min_support chosen so ≥ a handful of frequent items still exist
+# (with 3 items/row over 500 cols, P(any item) ≈ 0.6%)
+_SPARSE_SMALL_SUP  = 0.002   # ≈ 20 out of 10k rows
+_SPARSE_MEDIUM_SUP = 0.001   # ≈ 50 out of 50k rows
+_SPARSE_LARGE_SUP  = 0.0005  # ≈ 100 out of 200k rows
+
+
+@pytest.mark.benchmark(group="sparse_small")
+def test_benchmark_fpgrowth_sparse_small(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_SMALL, min_support=_SPARSE_SMALL_SUP)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="sparse_small")
+def test_benchmark_fptda_sparse_small(benchmark) -> None:
+    result = benchmark(fptda, DF_SPARSE_SMALL, min_support=_SPARSE_SMALL_SUP)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="sparse_medium")
+def test_benchmark_fpgrowth_sparse_medium(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_MEDIUM, min_support=_SPARSE_MEDIUM_SUP)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="sparse_medium")
+def test_benchmark_fptda_sparse_medium(benchmark) -> None:
+    result = benchmark(fptda, DF_SPARSE_MEDIUM, min_support=_SPARSE_MEDIUM_SUP)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="sparse_large")
+def test_benchmark_fpgrowth_sparse_large(benchmark) -> None:
+    result = benchmark(fpgrowth, DF_SPARSE_LARGE, min_support=_SPARSE_LARGE_SUP)
+    assert result.shape[0] >= 0
+
+
+@pytest.mark.benchmark(group="sparse_large")
+def test_benchmark_fptda_sparse_large(benchmark) -> None:
+    result = benchmark(fptda, DF_SPARSE_LARGE, min_support=_SPARSE_LARGE_SUP)
+    assert result.shape[0] >= 0
+
+
+def test_vs_fptda_sparse_comparison() -> None:
+    """Head-to-head on all three sparse sizes — prints ratios."""
+    for label, df, sup in [
+        ("sparse_small  (10k rows, 500 items, 3/row)",  DF_SPARSE_SMALL,  _SPARSE_SMALL_SUP),
+        ("sparse_medium (50k rows, 2k items,  5/row)",  DF_SPARSE_MEDIUM, _SPARSE_MEDIUM_SUP),
+        ("sparse_large  (200k rows, 5k items, 7/row)",  DF_SPARSE_LARGE,  _SPARSE_LARGE_SUP),
+    ]:
+        _, fpg_t, fpg_mem = _timed(fpgrowth, df, min_support=sup)
+        _, tda_t, tda_mem = _timed(fptda,    df, min_support=sup)
+        winner = "fptda" if tda_t < fpg_t else "fpgrowth"
+        ratio  = min(fpg_t, tda_t) / max(fpg_t, tda_t)
+        print(
+            f"\n[{label}]  fpgrowth={fpg_t:.3f}s  fptda={tda_t:.3f}s  "
+            f"faster={winner} ({ratio:.2f}×)  "
+            f"mem fpg={fpg_mem / 1e6:.1f}MB  tda={tda_mem / 1e6:.1f}MB"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Head-to-head: FP-TDA vs FP-Growth (dense data, internal)
 # ---------------------------------------------------------------------------
 
 

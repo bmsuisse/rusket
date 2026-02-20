@@ -18,7 +18,7 @@
 
 ---
 
-`rusket` is a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules` — backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **5–10× speed-ups** and dramatically lower memory usage. It natively supports **Pandas**, **Polars**, and **sparse DataFrames** out of the box.
+`rusket` is a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules` — backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **5–10× speed-ups** and dramatically lower memory usage. It natively supports **Pandas** (including the Arrow backend introduced in pandas 2.0), **Polars**, and **sparse DataFrames** out of the box.
 
 ---
 
@@ -28,6 +28,7 @@
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
+| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
 | **Polars input** | ✅ Arrow zero-copy | ❌ Not supported |
 | **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded |
@@ -313,10 +314,11 @@ uv run python tests/generate_benchmark_report.py
 ### Data Flow
 
 ```
-pandas dense  ──► np.uint8 array (C-contiguous) ──► Rust fpgrowth_from_dense
-pandas sparse ──► CSR int32 arrays              ──► Rust fpgrowth_from_csr
-polars        ──► Arrow → np.uint8 (zero-copy)  ──► Rust fpgrowth_from_dense
-numpy ndarray ──► np.uint8 (C-contiguous)       ──► Rust fpgrowth_from_dense
+pandas dense         ──► np.uint8 array (C-contiguous)  ──► Rust fpgrowth_from_dense
+pandas Arrow backend ──► Arrow → np.uint8 (zero-copy)   ──► Rust fpgrowth_from_dense
+pandas sparse        ──► CSR int32 arrays               ──► Rust fpgrowth_from_csr
+polars               ──► Arrow → np.uint8 (zero-copy)   ──► Rust fpgrowth_from_dense
+numpy ndarray        ──► np.uint8 (C-contiguous)        ──► Rust fpgrowth_from_dense
 ```
 
 All mining and rule generation happens **inside Rust**. No Python loops, no round-trips.

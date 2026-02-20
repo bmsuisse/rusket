@@ -20,79 +20,82 @@ use rayon::prelude::*;
 use crate::fpgrowth::{flatten_results, process_item_counts};
 
 // ---------------------------------------------------------------------------
-// Mining
+// Mining  (iterative — avoids stack overflow on wide sparse datasets)
 // ---------------------------------------------------------------------------
 
 /// A projected database: each entry is a sorted list of local column ids.
 type Projection = Vec<Vec<u32>>;
 
-/// Recursively mine frequent itemsets from a projected transaction database.
+/// Mine all frequent itemsets from `root_rows` using an explicit worklist.
 ///
-/// `rows`      – transactions as sorted lists of local col ids (0 = most freq)
-/// `max_col`   – only columns 0..max_col are in scope (exclusive upper bound)
-/// `suffix`    – original item ids accumulated so far (right side of itemset)
-/// `min_count` – absolute support threshold
-/// `max_len`   – maximum itemset length (None = unlimited)
-/// `original`  – local_id → original item id mapping
-/// `results`   – output accumulator
-fn mine_projection(
-    rows: &Projection,
-    max_col: usize,
-    suffix: &[u32],
+/// Each worklist item is `(rows, max_col, suffix)`:
+///   - `rows`    – transactions restricted to columns `0..max_col`
+///   - `max_col` – upper bound on column ids present in `rows`
+///   - `suffix`  – original item ids already chosen (right side of the itemset)
+///
+/// Using an explicit `Vec` stack instead of recursion avoids stack overflows
+/// on datasets with many frequent items (up to thousands of columns).
+fn mine_tda_iterative(
+    root_rows: Projection,
+    original: &[u32],
     min_count: u64,
     max_len: Option<usize>,
-    original: &[u32],
-    results: &mut Vec<(u64, Vec<u32>)>,
-) {
-    if max_col == 0 { return; }
+    num_cols: usize,
+) -> Vec<(u64, Vec<u32>)> {
+    let mut results: Vec<(u64, Vec<u32>)> = Vec::new();
 
-    // Count occurrences of each column in this projection.
-    let mut col_counts = vec![0u64; max_col];
-    for row in rows {
-        for &c in row {
-            // rows are already restricted to < max_col from the caller.
-            col_counts[c as usize] += 1;
-        }
-    }
+    // Worklist: (rows, max_col, suffix_items)
+    let mut stack: Vec<(Projection, usize, Vec<u32>)> = vec![(root_rows, num_cols, vec![])];
 
-    // Scan columns right-to-left: each frequent column produces an itemset
-    // and a recursive sub-projection.
-    for c in (0..max_col).rev() {
-        let count = col_counts[c];
-        if count < min_count { continue; }
+    while let Some((rows, max_col, suffix)) = stack.pop() {
+        if max_col == 0 || rows.is_empty() { continue; }
 
-        let item_orig = original[c];
-        let new_len = suffix.len() + 1;
-
-        // Emit {item_c} ∪ suffix.
-        if max_len.map_or(true, |ml| new_len <= ml) {
-            let mut iset = vec![item_orig];
-            iset.extend_from_slice(suffix);
-            results.push((count, iset));
+        // Count how many rows contain each column 0..max_col.
+        let mut col_counts = vec![0u64; max_col];
+        for row in &rows {
+            for &c in row {
+                col_counts[c as usize] += 1;
+            }
         }
 
-        // Recurse only if we can still grow the itemset.
-        if max_len.map_or(true, |ml| new_len < ml) && c > 0 {
-            // Project: keep only rows that contain col c, restricted to cols < c.
-            let projected: Projection = rows
-                .iter()
-                .filter(|row| row.binary_search(&(c as u32)).is_ok())
-                .map(|row| row.iter().filter(|&&x| x < c as u32).copied().collect())
-                .collect();
+        // Scan right-to-left; push sub-projections for frequent columns.
+        for c in (0..max_col).rev() {
+            let count = col_counts[c];
+            if count < min_count { continue; }
 
-            if !projected.is_empty() {
-                let mut new_suffix = vec![item_orig];
-                new_suffix.extend_from_slice(suffix);
-                mine_projection(
-                    &projected, c, &new_suffix, min_count, max_len, original, results,
-                );
+            let item_orig = original[c];
+            let new_len = suffix.len() + 1;
+
+            // Emit {item_c} ∪ suffix.
+            if max_len.map_or(true, |ml| new_len <= ml) {
+                let mut iset = vec![item_orig];
+                iset.extend_from_slice(&suffix);
+                results.push((count, iset));
+            }
+
+            // Push sub-projection if we can still grow the itemset.
+            if c > 0 && max_len.map_or(true, |ml| new_len < ml) {
+                let projected: Projection = rows
+                    .iter()
+                    .filter(|row| row.binary_search(&(c as u32)).is_ok())
+                    .map(|row| row.iter().copied().filter(|&x| x < c as u32).collect())
+                    .collect();
+
+                if !projected.is_empty() {
+                    let mut new_suffix = vec![item_orig];
+                    new_suffix.extend_from_slice(&suffix);
+                    stack.push((projected, c, new_suffix));
+                }
             }
         }
     }
+
+    results
 }
 
 // ---------------------------------------------------------------------------
 // Internal entry points (dense / CSR)
+
 // ---------------------------------------------------------------------------
 
 fn _mine_fptda_dense(

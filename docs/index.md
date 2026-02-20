@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo.svg" alt="rusket logo" width="200" />
+</div>
+
 # rusket
 
 **Blazing-fast FP-Growth and Association Rules for Python — pure Rust via PyO3.**
