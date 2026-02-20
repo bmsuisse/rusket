@@ -287,12 +287,14 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
         title_text="Time (seconds)",
         row=1,
         col=1,
+        range=[-1, 3.5], # 0.1s to 3000s
         gridcolor="rgba(128,128,128,0.15)",
     )
     fig.update_yaxes(
         title_text="Memory (MB)",
         row=1,
         col=2,
+        rangemode="tozero",
         gridcolor="rgba(128,128,128,0.15)",
     )
 
