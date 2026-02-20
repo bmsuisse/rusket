@@ -27,4 +27,6 @@ def fpgrowth(
 
     from ._core import dispatch
 
-    return dispatch(df, min_support, null_values, use_colnames, max_len, method, column_names)  # type: ignore[arg-type]
+    return dispatch(
+        df, min_support, null_values, use_colnames, max_len, method, column_names, verbose
+    )  # type: ignore[arg-type]

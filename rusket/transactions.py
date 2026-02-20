@@ -12,6 +12,7 @@ def from_transactions(
     data: pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    verbose: int = 0,
 ) -> pd.DataFrame:
     """Convert long-format transactional data to a one-hot boolean matrix.
 
@@ -62,7 +63,7 @@ def from_transactions(
         t = "DataFrame"
 
     if isinstance(data, (list, tuple)):
-        return _from_list(data)
+        return _from_list(data, verbose=verbose)
 
     import pandas as _pd
 
@@ -72,25 +73,27 @@ def from_transactions(
             f"got {type(data)}"
         )
 
-    return _from_dataframe(data, transaction_col, item_col)
+    return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
 
 
 def from_pandas(
     df: pd.DataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
+    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
 
 
 def from_polars(
     df: pl.DataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
+    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
 
 
 def from_spark(
@@ -104,10 +107,16 @@ def from_spark(
 
 def _from_list(
     transactions: Sequence[Sequence[str | int]],
+    verbose: int = 0,
 ) -> pd.DataFrame:
+    import time
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
+    
+    if verbose:
+        print(f"[{time.strftime('%X')}] Extracting unique items from list of lists...")
+        t0 = time.perf_counter()
 
     all_items_set: set[str | int] = set()
     for txn in transactions:
@@ -118,9 +127,20 @@ def _from_list(
     n_txn = len(transactions)
     n_items = len(all_items)
 
+    if verbose:
+        print(f"[{time.strftime('%X')}] Found {n_items:,} unique items. Building COO coordinates...")
+
     row_idx: list[int] = []
     col_idx: list[int] = []
-    for i, txn in enumerate(transactions):
+    iterator = enumerate(transactions)
+    if verbose:
+        try:
+            from tqdm.auto import tqdm
+            iterator = tqdm(iterator, total=n_txn, desc="Transactions")
+        except ImportError:
+            pass
+
+    for i, txn in iterator:
         for item in txn:
             row_idx.append(i)
             col_idx.append(item_to_idx[item])
@@ -131,20 +151,31 @@ def _from_list(
         shape=(n_txn, n_items),
     )
 
-    return pd.DataFrame.sparse.from_spmatrix(
+    sparse_df = pd.DataFrame.sparse.from_spmatrix(
         csr,
         columns=[str(item) for item in all_items],
     ).astype(pd.SparseDtype("bool", fill_value=False))
+
+    if verbose:
+        print(f"[{time.strftime('%X')}] CSR generation completed in {time.perf_counter() - t0:.2f}s.")
+        
+    return sparse_df
 
 
 def _from_dataframe(
     df: pd.DataFrame,
     transaction_col: str | None,
     item_col: str | None,
+    verbose: int = 0,
 ) -> pd.DataFrame:
+    import time
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
+    
+    if verbose:
+        print(f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})...")
+        t0 = time.perf_counter()
 
     cols = list(df.columns)
 
@@ -180,9 +211,14 @@ def _from_dataframe(
     csr.data = np.minimum(csr.data, 1)
 
     item_names = [str(c) for c in item_uniques]
-    return pd.DataFrame.sparse.from_spmatrix(
+    res = pd.DataFrame.sparse.from_spmatrix(
         csr, columns=item_names,
     ).astype(pd.SparseDtype("bool", fill_value=False))
+
+    if verbose:
+        print(f"[{time.strftime('%X')}] DataFrame parameterization completed in {time.perf_counter() - t0:.2f}s.")
+
+    return res
 
 
 def from_transactions_csr(

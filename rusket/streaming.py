@@ -96,7 +96,8 @@ class FPMiner:
         use_colnames: bool = False,
         column_names: list[str] | None = None,
         method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
-    ) -> pd.DataFrame:
+        verbose: int = 0,
+    ) -> "pd.DataFrame":
         """Mine frequent itemsets from all accumulated transactions.
 
         Parameters
@@ -111,6 +112,8 @@ class FPMiner:
             Column names to use when ``use_colnames=True``.
         method : "fpgrowth" | "eclat"
             Mining algorithm to use.
+        verbose : int
+            Level of verbosity: >0 prints progress logs and times.
 
         Returns
         -------
@@ -122,10 +125,20 @@ class FPMiner:
             return pd.DataFrame(columns=["support", "itemsets"])
 
         import numpy as np
+        
+        if verbose:
+            import time
+            print(f"[{time.strftime('%X')}] FPMiner: Starting k-way merge and mining in Rust ({method})...")
+            t0 = time.perf_counter()
+
         if method == "fpgrowth":
             result_tuple = self._inner.mine_fpgrowth(min_support, max_len)
         else:
             result_tuple = self._inner.mine_eclat(min_support, max_len)
+
+        if verbose:
+            t1 = time.perf_counter()
+            print(f"[{time.strftime('%X')}] FPMiner: Mining completed in {t1 - t0:.2f}s.")
 
         n_txn = result_tuple[0]
         raw = (
@@ -136,6 +149,9 @@ class FPMiner:
         from ._core import _build_result
 
         col_names = column_names or [str(i) for i in range(self.n_items)]
+        
+        if verbose:
+            print(f"[{time.strftime('%X')}] FPMiner: Assembling result DataFrame...")
         return _build_result(raw, n_txn, min_support, col_names, use_colnames)
 
     def reset(self) -> None:
