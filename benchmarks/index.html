@@ -697,10 +697,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#synthetic-retail-data" class="md-nav__link">
+  <a href="#million-scale-sparse-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synthetic Retail Data
+        Million-Scale Sparse Benchmarks 🚀
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synthetic-dense-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthetic Dense Benchmarks
       
     </span>
   </a>
@@ -723,6 +734,17 @@
     <span class="md-ellipsis">
       
         FP-Growth vs Eclat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-full-pipeline-from_transactions-at-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Full Pipeline: from_transactions at Scale
       
     </span>
   </a>
@@ -801,6 +823,17 @@
     <span class="md-ellipsis">
       
         5. Eclat: hardware popcount
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-sparse-from_transactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Sparse from_transactions
       
     </span>
   </a>
@@ -972,10 +1005,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#synthetic-retail-data" class="md-nav__link">
+  <a href="#million-scale-sparse-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Synthetic Retail Data
+        Million-Scale Sparse Benchmarks 🚀
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synthetic-dense-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthetic Dense Benchmarks
       
     </span>
   </a>
@@ -998,6 +1042,17 @@
     <span class="md-ellipsis">
       
         FP-Growth vs Eclat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-full-pipeline-from_transactions-at-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Full Pipeline: from_transactions at Scale
       
     </span>
   </a>
@@ -1082,6 +1137,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#6-sparse-from_transactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Sparse from_transactions
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1111,8 +1177,41 @@
 <p>rusket includes two mining algorithms (<strong>FP-Growth</strong> and <strong>Eclat</strong>), both implemented in Rust. These benchmarks compare rusket against <strong>mlxtend</strong> (pure Python) on synthetic and real-world datasets.</p>
 <p>Measured on Apple M-series (arm64).</p>
 <hr />
-<h2 id="synthetic-retail-data">Synthetic Retail Data<a class="headerlink" href="#synthetic-retail-data" title="Permanent link">&para;</a></h2>
-<p>Realistic retail basket simulation — sparse boolean matrices with Poisson-distributed basket sizes.</p>
+<h2 id="million-scale-sparse-benchmarks">Million-Scale Sparse Benchmarks 🚀<a class="headerlink" href="#million-scale-sparse-benchmarks" title="Permanent link">&para;</a></h2>
+<p>The killer use case: sparse retail basket data with millions of transactions, fed through <code>from_transactions</code> → sparse CSR → Rust.</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th style="text-align: center;"><code>rusket</code></th>
+<th style="text-align: center;"><code>mlxtend</code></th>
+<th style="text-align: center;"><strong>Speedup</strong></th>
+<th style="text-align: center;">RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1M txns × 10k items (5 items/basket)</td>
+<td style="text-align: center;"><strong>0.49 s</strong></td>
+<td style="text-align: center;">18.4 s</td>
+<td style="text-align: center;"><strong>38×</strong></td>
+<td style="text-align: center;">25 MB</td>
+</tr>
+<tr>
+<td>2M txns × 10k items (5 items/basket)</td>
+<td style="text-align: center;"><strong>0.68 s</strong></td>
+<td style="text-align: center;">45.2 s</td>
+<td style="text-align: center;"><strong>66×</strong></td>
+<td style="text-align: center;">50 MB</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition success">
+<p class="admonition-title">Key insight</p>
+<p>With sparse CSR-backed DataFrames, rusket uses <strong>only 25–50 MB of RAM</strong> for millions of transactions. The sparse path passes CSR <code>indptr</code>/<code>indices</code> arrays directly to Rust — <strong>zero densification, zero copy</strong>.</p>
+</div>
+<hr />
+<h2 id="synthetic-dense-benchmarks">Synthetic Dense Benchmarks<a class="headerlink" href="#synthetic-dense-benchmarks" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1218,15 +1317,29 @@
 </tbody>
 </table>
 <hr />
-<h2 id="running-the-benchmarks-yourself">Running the benchmarks yourself<a class="headerlink" href="#running-the-benchmarks-yourself" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Build optimized Rust extension</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
+<h2 id="the-full-pipeline-from_transactions-at-scale">The Full Pipeline: <code>from_transactions</code> at Scale<a class="headerlink" href="#the-full-pipeline-from_transactions-at-scale" title="Permanent link">&para;</a></h2>
+<p>For real-world retail data (100M+ transactions × 200k+ items), use <code>from_transactions</code> which now produces <strong>sparse CSR-backed DataFrames</strong>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_transactions</span><span class="p">,</span> <span class="n">fpgrowth</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># pytest-benchmark suite</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_benchmark.py<span class="w"> </span>-v<span class="w"> </span>-s
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Real-world dataset benchmark (auto-downloads datasets)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/bench_realworld.py
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Long-format: 100M rows of (transaction_id, item)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;orders.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">ohe</span> <span class="o">=</span> <span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>   <span class="c1"># → sparse CSR DataFrame (fits in memory!)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">fpgrowth</span><span class="p">(</span><span class="n">ohe</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Memory for 100M transactions × 200k items with ~5 items/basket:
+- <strong>Dense</strong>: ~20 TB (impossible)
+- <strong>Sparse CSR</strong>: ~4 GB (fits on a laptop)</p>
+<hr />
+<h2 id="running-the-benchmarks-yourself">Running the benchmarks yourself<a class="headerlink" href="#running-the-benchmarks-yourself" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Build optimized Rust extension</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># pytest-benchmark suite</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_benchmark.py<span class="w"> </span>-v<span class="w"> </span>-s
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Real-world dataset benchmark (auto-downloads datasets)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/bench_realworld.py
 </span></code></pre></div>
 <hr />
 <h2 id="why-is-rusket-faster">Why is rusket faster?<a class="headerlink" href="#why-is-rusket-faster" title="Permanent link">&para;</a></h2>
@@ -1242,9 +1355,11 @@
 <h3 id="3-parallel-mining-rayon">3. Parallel mining (Rayon)<a class="headerlink" href="#3-parallel-mining-rayon" title="Permanent link">&para;</a></h3>
 <p>Conditional pattern base mining is distributed across CPU threads via <a href="https://docs.rs/rayon">Rayon</a>.</p>
 <h3 id="4-arena-based-fp-tree">4. Arena-based FP-Tree<a class="headerlink" href="#4-arena-based-fp-tree" title="Permanent link">&para;</a></h3>
-<p>FP-Tree nodes use a flat children arena (not per-node heap allocations), making the tree cache-friendly. <code>is_path()</code> is tracked incrementally.</p>
+<p>FP-Tree nodes use a flat children arena (not per-node heap allocations), making the tree cache-friendly. <code>is_path()</code> is tracked incrementally — no full-tree scans.</p>
 <h3 id="5-eclat-hardware-popcount">5. Eclat: hardware popcount<a class="headerlink" href="#5-eclat-hardware-popcount" title="Permanent link">&para;</a></h3>
 <p>Eclat stores transactions as dense <code>Vec&lt;u64&gt;</code> bitsets. Support counting uses bitwise intersection + <code>popcnt</code> — billions of operations per second on modern CPUs.</p>
+<h3 id="6-sparse-from_transactions">6. Sparse <code>from_transactions</code><a class="headerlink" href="#6-sparse-from_transactions" title="Permanent link">&para;</a></h3>
+<p>The <code>from_transactions</code> helper uses <code>pd.Categorical</code> codes + scipy COO→CSR — <strong>no Python loops over rows</strong>. Produces <code>SparseDtype("bool")</code> DataFrames that keep memory at the theoretical minimum.</p>
 
 
 
