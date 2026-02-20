@@ -20,23 +20,25 @@ use rayon::prelude::*;
 use crate::fpgrowth::{flatten_results, process_item_counts};
 
 // ---------------------------------------------------------------------------
-// Mining  (iterative — avoids stack overflow on wide sparse datasets)
+// Mining  (iterative zero-copy slices)
 // ---------------------------------------------------------------------------
 
-/// A projected database: each entry is a sorted list of local column ids.
-type Projection = Vec<Vec<u32>>;
+/// A projected database: each entry is a slice of a transaction.
+/// Since items are sorted by frequency (0 = most freq), the subset
+/// of items `< c` is always a contiguous prefix of the slice.
+type Projection<'a> = Vec<&'a [u32]>;
 
 /// Mine all frequent itemsets from `root_rows` using an explicit worklist.
 ///
 /// Each worklist item is `(rows, max_col, suffix)`:
-///   - `rows`    – transactions restricted to columns `0..max_col`
+///   - `rows`    – transactions represented as slices `&[u32]` restricted to `0..max_col`
 ///   - `max_col` – upper bound on column ids present in `rows`
 ///   - `suffix`  – original item ids already chosen (right side of the itemset)
 ///
-/// Using an explicit `Vec` stack instead of recursion avoids stack overflows
-/// on datasets with many frequent items (up to thousands of columns).
-fn mine_tda_iterative(
-    root_rows: Projection,
+/// By using `&[u32]`, we avoid all allocation overhead for row data during
+/// projection. We only allocate a vector of pointers.
+fn mine_tda_iterative<'a>(
+    root_rows: Projection<'a>,
     original: &[u32],
     min_count: u64,
     max_len: Option<usize>,
@@ -45,7 +47,7 @@ fn mine_tda_iterative(
     let mut results: Vec<(u64, Vec<u32>)> = Vec::new();
 
     // Worklist: (rows, max_col, suffix_items)
-    let mut stack: Vec<(Projection, usize, Vec<u32>)> = vec![(root_rows, num_cols, vec![])];
+    let mut stack: Vec<(Projection<'a>, usize, Vec<u32>)> = vec![(root_rows, num_cols, vec![])];
 
     while let Some((rows, max_col, suffix)) = stack.pop() {
         if max_col == 0 || rows.is_empty() { continue; }
@@ -53,7 +55,7 @@ fn mine_tda_iterative(
         // Count how many rows contain each column 0..max_col.
         let mut col_counts = vec![0u64; max_col];
         for row in &rows {
-            for &c in row {
+            for &c in *row {
                 col_counts[c as usize] += 1;
             }
         }
@@ -75,11 +77,18 @@ fn mine_tda_iterative(
 
             // Push sub-projection if we can still grow the itemset.
             if c > 0 && max_len.map_or(true, |ml| new_len < ml) {
-                let projected: Projection = rows
-                    .iter()
-                    .filter(|row| row.binary_search(&(c as u32)).is_ok())
-                    .map(|row| row.iter().copied().filter(|&x| x < c as u32).collect())
-                    .collect();
+                let mut projected = Vec::with_capacity(count as usize);
+
+                for row in &rows {
+                    // Since the row is sorted, `binary_search` is fast.
+                    // If we find `c`, all elements before the found index are `< c`.
+                    if let Ok(idx) = row.binary_search(&(c as u32)) {
+                        let prefix = &row[0..idx];
+                        if !prefix.is_empty() {
+                            projected.push(prefix);
+                        }
+                    }
+                }
 
                 if !projected.is_empty() {
                     let mut new_suffix = vec![item_orig];
@@ -95,6 +104,7 @@ fn mine_tda_iterative(
 
 // ---------------------------------------------------------------------------
 // Internal entry points (dense / CSR)
+
 
 // ---------------------------------------------------------------------------
 
@@ -130,7 +140,7 @@ fn _mine_fptda_dense(
         };
 
     // 2. Build per-transaction sorted lists of local col ids.
-    let itemsets: Projection = flat
+    let owned_itemsets: Vec<Vec<u32>> = flat
         .par_chunks(n_cols)
         .filter_map(|row| {
             let mut items: Vec<u32> = frequent_cols
@@ -145,7 +155,8 @@ fn _mine_fptda_dense(
         .collect();
 
     // 3. Mine.
-    let results = mine_tda_iterative(itemsets, &original_items, min_count, max_len, frequent_len);
+    let root_rows: Projection = owned_itemsets.iter().map(|v| v.as_slice()).collect();
+    let results = mine_tda_iterative(root_rows, &original_items, min_count, max_len, frequent_len);
 
     Ok(flatten_results(results))
 }
@@ -186,7 +197,7 @@ fn _mine_fptda_csr(
         };
 
     // 2. Build per-transaction sorted lists of local col ids.
-    let itemsets: Projection = (0..n_rows)
+    let owned_itemsets: Vec<Vec<u32>> = (0..n_rows)
         .into_par_iter()
         .filter_map(|row| {
             let start = indptr[row] as usize;
@@ -207,7 +218,8 @@ fn _mine_fptda_csr(
         .collect();
 
     // 3. Mine.
-    let results = mine_tda_iterative(itemsets, &original_items, min_count, max_len, frequent_len);
+    let root_rows: Projection = owned_itemsets.iter().map(|v| v.as_slice()).collect();
+    let results = mine_tda_iterative(root_rows, &original_items, min_count, max_len, frequent_len);
 
     Ok(flatten_results(results))
 }
