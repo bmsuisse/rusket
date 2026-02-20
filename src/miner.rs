@@ -75,9 +75,11 @@ impl FPMiner {
         let n_txn_est = self.txns.len();
         if n_txn_est == 0 { return Ok((0, vec![], vec![], vec![])); }
         let min_count = ((min_support * n_txn_est as f64).ceil() as u64).max(1);
-        let (indptr, indices, n_txn, n_frequent) = self.build_csr_filtered(min_count)?;
+        let (indptr, indices, n_txn, inv_remap) = self.build_csr_filtered(min_count)?;
         if n_txn == 0 { return Ok((0, vec![], vec![], vec![])); }
+        let n_frequent = inv_remap.len();
         let (s, o, i) = _mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?;
+        let i = Self::unmap_items(i, &inv_remap);
         Ok((n_txn, s, o, i))
     }
 
@@ -87,10 +89,40 @@ impl FPMiner {
         let n_txn_est = self.txns.len();
         if n_txn_est == 0 { return Ok((0, vec![], vec![], vec![])); }
         let min_count = ((min_support * n_txn_est as f64).ceil() as u64).max(1);
-        let (indptr, indices, n_txn, n_frequent) = self.build_csr_filtered(min_count)?;
+        let (indptr, indices, n_txn, inv_remap) = self.build_csr_filtered(min_count)?;
         if n_txn == 0 { return Ok((0, vec![], vec![], vec![])); }
+        let n_frequent = inv_remap.len();
         let (s, o, i) = _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?;
+        let i = Self::unmap_items(i, &inv_remap);
         Ok((n_txn, s, o, i))
+    }
+
+    /// Auto mode: pick algorithm based on post-filter item density.
+    /// Borgelt (2003): dense data → FP-Growth, sparse → Eclat.
+    /// Heuristic: if avg_items_per_txn / n_frequent_items > 0.15 → fpgrowth, else eclat.
+    pub fn mine_auto(&self, min_support: f64, max_len: Option<usize>)
+        -> PyResult<(usize, Vec<u64>, Vec<u32>, Vec<u32>, String)>
+    {
+        let n_txn_est = self.txns.len();
+        if n_txn_est == 0 { return Ok((0, vec![], vec![], vec![], "eclat".into())); }
+        let min_count = ((min_support * n_txn_est as f64).ceil() as u64).max(1);
+        let (indptr, indices, n_txn, inv_remap) = self.build_csr_filtered(min_count)?;
+        if n_txn == 0 { return Ok((0, vec![], vec![], vec![], "eclat".into())); }
+        let n_frequent = inv_remap.len();
+        // Density = avg items per txn (after filter) / n_frequent_items
+        let total_items_in_csr = *indptr.last().unwrap_or(&0) as f64;
+        let density = if n_frequent > 0 && n_txn > 0 {
+            (total_items_in_csr / n_txn as f64) / n_frequent as f64
+        } else { 0.0 };
+        let use_eclat = density < 0.15;  // Borgelt threshold
+        let method_name = if use_eclat { "eclat" } else { "fpgrowth" };
+        let (s, o, i) = if use_eclat {
+            _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
+        } else {
+            _mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
+        };
+        let i = Self::unmap_items(i, &inv_remap);
+        Ok((n_txn, s, o, i, method_name.into()))
     }
 
     pub fn reset(&mut self) {
@@ -101,16 +133,21 @@ impl FPMiner {
 }
 
 impl FPMiner {
+    /// Undo frequency remap: replace dense new_ids with original item IDs.
+    fn unmap_items(items: Vec<u32>, inv_remap: &[u32]) -> Vec<u32> {
+        items.into_iter().map(|idx| inv_remap[idx as usize]).collect()
+    }
     /// Build a pre-filtered CSR matrix.
     ///
     /// Pass 1: count each item's global frequency across all transactions.
     /// Pass 2: keep only items with count >= min_count, remap to [0, n_freq).
     /// Pass 3: build CSR using remapped dense indices.
     ///
-    /// Result: (indptr, indices, n_txn, n_frequent_items)
-    fn build_csr_filtered(&self, min_count: u64) -> PyResult<(Vec<i32>, Vec<i32>, usize, usize)> {
+    /// Returns (indptr, indices, n_txn, inv_remap)
+    /// where inv_remap[new_id] = orig_item_id  (for undoing the remap after mining).
+    fn build_csr_filtered(&self, min_count: u64) -> PyResult<(Vec<i32>, Vec<i32>, usize, Vec<u32>)> {
         if self.txns.is_empty() {
-            return Ok((vec![0i32], vec![], 0, 0));
+            return Ok((vec![0i32], vec![], 0, vec![]));
         }
 
         // --- Pass 1: count item frequencies (parallel) ---
@@ -123,18 +160,27 @@ impl FPMiner {
             }
         }
 
-        // --- Build dense remap: item_id -> new_id (or u32::MAX if rare) ---
+        // --- Build dense remap sorted by frequency DESCENDING (Borgelt 2003, §2.2/3.3) ---
+        // Most-frequent item → index 0. Eclat's depth-first prefix tree prunes better
+        // when high-frequency items appear first in the ordering.
+        let mut freq_items: Vec<(u64, usize)> = item_freq
+            .iter()
+            .enumerate()
+            .filter(|(_, &f)| f >= min_count)
+            .map(|(id, &f)| (f, id))
+            .collect();
+        freq_items.sort_unstable_by(|a, b| b.0.cmp(&a.0)); // descending by freq
+
         let mut remap: Vec<u32> = vec![u32::MAX; self.n_items];
-        let mut n_frequent: usize = 0;
-        for (orig_id, &freq) in item_freq.iter().enumerate() {
-            if freq >= min_count {
-                remap[orig_id] = n_frequent as u32;
-                n_frequent += 1;
-            }
+        let n_frequent = freq_items.len();
+        for (new_id, &(_, orig_id)) in freq_items.iter().enumerate() {
+            remap[orig_id] = new_id as u32;
         }
+        // Build inverse remap: new_id -> orig_id
+        let inv_remap: Vec<u32> = freq_items.iter().map(|&(_, orig_id)| orig_id as u32).collect();
 
         if n_frequent == 0 {
-            return Ok((vec![0i32], vec![], 0, 0));
+            return Ok((vec![0i32], vec![], 0, vec![]));
         }
 
         // --- Pass 2: collect + sort transactions by txn_id ---
@@ -166,6 +212,6 @@ impl FPMiner {
         // Drop transactions that became empty after filtering
         // (their rows are already in indptr; we just leave them — FP/Eclat handles empty rows)
 
-        Ok((indptr, indices, n_txn, n_frequent))
+        Ok((indptr, indices, n_txn, inv_remap))
     }
 }

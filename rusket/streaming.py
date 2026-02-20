@@ -47,21 +47,21 @@ class FPMiner:
 
     t0 = 0.0
 
-    def __init__(self, n_items: int, max_ram_mb: int | None = -1) -> None:
+    def __init__(
+        self,
+        n_items: int,
+        max_ram_mb: int | None = -1,
+        hint_n_transactions: int | None = None,
+    ) -> None:
         if max_ram_mb == -1:
             try:
                 import psutil
-
-                # Use 90% of currently *available* RAM (not total).
-                # "available" accounts for OS caches, other processes,
-                # and is a much more accurate measure of what we can safely use.
                 available_mb = psutil.virtual_memory().available // (1024 * 1024)
                 max_ram_mb = max(100, int(available_mb * 0.90))
             except ImportError:
-                # Fallback if psutil is not available
                 max_ram_mb = 4000
 
-        self._inner: Any = _rust.FPMiner(n_items, max_ram_mb)  # type: ignore
+        self._inner: Any = _rust.FPMiner(n_items, max_ram_mb, hint_n_transactions)  # type: ignore
         self._n_rows: int = 0
 
     @property
@@ -116,7 +116,7 @@ class FPMiner:
         max_len: int | None = None,
         use_colnames: bool = False,
         column_names: list[str] | None = None,
-        method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
+        method: typing.Literal["fpgrowth", "eclat", "auto"] = "auto",
         verbose: int = 0,
     ) -> "pd.DataFrame":
         """Mine frequent itemsets from all accumulated transactions.
@@ -131,8 +131,10 @@ class FPMiner:
             If ``True``, itemsets contain column names instead of indices.
         column_names : list[str] | None
             Column names to use when ``use_colnames=True``.
-        method : "fpgrowth" | "eclat"
-            Mining algorithm to use.
+        method : "fpgrowth" | "eclat" | "auto"
+            Mining algorithm to use.  ``"auto"`` (default) picks the best
+            algorithm automatically based on data density after pre-filtering
+            rare items (Borgelt 2003 heuristic: density < 15% → Eclat, else FPGrowth).
         verbose : int
             Level of verbosity: >0 prints progress logs and times.
 
@@ -150,13 +152,17 @@ class FPMiner:
         import numpy as np
 
         if verbose:
-
             print(
-                f"[{time.strftime('%X')}] FPMiner: Starting k-way merge and mining in Rust ({method})..."
+                f"[{time.strftime('%X')}] FPMiner: Mining ({method})..."
             )
             t0 = time.perf_counter()
 
-        if method == "fpgrowth":
+        chosen_method = method
+        if method == "auto":
+            result_tuple = self._inner.mine_auto(min_support, max_len)
+            chosen_method = result_tuple[4]  # method name chosen by Rust
+            result_tuple = result_tuple[:4]
+        elif method == "fpgrowth":
             result_tuple = self._inner.mine_fpgrowth(min_support, max_len)
         else:
             result_tuple = self._inner.mine_eclat(min_support, max_len)
@@ -164,7 +170,7 @@ class FPMiner:
         if verbose:
             t1 = time.perf_counter()
             print(
-                f"[{time.strftime('%X')}] FPMiner: Mining completed in {t1 - t0:.2f}s."
+                f"[{time.strftime('%X')}] FPMiner: Mining ({chosen_method}) completed in {t1 - t0:.2f}s."
             )
 
         n_txn = result_tuple[0]
