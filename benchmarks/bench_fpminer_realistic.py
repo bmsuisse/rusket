@@ -161,40 +161,55 @@ def run_dataset(name: str) -> None:
         # Derive target transaction count from target rows
         target_txns = int(target_rows / avg_items)
         rng = np.random.default_rng(42)
-        # Use up to 8GB in-memory; only spill to disk beyond that.
-        miner = FPMiner(n_items=n_items, max_ram_mb=8_000)
 
-        t_add_start = time.perf_counter()
+        # Mine in batches of MINE_EVERY_TXNS transactions to cap peak RAM.
+        # Each batch accumulates sorted chunks, mines, then frees memory.
+        MINE_EVERY_TXNS = int(250_000_000 / avg_items)  # ~250M rows per batch
+
+        add_t_total = 0.0
+        mine_t_total = 0.0
+        total_rows = 0
+        last_freq = None
+
         txn_offset = 0
         while txn_offset < target_txns:
-            chunk_size = min(CHUNK_TXNS, target_txns - txn_offset)
-            txn_ids, item_ids = generate_chunk(
-                rng, item_probs, avg_items, n_items, chunk_size, txn_offset
-            )
-            miner.add_chunk(txn_ids, item_ids)
-            txn_offset += chunk_size
-            del txn_ids, item_ids
+            miner = FPMiner(n_items=n_items)
+            batch_end = min(txn_offset + MINE_EVERY_TXNS, target_txns)
+
+            t_add_start = time.perf_counter()
+            while txn_offset < batch_end:
+                chunk_size = min(CHUNK_TXNS, batch_end - txn_offset)
+                txn_ids, item_ids = generate_chunk(
+                    rng, item_probs, avg_items, n_items, chunk_size, txn_offset
+                )
+                miner.add_chunk(txn_ids, item_ids)
+                txn_offset += chunk_size
+                del txn_ids, item_ids
+            add_t_total += time.perf_counter() - t_add_start
+            total_rows += miner.n_rows
+
+            t0 = time.perf_counter()
+            try:
+                last_freq = miner.mine(
+                    min_support=info["min_support"],
+                    max_len=info["max_len"],
+                )
+                mine_t_total += time.perf_counter() - t0
+            except Exception as e:
+                print(f"  {total_rows:>14,}  ERROR: {e}", flush=True)
+                last_freq = None
+            del miner
             gc.collect()
-        add_t = time.perf_counter() - t_add_start
-        actual_rows = miner.n_rows
 
-        t0 = time.perf_counter()
-        try:
-            freq = miner.mine(
-                min_support=info["min_support"],
-                max_len=info["max_len"],
-            )
-            mine_t = time.perf_counter() - t0
-            print(
-                f"  {actual_rows:>14,}  {add_t:>7.1f}s  {mine_t:>7.1f}s  "
-                f"{add_t + mine_t:>7.1f}s  {len(freq):>10,}",
-                flush=True,
-            )
-        except Exception as e:
-            print(f"  {actual_rows:>14,}  {add_t:>7.1f}s  ERROR: {e}", flush=True)
+        n_itemsets = len(last_freq) if last_freq is not None else -1
+        print(
+            f"  {total_rows:>14,}  {add_t_total:>7.1f}s  {mine_t_total:>7.1f}s  "
+            f"{add_t_total + mine_t_total:>7.1f}s  {n_itemsets:>10,}",
+            flush=True,
+        )
 
-        del miner
         gc.collect()
+
 
 
 def main() -> None:

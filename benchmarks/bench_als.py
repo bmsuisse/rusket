@@ -379,7 +379,8 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
         }
 
     model = rusket.ALS(
-        factors=FACTORS, regularization=REG, alpha=ALPHA, iterations=ITERS, seed=42
+        factors=FACTORS, regularization=REG, alpha=ALPHA, iterations=ITERS, seed=42,
+        verbose=True, cg_iters=3,
     )
 
     t0 = time.perf_counter()
