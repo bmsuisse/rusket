@@ -31,7 +31,7 @@ class ALS:
         iterations: int = 15,
         seed: int = 42,
         verbose: bool = False,
-        cg_iters: int = 3,
+        cg_iters: int = 10,
     ) -> None:
         """Implicit ALS model.
 
@@ -42,7 +42,9 @@ class ALS:
             iterations: Number of ALS alternating steps.
             seed: Random seed.
             verbose: Print per-iteration timing.
-            cg_iters: CG solver iterations per ALS step (3 is usually enough).
+            cg_iters: CG solver iterations per ALS step.
+                Reduce to 3 for massive datasets (>100M ratings) — 3x speedup
+                with minimal quality loss on large sparse problems.
         """
         self.factors = factors
         self.regularization = float(regularization)

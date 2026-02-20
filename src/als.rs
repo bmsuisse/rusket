@@ -38,13 +38,8 @@ fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
 // ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
-    // Build a zero-copy faer MatRef using raw pointer + explicit strides.
-    // factors is row-major: element (r,c) = factors[r*k + c].
-    // faer from_raw_parts(ptr, nrows, ncols, row_stride, col_stride)
-    // SAFETY: factors has n*k f32 elements, lifetime scoped to this function.
-    let y: faer::MatRef<f32> = unsafe {
-        faer::mat::from_raw_parts(factors.as_ptr(), n, k, k as isize, 1isize)
-    };
+    // faer's matmul computes YᵀY with SIMD + rayon parallelism.
+    let y = faer::Mat::from_fn(n, k, |r, c| factors[r * k + c]);
     let yt = y.transpose();
 
     let mut g = faer::Mat::<f32>::zeros(k, k);
@@ -52,7 +47,7 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
         g.as_mut(),
         Accum::Replace,
         yt,
-        y,
+        y.as_ref(),
         1.0f32,
         Par::rayon(0),
     );
