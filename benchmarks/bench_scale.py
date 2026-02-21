@@ -146,19 +146,23 @@ def run_all() -> list[dict]:
         fpg_str = f"{t_fpg:.3f}s" if t_fpg is not None else "TIMEOUT"
         print(f"  fpgrowth: {fpg_str} ({n} itemsets)", flush=True)
 
-        # mlxtend (with timeout)
+        # mlxtend (with timeout) — only run at small/medium scales;
+        # at >=5M rows mlxtend typically hangs or OOMs and CI kills the process
+        # before our SIGALRM fires, so we skip it there.
         t_mlx = None
-        if HAS_MLX:
+        if HAS_MLX and n_rows <= 1_000_000:
             n_mlx, t_mlx = timed_run(
                 mlx_fpgrowth,
                 ohe,
                 min_support=0.001,
                 use_colnames=True,
                 max_len=3,
-                timeout_sec=180,
+                timeout_sec=30,
             )
-            mlx_str = f"{t_mlx:.3f}s" if t_mlx is not None else "TIMEOUT(180s)"
+            mlx_str = f"{t_mlx:.3f}s" if t_mlx is not None else "TIMEOUT(30s)"
             print(f"  mlxtend:  {mlx_str}", flush=True)
+        elif HAS_MLX:
+            print(f"  mlxtend:  SKIPPED (n_rows > 1M)", flush=True)
 
         results.append(
             {
