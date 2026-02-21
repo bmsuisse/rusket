@@ -144,10 +144,12 @@ The itemset count is **consistent across all scales** (15,218–15,234), confirm
 |-------------|-------|--------|-------|----------|----------|
 | 100M | 20.2s | 4.9s | **25.1s** | 4.00 | 37 |
 | 200M | 26.2s | 9.2s | **35.4s** | 5.67 | 37 |
-| 500M | ~65s | ~20s | **~85s** | ~6.0 | 37 |
-| **1B** | ~120s | ~40s | **~160s** | ~6.0 | 37 |
+| 500M | ❌ | ❌ | **OOM** | - | - |
+| **1B** | ❌ | ❌ | **OOM** | - | - |
 
-Sparse data (4.4 items/txn) is *faster* end-to-end — fewer items per transaction means smaller HashMap entries and faster CSR sort.
+While sparse data (4.4 items/txn) is *faster* end-to-end for smaller datasets due to fewer items per transaction, the memory overhead of the HashMap scaling up to 1 billion rows on this specific dataset shape still exceeds our machine's constraints.
+
+**The 1B challenge for dataset 2 remains open.**
 
 ---
 

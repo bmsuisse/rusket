@@ -51,10 +51,15 @@ For real-world retail datasets scaling to 1 Billion rows, `FPMiner` uses a memor
 
 ## vs mlxtend
 
-| Dataset | `rusket` | `mlxtend` | **Speedup** | RAM |
-|---------|:--------:|:---------:|:-----------:|:---:|
-| 1M txns (sparse) | **0.49 s** | 18.4 s | **38×** | 25 MB |
-| 2M txns (sparse) | **0.68 s** | 45.2 s | **66×** | 50 MB |
+Comparing the `FPMiner` streaming accumulator against `mlxtend`'s standard pandas One-Hot Encoded pipeline:
+
+| Dataset | `rusket` (prep + mine) | `mlxtend` (prep + mine) | **Speedup** |
+|---------|:--------:|:---------:|:-----------:|
+| 50k rows (10k txns, 100 items) | **0.0 s** | 0.1 s | **~5×** |
+| 500k rows (50k txns, 500 items)| **0.2 s** | 1.8 s | **~9×** |
+| 2M rows (500k txns, 2k items)  | **0.2 s** | 16.0 s | **80×** |
+
+*Note: `mlxtend` starts to struggle heavily with the One-Hot Encoding pandas `groupby/unstack` memory overhead at scale. `rusket`'s streaming `add_chunk` combined with `eclat` processes 2M rows in 0.2s flat.*
 
 ---
 
@@ -106,6 +111,7 @@ At 100M rows, the mining step takes **1.3 seconds** (not a typo).
 uv run maturin develop --release
 uv run python benchmarks/bench_scale.py    # Scale benchmark + Plotly chart
 uv run python benchmarks/bench_realworld.py  # Real-world datasets
+uv run python benchmarks/bench_vs_mlxtend.py # FPMiner streaming vs mlxtend
 uv run pytest tests/test_benchmark.py -v -s  # pytest-benchmark
 ```
 

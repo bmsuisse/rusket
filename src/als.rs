@@ -37,9 +37,11 @@ fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
 
 // ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
+use faer::mat::from_row_major_slice;
+
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
     // faer's matmul computes YᵀY with SIMD + rayon parallelism.
-    let y = faer::Mat::from_fn(n, k, |r, c| factors[r * k + c]);
+    let y = faer::mat::from_row_major_slice::<f32>(factors, n, k);
     let yt = y.transpose();
 
     let mut g = faer::Mat::<f32>::zeros(k, k);
@@ -47,7 +49,7 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
         g.as_mut(),
         Accum::Replace,
         yt,
-        y.as_ref(),
+        y,
         1.0f32,
         Par::rayon(0),
     );
@@ -95,15 +97,6 @@ fn solve_one_side_cg(
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
         let end = indptr[u + 1] as usize;
-        let nnz_u = end - start;
-
-        // Pre-collect (item, confidence) pairs
-        let mut sparse: Vec<(usize, f32)> = Vec::with_capacity(nnz_u);
-        for idx in start..end {
-            let i = indices[idx] as usize;
-            let c = 1.0 + alpha * data[idx];
-            sparse.push((i, c));
-        }
 
         // Use thread-local scratch to avoid heap alloc per user
         SCRATCH.with(|cell| {
@@ -115,7 +108,9 @@ fn solve_one_side_cg(
             ap.clear(); ap.resize(k, 0.0);
 
             // Compute RHS: b = Σᵢ cᵢ yᵢ
-            for &(i, c) in &sparse {
+            for idx in start..end {
+                let i = indices[idx] as usize;
+                let c = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
                 axpy(c, yi, b);
             }
@@ -127,7 +122,9 @@ fn solve_one_side_cg(
                     for bb in 0..k { s += gram[a * k + bb] * v[bb]; }
                     out[a] = s + eff_lambda * v[a];
                 }
-                for &(i, c) in &sparse {
+                for idx in start..end {
+                    let i = indices[idx] as usize;
+                    let c = 1.0 + alpha * data[idx];
                     let yi = &other[i * k..(i + 1) * k];
                     let w = (c - 1.0) * dot(yi, v);
                     axpy(w, yi, out);
@@ -651,16 +648,18 @@ pub fn als_fit_implicit<'py>(
     use_cholesky: bool,
     anderson_m: usize,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
-    let ip = indptr.as_slice()?.to_vec();
-    let ix = indices.as_slice()?.to_vec();
-    let id = data.as_slice()?.to_vec();
+    let ip = indptr.as_slice()?;
+    let ix = indices.as_slice()?;
+    let id = data.as_slice()?;
 
-    let (ti, tx, td) = csr_transpose(&ip, &ix, &id, n_users, n_items);
+    let (ti, tx, td) = py.detach(|| csr_transpose(ip, ix, id, n_users, n_items));
 
-    let (uf, itf) = als_train(
-        &ip, &ix, &id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-        alpha, iterations, seed, verbose, cg_iters, use_cholesky, anderson_m,
-    );
+    let (uf, itf) = py.detach(|| {
+        als_train(
+            ip, ix, id, &ti, &tx, &td, n_users, n_items, factors, regularization,
+            alpha, iterations, seed, verbose, cg_iters, use_cholesky, anderson_m,
+        )
+    });
 
     let ua = PyArray1::from_vec(py, uf);
     let ia = PyArray1::from_vec(py, itf);
