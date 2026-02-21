@@ -10,7 +10,7 @@
   <a href="https://pypi.org/project/rusket/"><img src="https://img.shields.io/pypi/v/rusket?color=%2334D058&logo=pypi&logoColor=white" alt="PyPI"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python"></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-1.83%2B-orange?logo=rust" alt="Rust"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-green" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
   <a href="https://bmsuisse.github.io/rusket/"><img src="https://img.shields.io/badge/docs-MkDocs-blue" alt="Docs"></a>
 </p>
 
@@ -630,4 +630,4 @@ uv run python examples/06_mlxtend_migration.py
 
 ## 📜 License
 
-[BSD 3-Clause](LICENSE)
+[MIT License](LICENSE)

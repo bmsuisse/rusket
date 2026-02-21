@@ -17,6 +17,8 @@ from .hupm import hupm
 from .similarity import similar_items
 from .recommend import Recommender, NextBestAction, score_potential
 from .analytics import find_substitutes, customer_saturation
+from .export import export_item_factors
+from . import viz
 
 __all__ = [
     "fpgrowth",
@@ -40,4 +42,6 @@ __all__ = [
     "score_potential",
     "find_substitutes",
     "customer_saturation",
+    "export_item_factors",
+    "viz",
 ]

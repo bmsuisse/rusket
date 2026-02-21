@@ -654,3 +654,68 @@ item_ids, scores = rec.recommend_for_user(user_id=125, n=5)
 active_cart = [10, 15] # User just added items 10 and 15
 suggested_additions = rec.recommend_for_cart(active_cart, n=3)
 ```
+
+---
+
+## 14. GenAI / LLM Stack Integration
+
+`rusket` provides native utilities to export its learned representations and rules into the modern Generative AI and graph analytics stack.
+
+### Vector Export & Vector Databases (LanceDB)
+
+You can easily export ALS latent user or item factors as vector embeddings to power RAG (Retrieval-Augmented Generation) or fast semantic similarity search in vector databases like LanceDB, FAISS, or Qdrant.
+
+```python
+import lancedb
+from rusket import export_item_factors
+
+# Export ALS item factors to a Pandas DataFrame
+# Returns columns: ['item_id', 'vector'] (and 'item_label' if available)
+df_vectors = export_item_factors(als_model)
+
+# Connect to a local LanceDB instance
+db = lancedb.connect("./lancedb")
+
+# Ingest the embeddings into a table
+table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
+
+# Perform a vector similarity search (e.g., finding items similar to a given query embedding)
+query_vector = df_vectors.iloc[0]["vector"]
+results = table.search(query_vector).limit(5).to_pandas()
+print(results)
+```
+
+### Fast Item-to-Item Similarity
+
+If you don't need a full vector database and just want fast, in-memory cosine similarity between items based on their ALS embeddings:
+
+```python
+from rusket import similar_items
+
+# Find the top 5 most similar items to item_id=42 using Cosine Similarity
+similar_ids, similarity_scores = similar_items(als_model, item_id=42, n=5)
+
+print(f"Similar items: {similar_ids}")
+print(f"Cosine similarities: {similarity_scores}")
+```
+
+### Graph Generation for Community Detection
+
+Frequent Pattern Mining rules can be naturally represented as a directed graph. You can automatically convert them into a `networkx` graph to run community detection (like Louvain) and discover "Product Clusters" or "Categories".
+
+```python
+import networkx as nx
+from rusket.viz import to_networkx
+
+# rules is a Pandas DataFrame from rusket.association_rules()
+# We use 'lift' as the edge weight connecting antecedents to consequents
+G = to_networkx(rules_df, source_col="antecedents", target_col="consequents", edge_attr="lift")
+
+# Run basic graph analytics
+print(f"Nodes: {G.number_of_nodes()}, Edges: {G.number_of_edges()}")
+
+# E.g., calculate PageRank to find the most influential products
+centrality = nx.pagerank(G, weight='weight')
+top_items = sorted(centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+print("Top central products:", top_items)
+```
