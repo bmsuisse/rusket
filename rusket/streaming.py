@@ -45,8 +45,6 @@ class FPMiner:
     >>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
     """
 
-    t0 = 0.0
-
     def __init__(
         self,
         n_items: int,
@@ -76,7 +74,7 @@ class FPMiner:
 
     @property
     def n_transactions(self) -> int:
-        """Number of distinct transactions accumulated so far (estimated as n_rows // avg_items)."""
+        """Number of distinct transactions accumulated so far."""
         return self._inner.n_transactions  # type: ignore
 
     @property
@@ -143,24 +141,21 @@ class FPMiner:
         pd.DataFrame
             Columns ``support`` and ``itemsets``.
         """
-        t0 = 0.0
         if self._n_rows == 0:
             import pandas as pd
-
             return pd.DataFrame(columns=["support", "itemsets"])
 
         import numpy as np
 
+        t0 = 0.0
         if verbose:
-            print(
-                f"[{time.strftime('%X')}] FPMiner: Mining ({method})..."
-            )
+            print(f"[{time.strftime('%X')}] FPMiner: Mining ({method})...")
             t0 = time.perf_counter()
 
         chosen_method = method
         if method == "auto":
             result_tuple = self._inner.mine_auto(min_support, max_len)
-            chosen_method = result_tuple[4]  # method name chosen by Rust
+            chosen_method = result_tuple[4]
             result_tuple = result_tuple[:4]
         elif method == "fpgrowth":
             result_tuple = self._inner.mine_fpgrowth(min_support, max_len)

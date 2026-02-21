@@ -3,7 +3,9 @@
 from __future__ import annotations
 import typing
 from typing import Any
+
 from . import _rusket as _rust  # type: ignore
+from ._compat import to_pandas
 
 
 class ALS:
@@ -58,23 +60,6 @@ class ALS:
         use_cholesky: bool = False,
         anderson_m: int = 0,
     ) -> None:
-        """Implicit ALS model.
-
-        Args:
-            factors: Latent factor count.
-            regularization: L2 regularisation weight.
-            alpha: Confidence scaling ``C = 1 + alpha * r``.
-            iterations: Number of ALS alternating steps.
-            seed: Random seed.
-            verbose: Print per-iteration timing.
-            cg_iters: CG solver iterations per ALS step (default 10).
-                Reduce to 3 for large datasets — ~3x speedup with minimal quality loss.
-            use_cholesky: Use direct Cholesky solve instead of CG.
-                Exact solution; faster when avg items/user >> factors.
-            anderson_m: Anderson Acceleration history window (0 = off).
-                Set to 5 to get ~2.5× speedup on outer iterations at equal quality.
-                Uses ``m`` extra copies of the full factor matrices in RAM.
-        """
         self.factors = factors
         self.regularization = float(regularization)
         self.alpha = float(alpha)
@@ -101,9 +86,7 @@ class ALS:
         )
 
     def fit(self, interactions: Any) -> "ALS":
-        """
-        Fit the model to the user-item interaction matrix.
-        """
+        """Fit the model to the user-item interaction matrix."""
         import numpy as np
         from scipy import sparse as sp
 
@@ -119,14 +102,11 @@ class ALS:
                 f"Expected scipy sparse matrix or numpy array, got {type(interactions)}"
             )
 
-        # Only convert to CSR if it isn't one already (e.g. DOK or LIL)
         if not isinstance(csr, sp.csr_matrix):
             csr = csr.tocsr()
 
-        # For small matrices we can ensure canonical format.
-        # But for 1B ratings (>2.1B elements), SciPy's compiled C++ algorithms (like
-        # eliminate_zeros/has_canonical_format) overflow int32 downcasts and crash.
-        # So we skip them if nnz > 1 Billion or we trust the input.
+        # SciPy's C++ algorithms overflow int32 for nnz > 1B, so skip canonical
+        # format enforcement on very large matrices.
         if csr.nnz < 1_000_000_000:
             if not csr.has_canonical_format:
                 csr.sum_duplicates()
@@ -137,7 +117,6 @@ class ALS:
         indices = np.asarray(csr.indices, dtype=np.int32)
         data = np.asarray(csr.data, dtype=np.float32)
 
-        # Call Rust Core
         self._user_factors, self._item_factors = _rust.als_fit_implicit(
             indptr,
             indices,
@@ -173,11 +152,7 @@ class ALS:
         import pandas as _pd
         from scipy import sparse as sp
 
-        t = type(data).__name__
-        if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
-            data = typing.cast(Any, data).toPandas()
-        elif t == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
-            data = typing.cast(Any, data).to_pandas()
+        data = to_pandas(data)
 
         if not isinstance(data, _pd.DataFrame):
             raise TypeError(f"Expected Pandas/Polars/Spark DataFrame, got {type(data)}")

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import time
-
-
 import typing
 from typing import TYPE_CHECKING, Any, Sequence
+
+from ._compat import to_pandas
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -17,14 +17,6 @@ def from_transactions(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
     """Convert long-format transactional data to a one-hot boolean matrix.
 
     Parameters
@@ -62,17 +54,7 @@ def from_transactions(
     >>> ohe = rusket.from_transactions(df)
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
-    t0 = 0.0
-    t = type(data).__name__
-
-    if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
-        data = typing.cast(Any, data).toPandas()
-        t = "DataFrame"
-
-    if t == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
-        pl_df = typing.cast("pl.DataFrame", data)
-        data = pl_df.to_pandas()
-        t = "DataFrame"
+    data = to_pandas(data)
 
     if isinstance(data, (list, tuple)):
         return _from_list(data, verbose=verbose)
@@ -94,16 +76,7 @@ def from_pandas(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    t0 = 0.0
     return from_transactions(
         df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
     )
@@ -115,16 +88,7 @@ def from_polars(
     item_col: str | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    t0 = 0.0
     return from_transactions(
         df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
     )
@@ -136,7 +100,6 @@ def from_spark(
     item_col: str | None = None,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    t0 = 0.0
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
 
 
@@ -144,18 +107,11 @@ def _from_list(
     transactions: Sequence[Sequence[str | int]],
     verbose: int = 0,
 ) -> pd.DataFrame:
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
 
+    t0 = 0.0
     if verbose:
         print(f"[{time.strftime('%X')}] Extracting unique items from list of lists...")
         t0 = time.perf_counter()
@@ -180,7 +136,6 @@ def _from_list(
     if verbose:
         try:
             from tqdm.auto import tqdm
-
             iterator = tqdm(iterator, total=n_txn, desc="Transactions")
         except ImportError:
             pass
@@ -215,18 +170,11 @@ def _from_dataframe(
     item_col: str | None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
-    t0 = 0.0; t1 = 0.0
     import numpy as np
     import pandas as pd
     from scipy import sparse as sp
 
+    t0 = 0.0
     if verbose:
         print(
             f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})..."
@@ -330,21 +278,12 @@ def from_transactions_csr(
     >>> freq = rusket.fpgrowth(csr, min_support=0.001,
     ...                        use_colnames=True, column_names=names)
     """
-    t0 = 0.0
     import numpy as np
     import pandas as pd
     from pathlib import Path
     from scipy import sparse as sp
 
-    t = type(data).__name__
-
-    if t == "DataFrame" and getattr(data, "__module__", "").startswith("pyspark"):
-        data = typing.cast(Any, data).toPandas()
-        t = "DataFrame"
-
-    if t == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
-        data = typing.cast(Any, data).to_pandas()
-        t = "DataFrame"
+    data = to_pandas(data)
 
     if isinstance(data, (str, Path)):
         return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
@@ -360,7 +299,6 @@ def from_transactions_csr(
 
     n = len(df)
     csr_parts: list[sp.csr_matrix] = []
-    txn_offset = 0
 
     for start in range(0, n, chunk_size):
         end = min(start + chunk_size, n)
@@ -380,7 +318,6 @@ def from_transactions_csr(
         )
         chunk_csr.data = np.minimum(chunk_csr.data, 1)
         csr_parts.append(chunk_csr)
-        txn_offset += n_txn_chunk
 
     final_csr = sp.vstack(csr_parts, format="csr")
     return final_csr, item_names

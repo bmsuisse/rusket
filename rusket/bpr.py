@@ -6,13 +6,14 @@ from typing import Any
 
 from . import _rusket as _rust  # type: ignore
 
+
 class BPR:
     """Bayesian Personalized Ranking (BPR) model for implicit feedback.
-    
+
     BPR optimizes for ranking rather than reconstruction error (like ALS).
     It works by drawing positive items the user interacted with, and negative items
     they haven't, and adjusting latent factors to ensure the positive item scores higher.
-    
+
     Parameters
     ----------
     factors : int
@@ -22,7 +23,7 @@ class BPR:
     regularization : float
         L2 regularization weight (default: 0.01).
     iterations : int
-        Number of passes over the entire interaction dataset (default: 100).
+        Number of passes over the entire interaction dataset (default: 150).
     seed : int
         Random seed for Hogwild! SGD sampling (default: 42).
     """
@@ -42,7 +43,6 @@ class BPR:
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -80,12 +80,11 @@ class BPR:
             csr = csr.tocsr()
 
         csr.eliminate_zeros()
-        
+
         n_users, n_items = typing.cast(tuple[int, int], csr.shape)
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)
 
-        # Call Rust Core
         self._user_factors, self._item_factors = _rust.bpr_fit_implicit(
             indptr,
             indices,
@@ -98,7 +97,6 @@ class BPR:
             self.seed,
             self.verbose,
         )
-        
         self._n_users = n_users
         self._n_items = n_items
         self._fit_indptr = indptr
@@ -115,9 +113,7 @@ class BPR:
         """Top-N items for a user."""
         import numpy as np
 
-        if not self.fitted:
-             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")
-             
+        self._check_fitted()
         if (
             exclude_seen
             and self._fit_indptr is not None
@@ -128,9 +124,7 @@ class BPR:
         else:
             exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
             exc_indices = np.array([], dtype=np.int32)
-            
-        # We reuse the ALS rust function here since the top-N retrieval using 
-        # dot products is exactly identical between ALS and BPR
+
         ids, scores = _rust.als_recommend_items(
             self._user_factors,
             self._item_factors,
