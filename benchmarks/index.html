@@ -985,6 +985,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-1-billion-row-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗 The 1 Billion Row Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-the-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1305,6 +1316,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-1-billion-row-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🏗 The 1 Billion Row Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-the-benchmarks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1381,33 +1403,33 @@
 <tr>
 <td>10M rows (2M txns × 50k items)</td>
 <td style="text-align: center;">24.4s</td>
-<td style="text-align: center;"><strong>1.7s</strong></td>
-<td style="text-align: center;"><strong>14×</strong></td>
+<td style="text-align: center;"><strong>1.2s</strong></td>
+<td style="text-align: center;"><strong>20×</strong></td>
 </tr>
 <tr>
 <td>50M rows (10M txns × 100k items)</td>
 <td style="text-align: center;">63.1s</td>
-<td style="text-align: center;"><strong>10.9s</strong></td>
-<td style="text-align: center;"><strong>6×</strong></td>
+<td style="text-align: center;"><strong>4.0s</strong></td>
+<td style="text-align: center;"><strong>15×</strong></td>
 </tr>
 <tr>
 <td>100M rows (20M txns × 200k items)</td>
 <td style="text-align: center;">134.2s</td>
-<td style="text-align: center;"><strong>25.9s</strong></td>
-<td style="text-align: center;"><strong>5×</strong></td>
+<td style="text-align: center;"><strong>10.1s</strong></td>
+<td style="text-align: center;"><strong>13×</strong></td>
 </tr>
 <tr>
-<td>200M rows (40M txns × 200k items)</td>
+<td><strong>200M rows</strong> (40M txns × 200k items)</td>
 <td style="text-align: center;">246.8s</td>
-<td style="text-align: center;"><strong>73.1s</strong></td>
-<td style="text-align: center;"><strong>3×</strong></td>
+<td style="text-align: center;"><strong>17.6s</strong></td>
+<td style="text-align: center;"><strong>14×</strong></td>
 </tr>
 </tbody>
 </table>
 <div class="admonition success">
 <p class="admonition-title">Direct CSR is the power-user path</p>
-<p>At 100M rows, direct CSR mining takes <strong>1.3 seconds</strong> — the bottleneck is entirely the CSR build (24.5s).
-Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sparse.to_coo().tocsr()</code> overhead.</p>
+<p>At 100M rows, direct CSR mining takes <strong>1.2 seconds</strong> — the bottleneck is entirely the CSR build (24.5s).
+Compare to the pandas sparse path where mining alone takes 9.0s due to <code>sparse.to_coo().tocsr()</code> overhead.</p>
 </div>
 <h4 id="out-of-core-scale-fpminer-streaming">Out-of-Core Scale (FPMiner Streaming)<a class="headerlink" href="#out-of-core-scale-fpminer-streaming" title="Permanent link">&para;</a></h4>
 <p>For real-world retail datasets scaling to 1 Billion rows, <code>FPMiner</code> uses a memory-safe chunks approach (per-chunk sort + k-way merge).</p>
@@ -1552,7 +1574,15 @@ Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sp
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">fpgrowth</span><span class="p">(</span><span class="n">csr</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">item_names</span><span class="p">)</span>
 </span></code></pre></div>
-<p>At 100M rows, the mining step takes <strong>1.3 seconds</strong> (not a typo).</p>
+<p>At 100M rows, the mining step takes <strong>1.2 seconds</strong> (not a typo).</p>
+<hr />
+<h2 id="the-1-billion-row-architecture">🏗 The 1 Billion Row Architecture<a class="headerlink" href="#the-1-billion-row-architecture" title="Permanent link">&para;</a></h2>
+<p>To pass the "1 Billion Row" threshold without OOM crashes, <code>rusket</code> employs a zero-allocation mining loop:</p>
+<ol>
+<li><strong>Eclat Scratch Buffers:</strong> <code>intersect_count_into</code> writes intersections directly into thread-local pre-allocated memory bytes and computes <code>popcnt</code> in a single pass. It implements <strong>early-exit</strong> loop termination the moment it proves a combination cannot reach <code>min_support</code>.</li>
+<li><strong>FPGrowth Parallel Tree Build:</strong> Conditional FP-trees are collected concurrently inside the rayon parallel mining step, replacing the standard sequential loop and eliminating memory contention bottlenecks.</li>
+<li><strong><code>AHashMap</code> Deduplication:</strong> Extremely fast O(N) duplicate basket counting replaces standard O(N log N) unstable sorts in the core pipeline.</li>
+</ol>
 <hr />
 <h2 id="running-the-benchmarks">Running the benchmarks<a class="headerlink" href="#running-the-benchmarks" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
