@@ -26,7 +26,7 @@ def find_substitutes(rules_df: pd.DataFrame, max_lift: float = 0.8) -> pd.DataFr
         & (rules_df["consequents"].apply(len) == 1)
         & (rules_df["lift"] < max_lift)
     ].copy()
-    return substitutes.sort_values(by=["lift", "confidence"], ascending=[True, True]).reset_index(drop=True)
+    return substitutes.sort_values(by=["lift", "confidence"]).reset_index(drop=True)  # type: ignore
 
 
 def customer_saturation(

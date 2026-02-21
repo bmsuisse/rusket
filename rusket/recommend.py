@@ -41,7 +41,7 @@ class Recommender:
         cart_set = frozenset(cart_items)
         valid_rules = self.rules_df[
             self.rules_df["antecedents"].apply(lambda ant: frozenset(ant).issubset(cart_set))
-        ].sort_values(by=["lift", "confidence"], ascending=[False, False])
+        ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
 
         if valid_rules.empty:
             return []

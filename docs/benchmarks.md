@@ -114,6 +114,24 @@ At 100M rows, the mining step takes **1.2 seconds** (not a typo).
 
 ---
 
+## 🏆 Conquering the 1 Billion Row Challenge
+
+Scaling to 1,000,000,000 transactions presents three distinct software engineering bottlenecks. `rusket` was specifically architected to eliminate all three of them.
+
+### Bottleneck 1: Memory Exhaustion during Ingestion
+If you attempt to load 1 Billion rows into Pandas or construct a sparse CSR matrix in memory, Python will crash with an Object Memory Error (OOM) well before the mining phase even begins.
+**The Solution:** The `FPMiner` class provides an out-of-core streaming API. It accepts chunks of `(txn_id, item_id)` pairs, performs a fast $O(k \log k)$ sort in Rust, buffers them, and uses a **k-way merge** to stream directly into the final compressed CSR memory block—guaranteeing peak memory overhead remains strictly identical to the final object size.
+
+### Bottleneck 2: Algorithmic Memory Thrashing
+Traditional Eclat architectures allocate a new `BitSet` ($>100\text{ MB}$ at 1B scale) for every single item pair intersection, evaluating the support count, and discarding the allocation if it falls below the threshold. Across millions of recursive combinations, this obliterates the allocator and memory bandwidth.
+**The Solution:** `rusket` employs a zero-allocation `intersect_count_into()` kernel. It pre-allocates a thread-local scratch buffer, intersected in-place. Crucially, it tracks the running popcount and utilizes an **early-exit heuristic**—aborting the memory scan the exact moment it proves the remaining bits mathematically cannot satisfy the `min_support` threshold.
+
+### Bottleneck 3: Sequential Seriality
+FP-Growth typically shines on dense data, but building millions of conditional FP-trees creates a massive sequential bottleneck before parallel processing can begin.
+**The Solution:** `rusket` merges tree construction into the parallel worker loop. Conditional trees are collected and mined concurrently inside the rayon thread pool, replacing the standard serial loop and eliminating the master thread bottleneck.
+
+---
+
 ## 🏗 The 1 Billion Row Architecture
 
 To pass the "1 Billion Row" threshold without OOM crashes, `rusket` employs a zero-allocation mining loop:

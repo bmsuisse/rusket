@@ -71,8 +71,8 @@ def sequences_from_event_log(
     item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
     idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
     
-    # Map column to indices
-    mapped_items = df_sorted[item_col].map(item_to_idx)
+    # Map column to indices using .map with a callable
+    mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
     
     # Group by user and collect sequences
     # We use mapped_items to ensure we group the integer IDs.
