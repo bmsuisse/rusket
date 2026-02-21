@@ -2958,14 +2958,8 @@ wheels = [
 
 [[package]]
 name = "rusket"
-version = "0.1.16"
+version = "0.1.17"
 source = { editable = "." }
-dependencies = [
-    { name = "efficient-apriori" },
-    { name = "psutil" },
-    { name = "pyarrow" },
-    { name = "tqdm" },
-]
 
 [package.optional-dependencies]
 docs = [
@@ -2984,6 +2978,7 @@ polars = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "efficient-apriori" },
     { name = "faker" },
     { name = "jupyter" },
     { name = "jupytext" },
@@ -3011,20 +3006,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "efficient-apriori", specifier = ">=2.0.6" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.5,<2" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
     { name = "numpy", marker = "extra == 'pandas'", specifier = ">=1.24" },
     { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.0" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=0.20" },
-    { name = "psutil", specifier = ">=6" },
-    { name = "pyarrow", specifier = ">=23.0.1" },
-    { name = "tqdm", specifier = ">=4" },
 ]
 provides-extras = ["polars", "pandas", "docs"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "efficient-apriori", specifier = ">=2.0.6" },
     { name = "faker", specifier = ">=40.4.0" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "jupytext", specifier = ">=1.19.1" },

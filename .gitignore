@@ -51,3 +51,5 @@ data/
 
 # Fix scripts
 fix_*
+docs/notebooks/ml-100k
+docs/notebooks/*.zip

@@ -9,12 +9,7 @@ description = "Blazing-fast FP-Growth and Association Rules — pure Rust via Py
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dependencies = [
-    "efficient-apriori>=2.0.6",
-    "pyarrow>=23.0.1",
-    "psutil>=6",
-    "tqdm>=4",
-]
+dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/bmsuisse/rusket"
@@ -34,6 +29,7 @@ features = ["pyo3/extension-module"]
 dev = [
     "pytest>=8",
     "pytest-timeout>=2.0",
+    "efficient-apriori>=2.0.6",
     "mlxtend>=0.23",
     "packaging>=23",
     "scipy>=1.11",

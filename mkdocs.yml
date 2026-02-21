@@ -52,7 +52,11 @@ nav:
     - Migration from mlxtend: migration.md
   - User Guide:
     - API Reference: api-reference.md
-    - Cookbook: cookbook.md
+    - Cookbook (Code): cookbook.md
+    - Cookbook (Interactive Notebooks):
+      - 🛒 Retail Assortment Optimization: notebooks/1_online_retail_basket_analysis.ipynb
+      - 🎬 MovieLens Hybrid Recommender: notebooks/2_movielens_recommendations.ipynb
+      - ⏱️ E-Commerce Lifecycle Discovery: notebooks/3_ecommerce_lifecycle_mining.ipynb
     - Recommender Workflows: recommender.md
     - Polars Support: polars.md
     - Benchmarks: benchmarks.md
