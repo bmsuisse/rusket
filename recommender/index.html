@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://bmsuisse.github.io/rusket/benchmarks/">
+        <link rel="canonical" href="https://bmsuisse.github.io/rusket/recommender/">
       
       
-        <link rel="prev" href="../polars/">
+        <link rel="prev" href="../notebooks/3_ecommerce_lifecycle_mining.ipynb">
       
       
-        <link rel="next" href="../1b-challenge/">
+        <link rel="next" href="../polars/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Benchmarks - rusket</title>
+        <title>Recommender Workflows - rusket</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#benchmarks" class="md-skip">
+        <a href="#recommender-workflows" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Benchmarks
+              Recommender Workflows
             
           </span>
         </div>
@@ -755,10 +755,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../recommender/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recommender Workflows
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -774,6 +801,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-hybrid-recommender" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Hybrid Recommender
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Hybrid Recommender">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-personalized-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Personalized Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-cart-based-cross-selling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Cart-based Cross-Selling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#item-to-item-similarity-i2i" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Item-to-Item Similarity (i2i)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cross-selling-potential-scoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Selling Potential Scoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -811,37 +919,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Benchmarks
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
         
   
   
@@ -857,159 +938,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#scale-benchmarks-1m-1b-rows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scale Benchmarks: 1M → 1B Rows 🚀
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 1B Rows 🚀">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#interactive-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Interactive Chart
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#three-input-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three Input Paths
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Three Input Paths">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#in-memory-scale-fpgrowth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        In-Memory Scale (fpgrowth)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#out-of-core-scale-fpminer-streaming" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Out-of-Core Scale (FPMiner Streaming)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#vs-mlxtend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        vs mlxtend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-auto-routine-algorithm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The "Auto" Routine Algorithm
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-world-datasets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real-World Datasets
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-power-user-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Power-User Pipeline
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#running-the-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Running the benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-is-rusket-faster" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why is rusket faster?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1194,22 +1122,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#scale-benchmarks-1m-1b-rows" class="md-nav__link">
+  <a href="#the-hybrid-recommender" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scale Benchmarks: 1M → 1B Rows 🚀
+        The Hybrid Recommender
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scale Benchmarks: 1M → 1B Rows 🚀">
+    <nav class="md-nav" aria-label="The Hybrid Recommender">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#interactive-chart" class="md-nav__link">
+  <a href="#1-personalized-recommendations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interactive Chart
+        1. Personalized Recommendations
       
     </span>
   </a>
@@ -1217,33 +1145,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#three-input-paths" class="md-nav__link">
+  <a href="#2-cart-based-cross-selling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Three Input Paths
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Three Input Paths">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#in-memory-scale-fpgrowth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        In-Memory Scale (fpgrowth)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#out-of-core-scale-fpminer-streaming" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Out-of-Core Scale (FPMiner Streaming)
+        2. Cart-based Cross-Selling
       
     </span>
   </a>
@@ -1254,17 +1159,12 @@
     </nav>
   
 </li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
-  <a href="#vs-mlxtend" class="md-nav__link">
+  <a href="#item-to-item-similarity-i2i" class="md-nav__link">
     <span class="md-ellipsis">
       
-        vs mlxtend
+        Item-to-Item Similarity (i2i)
       
     </span>
   </a>
@@ -1272,54 +1172,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-auto-routine-algorithm" class="md-nav__link">
+  <a href="#cross-selling-potential-scoring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The "Auto" Routine Algorithm
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#real-world-datasets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Real-World Datasets
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-power-user-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Power-User Pipeline
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#running-the-benchmarks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Running the benchmarks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-is-rusket-faster" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why is rusket faster?
+        Cross-Selling Potential Scoring
       
     </span>
   </a>
@@ -1346,257 +1202,82 @@
   
 
 
-<h1 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">&para;</a></h1>
-<p>rusket includes two mining algorithms (<strong>FP-Growth</strong> and <strong>Eclat</strong>), both implemented in Rust. These benchmarks compare rusket against <strong>mlxtend</strong> (pure Python) on synthetic and real-world datasets.</p>
-<p>Measured on Apple M-series (arm64).</p>
+<h1 id="recommender-workflows">Recommender Workflows<a class="headerlink" href="#recommender-workflows" title="Permanent link">&para;</a></h1>
+<p>While <code>rusket</code> provides blazing-fast core algorithms like Alternating Least Squares (ALS) and FP-Growth, raw algorithms often require heavy lifting to translate into business outcomes. </p>
+<p>To bridge this gap, <code>rusket</code> includes a high-level <strong>Business Recommender API</strong> designed for e-commerce, content platforms, and marketing analytics.</p>
 <hr />
-<h2 id="scale-benchmarks-1m-1b-rows">Scale Benchmarks: 1M → 1B Rows 🚀<a class="headerlink" href="#scale-benchmarks-1m-1b-rows" title="Permanent link">&para;</a></h2>
-<h3 id="interactive-chart">Interactive Chart<a class="headerlink" href="#interactive-chart" title="Permanent link">&para;</a></h3>
-<iframe src="../assets/scale_benchmark.html" width="100%" height="550px" style="border:none; border-radius:8px;"></iframe>
-
-<h3 id="three-input-paths">Three Input Paths<a class="headerlink" href="#three-input-paths" title="Permanent link">&para;</a></h3>
-<p>rusket supports three ways to ingest data at scale:</p>
-<ol>
-<li><strong><code>from_transactions</code> → sparse DataFrame</strong> — returns a pandas DataFrame, easy API</li>
-<li><strong>Direct CSR → Rust</strong> — pass <code>scipy.sparse.csr_matrix</code> directly to <code>fpgrowth()</code>, skips pandas entirely</li>
-<li><strong><code>FPMiner</code> Streaming</strong> — memory-safe accumulator for 100M+ rows that don't fit in RAM</li>
-</ol>
-<h4 id="in-memory-scale-fpgrowth">In-Memory Scale (fpgrowth)<a class="headerlink" href="#in-memory-scale-fpgrowth" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Scale</th>
-<th style="text-align: center;"><code>from_transactions</code> → fpgrowth</th>
-<th style="text-align: center;">Direct CSR → fpgrowth</th>
-<th style="text-align: center;"><strong>Speedup</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1M rows (200k txns × 10k items)</td>
-<td style="text-align: center;">5.0s</td>
-<td style="text-align: center;"><strong>0.1s</strong></td>
-<td style="text-align: center;"><strong>50×</strong></td>
-</tr>
-<tr>
-<td>10M rows (2M txns × 50k items)</td>
-<td style="text-align: center;">24.4s</td>
-<td style="text-align: center;"><strong>1.7s</strong></td>
-<td style="text-align: center;"><strong>14×</strong></td>
-</tr>
-<tr>
-<td>50M rows (10M txns × 100k items)</td>
-<td style="text-align: center;">63.1s</td>
-<td style="text-align: center;"><strong>10.9s</strong></td>
-<td style="text-align: center;"><strong>6×</strong></td>
-</tr>
-<tr>
-<td>100M rows (20M txns × 200k items)</td>
-<td style="text-align: center;">134.2s</td>
-<td style="text-align: center;"><strong>25.9s</strong></td>
-<td style="text-align: center;"><strong>5×</strong></td>
-</tr>
-<tr>
-<td>200M rows (40M txns × 200k items)</td>
-<td style="text-align: center;">246.8s</td>
-<td style="text-align: center;"><strong>73.1s</strong></td>
-<td style="text-align: center;"><strong>3×</strong></td>
-</tr>
-</tbody>
-</table>
-<div class="admonition success">
-<p class="admonition-title">Direct CSR is the power-user path</p>
-<p>At 100M rows, direct CSR mining takes <strong>1.3 seconds</strong> — the bottleneck is entirely the CSR build (24.5s).
-Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sparse.to_coo().tocsr()</code> overhead.</p>
-</div>
-<h4 id="out-of-core-scale-fpminer-streaming">Out-of-Core Scale (FPMiner Streaming)<a class="headerlink" href="#out-of-core-scale-fpminer-streaming" title="Permanent link">&para;</a></h4>
-<p>For real-world retail datasets scaling to 1 Billion rows, <code>FPMiner</code> uses a memory-safe chunks approach (per-chunk sort + k-way merge).</p>
-<p><strong>Benchmark:</strong> 2,603 retail items, avg 4.4 items/basket, min_support = 0.1%</p>
-<table>
-<thead>
-<tr>
-<th>Scale</th>
-<th style="text-align: center;">add_chunk()</th>
-<th style="text-align: center;">mine()</th>
-<th style="text-align: center;">Total Time</th>
-<th style="text-align: center;">Itemsets Found</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>50M rows</td>
-<td style="text-align: center;">4.8s</td>
-<td style="text-align: center;">5.6s</td>
-<td style="text-align: center;"><strong>10.4s</strong></td>
-<td style="text-align: center;">1,260</td>
-</tr>
-<tr>
-<td>100M rows</td>
-<td style="text-align: center;">10.6s</td>
-<td style="text-align: center;">13.9s</td>
-<td style="text-align: center;"><strong>24.6s</strong></td>
-<td style="text-align: center;">1,254</td>
-</tr>
-<tr>
-<td>200M rows</td>
-<td style="text-align: center;">22.7s</td>
-<td style="text-align: center;">33.2s</td>
-<td style="text-align: center;"><strong>55.9s</strong></td>
-<td style="text-align: center;">1,261</td>
-</tr>
-<tr>
-<td>300M rows</td>
-<td style="text-align: center;">30.0s</td>
-<td style="text-align: center;">55.4s</td>
-<td style="text-align: center;"><strong>85.4s</strong></td>
-<td style="text-align: center;">1,259</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="vs-mlxtend">vs mlxtend<a class="headerlink" href="#vs-mlxtend" title="Permanent link">&para;</a></h2>
-<p>Comparing the <code>FPMiner</code> streaming accumulator against <code>mlxtend</code>'s standard pandas One-Hot Encoded pipeline:</p>
-<table>
-<thead>
-<tr>
-<th>Dataset</th>
-<th style="text-align: center;"><code>rusket</code> (prep + mine)</th>
-<th style="text-align: center;"><code>mlxtend</code> (prep + mine)</th>
-<th style="text-align: center;"><strong>Speedup</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>50k rows (10k txns, 100 items)</td>
-<td style="text-align: center;"><strong>0.0 s</strong></td>
-<td style="text-align: center;">0.1 s</td>
-<td style="text-align: center;"><strong>~5×</strong></td>
-</tr>
-<tr>
-<td>500k rows (50k txns, 500 items)</td>
-<td style="text-align: center;"><strong>0.2 s</strong></td>
-<td style="text-align: center;">1.8 s</td>
-<td style="text-align: center;"><strong>~9×</strong></td>
-</tr>
-<tr>
-<td>2M rows (500k txns, 2k items)</td>
-<td style="text-align: center;"><strong>0.2 s</strong></td>
-<td style="text-align: center;">16.0 s</td>
-<td style="text-align: center;"><strong>80×</strong></td>
-</tr>
-</tbody>
-</table>
-<p><em>Note: <code>mlxtend</code> starts to struggle heavily with the One-Hot Encoding pandas <code>groupby/unstack</code> memory overhead at scale. <code>rusket</code>'s streaming <code>add_chunk</code> combined with <code>eclat</code> processes 2M rows in 0.2s flat.</em></p>
-<hr />
-<h2 id="the-auto-routine-algorithm">The "Auto" Routine Algorithm<a class="headerlink" href="#the-auto-routine-algorithm" title="Permanent link">&para;</a></h2>
-<p><code>rusket.mine(method="auto")</code> dynamically selects the algorithm that performs best based on the dataset density (Borgelt 2003 heuristic).</p>
-<ul>
-<li><strong>Density &gt; 0.15 (Dense)</strong>: Automatically routes to <strong>FP-Growth</strong>. Tree-traversal performs exceptionally well when most transactions contain a massive overlap of identical items.</li>
-<li><strong>Density &lt; 0.15 (Sparse)</strong>: Automatically routes to <strong>Eclat</strong>. On sparse data (like retail baskets), traversing an enormous tree is memory-intensive. Eclat directly uses hardware SIMD array-intersections (<code>popcnt</code>) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).</li>
-</ul>
-<hr />
-<h2 id="real-world-datasets">Real-World Datasets<a class="headerlink" href="#real-world-datasets" title="Permanent link">&para;</a></h2>
-<p>Datasets from <a href="https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining">andi611/Apriori-and-Eclat-Frequent-Itemset-Mining</a>.</p>
-<table>
-<thead>
-<tr>
-<th>Dataset</th>
-<th style="text-align: center;">Transactions</th>
-<th style="text-align: center;">Items</th>
-<th style="text-align: center;"><code>rusket</code></th>
-<th style="text-align: center;"><code>mlxtend</code></th>
-<th style="text-align: center;"><strong>Speedup</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>andi_data.txt</td>
-<td style="text-align: center;">8,416</td>
-<td style="text-align: center;">119</td>
-<td style="text-align: center;"><strong>9.7 s</strong> (22.8M itemsets)</td>
-<td style="text-align: center;"><strong>TIMEOUT</strong> 💥</td>
-<td style="text-align: center;">∞</td>
-</tr>
-<tr>
-<td>andi_data2.txt</td>
-<td style="text-align: center;">540,455</td>
-<td style="text-align: center;">2,603</td>
-<td style="text-align: center;"><strong>7.9 s</strong></td>
-<td style="text-align: center;">16.2 s</td>
-<td style="text-align: center;"><strong>2×</strong></td>
-</tr>
-</tbody>
-</table>
-<div class="admonition warning">
-<p class="admonition-title">Dense data</p>
-<p>On <code>andi_data.txt</code> (~23 items/basket), <code>mlxtend</code> can't finish in 60s. <code>rusket</code> mines <strong>22.8M itemsets in under 10s</strong>.</p>
-</div>
-<hr />
-<h2 id="the-power-user-pipeline">The Power-User Pipeline<a class="headerlink" href="#the-power-user-pipeline" title="Permanent link">&para;</a></h2>
-<p>For maximum performance at 100M+ scale, skip pandas entirely:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span> <span class="k">as</span> <span class="n">sp</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">fpgrowth</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Your data: integer arrays of (txn_id, item_id)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">txn_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># transaction IDs</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">item_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>  <span class="c1"># item IDs</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Build CSR directly (fast!)</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">csr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">txn_ids</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="n">txn_ids</span><span class="p">,</span> <span class="n">item_ids</span><span class="p">)),</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_transactions</span><span class="p">,</span> <span class="n">n_items</span><span class="p">),</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># Mine directly from CSR — no pandas overhead</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">fpgrowth</span><span class="p">(</span><span class="n">csr</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">item_names</span><span class="p">)</span>
+<h2 id="the-hybrid-recommender">The Hybrid Recommender<a class="headerlink" href="#the-hybrid-recommender" title="Permanent link">&para;</a></h2>
+<p>The <code>Recommender</code> class blends the serendipity of <strong>Collaborative Filtering</strong> (ALS) with the strict deterministic logic of <strong>Frequent Pattern Mining</strong> (Association Rules) to provide the "Next Best Action" for any context.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">Recommender</span><span class="p">,</span> <span class="n">mine</span><span class="p">,</span> <span class="n">association_rules</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># 1. Train your Collaborative Filtering model</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_sparse_matrix</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># 2. Mine your Association Rules</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">user_item_sparse_matrix</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="n">user_item_sparse_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># 3. Create the Hybrid Engine</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
 </span></code></pre></div>
-<p>At 100M rows, the mining step takes <strong>1.3 seconds</strong> (not a typo).</p>
-<hr />
-<h2 id="running-the-benchmarks">Running the benchmarks<a class="headerlink" href="#running-the-benchmarks" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/bench_scale.py<span class="w">    </span><span class="c1"># Scale benchmark + Plotly chart</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/bench_realworld.py<span class="w">  </span><span class="c1"># Real-world datasets</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>benchmarks/bench_vs_mlxtend.py<span class="w"> </span><span class="c1"># FPMiner streaming vs mlxtend</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_benchmark.py<span class="w"> </span>-v<span class="w"> </span>-s<span class="w">  </span><span class="c1"># pytest-benchmark</span>
+<h3 id="1-personalized-recommendations">1. Personalized Recommendations<a class="headerlink" href="#1-personalized-recommendations" title="Permanent link">&para;</a></h3>
+<p>Use <code>recommend_for_user</code> to generate a customized list of products for a returning customer based on their latent profile (ALS).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Get top 5 product recommendations for user 42</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recommended Items: </span><span class="si">{</span><span class="n">items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Recommended Items: [34, 12, 89, 7, 102]</span>
+</span></code></pre></div>
+<h3 id="2-cart-based-cross-selling">2. Cart-based Cross-Selling<a class="headerlink" href="#2-cart-based-cross-selling" title="Permanent link">&para;</a></h3>
+<p>When a user adds items to their shopping cart, you want to show a "Frequently bought together" carousel. The <code>recommend_for_cart</code> method uses deterministic association rules to find the highest lift recommendations for the contents of the cart.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># User has items 14 and 7 in their cart</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">suggested</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">([</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Others also bought: </span><span class="si">{</span><span class="n">suggested</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Others also bought: [8, 45, 99] </span>
 </span></code></pre></div>
 <hr />
-<h2 id="why-is-rusket-faster">Why is rusket faster?<a class="headerlink" href="#why-is-rusket-faster" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Technique</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Zero-copy CSR</strong></td>
-<td><code>indptr</code>/<code>indices</code> passed to Rust as pointer hand-offs</td>
-</tr>
-<tr>
-<td><strong>Arena FP-Tree</strong></td>
-<td>Flat children arena, incremental <code>is_path()</code> tracking</td>
-</tr>
-<tr>
-<td><strong>Rayon</strong></td>
-<td>Parallel conditional mining across CPU cores</td>
-</tr>
-<tr>
-<td><strong>Eclat popcount</strong></td>
-<td><code>Vec&lt;u64&gt;</code> bitsets + hardware <code>popcnt</code> for support</td>
-</tr>
-<tr>
-<td><strong>No Python loops</strong></td>
-<td>FP-Tree, mining, and metrics all in Rust</td>
-</tr>
-<tr>
-<td><strong><code>pd.factorize</code></strong></td>
-<td>O(n) integer encoding, faster than <code>pd.Categorical</code> at scale</td>
-</tr>
-</tbody>
-</table>
+<h2 id="item-to-item-similarity-i2i">Item-to-Item Similarity (i2i)<a class="headerlink" href="#item-to-item-similarity-i2i" title="Permanent link">&para;</a></h2>
+<p>Often you don't have a user context (e.g., an anonymous visitor on a product description page). In these cases, you can use the latent item factors learned by the ALS model to find conceptually similar products.</p>
+<p>The <code>similar_items</code> function performs ultra-fast Cosine Similarity over the ALS item embeddings.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Fit ALS on your interaction data</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Find 4 products most similar to product 99</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">similar</span><span class="p">,</span> <span class="n">similarities</span> <span class="o">=</span> <span class="n">similar_items</span><span class="p">(</span><span class="n">als</span><span class="p">,</span> <span class="n">item_id</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">similar</span><span class="p">)</span> 
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># [100, 95, 102, 88]</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">similarities</span><span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># [0.98, 0.94, 0.89, 0.85]</span>
+</span></code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> Because this operates on latent factors, it discovers implicit relationships. For example, it might identify that a high-end coffee grinder is similar to an expensive espresso machine, even if they aren't directly bought in the exact same cart.</p>
+</blockquote>
+<hr />
+<h2 id="cross-selling-potential-scoring">Cross-Selling Potential Scoring<a class="headerlink" href="#cross-selling-potential-scoring" title="Permanent link">&para;</a></h2>
+<p>For marketing teams, sending generic email blasts is inefficient. The <code>score_potential</code> function quantifies the "missed opportunity" by calculating the probability a user <em>should</em> have bought an item by now, but hasn't.</p>
+<p>This is perfect for building highly targeted audiences for email campaigns or retargeting pixels.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># user_history: list of item IDs each user has already interacted with</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># target_categories: optional list of specific item/category IDs to score</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">potential_matrix</span> <span class="o">=</span> <span class="n">score_potential</span><span class="p">(</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">user_history</span><span class="o">=</span><span class="p">[[</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="p">[</span><span class="mi">99</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]],</span> 
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">target_categories</span><span class="o">=</span><span class="p">[</span><span class="mi">101</span><span class="p">,</span> <span class="mi">102</span><span class="p">,</span> <span class="mi">103</span><span class="p">]</span> <span class="c1"># e.g., the &quot;Electronics&quot; category</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># The result is a dense numpy array of shape (n_users, len(target_categories))</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Values are raw ALS interaction scores. Items the user has already bought </span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># are masked with -infinity.</span>
+</span></code></pre></div>
+<p>By sorting users by their maximum score in <code>potential_matrix</code>, you can instantly generate a ranked list of the absolute best customers to target for an upcoming product launch in the <code>Electronics</code> category.</p>
 
 
 
@@ -1634,7 +1315,7 @@ Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sp
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../polars/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Polars Support">
+          <a href="../notebooks/3_ecommerce_lifecycle_mining.ipynb" class="md-footer__link md-footer__link--prev" aria-label="Previous: ⏱️ E-Commerce Lifecycle Discovery">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1644,20 +1325,20 @@ Compare to the pandas sparse path where mining alone takes 30.4s due to <code>sp
                 Previous
               </span>
               <div class="md-ellipsis">
-                Polars Support
+                ⏱️ E-Commerce Lifecycle Discovery
               </div>
             </div>
           </a>
         
         
           
-          <a href="../1b-challenge/" class="md-footer__link md-footer__link--next" aria-label="Next: The 1B Challenge">
+          <a href="../polars/" class="md-footer__link md-footer__link--next" aria-label="Next: Polars Support">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                The 1B Challenge
+                Polars Support
               </div>
             </div>
             <div class="md-footer__button md-icon">
