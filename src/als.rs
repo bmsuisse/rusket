@@ -37,11 +37,9 @@ fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
 
 // ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
-use faer::mat::from_row_major_slice;
-
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
     // faer's matmul computes YᵀY with SIMD + rayon parallelism.
-    let y = faer::mat::from_row_major_slice::<f32>(factors, n, k);
+    let y = MatRef::from_row_major_slice(factors, n, k);
     let yt = y.transpose();
 
     let mut g = faer::Mat::<f32>::zeros(k, k);

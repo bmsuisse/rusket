@@ -63,6 +63,15 @@ Comparing the `FPMiner` streaming accumulator against `mlxtend`'s standard panda
 
 ---
 
+## The "Auto" Routine Algorithm
+
+`rusket.mine(method="auto")` dynamically selects the algorithm that performs best based on the dataset density (Borgelt 2003 heuristic).
+
+- **Density > 0.15 (Dense)**: Automatically routes to **FP-Growth**. Tree-traversal performs exceptionally well when most transactions contain a massive overlap of identical items.
+- **Density < 0.15 (Sparse)**: Automatically routes to **Eclat**. On sparse data (like retail baskets), traversing an enormous tree is memory-intensive. Eclat directly uses hardware SIMD array-intersections (`popcnt`) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).
+
+---
+
 ## Real-World Datasets
 
 Datasets from [andi611/Apriori-and-Eclat-Frequent-Itemset-Mining](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining).

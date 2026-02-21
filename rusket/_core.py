@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
-Method = Literal["fpgrowth", "eclat"]
+Method = Literal["fpgrowth", "eclat", "auto"]
 
 _RUST_DENSE = {"fpgrowth": _rust.fpgrowth_from_dense, "eclat": _rust.eclat_from_dense}
 _RUST_CSR = {"fpgrowth": _rust.fpgrowth_from_csr, "eclat": _rust.eclat_from_csr}
@@ -162,6 +162,20 @@ def _run_polars(
             f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
         )
         t0 = t1
+    if method == "auto":
+        # Polars: count True/non-zero elements
+        try:
+            import polars as pl
+            # Try efficient counting if it's a boolean mask
+            nnz = df.select(pl.all().cast(pl.Boolean).sum()).sum_horizontal().item()
+        except Exception:
+            nnz = n_rows * n_cols # fallback
+            
+        density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+        method = "eclat" if density < 0.15 else "fpgrowth"
+        if verbose:
+            print(f"[{time.strftime('%X')}] Auto-selected method: '{method}' (density={density:.4f})")
+
     raw = _RUST_DENSE[method](arr, min_count, max_len)
     if verbose:
         print(
@@ -226,6 +240,13 @@ def dispatch(
                 f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
             )
             t0 = t1
+        if method == "auto":
+            # CSR density: nnz / (rows * cols)
+            density = csr.nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+            method = "eclat" if density < 0.15 else "fpgrowth"
+            if verbose:
+                print(f"[{time.strftime('%X')}] Auto-selected method: '{method}' (density={density:.4f})")
+
         raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
         if verbose:
             print(
@@ -251,6 +272,15 @@ def dispatch(
                 f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
             )
             t0 = t1
+        if method == "auto":
+            # Dense numpy arrays are 100% density generally, or dense boolean masks.
+            # But actual density is sum(arr > 0) / size.
+            nnz = np.count_nonzero(df_nd)
+            density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+            method = "eclat" if density < 0.15 else "fpgrowth"
+            if verbose:
+                print(f"[{time.strftime('%X')}] Auto-selected method: '{method}' (density={density:.4f})")
+                
         raw = _RUST_DENSE[method](data, min_count, max_len)
         if verbose:
             print(
@@ -266,6 +296,20 @@ def dispatch(
     from ._validation import valid_input_check
 
     valid_input_check(df_pd, null_values)
+
+    if method == "auto":
+        # Dense pandas dataframe
+        # Sparse pandas dataframes fall into `_run_sparse`
+        if hasattr(df_pd, "sparse"):
+            nnz = getattr(df_pd.sparse, "density", 0.0) * (n_rows * n_cols)
+            density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+        else:
+            nnz = df_pd.astype(bool).sum().sum()
+            density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+            
+        method = "eclat" if density < 0.15 else "fpgrowth"
+        if verbose:
+            print(f"[{time.strftime('%X')}] Auto-selected method: '{method}' (density={density:.4f})")
 
     if hasattr(df_pd, "sparse"):
         raw = _run_sparse(df_pd, n_cols, min_count, max_len, method, verbose)

@@ -145,7 +145,7 @@ pub fn eclat_from_dense(
             let mut sub_results = Vec::new();
             let count = bs_a.count_ones();
             if count >= min_count {
-                let mut iset = vec![*item_a];
+                let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
 
                 if max_len.map_or(true, |ml| ml > 1) {
@@ -242,7 +242,7 @@ pub fn eclat_from_csr(
             let mut sub_results = Vec::new();
             let count = bs_a.count_ones();
             if count >= min_count {
-                let mut iset = vec![*item_a];
+                let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
 
                 if max_len.map_or(true, |ml| ml > 1) {
