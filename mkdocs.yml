@@ -1,5 +1,5 @@
 site_name: rusket
-site_description: Blazing-fast FP-Growth and Association Rules for Python — pure Rust via PyO3.
+site_description: Blazing-fast FP-Growth, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3.
 site_url: https://bmsuisse.github.io/rusket
 repo_url: https://github.com/bmsuisse/rusket
 repo_name: bmsuisse/rusket
@@ -53,6 +53,7 @@ nav:
   - User Guide:
     - API Reference: api-reference.md
     - Cookbook: cookbook.md
+    - Recommender Workflows: recommender.md
     - Polars Support: polars.md
     - Benchmarks: benchmarks.md
     - The 1B Challenge: 1b-challenge.md

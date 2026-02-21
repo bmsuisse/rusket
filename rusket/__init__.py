@@ -11,6 +11,12 @@ from .transactions import (
 )
 from .streaming import FPMiner
 from .als import ALS
+from .bpr import BPR
+from .prefixspan import prefixspan, sequences_from_event_log
+from .hupm import hupm
+from .similarity import similar_items
+from .recommend import Recommender, NextBestAction, score_potential
+from .analytics import find_substitutes, customer_saturation
 
 __all__ = [
     "fpgrowth",
@@ -24,4 +30,14 @@ __all__ = [
     "from_spark",
     "FPMiner",
     "ALS",
+    "BPR",
+    "prefixspan",
+    "sequences_from_event_log",
+    "hupm",
+    "similar_items",
+    "Recommender",
+    "NextBestAction",
+    "score_potential",
+    "find_substitutes",
+    "customer_saturation",
 ]

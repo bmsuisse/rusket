@@ -1,5 +1,55 @@
 [
   {
+    "label": "MovieLens 1M",
+    "n_users": 6040,
+    "n_items": 3706,
+    "nnz": 1000209,
+    "methods": [
+      {
+        "method": "rusket cg=3",
+        "fit_s": 1.8200876249902649,
+        "rec_ms": 0.09200000000419095
+      },
+      {
+        "method": "rusket cholesky",
+        "fit_s": 13.20787549999659,
+        "rec_ms": 0.09864791500149295
+      },
+      {
+        "method": "rusket cg=10",
+        "fit_s": 5.657813292011269,
+        "rec_ms": 0.09188458498101681
+      }
+    ],
+    "csr_mb": 8.025836,
+    "fact_mb": 2.494976
+  },
+  {
+    "label": "MovieLens 10M",
+    "n_users": 69878,
+    "n_items": 10677,
+    "nnz": 10000054,
+    "methods": [
+      {
+        "method": "rusket cg=3",
+        "fit_s": 23.61117283400381,
+        "rec_ms": 0.28566041502926964
+      },
+      {
+        "method": "rusket cholesky",
+        "fit_s": 170.6561063750123,
+        "rec_ms": 0.36472687497735023
+      },
+      {
+        "method": "rusket cg=10",
+        "fit_s": 80.59535587498976,
+        "rec_ms": 0.3656475000025239
+      }
+    ],
+    "csr_mb": 80.279948,
+    "fact_mb": 20.62208
+  },
+  {
     "label": "MovieLens 25M",
     "n_users": 162541,
     "n_items": 59047,
@@ -7,13 +57,18 @@
     "methods": [
       {
         "method": "rusket cg=3",
-        "fit_s": 66.10330220800824,
-        "rec_ms": 1.5394029150047572
+        "fit_s": 79.9606893339951,
+        "rec_ms": 1.6397104199859314
+      },
+      {
+        "method": "rusket cholesky",
+        "fit_s": 756.9329532910051,
+        "rec_ms": 2.593031249998603
       },
       {
         "method": "rusket cg=10",
-        "fit_s": 171.11744741600705,
-        "rec_ms": 1.5261933299916564
+        "fit_s": 451.50754016599967,
+        "rec_ms": 1.621579999991809
       }
     ],
     "csr_mb": 200.650928,

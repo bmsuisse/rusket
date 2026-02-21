@@ -280,7 +280,101 @@ model.fit(mat)
 
 ---
 
-## 6. Native Polars Integration
+---
+
+## 6. Bayesian Personalized Ranking (BPR)
+
+Unlike ALS which tries to reconstruct the full interaction matrix, BPR explicitly optimizes the model to rank positive observed items higher than unobserved items. This makes BPR excellent for top-N ranking tasks on implicit data (like clicks or views).
+
+```python
+from rusket import BPR
+from scipy.sparse import csr_matrix
+import numpy as np
+
+# Prepare sparse interaction matrix
+rows = np.random.randint(0, 1000, size=5000)
+cols = np.random.randint(0, 500, size=5000)
+mat = csr_matrix((np.ones(5000), (rows, cols)), shape=(1000, 500))
+
+# Initialize and fit BPR with Hogwild! parallel SGD
+model = BPR(
+    factors=64,
+    learning_rate=0.01,
+    regularization=0.01,
+    iterations=100,
+    seed=42,
+)
+model.fit(mat)
+
+# Recommend items just like ALS
+items, scores = model.recommend_items(user_id=10, n=5)
+```
+
+---
+
+## 7. Sequential Pattern Mining (PrefixSpan)
+
+PrefixSpan discovers frequent sequences of events over time. Unlike standard market basket analysis where subsets within a single transaction are mined, PrefixSpan finds patterns *across ordered transactions*.
+
+```python
+import pandas as pd
+from rusket import prefixspan, sequences_from_event_log
+
+# 1. Start with an event log (e.g. clickstream)
+events = pd.DataFrame({
+    "user_id": [1, 1, 1, 2, 2, 3, 3, 3],
+    "timestamp": [10, 20, 30, 15, 25, 5, 15, 35],
+    "page": ["Home", "Product", "Cart", "Home", "Cart", "Product", "Cart", "Checkout"],
+})
+
+# 2. Convert to the nested list format expected by the Rust miner
+seqs, mapping = sequences_from_event_log(
+    events, user_col="user_id", time_col="timestamp", item_col="page"
+)
+
+# 3. Mine sequential patterns (min_support = number of sequences)
+patterns_df = prefixspan(seqs, min_support=2, max_len=3)
+
+# 4. Map the integer item IDs back to human-readable labels
+patterns_df["sequence_labels"] = patterns_df["sequence"].apply(
+    lambda seq: [mapping[item] for item in seq]
+)
+print(patterns_df.head())
+```
+
+---
+
+## 8. High-Utility Pattern Mining (HUPM)
+
+Frequent itemsets aren't always the most profitable. High-Utility Pattern Mining (HUPM) accounts for the utility (e.g., profit margin or revenue) of items to find sets that generate the *highest total value* across all transactions, regardless of frequency.
+
+```python
+from rusket import hupm
+
+# Transactions (lists of item IDs) and their corresponding utilities (profit)
+transactions = [
+    [1, 2, 3],  # Transaction 1: Items 1, 2, 3
+    [1, 3],     # Transaction 2: Items 1, 3
+    [2, 3],     # Transaction 3: Items 2, 3
+]
+
+# The profit of each item inside that specific transaction
+utilities = [
+    [5.0, 2.0, 1.0], # Profits for items 1, 2, 3 in T1
+    [5.0, 1.0],      # Profits for items 1, 3 in T2
+    [2.0, 1.0],      # Profits for items 2, 3 in T3
+]
+
+# Find itemsets with a total global utility >= 7.0
+high_value_patterns = hupm(transactions, utilities, min_utility=7.0)
+
+# Output contains the 'utility' and 'itemset'
+print(high_value_patterns)
+```
+
+---
+
+## 9. Native Polars Integration
 
 `rusket` returns itemsets as zero-copy **PyArrow `ListArray`** structures, making Polars interoperability very efficient.
 
@@ -313,7 +407,7 @@ top_10["sets"] = top_10["itemsets"].apply(set)
 
 ---
 
-## 7. Spark / Databricks Integration
+## 10. Spark / Databricks Integration
 
 ```python
 from rusket import from_transactions
@@ -333,7 +427,7 @@ model.fit_transactions(ratings_spark, user_col="user_id", item_col="item_id", ra
 
 ---
 
-## 8. Tuning Guide
+## 11. Tuning Guide
 
 ### FPGrowth / ECLAT
 
@@ -354,12 +448,29 @@ model.fit_transactions(ratings_spark, user_col="user_id", item_col="item_id", ra
 | `cg_iters` | 3 | CG solver steps per ALS step — 3 is almost always optimal |
 | `verbose` | False | Set `True` to print per-iteration timing |
 
+### BPR
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `factors` | 64 | Higher → better quality, more RAM. BPR requires more factors than ALS typically |
+| `iterations` | 100 | BPR uses SGD and requires more iterations than ALS. Try 100-500. |
+| `learning_rate` | 0.01 | SGD learning rate. Decrease if unstable, increase if slow convergence. |
+| `regularization` | 0.01 | Increase if overfitting |
+
+### PrefixSpan & HUPM
+
+| Parameter | Default | Notes |
+|---|---|---|
+| `min_support` | required | Defines frequency for PrefixSpan or total value for HUPM |
+| `max_len` | None | Cap itemset/sequence size to avoid combinatorial explosions |
+
 ### Recommendation quality tips
 
 - Use `regularization=0.1` for very sparse matrices (< 5 interactions/user)
-- `alpha=10` works better for rating-weighted data vs binary implicit feedback
-- For the best cold-start handling, combine ALS with popularity-based fallback
-- Lower `cg_iters` (e.g., 1–2) for faster but noisier convergence on huge datasets
+- `alpha=10` works better for rating-weighted data vs binary implicit feedback for ALS
+- For top-N ranking optimization directly, use **BPR** instead of **ALS**. ALS is better for score prediction and serendipity.
+- For the best cold-start handling, combine ALS/BPR with popularity-based fallback
+- Lower `cg_iters` (e.g., 1–2) for faster but noisier convergence on huge ALS datasets
 
 ---
 

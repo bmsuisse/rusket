@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, FP-Growth, Eclat) for Python, powered by Rust.</strong>
+  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, BPR, FP-Growth, PrefixSpan) for Python, powered by Rust.</strong>
 </p>
 
 <p align="center">
@@ -16,7 +16,9 @@
 
 ---
 
-`rusket` is a high-performance library for **Market Basket Analysis** and **Recommender Engines**, backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage. It includes **Alternating Least Squares (ALS)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon) and **Eclat** (vertical bitset mining) for frequent pattern mining. It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s `fpgrowth` and `association_rules`, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
+`rusket` is a high-performance library for **Market Basket Analysis**, **Graph Analytics**, and **Recommender Engines**, backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage.
+
+It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Ranking (BPR)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon), **Eclat** (vertical bitset mining), and **PrefixSpan** (sequential pattern mining). It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s APIs, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
 
 ---
 
@@ -25,7 +27,9 @@
 | | `rusket` | `mlxtend` |
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
-| **Algorithms** | ALS + Auto Routing (FP-Growth/Eclat) | FP-Growth only |
+| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat | FP-Growth only |
+| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ |
+| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
 | **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
@@ -441,6 +445,47 @@ rusket.from_pandas(df, transaction_col=None, item_col=None) -> pd.DataFrame
 rusket.from_polars(df, transaction_col=None, item_col=None) -> pd.DataFrame
 rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 ```
+
+---
+
+## 🧠 Advanced Pattern & Recommendation Algorithms
+
+`rusket` provides more than just basic market basket analysis. It includes an entire suite of modern algorithms and a high-level Business Recommender API.
+
+### 🎯 Hybrid Recommender API
+Combine the serendipity of **Collaborative Filtering** (ALS/BPR) with the strict, deterministic logic of **Frequent Pattern Mining**.
+
+```python
+from rusket import ALS, Recommender, mine, association_rules
+
+# 1. Train your Collaborative Filtering model
+als = ALS(factors=64).fit(user_item_matrix)
+
+# 2. Mine your Association Rules
+rules = association_rules(mine(user_item_matrix))
+
+# 3. Create the Hybrid Engine
+rec = Recommender(als_model=als, rules_df=rules)
+
+# Personalized recommendations for a user (ALS)
+items, scores = rec.recommend_for_user(user_id=42, n=5)
+
+# Next Best Action for an active shopping cart (Association Rules)
+cross_sell = rec.recommend_for_cart([14, 7], n=3)
+```
+
+### 📈 BPR & Sequential Patterns
+
+- **BPR (Bayesian Personalized Ranking):** Optimize for implicit feedback (clicks, views, purchases) directly by learning the ranking order of items instead of minimizing error.
+- **Sequential Pattern Mining (PrefixSpan):** Look at purchases over time instead of just single transactions (e.g., "Customer bought a Camera -> 1 month later bought a Lens").
+
+### 🕸️ Graph Analytics & Embeddings
+
+Integrate natively with the modern GenAI/LLM stack:
+
+- **Vector Export:** Export user/item factors to a Pandas `DataFrame` ready for FAISS/Qdrant using `rusket.export_item_factors`.
+- **Item-to-Item Similarity:** Fast Cosine Similarity on embeddings using `rusket.similar_items(als_model, item_id)`.
+- **Graph Generation:** Automatically convert association rules into a `networkx` directed Graph for community detection using `rusket.viz.to_networkx(rules)`.
 
 ---
 

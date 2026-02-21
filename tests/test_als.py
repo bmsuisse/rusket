@@ -182,6 +182,13 @@ def test_single_item() -> None:
     assert model.user_factors.shape == (3, 4)
     assert model.item_factors.shape == (1, 4)
 
+def test_fit_empty_matrix() -> None:
+    raw = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    model = rusket.ALS(factors=4, iterations=5)
+    model.fit(csr_matrix(raw, dtype=np.float32))
+    assert model.user_factors.shape == (3, 4)
+    assert model.item_factors.shape == (3, 4)
+    assert not np.isnan(model.user_factors).any()
 
 def test_not_fitted_raises() -> None:
     with pytest.raises(RuntimeError, match="not been fitted"):

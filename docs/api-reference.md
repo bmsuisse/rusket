@@ -380,3 +380,58 @@ csr, names = from_transactions_csr("orders.parquet", chunk_size=10_000_000)
 freq = mine(csr, min_support=0.001, use_colnames=True, column_names=names)
 ```
 
+---
+
+## Recommendation & Analytics
+
+### `rusket.recommend.Recommender`
+
+High-level Hybrid Recommender that combines ALS and Association Rules.
+
+```python
+from rusket import Recommender
+
+rec = Recommender(als_model=als, rules_df=rules_df)
+rec.recommend_for_user(user_id=42, n=5)
+rec.recommend_for_cart(cart_items=[14, 7], n=3)
+```
+
+### `rusket.score_potential`
+
+Calculates cross-selling potential scores to identify "missed opportunities" for users who should have bought an item by now but haven't.
+
+```python
+from rusket import score_potential
+
+scores = score_potential(user_history, als_model, target_categories=[101, 102])
+```
+
+### `rusket.similar_items`
+
+Find the most similar items to a given item ID based on ALS/BPR latent factors using fast Cosine Similarity.
+
+```python
+from rusket import similar_items
+
+similar_ids, scores = similar_items(als_model, item_id=99, n=5)
+```
+
+### `rusket.export_item_factors`
+
+Exports ALS/BPR latent item factors as a Pandas DataFrame for Vector DBs (FAISS, Qdrant, Pinecone) for Retrieval-Augmented Generation (RAG).
+
+```python
+from rusket import export_item_factors
+
+df_vectors = export_item_factors(als_model, include_labels=True)
+```
+
+### `rusket.viz.to_networkx`
+
+Converts a `rusket` association rules DataFrame into a NetworkX Directed Graph. Useful for product clustering and visualization.
+
+```python
+from rusket.viz import to_networkx
+
+G = to_networkx(rules_df, edge_attr="lift")
+```
