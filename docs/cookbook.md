@@ -14,7 +14,8 @@ pip install rusket
 import numpy as np
 import pandas as pd
 import polars as pl
-from rusket import mine, eclat, association_rules, ALS
+from rusket import mine, eclat, association_rules, ALS, BPR
+from rusket import prefixspan, sequences_from_event_log, hupm, similar_items, Recommender, score_potential
 ```
 
 ---
@@ -359,3 +360,186 @@ model.fit_transactions(ratings_spark, user_col="user_id", item_col="item_id", ra
 - `alpha=10` works better for rating-weighted data vs binary implicit feedback
 - For the best cold-start handling, combine ALS with popularity-based fallback
 - Lower `cg_iters` (e.g., 1–2) for faster but noisier convergence on huge datasets
+
+---
+
+## 9. Sequential Pattern Mining (PrefixSpan)
+
+When the **order** of events matters (e.g., website navigation paths, sequential purchases over time), use PrefixSpan instead of FP-Growth.
+
+### Prepare the Event Log
+
+```python
+from rusket import prefixspan, sequences_from_event_log
+
+events = pd.DataFrame({
+    "user_id": [1, 1, 1, 2, 2, 3, 3, 3],
+    "timestamp": [
+        "2024-01-01 10:00", "2024-01-01 10:05", "2024-01-01 10:10",
+        "2024-01-02 11:00", "2024-01-02 11:05",
+        "2024-01-03 09:00", "2024-01-03 09:05", "2024-01-03 09:10"
+    ],
+    "page_id": ["home", "products", "checkout", "home", "products", "home", "products", "checkout"]
+})
+
+# Convert timestamp to datetime for correct sorting
+events["timestamp"] = pd.to_datetime(events["timestamp"])
+
+# Convert to sequence format required by prefixspan
+sequences, idx_to_item = sequences_from_event_log(
+    events, 
+    user_col="user_id", 
+    time_col="timestamp", 
+    item_col="page_id"
+)
+```
+
+### Mine Sequential Patterns
+
+```python
+# min_support is an absolute number of sequences
+patterns = prefixspan(sequences, min_support=2, max_len=3)
+
+# Map integer IDs back to original page names
+patterns["sequence_names"] = patterns["sequence"].apply(
+    lambda seq: [idx_to_item[idx] for idx in seq]
+)
+
+print(patterns[["support", "sequence_names"]])
+#    support               sequence_names
+# 0        3                       [home]
+# 1        3                   [products]
+# 2        3             [home, products]
+# 3        2                   [checkout]
+# 4        2             [home, checkout]
+# 5        2         [products, checkout]
+# 6        2   [home, products, checkout]
+```
+
+---
+
+## 10. High-Utility Pattern Mining (HUPM)
+
+Standard Frequent Itemset Mining (FP-Growth/Eclat) treats all items equally. HUPM considers the **profit** or **utility** of items, discovering itemsets that generate high total revenue even if they are bought infrequently.
+
+```python
+from rusket import hupm
+
+# Item IDs bought
+transactions = [
+    [1, 2, 3], 
+    [1, 3],    
+    [2, 3]     
+]
+
+# Profit (or quantity * price) of each item in the respective transaction
+utilities = [
+    [5.0, 10.0, 2.0], # Transaction 1 profits
+    [5.0, 2.0],       # Transaction 2 profits
+    [10.0, 2.0]       # Transaction 3 profits
+]
+
+# Mine itemsets with at least 15.0 total utility
+high_utility_itemsets = hupm(transactions, utilities, min_utility=15.0, max_len=3)
+print(high_utility_itemsets)
+#    utility    itemset
+# 0     20.0       [2]
+# 1     24.0    [2, 3]
+# 2     17.0 [1, 2, 3]
+```
+
+---
+
+## 11. Bayesian Personalized Ranking (BPR)
+
+BPR is a matrix factorization model that optimizes for **ranking metrics** rather than reconstruction error (like ALS). It works by sampling positive (interacted) and negative (unseen) items and ensuring the positive items are ranked higher. Use it when interaction data is purely binary implicit feedback.
+
+```python
+from rusket import BPR
+from scipy.sparse import csr_matrix
+import numpy as np
+
+# Create an implicit feedback matrix (users x items)
+mat = csr_matrix((np.ones(10), ([0,0,0,1,1,2,2,3,3,4], [1,3,4,1,2,2,3,1,4,4])), shape=(5, 5))
+
+model = BPR(
+    factors=32,
+    learning_rate=0.05,
+    iterations=200,
+    regularization=0.01,
+    seed=42
+)
+
+# Fit the BPR model
+model.fit(mat)
+
+# Recommend 3 items for user 0, excluding items they already interacted with
+item_ids, scores = model.recommend_items(user_id=0, n=3, exclude_seen=True)
+print(item_ids, scores)
+```
+
+---
+
+## 12. Item Similarity and Cross-Selling Potential
+
+Once you have fitted an ALS or BPR model, the learned latent factors are incredibly useful for measuring item similarity and predicting missed cross-sell opportunities.
+
+### Find Similar Products (Item-to-Item)
+
+```python
+from rusket import similar_items
+
+# Given an ALS model fitted on purchases
+item_ids, match_scores = similar_items(model, item_id=102, n=5)
+
+print(f"Items similar to {102}: {item_ids}")
+# => Items similar to 102: [105, 99, 110, 87, 10]
+```
+
+### Calculate Cross-Selling Potential
+
+Identify the probability that a user *should* have bought an item by now, but hasn't (`score_potential`).
+
+```python
+from rusket import score_potential
+
+user_purchase_history = [
+    [0, 1, 5], # User 0 bought items 0, 1, 5
+    [1, 3],    # User 1 bought items 1, 3
+    [0]        # User 2 bought item 0
+]
+
+# Provide specific categories/items you want to cross-sell
+target_items = [2, 4, 6]
+
+# Matrix of shape (n_users, len(target_items))
+scores = score_potential(
+    user_purchase_history, 
+    als_model=model, 
+    target_categories=target_items
+)
+
+# The highest scores correspond to the users most primed to buy those specific targets
+print("Cross-sell potential scores:")
+print(scores)
+```
+
+---
+
+## 13. Hybrid Recommender (ALS + Association Rules)
+
+The `Recommender` workflow class wraps both your collaborative filtering models (ALS) and Frequent Pattern Mining rules into a single API. This easily enables the two most common placement strategies in e-commerce: **"For You"** (ALS) and **"Frequently Bought Together"** (Association Rules).
+
+```python
+from rusket import Recommender
+
+# Initialize with both your fitted ALS model and Rules DataFrame
+rec = Recommender(als_model=model, rules_df=strong_rules)
+
+# 1. "For You" (Personalized cross-selling based on user history)
+item_ids, scores = rec.recommend_for_user(user_id=125, n=5)
+
+# 2. "Frequently Bought Together" (Cart-based additions)
+active_cart = [10, 15] # User just added items 10 and 15
+suggested_additions = rec.recommend_for_cart(active_cart, n=3)
+```
