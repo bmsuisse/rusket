@@ -40,7 +40,7 @@ To also enable **Polars** support:
     # Before
     from mlxtend.frequent_patterns import fpgrowth, association_rules
     # After
-    from rusket import fpgrowth, association_rules
+    from rusket import mine, association_rules
     ```
     See the full [Migration Guide](migration.md) for details.
 
@@ -48,7 +48,7 @@ To also enable **Polars** support:
 
 ## Step 1 — Prepare your data
 
-`fpgrowth` expects a **one-hot encoded** DataFrame of boolean or 0/1 integer values where rows are transactions and columns are items.
+`mine` expects a **one-hot encoded** DataFrame of boolean or 0/1 integer values where rows are transactions and columns are items.
 
 ```python
 import pandas as pd
@@ -80,9 +80,10 @@ print(df)
 ## Step 2 — Mine frequent itemsets
 
 ```python
-from rusket import fpgrowth
+from rusket import mine
 
-freq = fpgrowth(df, min_support=0.5, use_colnames=True)
+# method="auto" automatically selects FP-Growth or Eclat based on dataset density
+freq = mine(df, min_support=0.5, use_colnames=True)
 print(freq)
 #    support          itemsets
 # 0     0.75          (milk,)
@@ -108,8 +109,8 @@ print(freq)  # identical output to fpgrowth
 ```
 
 !!! tip "When to use which?"
-    - **FP-Growth** — good default for all data shapes, excels on dense data
-    - **Eclat** — competitive alternative, especially on sparse retail basket data
+    The `mine(method="auto")` parameter handles this automatically for you. 
+    It evaluates the density of the dataset `nnz / (rows * cols)` and picks `eclat` for sparse datasets `< 0.15` and `fpgrowth` for dense datasets.
 
 ---
 
@@ -166,13 +167,13 @@ If you already have integer arrays (e.g. from a database query), skip
 
 ```python
 from scipy import sparse as sp
-from rusket import fpgrowth
+from rusket import mine
 
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
-freq = fpgrowth(csr, min_support=0.001, column_names=item_names)
+freq = mine(csr, min_support=0.001, column_names=item_names)
 ```
 
 ---

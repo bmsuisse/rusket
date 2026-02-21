@@ -14,7 +14,7 @@ pip install rusket
 import numpy as np
 import pandas as pd
 import polars as pl
-from rusket import fpgrowth, eclat, association_rules, ALS
+from rusket import mine, eclat, association_rules, ALS
 ```
 
 ---
@@ -46,7 +46,7 @@ df = pd.DataFrame(
 ### Find frequent itemsets
 
 ```python
-fi = fpgrowth(df, min_support=0.05, use_colnames=True)
+fi = mine(df, min_support=0.05, use_colnames=True)
 # Returns a Pandas DataFrame with columns: support, itemsets
 print(f"Found {len(fi)} frequent itemsets")
 fi.sort_values("support", ascending=False).head(10)
@@ -65,7 +65,7 @@ strong.sort_values("lift", ascending=False).head(10)
 
 ```python
 # Only find pairs and triples — much faster for large catalogs
-fi_pairs = fpgrowth(df, min_support=0.02, max_len=2, use_colnames=True)
+fi_pairs = mine(df, min_support=0.02, max_len=2, use_colnames=True)
 ```
 
 ---
@@ -82,15 +82,15 @@ fi_ec = eclat(df, min_support=0.05, use_colnames=True)
 
 | Condition | Recommended algorithm |
 |---|---|
-| Dense dataset, few items | `fpgrowth` |
-| Sparse dataset, many items, low support | `eclat` |
-| Very large dataset (100M+ rows) | `fpgrowth` with streaming |
+| Dense dataset, few items | `mine(method="auto")` |
+| Sparse dataset, many items, low support | `mine(method="auto")` |
+| Very large dataset (100M+ rows) | `FPMiner` with streaming |
 
 ---
 
 ## 3. Transaction Helpers
 
-Convert long-format order data (e.g., from a database) to the one-hot boolean matrix format required by `fpgrowth` and `eclat`.
+Convert long-format order data (e.g., from a database) to the one-hot boolean matrix format required by `mine` (which automatically routes to `fpgrowth` or `eclat`).
 
 ### From a Pandas DataFrame
 
@@ -104,7 +104,7 @@ orders = pd.DataFrame({
 
 # Converts long-format → wide boolean matrix
 basket = from_transactions(orders, user_col="order_id", item_col="item")
-fi = fpgrowth(basket, min_support=0.3, use_colnames=True)
+fi = mine(basket, min_support=0.3, use_colnames=True)
 ```
 
 ### From a Polars DataFrame
@@ -285,12 +285,12 @@ model.fit(mat)
 
 ```python
 df_pl = pl.from_pandas(df)
-fi_pl = fpgrowth(df_pl, min_support=0.05, use_colnames=True)
+fi_pl = mine(df_pl, min_support=0.05, use_colnames=True)
 
 # LazyFrame works too:
 lazy = df_pl.lazy()
 # (convert to eager first before passing to fpgrowth)
-fi_pl2 = fpgrowth(lazy.collect(), min_support=0.05, use_colnames=True)
+fi_pl2 = mine(lazy.collect(), min_support=0.05, use_colnames=True)
 ```
 
 ### Query itemsets with PyArrow compute
@@ -319,7 +319,7 @@ from rusket import from_transactions
 from rusket import ALS
 
 # FPGrowth from Spark
-fi = fpgrowth(spark_df.toPandas(), min_support=0.05, use_colnames=True)
+fi = mine(spark_df.toPandas(), min_support=0.05, use_colnames=True)
 
 # ALS from Spark ratings table
 ratings_spark = spark.table("ratings")  # user_id, item_id, rating

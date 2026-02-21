@@ -25,7 +25,7 @@
 | | `rusket` | `mlxtend` |
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
-| **Algorithms** | ALS + FP-Growth + Eclat | FP-Growth only |
+| **Algorithms** | ALS + Auto Routing (FP-Growth/Eclat) | FP-Growth only |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
 | **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
@@ -63,7 +63,7 @@ pip install "rusket[pandas]"
 
 ```python
 import pandas as pd
-from rusket import fpgrowth, association_rules
+from rusket import mine, association_rules
 
 # One-hot encoded boolean DataFrame
 data = {
@@ -76,7 +76,8 @@ data = {
 df = pd.DataFrame(data).astype(bool)
 
 # 1. Mine frequent itemsets
-freq = fpgrowth(df, min_support=0.4, use_colnames=True)
+# method="auto" automatically selects FP-Growth or Eclat based on dataset density
+freq = mine(df, min_support=0.4, use_colnames=True)
 
 # 2. Generate association rules
 rules = association_rules(
@@ -98,7 +99,7 @@ Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices.
 
 ```python
 import pandas as pd
-from rusket import from_transactions, fpgrowth
+from rusket import from_transactions, mine
 
 # Long-format transactional data
 df = pd.DataFrame({
@@ -110,7 +111,7 @@ df = pd.DataFrame({
 ohe = from_transactions(df)
 
 # Mine!
-freq = fpgrowth(ohe, min_support=0.3, use_colnames=True)
+freq = mine(ohe, min_support=0.3, use_colnames=True)
 print(freq)
 ```
 
@@ -151,11 +152,12 @@ print(rules)
 
 #### When to use which?
 
-| Scenario | Recommended |
+You almost always want to use `rusket.mine(method="auto")`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
+
+| Scenario | Algorithm chosen by `method="auto"` |
 |---|---|
-| Very sparse data (retail baskets, e-commerce) | `eclat` or `fpgrowth` — both fast |
-| Dense data (many items per transaction) | `fpgrowth` |
-| General-purpose / don't know | `fpgrowth` (default) |
+| Very sparse data (density < 0.15) | `eclat` (bitset/SIMD intersections) |
+| Dense data (density > 0.15) | `fpgrowth` (FP-tree traversals) |
 
 ---
 
@@ -199,10 +201,10 @@ Or more concisely — just read a Parquet file:
 
 ```python
 import polars as pl
-from rusket import fpgrowth
+from rusket import mine
 
 df = pl.read_parquet("transactions.parquet")
-freq = fpgrowth(df, min_support=0.05, use_colnames=True)
+freq = mine(df, min_support=0.05, use_colnames=True)
 ```
 
 > **How it works under the hood:**  
@@ -236,7 +238,7 @@ print(f"Dense  memory: {dense_mb:.1f} MB")
 print(f"Sparse memory: {sparse_mb:.1f} MB  ({dense_mb / sparse_mb:.1f}× smaller)")
 
 # Same API, same results — just faster and lighter
-freq = fpgrowth(df_sparse, min_support=0.01, use_colnames=True)
+freq = mine(df_sparse, min_support=0.01, use_colnames=True)
 print(f"Frequent itemsets: {len(freq):,}")
 ```
 
@@ -279,9 +281,10 @@ freq = miner.mine(min_support=0.001, max_len=3)
 
 ```diff
 - from mlxtend.frequent_patterns import fpgrowth, association_rules
-+ from rusket import fpgrowth, association_rules
++ from rusket import mine, association_rules
 
-  freq  = fpgrowth(df, min_support=0.05, use_colnames=True)        # identical
+- freq  = fpgrowth(df, min_support=0.05, use_colnames=True)
++ freq  = mine(df, min_support=0.05, use_colnames=True)
 
 - rules = association_rules(freq, metric="lift", min_threshold=1.2)
 + rules = association_rules(freq, num_itemsets=len(df),             # ← add this
@@ -298,6 +301,36 @@ freq = miner.mine(min_support=0.001, max_len=3)
 ---
 
 ## 📖 API Reference
+
+### `mine`
+
+```python
+rusket.mine(
+    df,
+    min_support: float = 0.5,
+    null_values: bool = False,
+    use_colnames: bool = False,
+    max_len: int | None = None,
+    method: str = "auto",
+    verbose: int = 0,
+) -> pd.DataFrame
+```
+
+Dynamically selects the optimal mining algorithm based on the dataset density heuristically. It's highly recommended to use this instead of `fpgrowth` or `eclat` directly.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `df` | `pd.DataFrame` \| `pl.DataFrame` \| `np.ndarray` | One-hot encoded input (bool / 0-1). Dense, sparse, or Polars. |
+| `min_support` | `float` | Minimum support threshold in `(0, 1]`. |
+| `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
+| `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
+| `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
+| `method` | `"auto" \| "fpgrowth" \| "eclat"` | Algorithm to use. "auto" selects Eclat for `<0.15` density distributions. |
+| `verbose` | `int` | Verbosity level. |
+
+**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
+
+---
 
 ### `fpgrowth`
 
@@ -428,15 +461,15 @@ rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import fpgrowth
+from rusket import mine
 
 # Build CSR directly from integer IDs (no pandas!)
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
-freq = fpgrowth(csr, min_support=0.001, max_len=3,
-                use_colnames=True, column_names=item_names)
+freq = mine(csr, min_support=0.001, max_len=3,
+            use_colnames=True, column_names=item_names)
 ```
 
 > At 100M rows, the mining step takes **1.3 seconds** — the bottleneck is entirely the CSR build.

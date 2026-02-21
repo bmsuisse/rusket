@@ -1,5 +1,86 @@
 # API Reference
 
+## `mine` (Recommended)
+
+```python
+from rusket import mine
+
+mine(
+    df,
+    min_support=0.5,
+    null_values=False,
+    use_colnames=False,
+    max_len=None,
+    method="auto",
+    verbose=0,
+) -> pd.DataFrame
+```
+
+Dynamically selects the optimal mining algorithm (`fpgrowth` or `eclat`) based on the dataset density heuristically. It's highly recommended to use this entry point instead of calling the algorithms directly.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `df` | `pd.DataFrame \| pl.DataFrame` | — | One-hot encoded DataFrame. Rows are transactions, columns are items. Accepts bool or 0/1 integer values. Sparse pandas DataFrames are supported via the CSR path. |
+| `min_support` | `float` | `0.5` | Minimum support threshold in `(0, 1]`. Items occurring in fewer than `ceil(min_support × n_rows)` transactions are excluded. |
+| `null_values` | `bool` | `False` | Allow NaN values in `df` (pandas only). When `True`, NaNs are treated as zeros. |
+| `use_colnames` | `bool` | `False` | If `True`, itemsets contain column names instead of integer column indices. |
+| `max_len` | `int \| None` | `None` | Maximum itemset length. `None` means unlimited. |
+| `method` | `"auto" \| "fpgrowth" \| "eclat"` | `"auto"` | Algorithm to use. "auto" selects Eclat for sparse datasets and FP-Growth for dense ones. |
+| `verbose` | `int` | `0` | Verbosity level. |
+
+### Returns
+
+`pandas.DataFrame` with columns:
+
+| Column | Type | Description |
+|---|---|---|
+| `support` | `float` | Support of the itemset (fraction of transactions). |
+| `itemsets` | `frozenset` | Set of column indices (or names when `use_colnames=True`). |
+
+### Raises
+
+| Exception | Condition |
+|---|---|
+| `ValueError` | `min_support` ≤ 0 |
+| `TypeError` | `df` is not a pandas or Polars DataFrame |
+
+### Examples
+
+=== "Dense pandas"
+
+    ```python
+    import pandas as pd
+    from rusket import mine
+
+    df = pd.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
+    freq = mine(df, min_support=0.5, use_colnames=True)
+    ```
+
+=== "Sparse pandas"
+
+    ```python
+    import pandas as pd
+    from pandas.arrays import SparseArray
+    from rusket import mine
+
+    df = pd.DataFrame.sparse.from_spmatrix(my_csr_matrix, columns=items)
+    freq = mine(df, min_support=0.1, use_colnames=True)
+    ```
+
+=== "Polars"
+
+    ```python
+    import polars as pl
+    from rusket import mine
+
+    df = pl.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
+    freq = mine(df, min_support=0.5, use_colnames=True)
+    ```
+
+---
+
 ## `fpgrowth`
 
 ```python
@@ -137,7 +218,7 @@ Generate association rules from a DataFrame of frequent itemsets. The rule-gener
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `df` | `pd.DataFrame` | — | Output of `fpgrowth()` with columns `['support', 'itemsets']`. |
+| `df` | `pd.DataFrame` | — | Output of `mine()` or `fpgrowth()` with columns `['support', 'itemsets']`. |
 | `num_itemsets` | `int` | — | **Total number of transactions** in the original dataset (= `len(original_df)`). |
 | `df_orig` | `pd.DataFrame \| None` | `None` | Original (non-binarised) DataFrame. Only needed when `null_values=True`. |
 | `null_values` | `bool` | `False` | Apply null-value correction (not yet on the Rust path; falls back gracefully). |
@@ -292,10 +373,10 @@ memory at once.
 ### Example
 
 ```python
-from rusket import from_transactions_csr, fpgrowth
+from rusket import from_transactions_csr, mine
 
 # From Parquet — never loads entire file
 csr, names = from_transactions_csr("orders.parquet", chunk_size=10_000_000)
-freq = fpgrowth(csr, min_support=0.001, use_colnames=True, column_names=names)
+freq = mine(csr, min_support=0.001, use_colnames=True, column_names=names)
 ```
 
