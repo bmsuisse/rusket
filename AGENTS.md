@@ -31,6 +31,7 @@ rusket is a blazing fast library and a drop-in replacement for `mlxtend`'s FP-Gr
 ### General Development Guidelines
 - **File Size Limit**: No file should exceed 1000 lines of code.
 - **Branching**: Create a branch for each feature.
+- **Temporary / scratch files**: Never drop throwaway files (e.g. `test_*.rs`, `scratch_*.py`) in the repo root or anywhere tracked by git. If you need a sandbox file while investigating something, put it inside `.temp/` — that directory is in `.gitignore` and will never be committed.
 
 ## YOLO
 

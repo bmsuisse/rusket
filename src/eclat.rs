@@ -29,16 +29,38 @@ impl BitSet {
         self.blocks.iter().map(|b| b.count_ones() as u64).sum()
     }
 
+    /// Intersect self & other, writing into `out` (must have same block count).
+    /// Returns the popcount. If at any point the remaining blocks can't bring
+    /// the total up to `min_count`, aborts and returns 0 (early-exit).
+    #[inline]
+    fn intersect_count_into(&self, other: &BitSet, out: &mut BitSet, min_count: u64) -> u64 {
+        let n = self.blocks.len();
+        debug_assert_eq!(other.blocks.len(), n);
+        debug_assert_eq!(out.blocks.len(), n);
+        let mut count = 0u64;
+        for i in 0..n {
+            let v = self.blocks[i] & other.blocks[i];
+            out.blocks[i] = v;
+            count += v.count_ones() as u64;
+            // Early-exit: even if all remaining blocks are all-ones we can't reach min_count
+            let remaining_max = ((n - i - 1) * 64) as u64;
+            if count + remaining_max < min_count {
+                // zero out remaining blocks so `out` is consistent if caller checks
+                for j in (i+1)..n { out.blocks[j] = 0; }
+                return 0;
+            }
+        }
+        count
+    }
+
     #[inline]
     fn intersect(&self, other: &BitSet) -> BitSet {
-        let blocks = self.blocks
-            .iter()
-            .zip(other.blocks.iter())
-            .map(|(a, b)| a & b)
-            .collect();
+        let blocks = self.blocks.iter().zip(other.blocks.iter())
+            .map(|(a, b)| a & b).collect();
         BitSet { blocks }
     }
 }
+
 
 pub(crate) fn eclat_mine(
     prefix: &[u32],
@@ -48,6 +70,9 @@ pub(crate) fn eclat_mine(
 ) -> Vec<(u64, Vec<u32>)> {
     let mut results = Vec::new();
     let new_len = prefix.len() + 1;
+    // Scratch buffer reused across pairs at this level — one allocation per call.
+    let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
+    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
 
     for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
         let count = bs_a.count_ones();
@@ -60,14 +85,16 @@ pub(crate) fn eclat_mine(
             results.push((count, iset.clone()));
 
             if max_len.map_or(true, |ml| new_len < ml) {
-                let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                let mut next_active: Vec<(u32, BitSet)> =
+                    Vec::with_capacity(active_items.len() - i - 1);
                 for (item_b, bs_b) in &active_items[i + 1..] {
-                    let new_bs = bs_a.intersect(bs_b);
-                    if new_bs.count_ones() >= min_count {
-                        next_active.push((*item_b, new_bs));
+                    let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                    if c >= min_count {
+                        // Clone scratch into a new owned BitSet for storage
+                        next_active.push((*item_b, scratch.clone()));
                     }
                 }
-                
+
                 if !next_active.is_empty() {
                     results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
                 }
@@ -77,6 +104,7 @@ pub(crate) fn eclat_mine(
 
     results
 }
+
 
 #[pyfunction]
 #[pyo3(signature = (data, min_count, max_len=None))]
@@ -149,11 +177,13 @@ pub fn eclat_from_dense(
                 sub_results.push((count, iset.clone()));
 
                 if max_len.map_or(true, |ml| ml > 1) {
+                    let n_blocks = bs_a.blocks.len();
+                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
-                        let new_bs = bs_a.intersect(bs_b);
-                        if new_bs.count_ones() >= min_count {
-                            next_active.push((*item_b, new_bs));
+                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                        if c >= min_count {
+                            next_active.push((*item_b, scratch.clone()));
                         }
                     }
                     if !next_active.is_empty() {
@@ -246,11 +276,13 @@ pub fn eclat_from_csr(
                 sub_results.push((count, iset.clone()));
 
                 if max_len.map_or(true, |ml| ml > 1) {
+                    let n_blocks = bs_a.blocks.len();
+                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
-                        let new_bs = bs_a.intersect(bs_b);
-                        if new_bs.count_ones() >= min_count {
-                            next_active.push((*item_b, new_bs));
+                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                        if c >= min_count {
+                            next_active.push((*item_b, scratch.clone()));
                         }
                     }
                     if !next_active.is_empty() {
@@ -330,11 +362,13 @@ pub(crate) fn _eclat_mine_csr(
                 let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
                 if max_len.map_or(true, |ml| ml > 1) {
+                    let n_blocks = bs_a.blocks.len();
+                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
-                        let new_bs = bs_a.intersect(bs_b);
-                        if new_bs.count_ones() >= min_count {
-                            next_active.push((*item_b, new_bs));
+                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                        if c >= min_count {
+                            next_active.push((*item_b, scratch.clone()));
                         }
                     }
                     if !next_active.is_empty() {

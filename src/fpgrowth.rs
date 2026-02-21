@@ -175,6 +175,7 @@ impl FPTree {
         }
         cond_tree
     }
+
 }
 
 fn combinations<T: Copy>(items: &[T], size: usize) -> impl Iterator<Item = Vec<T>> + '_ {
@@ -230,22 +231,20 @@ pub(crate) fn fpg_step(
     } else if max_len.map_or(true, |ml| ml > cond_len) {
         let prefix = &tree.cond_items;
 
-        let item_trees: Vec<(u32, u64, FPTree)> = (0..num_items as u32)
-            .rev()
-            .map(|local_id| {
-                let support: u64 = tree.item_nodes[local_id as usize]
-                    .iter()
-                    .map(|&ni| tree.nodes[ni as usize].count)
-                    .sum();
-                let cond_tree = tree.conditional_tree(local_id, minsup);
-                (local_id, support, cond_tree)
-            })
-            .collect();
-
-        let sub_results: Vec<Vec<(u64, Vec<u32>)>> = if item_trees.len() >= PAR_ITEMS_CUTOFF {
-            item_trees
+        // Build conditional trees AND mine them in a single parallel step.
+        // Previously the item_trees Vec was collected sequentially first,
+        // making conditional_tree() a serial bottleneck before mining could start.
+        let use_par = num_items >= PAR_ITEMS_CUTOFF;
+        let sub_results: Vec<Vec<(u64, Vec<u32>)>> = if use_par {
+            (0..num_items as u32)
                 .into_par_iter()
-                .map(|(local_id, support, cond_tree)| {
+                .rev()
+                .map(|local_id| {
+                    let support: u64 = tree.item_nodes[local_id as usize]
+                        .iter()
+                        .map(|&ni| tree.nodes[ni as usize].count)
+                        .sum();
+                    let cond_tree = tree.conditional_tree(local_id, minsup);
                     let mut sub = Vec::new();
                     let mut iset = Vec::with_capacity(prefix.len() + 1);
                     iset.extend_from_slice(prefix);
@@ -256,9 +255,14 @@ pub(crate) fn fpg_step(
                 })
                 .collect()
         } else {
-            item_trees
-                .into_iter()
-                .map(|(local_id, support, cond_tree)| {
+            (0..num_items as u32)
+                .rev()
+                .map(|local_id| {
+                    let support: u64 = tree.item_nodes[local_id as usize]
+                        .iter()
+                        .map(|&ni| tree.nodes[ni as usize].count)
+                        .sum();
+                    let cond_tree = tree.conditional_tree(local_id, minsup);
                     let mut sub = Vec::new();
                     let mut iset = Vec::with_capacity(prefix.len() + 1);
                     iset.extend_from_slice(prefix);
@@ -272,6 +276,7 @@ pub(crate) fn fpg_step(
 
         for mut chunk in sub_results { results.append(&mut chunk); }
     }
+
 
     results
 }
@@ -301,22 +306,23 @@ pub(crate) fn process_item_counts(
 }
 
 fn mine_itemsets(
-    mut itemsets: Vec<Vec<u32>>,
+    itemsets: Vec<Vec<u32>>,
     frequent_len: usize,
     original_items: Vec<u32>,
     min_count: u64,
     max_len: Option<usize>,
 ) -> PyResult<Vec<(u64, Vec<u32>)>> {
-    itemsets.par_sort_unstable();
+    // Count duplicate baskets with a hash map — O(n) vs O(n log n) sort.
+    // ahash is already in our dependency tree.
+    use ahash::AHashMap;
+    let mut basket_counts: AHashMap<Vec<u32>, u64> =
+        AHashMap::with_capacity(itemsets.len());
+    for basket in itemsets {
+        *basket_counts.entry(basket).or_insert(0) += 1;
+    }
     let mut tree = FPTree::new(frequent_len, original_items);
-    let total = itemsets.len();
-    let mut i = 0;
-    while i < total {
-        let basket = &itemsets[i];
-        let mut j = i + 1;
-        while j < total && itemsets[j] == *basket { j += 1; }
-        tree.insert_itemset(basket, (j - i) as u64);
-        i = j;
+    for (basket, count) in basket_counts {
+        tree.insert_itemset(&basket, count);
     }
     Ok(fpg_step(&tree, min_count, max_len))
 }
@@ -374,13 +380,19 @@ fn _mine_dense(
     let itemsets: Vec<Vec<u32>> = flat
         .par_chunks(n_cols)
         .filter_map(|row| {
-            let mut items: Vec<u32> = frequent_cols
+            // frequent_cols is in frequency-descending order by global col,
+            // but local IDs are assigned 0..n in that same order.
+            // We want local IDs in ascending order for consistent tree paths.
+            // Since local_id = position in frequent_cols (0 = most frequent),
+            // we iterate in *reverse* to get ascending local IDs without sorting.
+            let items: Vec<u32> = frequent_cols
                 .iter()
-                .filter(|&&col| unsafe { *row.get_unchecked(col) != 0 })
-                .map(|&col| global_to_local[col])
+                .enumerate()
+                .filter(|&(_, &col)| unsafe { *row.get_unchecked(col) != 0 })
+                .map(|(local_id, _)| local_id as u32)
                 .collect();
+            // items is produced in ascending local_id order already — no sort needed.
             if items.is_empty() { return None; }
-            items.sort_unstable();
             Some(items)
         })
         .collect();
@@ -438,6 +450,7 @@ pub(crate) fn _mine_csr(
                 })
                 .collect();
             if items.is_empty() { return None; }
+            // CSR indices are not guaranteed sorted by local_id, must sort
             items.sort_unstable();
             Some(items)
         })

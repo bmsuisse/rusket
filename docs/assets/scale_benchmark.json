@@ -1,62 +1,62 @@
 [
   {
     "label": "1M",
-    "n_rows": 1000000.0,
-    "ft_time": 4.0,
-    "csr_time": 0.07,
-    "fpg_pd": 0.96,
-    "fpg_csr": 0.05,
-    "ohe_mb": 5,
-    "csr_mb": 6
+    "n_rows": 1000000,
+    "n_txns": 198687,
+    "n_items": 10000,
+    "conv_time": 0.6149031669920078,
+    "fpg_time": 0.17507191699405666,
+    "mlx_time": 1.9035628749988973,
+    "mem_mb": 4.998832
   },
   {
     "label": "5M",
-    "n_rows": 5000000.0,
-    "ft_time": 8.7,
-    "csr_time": 0.62,
-    "fpg_pd": 2.23,
-    "fpg_csr": 0.12,
-    "ohe_mb": 25,
-    "csr_mb": 29
+    "n_rows": 5000000,
+    "n_txns": 993157,
+    "n_items": 20000,
+    "conv_time": 1.5502901669970015,
+    "fpg_time": 0.4648813750100089,
+    "mlx_time": null,
+    "mem_mb": 24.997137
   },
   {
     "label": "10M",
-    "n_rows": 10000000.0,
-    "ft_time": 20.5,
-    "csr_time": 1.45,
-    "fpg_pd": 3.88,
-    "fpg_csr": 0.2,
-    "ohe_mb": 50,
-    "csr_mb": 58
+    "n_rows": 10000000,
+    "n_txns": 1986528,
+    "n_items": 50000,
+    "conv_time": 5.283317791996524,
+    "fpg_time": 1.200836125004571,
+    "mlx_time": null,
+    "mem_mb": 49.997727
   },
   {
     "label": "50M",
-    "n_rows": 50000000.0,
-    "ft_time": 49.7,
-    "csr_time": 10.1,
-    "fpg_pd": 13.4,
-    "fpg_csr": 0.76,
-    "ohe_mb": 250,
-    "csr_mb": 290
+    "n_rows": 50000000,
+    "n_txns": 9932543,
+    "n_items": 100000,
+    "conv_time": 15.845442040998023,
+    "fpg_time": 4.013163166004233,
+    "mlx_time": null,
+    "mem_mb": 249.993937
   },
   {
     "label": "100M",
-    "n_rows": 100000000.0,
-    "ft_time": 103.8,
-    "csr_time": 24.5,
-    "fpg_pd": 30.4,
-    "fpg_csr": 1.34,
-    "ohe_mb": 500,
-    "csr_mb": 580
+    "n_rows": 100000000,
+    "n_txns": 19865758,
+    "n_items": 200000,
+    "conv_time": 26.667045542009873,
+    "fpg_time": 10.125701083990862,
+    "mlx_time": null,
+    "mem_mb": 499.993662
   },
   {
     "label": "200M",
-    "n_rows": 200000000.0,
-    "ft_time": 195.1,
-    "csr_time": 69.9,
-    "fpg_pd": 51.7,
-    "fpg_csr": 3.24,
-    "ohe_mb": 1000,
-    "csr_mb": 1160
+    "n_rows": 200000000,
+    "n_txns": 39730167,
+    "n_items": 200000,
+    "conv_time": 43.40303341599065,
+    "fpg_time": 17.630105167001602,
+    "mlx_time": null,
+    "mem_mb": 999.988087
   }
 ]

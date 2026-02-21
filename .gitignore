@@ -49,6 +49,9 @@ benchdata/
 benchmarks/data/
 data/
 
+# Temporary agent scratch files
+.temp/
+
 # Fix scripts
 fix_*
 docs/notebooks/ml-100k

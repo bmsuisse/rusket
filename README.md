@@ -496,10 +496,10 @@ Integrate natively with the modern GenAI/LLM stack:
 | Scale | `from_transactions` → fpgrowth | Direct CSR → Rust | **Speedup** |
 |---|:---:|:---:|:---:|
 | 1M rows | 5.0s | **0.1s** | **50×** |
-| 10M rows | 24.4s | **1.7s** | **14×** |
-| 50M rows | 63.1s | **10.9s** | **6×** |
-| 100M rows (20M txns × 200k items) | 134.2s | **25.9s** | **5×** |
-| 200M rows (40M txns × 200k items) | 246.8s | **73.1s** | **3×** |
+| 10M rows | 24.4s | **1.2s** | **20×** |
+| 50M rows | 63.1s | **4.0s** | **15×** |
+| 100M rows (20M txns × 200k items) | 134.2s | **10.1s** | **13×** |
+| **200M rows** (40M txns × 200k items) | 246.8s | **17.6s** | **14×** |
 
 #### Power-user path: Direct CSR → Rust
 
@@ -550,6 +550,12 @@ numpy ndarray        ──► np.uint8 (C-contiguous)        ──► Rust fpg
 
 All mining and rule generation happens **inside Rust**. No Python loops, no round-trips.
 
+### The 1 Billion Row Architecture
+
+To pass the "1 Billion Row" threshold without OOM crashes, `rusket` employs a zero-allocation mining loop:
+- **Eclat Scratch Buffers:** `intersect_count_into` writes intersections directly into thread-local pre-allocated memory bytes and computes `popcnt` in a single pass. It implements **early-exit** loop termination the moment it proves a combination cannot reach `min_support`.
+- **FPGrowth Parallel Tree Build:** Conditional FP-trees are collected concurrently inside the rayon parallel mining step, replacing the standard sequential loop and eliminating memory contention bottlenecks.
+- **`AHashMap` Deduplication:** Extremely fast O(N) duplicate basket counting replaces standard O(N log N) unstable sorts in the core pipeline.
 ### Project Structure
 
 ```
