@@ -396,12 +396,14 @@ def run_method_rusket(
     label: str,
     cg_iters: int,
     verbose: bool = True,
+    use_cholesky: bool = False,
 ) -> dict:
     """Benchmark rusket ALS with given cg_iters."""
     t0 = time.perf_counter()
     model = rusket.ALS(
         factors=FACTORS, regularization=REG, alpha=ALPHA,
         iterations=ITERS, seed=42, verbose=verbose, cg_iters=cg_iters,
+        use_cholesky=use_cholesky,
     )
     model.fit(mat)
     fit_s = time.perf_counter() - t0
@@ -480,6 +482,10 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
 
     print("\n  Method: rusket ALS  cg_iters=3  (fast)", flush=True)
     r = run_method_rusket(mat, "rusket cg=3", cg_iters=3, verbose=False)
+    method_results.append(r)
+
+    print("\n  Method: rusket ALS  Cholesky (exact)", flush=True)
+    r = run_method_rusket(mat, "rusket cholesky", cg_iters=3, use_cholesky=True, verbose=False)
     method_results.append(r)
 
     print("\n  Method: rusket ALS  cg_iters=10 (default)", flush=True)
