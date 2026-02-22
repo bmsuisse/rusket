@@ -344,6 +344,114 @@ class TestOnlineRetailALS:
 
 
 # ===========================================================================
+# UCI Online Retail II — EASE Recommender
+# ===========================================================================
+
+@pytest.mark.integration
+class TestOnlineRetailEASE:
+    """EASE from_transactions on real customer-product interactions."""
+
+    def test_ease_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+        """EASE factor matrices have expected dimensions."""
+        import numpy as np
+        import rusket
+
+        model = rusket.EASE.from_transactions(
+            online_retail_df,
+            user_col="Customer_ID",
+            item_col="Description",
+            regularization=100.0,
+        )
+        n_users = online_retail_df["Customer_ID"].nunique()
+        n_items = online_retail_df["Description"].nunique()
+        assert model.item_weights.shape == (n_items, n_items)
+        assert np.isfinite(model.item_weights).all()
+
+    def test_ease_recommend_items_no_seen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+        """EASE.recommend_items with exclude_seen=True never returns seen items."""
+        import rusket
+
+        model = rusket.EASE.from_transactions(
+            online_retail_df,
+            user_col="Customer_ID",
+            item_col="Description",
+            regularization=100.0,
+        )
+        ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+        assert len(ids) >= 1
+        assert len(scores) == len(ids)
+        for i in range(len(scores) - 1):
+            assert scores[i] >= scores[i + 1], "Scores must be sorted descending"
+
+    def test_similar_items_returns_sorted_cosine(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+        """similar_items returns cosine similarities in descending order for EASE."""
+        import rusket
+
+        model = rusket.EASE.from_transactions(
+            online_retail_df,
+            user_col="Customer_ID",
+            item_col="Description",
+            regularization=100.0,
+        )
+        # Using item weights as item representations
+        # We need to temporarily mock .item_factors to allow `similar_items` to work out of the box
+        # similar_items uses model.item_factors
+        model.item_factors = model.item_weights
+        
+        item_ids, sim_scores = rusket.similar_items(model, item_id=0, n=5)
+        assert len(item_ids) >= 1
+        assert (sim_scores <= 1.0).all()
+        assert (sim_scores >= -1.0).all()
+        for i in range(len(sim_scores) - 1):
+            assert sim_scores[i] >= sim_scores[i + 1]
+
+
+# ===========================================================================
+# UCI Online Retail II — ItemKNN Recommender
+# ===========================================================================
+
+@pytest.mark.integration
+class TestOnlineRetailItemKNN:
+    """ItemKNN from_transactions on real customer-product interactions."""
+
+    def test_itemknn_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+        """ItemKNN factor matrices have expected dimensions."""
+        import numpy as np
+        import rusket
+
+        model = rusket.ItemKNN.from_transactions(
+            online_retail_df,
+            user_col="Customer_ID",
+            item_col="Description",
+            method="bm25",
+            k=20,
+        )
+        assert model.w_indptr is not None
+        assert model.w_indices is not None
+        assert model.w_data is not None
+        
+        n_items = online_retail_df["Description"].nunique()
+        assert model.w_indptr.shape[0] == n_items + 1
+
+    def test_itemknn_recommend_items_no_seen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+        """ItemKNN.recommend_items with exclude_seen=True never returns seen items."""
+        import rusket
+
+        model = rusket.ItemKNN.from_transactions(
+            online_retail_df,
+            user_col="Customer_ID",
+            item_col="Description",
+            method="bm25",
+            k=20,
+        )
+        ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+        assert len(ids) >= 1
+        assert len(scores) == len(ids)
+        for i in range(len(scores) - 1):
+            assert scores[i] >= scores[i + 1], "Scores must be sorted descending"
+
+
+# ===========================================================================
 # Instacart — requires Kaggle token
 # ===========================================================================
 

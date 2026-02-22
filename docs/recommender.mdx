@@ -1,0 +1,291 @@
+---
+title: "Recommender Workflows"
+description: "Three complementary recommendation strategies: cart add-ons, personalised 'For You', and hybrid models."
+---
+
+`rusket` provides three complementary recommendation strategies that cover the most common revenue-generating use cases in e-commerce, retail, and content platforms.
+
+| Strategy | Best for | API |
+|---|---|---|
+| **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `AutoMiner` |
+| **"For You" (Personalised)** | Homepage, email, loyalty | `ALS` / `BPR` |
+| **Hybrid** | Blend both signals | `Recommender` |
+
+---
+
+## "Frequently Bought Together" — Cart Recommendations
+
+The fastest path to cart cross-selling: mine association rules from checkout history, then call `recommend_items` with the current basket contents.
+
+```python
+import pandas as pd
+from rusket import AutoMiner  # or FPGrowth, Eclat
+
+# POS checkout log — one row per line item
+checkouts = pd.DataFrame({
+    "receipt_id": [1, 1, 2, 2, 2, 3, 3, 4, 4, 4],
+    "product":    ["espresso_beans", "grinder",
+                   "espresso_beans", "milk_frother", "travel_mug",
+                   "grinder", "milk_frother",
+                   "espresso_beans", "grinder", "descaler"],
+})
+
+model = AutoMiner.from_transactions(
+    checkouts,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.3,
+)
+
+# User just added an espresso grinder to their cart
+basket   = ["grinder"]
+add_ons  = model.recommend_items(basket, n=3)
+print(add_ons)
+# e.g. ["espresso_beans", "milk_frother", "descaler"]
+
+# Or inspect the full rule table
+rules = model.association_rules(metric="lift", min_threshold=1.0)
+```
+
+`num_itemsets` is inferred automatically — no extra wiring needed.
+
+---
+
+## "For You" — Personalised Recommendations with ALS / BPR
+
+Collaborative Filtering builds a latent-space model of user taste from implicit signals (purchases, clicks, plays). Two algorithms are available:
+
+- **ALS** — best for score prediction and serendipitous discovery (matrix reconstruction)
+- **BPR** — best when you care only about top-N ranking (optimises pairwise ranking loss)
+
+### Fitting from a purchase log
+
+```python
+from rusket import ALS, BPR
+
+# E-commerce purchase history (one row per purchase)
+purchases = pd.DataFrame({
+    "customer_id": [1001, 1001, 1001, 1002, 1002, 1003],
+    "sku":         ["A10", "B22", "C15",  "A10", "D33",  "B22"],
+    "revenue":     [29.99, 49.00, 9.99,  29.99, 15.00, 49.00],  # optional weight
+})
+
+# Option A — fit directly from the event log
+als = ALS(factors=64, iterations=15, alpha=40.0).from_transactions(
+    purchases,
+    user_col="customer_id",
+    item_col="sku",
+    rating_col="revenue",   # use revenue as confidence weight; omit for binary
+)
+
+# Option B — fit from a pre-built scipy CSR matrix
+# als = ALS(factors=64, iterations=15, cg_iters=3, anderson_m=5).fit(user_item_csr)
+
+# BPR is a drop-in alternative
+bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
+```
+
+### Getting recommendations
+
+```python
+# Top-5 SKUs for customer 1001 (hiding already-purchased items)
+items, scores = als.recommend_items(user_id=1001, n=5, exclude_seen=True)
+print(f"Recommended SKUs: {items}")
+# → e.g. ["D33", "E11", "F02", "A45", "C99"]
+
+# Which customers are most likely to buy a specific product? — useful for email targeting
+top_customers, scores = als.recommend_users(item_id="D33", n=100)
+```
+
+---
+
+## The Hybrid Recommender
+
+Blend **Collaborative Filtering** (ALS/BPR) with **Association Rules** to handle both the personalised homepage and the active shopping cart in a single engine.
+
+```python
+from rusket import ALS, Recommender, mine, association_rules
+
+# 1. Personalised model trained on full purchase history
+als  = ALS(factors=64, iterations=15).fit(user_item_csr)
+
+# 2. Association rules mined from basket data
+freq  = mine(basket_ohe, min_support=0.01)
+rules = association_rules(freq, num_itemsets=n_receipts)
+
+# 3. Combine into one engine
+rec = Recommender(als_model=als, rules_df=rules)
+```
+
+### 1. Personalised homepage ("For You")
+
+```python
+# Returns the 5 most relevant SKUs for customer 1001
+items, scores = rec.recommend_for_user(user_id=1001, n=5)
+print(f"Homepage picks for customer 1001: {items}")
+```
+
+### 2. Hybrid — CF + product embeddings
+
+When you have product description vectors (e.g. from a sentence-transformer model or your PIM), blend semantic similarity into the CF score:
+
+```python
+rec = Recommender(als_model=als, rules_df=rules, item_embeddings=product_vectors)
+
+# alpha=0.7 → 70% CF preference signal + 30% product similarity
+items, scores = rec.recommend_for_user(
+    user_id=1001,
+    n=5,
+    alpha=0.7,
+    target_item_for_semantic="B22",  # anchor the similarity to the last viewed item
+)
+```
+
+### 3. Cart-based "Frequently Bought Together"
+
+```python
+# Customer has espresso beans and a grinder in the cart
+cart = ["espresso_beans", "grinder"]
+add_ons = rec.recommend_for_cart(cart, n=3)
+print(f"Add to cart suggestions: {add_ons}")
+# → ["milk_frother", "descaler", "travel_mug"]
+```
+
+### 4. Batch scoring — email campaign targeting
+
+Score the entire customer base overnight and write results to your CRM:
+
+```python
+# user_history_df: one row per customer with their purchase history
+batch = rec.predict_next_chunk(user_history_df, user_col="customer_id", k=5)
+# Returns: DataFrame[customer_id, recommended_items]
+batch.to_parquet("s3://data-lake/recommendations/daily_picks.parquet")
+```
+
+---
+
+## Item-to-Item Similarity — "You May Also Like"
+
+For anonymous visitors (no login, no history), fall back to latent-space item similarity:
+
+```python
+from rusket import similar_items, ALS
+
+als = ALS(factors=128).fit(interactions)
+
+# Customer is viewing product B22 (a coffee grinder)
+similar_skus, similarity_scores = similar_items(als, item_id="B22", n=4)
+print(similar_skus)      # → ["B25", "B18", "C10", "D05"]
+print(similarity_scores) # → [0.97, 0.93, 0.89, 0.84]
+```
+
+<Note>
+**Latent-space similarity** discovers implicit relationships — a premium coffee grinder may cluster tightly with an espresso machine even if they're rarely purchased in the same basket, because the *same type of customer* buys both.
+</Note>
+
+---
+
+## Cross-Selling Potential Scoring
+
+Quantify the "missed opportunity" — how likely is a customer to buy a product they haven't bought yet, based on their overall purchasing pattern?
+Perfect for targeting high-intent customers with a retargeting ad or a personalised email.
+
+```python
+from rusket import score_potential
+
+# Purchase history for 3 customers (item IDs they've already bought)
+purchase_histories = [
+    [10, 22, 51],   # customer 1001 — bought SKUs 10, 22, 51
+    [10, 33],        # customer 1002
+    [51],            # customer 1003
+]
+
+# Target: which customers should receive a "Coffee Machine Accessories" promo?
+accessory_skus = [60, 61, 62]  # descaler, portafilter, tamper
+
+# Shape: (n_customers, len(accessory_skus))
+# Already-purchased items are masked to -∞ so they never appear in rankings
+potential = score_potential(
+    user_history=purchase_histories,
+    als_model=als,
+    target_categories=accessory_skus,
+)
+
+# Sort customers by their accessory affinity
+import pandas as pd
+df_potential = pd.DataFrame(potential, columns=accessory_skus)
+top_targets  = df_potential.mean(axis=1).sort_values(ascending=False)
+print("Customers to target:", top_targets.head(10).index.tolist())
+```
+
+---
+
+## Analytics Helpers
+
+### Substitute / Cannibalising Products
+
+Items that are individually popular but rarely bought together (lift < 1.0) likely compete with each other. Useful for assortment rationalisation:
+
+```python
+from rusket import find_substitutes
+
+# Identify products that cannibalise each other's sales
+subs = find_substitutes(rules_df, max_lift=0.8)
+# Returns a DataFrame sorted ascending by lift (strongest cannibals first)
+#  antecedents  consequents  lift
+#  (Cola A,)    (Cola B,)    0.61
+```
+
+### Customer Saturation
+
+Segment your customer base by how deeply they've penetrated a category — essential for deciding where to focus expansion campaigns vs. loyalty programmes:
+
+```python
+from rusket import customer_saturation
+
+saturation = customer_saturation(
+    purchases_df,
+    user_col="customer_id",
+    category_col="category_id",
+)
+# Returns: customer_id | unique_count | saturation_pct | decile
+# Decile 10 = customers who already buy almost everything in the category (defend)
+# Decile 1  = low engagement — high growth potential (acquire/activate)
+```
+
+---
+
+## Vector DB Export
+
+Export ALS/BPR item factors as embeddings, ready for FAISS, Qdrant, or Pinecone — connect your recommender to a Generative AI retrieval pipeline:
+
+```python
+from rusket import export_item_factors
+
+# Each row: one SKU, columns = latent dimensions
+df_vectors = export_item_factors(als, include_labels=True)
+
+# Write directly to your vector store
+import lancedb
+db    = lancedb.connect("./product_vectors")
+table = db.create_table("skus", data=df_vectors, mode="overwrite")
+```
+
+---
+
+## Graph Analytics — Product Community Detection
+
+Convert association rules into a NetworkX directed graph to discover product communities — groups of products that form a natural ecosystem (e.g., "barista toolkit", "home baking essentials"):
+
+```python
+from rusket.viz import to_networkx
+import networkx as nx
+
+G = to_networkx(rules_df, edge_attr="lift")
+
+# PageRank highlights the most "gateway" products in the catalogue
+centrality = nx.pagerank(G, weight="lift")
+top_gateway = sorted(centrality, key=centrality.get, reverse=True)[:5]
+print("Gateway products:", top_gateway)
+# → e.g. ["espresso_beans", "grinder", "milk_frother", ...]
+```

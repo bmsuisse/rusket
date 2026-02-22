@@ -18,7 +18,7 @@ Repository = "https://github.com/bmsuisse/rusket.git"
 [project.optional-dependencies]
 polars = ["polars>=0.20"]
 pandas = ["numpy>=1.24", "pandas>=2.0"]
-docs = ["mkdocs-material>=9.5", "mkdocs>=1.5,<2"]
+docs = ["zensical>=0.0.23"]
 
 [tool.maturin]
 python-source = "."
@@ -42,7 +42,7 @@ dev = [
     "numpy>=1.24",
     "jupytext>=1.19.1",
     "jupyter>=1.1.1",
-    "mkdocs-jupyter>=0.25.1",
+
     "pyarrow>=23.0.1",
     "psutil>=6",
     "tqdm>=4",

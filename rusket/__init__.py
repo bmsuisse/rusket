@@ -3,10 +3,12 @@ from .als import ALS
 from .analytics import customer_saturation, find_substitutes
 from .association_rules import association_rules
 from .bpr import BPR
+from .ease import EASE
 from .eclat import Eclat, eclat
 from .export import export_item_factors
 from .fpgrowth import FPGrowth, fpgrowth
 from .hupm import HUPM, hupm, mine_hupm
+from .item_knn import ItemKNN
 from .mine import AutoMiner, mine
 from .model import BaseModel
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
@@ -40,6 +42,8 @@ __all__ = [
     "BaseModel",
     "ALS",
     "BPR",
+    "EASE",
+    "ItemKNN",
     "prefixspan",
     "PrefixSpan",
     "sequences_from_event_log",

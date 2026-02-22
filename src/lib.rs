@@ -12,6 +12,8 @@ mod fpgrowth;
 mod hupm;
 mod miner;
 mod prefixspan;
+mod ease;
+mod item_knn;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -30,5 +32,8 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(bpr::bpr_fit_implicit, m)?)?;
     m.add_function(wrap_pyfunction!(prefixspan::prefixspan_mine_py, m)?)?;
     m.add_function(wrap_pyfunction!(hupm::hupm_mine_py, m)?)?;
+    m.add_function(wrap_pyfunction!(ease::ease_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(item_knn::itemknn_top_k, m)?)?;
+    m.add_function(wrap_pyfunction!(item_knn::itemknn_recommend_items, m)?)?;
     Ok(())
 }
