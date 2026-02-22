@@ -242,7 +242,7 @@ def prefixspan_grouped(
             if not result_pd.empty:
                 result_pd["sequence"] = result_pd["sequence"].apply(lambda seq: [str(x) for x in seq])
         except Exception:
-            result_pd = pd.DataFrame(columns=["support", "sequence"])
+            result_pd = pd.DataFrame(columns=["support", "sequence"])  # type: ignore[reportArgumentType]
 
         if len(result_pd) == 0:
             return pa.Table.from_batches(
@@ -290,7 +290,7 @@ def prefixspan_grouped(
                 if not res.empty:
                     res["sequence"] = res["sequence"].apply(lambda seq: [str(x) for x in seq])
             except Exception:
-                res = pd.DataFrame(columns=["support", "sequence"])
+                res = pd.DataFrame(columns=["support", "sequence"])  # type: ignore[reportArgumentType]
 
             res.insert(0, group_col, group_id)
             return res

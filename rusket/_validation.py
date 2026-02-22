@@ -49,7 +49,7 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
         if isinstance(mask, pd.Series):
             all_bools = bool(mask.all())
         else:
-            all_bools = bool(mask.all().all())
+            all_bools = bool(mask.all().all())  # type: ignore[reportAttributeAccessIssue]
     else:
         all_bools = bool(df.dtypes.apply(pd.api.types.is_bool_dtype).all())
 
