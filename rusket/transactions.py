@@ -106,6 +106,21 @@ def from_transactions(
     >>> ohe = rusket.from_transactions(df)
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
+    # --- Spark Detection MUST happen before coercion to Polars in to_dataframe() ---
+    _type = type(data)
+    _is_spark = _type.__name__ == "DataFrame" and getattr(_type, "__module__", "").startswith("pyspark")
+
+    if _is_spark:
+        pandas_df = data.toPandas()  # type: ignore[union-attr]
+        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
+        # Convert back via Arrow for efficiency
+        import pyarrow as _pa
+
+        spark = data.sparkSession  # type: ignore[union-attr]
+        arrow_table = _pa.Table.from_pandas(result_pd.astype(bool))
+        return spark.createDataFrame(arrow_table)
+
+    # Standard coercion (coerces Spark to Polars, but we bypassed it above)
     data = to_dataframe(data)
 
     if isinstance(data, (list, tuple)):
@@ -113,20 +128,6 @@ def from_transactions(
 
     import pandas as _pd
     import polars as _pl
-
-    # --- Spark ---
-    _spark_type = type(data)
-    _is_spark = _spark_type.__name__ == "DataFrame" and getattr(
-        _spark_type, "__module__", ""
-    ).startswith("pyspark")
-    if _is_spark:
-        pandas_df = data.toPandas()  # type: ignore[union-attr]
-        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
-        # Convert back via Arrow for efficiency
-        import pyarrow as _pa
-        spark = data.sparkSession  # type: ignore[union-attr]
-        arrow_table = _pa.Table.from_pandas(result_pd.astype(bool))
-        return spark.createDataFrame(arrow_table)
 
     # --- Polars ---
     if isinstance(data, _pl.DataFrame):
