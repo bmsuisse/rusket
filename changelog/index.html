@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Blazing-fast FP-Growth, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3.">
+        <meta name="description" content="Blazing-fast FP-Growth, Eclat, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3.">
       
       
       
@@ -20,8 +20,8 @@
         
       
       
-      <link rel="icon" href="../assets/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.23">
     
     
       
@@ -29,10 +29,15 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e989742.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -46,14 +51,12 @@
         
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
         <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
       
     
     
-      <link rel="stylesheet" href="../assets/extra.css">
-    
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -69,7 +72,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="deep-orange">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="orange">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -90,16 +93,19 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo_single.svg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 21c-.78 0-1.46-.45-1.79-1.1L1.1 10.44 1 10a1 1 0 0 1 1-1h4.58l4.6-6.57a.997.997 0 0 1 1.65.01L17.42 9H22a1 1 0 0 1 1 1l-.04.29-2.67 9.61c-.33.65-1.01 1.1-1.79 1.1zM12 4.74 9 9h6zM12 13a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
       
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
     </label>
     <div class="md-header__title" data-md-component="header-title">
       <div class="md-header__ellipsis">
@@ -124,20 +130,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="deep-orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="deep-orange" data-md-color-accent="orange"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
     
       <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="deep-orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="deep-orange" data-md-color-accent="orange"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
     
       <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
       </label>
     
   
@@ -153,57 +159,18 @@
       
         <label class="md-header__button md-icon" for="__search">
           
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
         </label>
-        <div class="md-search" data-md-component="search" role="dialog">
-  <label class="md-search__overlay" for="__search"></label>
-  <div class="md-search__inner" role="search">
-    <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
-      <label class="md-search__icon md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-      </label>
-      <nav class="md-search__options" aria-label="Search">
-        
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </nav>
-      
-        <div class="md-search__suggest" data-md-component="search-suggest"></div>
-      
-    </form>
-    <div class="md-search__output">
-      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="search-result">
-          <div class="md-search-result__meta">
-            Initializing search
-          </div>
-          <ol class="md-search-result__list" role="presentation"></ol>
-        </div>
-      </div>
-    </div>
-  </div>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
 </div>
       
     
-    
-      <div class="md-header__source">
-        <a href="https://github.com/bmsuisse/rusket" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
-  </div>
-  <div class="md-source__repository">
-    bmsuisse/rusket
-  </div>
-</a>
-      </div>
-    
+    <div class="md-header__source">
+      
+    </div>
   </nav>
   
 </header>
@@ -212,96 +179,6 @@
       
       
         
-          
-            
-<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
-  <div class="md-grid">
-    <ul class="md-tabs__list">
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
-  
-  
-    
-  
-  Home
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../quickstart/" class="md-tabs__link">
-          
-  
-  
-  Getting Started
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../api-reference/" class="md-tabs__link">
-          
-  
-  
-  User Guide
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-    
-  
-  
-    
-    
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
-          
-  
-  
-  Reference
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ul>
-  </div>
-</nav>
           
         
       
@@ -316,30 +193,17 @@
                     
 
 
-  
 
-
-<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo_single.svg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 21c-.78 0-1.46-.45-1.79-1.1L1.1 10.44 1 10a1 1 0 0 1 1-1h4.58l4.6-6.57a.997.997 0 0 1 1.65.01L17.42 9H22a1 1 0 0 1 1 1l-.04.29-2.67 9.61c-.33.65-1.01 1.1-1.79 1.1zM12 4.74 9 9h6zM12 13a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2"/></svg>
 
     </a>
     rusket
   </label>
-  
-    <div class="md-nav__source">
-      <a href="https://github.com/bmsuisse/rusket" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
-  </div>
-  <div class="md-source__repository">
-    bmsuisse/rusket
-  </div>
-</a>
-    </div>
   
   <ul class="md-nav__list" data-md-scrollfix>
     
@@ -349,15 +213,62 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Home
+    Introduction
   
 
     
@@ -369,60 +280,7 @@
     </li>
   
 
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Getting Started
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
+              
             
               
                 
@@ -497,22 +355,15 @@
     
     
     
-      
-      
-        
-      
-    
     
     <li class="md-nav__item md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -530,8 +381,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -583,7 +434,7 @@
   <span class="md-ellipsis">
     
   
-    Cookbook (Code)
+    Cookbook
   
 
     
@@ -607,29 +458,22 @@
     
     
     
-      
-      
-        
-      
-    
     
     <li class="md-nav__item md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    Cookbook (Interactive Notebooks)
+    Notebooks
   
 
     
@@ -640,12 +484,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Cookbook (Interactive Notebooks)
+    Notebooks
   
 
           </label>
@@ -665,7 +509,7 @@
   <span class="md-ellipsis">
     
   
-    🛒 Retail Assortment Optimization
+    Online Retail & Basket Analysis
   
 
     
@@ -693,7 +537,7 @@
   <span class="md-ellipsis">
     
   
-    🎬 MovieLens Hybrid Recommender
+    MovieLens Recommendations
   
 
     
@@ -721,7 +565,7 @@
   <span class="md-ellipsis">
     
   
-    ⏱️ E-Commerce Lifecycle Discovery
+    E-Commerce Lifecycle Mining
   
 
     
@@ -958,23 +802,15 @@
     
     
     
-      
-        
-        
-      
-      
-        
-      
     
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -992,8 +828,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1037,7 +873,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1056,7 +892,8 @@
       
         
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
   
   
   
@@ -1065,15 +902,37 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      On this page
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#style" class="md-nav__link">
+  <a href="#benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Style
+        Benchmark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Merge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Performance
       
     </span>
   </a>
@@ -1103,7 +962,40 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#style_1" class="md-nav__link">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bench" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bench
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmark_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#style" class="md-nav__link">
     <span class="md-ellipsis">
       
         Style
@@ -1114,10 +1006,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
+  <a href="#performance_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🐛 Bug Fixes
+        ⚡ Performance
       
     </span>
   </a>
@@ -1147,6 +1039,61 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#style_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#refactoring" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1158,7 +1105,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#features_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1169,7 +1116,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#performance_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -1191,7 +1138,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_2" class="md-nav__link">
+  <a href="#documentation_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -1235,32 +1182,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#documentation_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bench" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bench
       
     </span>
   </a>
@@ -1279,54 +1204,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_2" class="md-nav__link">
+  <a href="#bench_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📦 Miscellaneous
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ⚡ Performance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🐛 Bug Fixes
+        Bench
       
     </span>
   </a>
@@ -1338,6 +1219,17 @@
     <span class="md-ellipsis">
       
         📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
       
     </span>
   </a>
@@ -1360,6 +1252,39 @@
     <span class="md-ellipsis">
       
         🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
       
     </span>
   </a>
@@ -1400,7 +1325,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bench_1" class="md-nav__link">
+  <a href="#features_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bench_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bench
@@ -1411,7 +1358,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_7" class="md-nav__link">
+  <a href="#documentation_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -1422,7 +1369,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_8" class="md-nav__link">
+  <a href="#features_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1444,7 +1391,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance_2" class="md-nav__link">
+  <a href="#performance_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -1466,7 +1413,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_9" class="md-nav__link">
+  <a href="#features_11" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1488,7 +1435,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_3" class="md-nav__link">
+  <a href="#miscellaneous_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -1499,7 +1446,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_10" class="md-nav__link">
+  <a href="#features_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1510,7 +1457,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_4" class="md-nav__link">
+  <a href="#miscellaneous_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -1532,7 +1479,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_8" class="md-nav__link">
+  <a href="#documentation_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -1543,7 +1490,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_5" class="md-nav__link">
+  <a href="#miscellaneous_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -1565,7 +1512,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_11" class="md-nav__link">
+  <a href="#features_13" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1598,7 +1545,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_9" class="md-nav__link">
+  <a href="#documentation_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -1609,7 +1556,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_12" class="md-nav__link">
+  <a href="#features_14" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1631,7 +1578,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_6" class="md-nav__link">
+  <a href="#miscellaneous_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -1642,7 +1589,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance_3" class="md-nav__link">
+  <a href="#performance_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -1657,28 +1604,6 @@
     <span class="md-ellipsis">
       
         🐛 Bug Fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation_10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#miscellaneous_7" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Miscellaneous
       
     </span>
   </a>
@@ -1708,6 +1633,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#documentation_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cicd_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1719,7 +1666,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_13" class="md-nav__link">
+  <a href="#features_15" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1758,7 +1705,8 @@
                   <div class="md-sidebar__inner">
                     
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
   
   
   
@@ -1767,15 +1715,37 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      On this page
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#style" class="md-nav__link">
+  <a href="#benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Style
+        Benchmark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Merge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Performance
       
     </span>
   </a>
@@ -1805,7 +1775,40 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#style_1" class="md-nav__link">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bench" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bench
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmark_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#style" class="md-nav__link">
     <span class="md-ellipsis">
       
         Style
@@ -1816,10 +1819,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
+  <a href="#performance_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🐛 Bug Fixes
+        ⚡ Performance
       
     </span>
   </a>
@@ -1849,6 +1852,61 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#style_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#refactoring" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1860,7 +1918,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#features_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -1871,7 +1929,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#performance_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -1893,7 +1951,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_2" class="md-nav__link">
+  <a href="#documentation_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -1937,32 +1995,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#documentation_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bench" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bench
       
     </span>
   </a>
@@ -1981,54 +2017,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_2" class="md-nav__link">
+  <a href="#bench_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        📦 Miscellaneous
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🚀 Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ⚡ Performance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🐛 Bug Fixes
+        Bench
       
     </span>
   </a>
@@ -2040,6 +2032,17 @@
     <span class="md-ellipsis">
       
         📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
       
     </span>
   </a>
@@ -2062,6 +2065,39 @@
     <span class="md-ellipsis">
       
         🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚡ Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
       
     </span>
   </a>
@@ -2102,7 +2138,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bench_1" class="md-nav__link">
+  <a href="#features_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bench_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bench
@@ -2113,7 +2171,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_7" class="md-nav__link">
+  <a href="#documentation_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -2124,7 +2182,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_8" class="md-nav__link">
+  <a href="#features_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2146,7 +2204,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance_2" class="md-nav__link">
+  <a href="#performance_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -2168,7 +2226,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_9" class="md-nav__link">
+  <a href="#features_11" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2190,7 +2248,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_3" class="md-nav__link">
+  <a href="#miscellaneous_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -2201,7 +2259,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_10" class="md-nav__link">
+  <a href="#features_12" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2212,7 +2270,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_4" class="md-nav__link">
+  <a href="#miscellaneous_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -2234,7 +2292,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_8" class="md-nav__link">
+  <a href="#documentation_9" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -2245,7 +2303,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_5" class="md-nav__link">
+  <a href="#miscellaneous_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -2267,7 +2325,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_11" class="md-nav__link">
+  <a href="#features_13" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2300,7 +2358,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#documentation_9" class="md-nav__link">
+  <a href="#documentation_10" class="md-nav__link">
     <span class="md-ellipsis">
       
         📖 Documentation
@@ -2311,7 +2369,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_12" class="md-nav__link">
+  <a href="#features_14" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2333,7 +2391,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#miscellaneous_6" class="md-nav__link">
+  <a href="#miscellaneous_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         📦 Miscellaneous
@@ -2344,7 +2402,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance_3" class="md-nav__link">
+  <a href="#performance_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         ⚡ Performance
@@ -2359,28 +2417,6 @@
     <span class="md-ellipsis">
       
         🐛 Bug Fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation_10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📖 Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#miscellaneous_7" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        📦 Miscellaneous
       
     </span>
   </a>
@@ -2410,6 +2446,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#documentation_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📖 Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#miscellaneous_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📦 Miscellaneous
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cicd_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2421,7 +2479,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#features_13" class="md-nav__link">
+  <a href="#features_15" class="md-nav__link">
     <span class="md-ellipsis">
       
         🚀 Features
@@ -2446,26 +2504,77 @@
                 
                   
 
-
-  
-  
-
-
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>All notable changes are documented here.
 This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <hr />
+<h3 id="benchmark">Benchmark<a class="headerlink" href="#benchmark" title="Permanent link">&para;</a></h3>
+<ul>
+<li>add script comparing eALS vs iALS</li>
+</ul>
+<h3 id="merge">Merge<a class="headerlink" href="#merge" title="Permanent link">&para;</a></h3>
+<ul>
+<li>feature/fin-lcm-miner into main (FIN/LCM algorithms, FM/FPMC)</li>
+</ul>
+<h3 id="performance">⚡ Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>SIMD unrolling for dot and axpy hot-loops in ALS solver</li>
+</ul>
+<h3 id="documentation">📖 Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>fix MDX parsing errors for Mintlify</li>
+<li>add business-oriented LightGCN and SASRec example notebooks</li>
+<li>migrate to Zensical for GitHub Pages deployment</li>
+</ul>
+<h3 id="miscellaneous">📦 Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Remove Python profiling, benchmarking, and RecBole testing scripts, and update Cargo.toml and .gitignore.</li>
+<li>untrack generated artifacts (tensorboard logs, dSYM, recbole_data, saved)</li>
+<li>untrack ai slop benches/ directory</li>
+</ul>
+<h3 id="features">🚀 Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>implement FIN and LCM algorithms with fast bitset operations</li>
+<li>wip RecBole benchmarking and FM/FPMC algorithms</li>
+<li>add LightGCN and SASRec recommendation models</li>
+</ul>
+<h3 id="bench">Bench<a class="headerlink" href="#bench" title="Permanent link">&para;</a></h3>
+<ul>
+<li>fix unfair benchmark timing and optimize EASE with Cholesky</li>
+</ul>
+<h3 id="benchmark_1">Benchmark<a class="headerlink" href="#benchmark_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>add script comparing dEclat vs ECLAT</li>
+<li>add script comparing eALS vs iALS</li>
+</ul>
 <h3 id="style">Style<a class="headerlink" href="#style" title="Permanent link">&para;</a></h3>
 <ul>
 <li>run ruff format</li>
 </ul>
-<h3 id="documentation">📖 Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<h3 id="performance_1">⚡ Performance<a class="headerlink" href="#performance_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>SIMD unrolling for dot and axpy hot-loops in ALS solver</li>
+</ul>
+<h3 id="documentation_1">📖 Documentation<a class="headerlink" href="#documentation_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>expose llm.txt in docs root and fix test_real_world.py sampling</li>
+<li>migrate to Mintlify</li>
+<li>auto-update API reference, changelog, and llm.txt</li>
+<li>fix MDX parsing errors for Mintlify</li>
+<li>auto-update API reference, changelog, and llm.txt</li>
+<li>add als 25m benchmark sweep chart</li>
+<li>update changelog for YOLO release</li>
 </ul>
-<h3 id="miscellaneous">📦 Miscellaneous<a class="headerlink" href="#miscellaneous" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_1">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>include Mintlify config and generated MDX docs</li>
+</ul>
+<h3 id="features_1">🚀 Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Add ultra-fast Sparse ItemKNN algorithm using BM25 and Rust Rayon</li>
+<li>implement FIN and LCM algorithms with fast bitset operations</li>
+<li>wip RecBole benchmarking and FM/FPMC algorithms</li>
+<li>Add grouped PySpark support for ALS</li>
 </ul>
 <h3 id="style_1">Style<a class="headerlink" href="#style_1" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2478,13 +2587,13 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>resolve PySpark ChunkedArray fallback warning and implement BPR fit_transactions</li>
 <li>fix pyright errors reported on ci</li>
 </ul>
-<h3 id="documentation_1">📖 Documentation<a class="headerlink" href="#documentation_1" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_2">📖 Documentation<a class="headerlink" href="#documentation_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add Polars/PySpark PrefixSpan tests and cookbook examples</li>
 <li>improve API documentation, update marketing copy, and setup PySpark skips</li>
 <li>enhance PrefixSpan and HUPM cookbook sections with clearer descriptions, business scenarios, and updated Python code examples.</li>
 </ul>
-<h3 id="miscellaneous_1">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_1" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_2">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>commit remaining unstaged files from previous sessions</li>
 <li>bump version to 0.1.21</li>
@@ -2496,7 +2605,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>simplify BaseModel and remove implicit recommender duplication</li>
 <li>update logo SVG basket elements to use curved paths and refined wire details.</li>
 </ul>
-<h3 id="features">🚀 Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<h3 id="features_2">🚀 Features<a class="headerlink" href="#features_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>core algorithms via Faer, HUPM, Arrow Streams, and Hybrid Recommender</li>
 <li>complete PySpark and Polars integration for PrefixSpan via native PyArrow sequences</li>
@@ -2506,7 +2615,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>enhance recommender system documentation and examples, update core logic, and refresh logos.</li>
 <li>merge feature/fpgrowth-mlxtend-api</li>
 </ul>
-<h3 id="performance">⚡ Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<h3 id="performance_2">⚡ Performance<a class="headerlink" href="#performance_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Boost FPGrowth performance with a new architecture, update benchmarks and documentation, add new logos, and remove temporary test files."</li>
 </ul>
@@ -2514,7 +2623,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>skip mlxtend comparison at &gt;1M rows to prevent CI timeout</li>
 </ul>
-<h3 id="documentation_2">📖 Documentation<a class="headerlink" href="#documentation_2" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_3">📖 Documentation<a class="headerlink" href="#documentation_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add genai and lancedb integration examples to cookbook</li>
 <li>add cookbook examples for ALS PCA visualization and Spark MLlib translation</li>
@@ -2532,36 +2641,36 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>Loosen numerical tolerance for parallel Hogwild! BPR test to fix CI</li>
 </ul>
-<h3 id="documentation_3">📖 Documentation<a class="headerlink" href="#documentation_3" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_4">📖 Documentation<a class="headerlink" href="#documentation_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>use relative path for logo in README</li>
 </ul>
-<h3 id="documentation_4">📖 Documentation<a class="headerlink" href="#documentation_4" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_5">📖 Documentation<a class="headerlink" href="#documentation_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Comprehensive Interactive Cookbook with Real-World Datasets</li>
 </ul>
-<h3 id="bench">Bench<a class="headerlink" href="#bench" title="Permanent link">&para;</a></h3>
+<h3 id="bench_1">Bench<a class="headerlink" href="#bench_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add Cholesky to ALS benchmark script and fix pyright</li>
 </ul>
-<h3 id="documentation_5">📖 Documentation<a class="headerlink" href="#documentation_5" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_6">📖 Documentation<a class="headerlink" href="#documentation_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li>feature rusket.mine as the primary public api endpoint across mkdocs and readme</li>
 <li>append comprehensive cookbook examples for prefixspan, hupm, bpr, similarity, and recommender modules</li>
 </ul>
-<h3 id="miscellaneous_2">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_2" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_3">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>safe checkpoint</li>
 </ul>
-<h3 id="features_1">🚀 Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
+<h3 id="features_3">🚀 Features<a class="headerlink" href="#features_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add method='auto' routing to dynamically select eclat or fpgrowth based on dataset density</li>
 </ul>
-<h3 id="features_2">🚀 Features<a class="headerlink" href="#features_2" title="Permanent link">&para;</a></h3>
+<h3 id="features_4">🚀 Features<a class="headerlink" href="#features_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>YOLO release v0.1.16</li>
 </ul>
-<h3 id="performance_1">⚡ Performance<a class="headerlink" href="#performance_1" title="Permanent link">&para;</a></h3>
+<h3 id="performance_3">⚡ Performance<a class="headerlink" href="#performance_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>implement rayon multi-threading for FPMiner chunk ingestion</li>
 <li>revert SmallVec regression, clean HashMap FPMiner + scale to 1B benchmark</li>
@@ -2578,12 +2687,12 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>SCALE_TARGETS scoping + launch 1B Eclat scale-up</li>
 <li>restore SEP in benchmark f-strings</li>
 </ul>
-<h3 id="documentation_6">📖 Documentation<a class="headerlink" href="#documentation_6" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_7">📖 Documentation<a class="headerlink" href="#documentation_7" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add FPMiner out-of-core streaming section and 300M benchmark</li>
 <li>add ALS feature and market basket analysis to README</li>
 </ul>
-<h3 id="features_3">🚀 Features<a class="headerlink" href="#features_3" title="Permanent link">&para;</a></h3>
+<h3 id="features_5">🚀 Features<a class="headerlink" href="#features_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add verbose mode to fpgrowth, eclat, and FPMiner for large-scale feedback</li>
 <li>implement hybrid memory/disk out-of-core FPMiner with dynamic RAM limit</li>
@@ -2593,31 +2702,31 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>frequency-sorted remap + mine_auto + hint_n_transactions (Borgelt 2003)</li>
 <li>Anderson Acceleration for ALS outer loop (anderson_m param)</li>
 </ul>
-<h3 id="features_4">🚀 Features<a class="headerlink" href="#features_4" title="Permanent link">&para;</a></h3>
+<h3 id="features_6">🚀 Features<a class="headerlink" href="#features_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li>FPMiner streaming accumulator v0.1.14</li>
 </ul>
-<h3 id="features_5">🚀 Features<a class="headerlink" href="#features_5" title="Permanent link">&para;</a></h3>
+<h3 id="features_7">🚀 Features<a class="headerlink" href="#features_7" title="Permanent link">&para;</a></h3>
 <ul>
 <li>direct scipy CSR support in fpgrowth/eclat + pd.factorize + scale benchmarks</li>
 </ul>
-<h3 id="features_6">🚀 Features<a class="headerlink" href="#features_6" title="Permanent link">&para;</a></h3>
+<h3 id="features_8">🚀 Features<a class="headerlink" href="#features_8" title="Permanent link">&para;</a></h3>
 <ul>
 <li>automated scale benchmark with Plotly chart (1M-500M rows)</li>
 </ul>
-<h3 id="features_7">🚀 Features<a class="headerlink" href="#features_7" title="Permanent link">&para;</a></h3>
+<h3 id="features_9">🚀 Features<a class="headerlink" href="#features_9" title="Permanent link">&para;</a></h3>
 <ul>
 <li>sparse CSR from_transactions + million-scale benchmarks (66× faster)</li>
 </ul>
-<h3 id="bench_1">Bench<a class="headerlink" href="#bench_1" title="Permanent link">&para;</a></h3>
+<h3 id="bench_2">Bench<a class="headerlink" href="#bench_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add real-world dataset benchmark (auto-downloads, with timeouts)</li>
 </ul>
-<h3 id="documentation_7">📖 Documentation<a class="headerlink" href="#documentation_7" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_8">📖 Documentation<a class="headerlink" href="#documentation_8" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add Eclat API, real-world benchmarks, and usage examples</li>
 </ul>
-<h3 id="features_8">🚀 Features<a class="headerlink" href="#features_8" title="Permanent link">&para;</a></h3>
+<h3 id="features_10">🚀 Features<a class="headerlink" href="#features_10" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add from_transactions, from_pandas, from_polars, from_spark helpers</li>
 </ul>
@@ -2625,7 +2734,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>add dedicated test_eclat.py for standalone eclat() function</li>
 </ul>
-<h3 id="performance_2">⚡ Performance<a class="headerlink" href="#performance_2" title="Permanent link">&para;</a></h3>
+<h3 id="performance_4">⚡ Performance<a class="headerlink" href="#performance_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>arena-based FPNode with flat children storage (7.8x speedup)</li>
 </ul>
@@ -2633,7 +2742,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>add readme and license to pyproject.toml for PyPI, bump to 0.1.9</li>
 </ul>
-<h3 id="features_9">🚀 Features<a class="headerlink" href="#features_9" title="Permanent link">&para;</a></h3>
+<h3 id="features_11">🚀 Features<a class="headerlink" href="#features_11" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add Eclat algorithm (method='eclat') with 2.4-2.8x speedup on sparse data</li>
 <li>make eclat the default method (faster in all benchmarks)</li>
@@ -2643,17 +2752,17 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>remove orphaned FPGrowth import after FP-TDA removal</li>
 </ul>
-<h3 id="miscellaneous_3">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_3" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_4">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>remove FP-TDA implementation</li>
 <li>add MIT license</li>
 <li>add dependabot.yml to match httprx structure</li>
 </ul>
-<h3 id="features_10">🚀 Features<a class="headerlink" href="#features_10" title="Permanent link">&para;</a></h3>
+<h3 id="features_12">🚀 Features<a class="headerlink" href="#features_12" title="Permanent link">&para;</a></h3>
 <ul>
 <li>implement zero-copy slice algorithm for FP-TDA</li>
 </ul>
-<h3 id="miscellaneous_4">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_4" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_5">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>remove tracked <strong>pycache</strong> / .pyc files</li>
 </ul>
@@ -2665,11 +2774,11 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>benchmark CI - conditional baseline compare + PyPI trusted publishing (OIDC)</li>
 <li>fptda iterative mining to avoid stack overflow on sparse data</li>
 </ul>
-<h3 id="documentation_8">📖 Documentation<a class="headerlink" href="#documentation_8" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_9">📖 Documentation<a class="headerlink" href="#documentation_9" title="Permanent link">&para;</a></h3>
 <ul>
 <li>compact logo, remove fast pattern mining subtitle</li>
 </ul>
-<h3 id="miscellaneous_5">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_5" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_6">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li>merge feat/regression-benchmarks into main</li>
 <li>bump version to 0.1.5</li>
@@ -2678,7 +2787,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>extract FPBase, add FPTda class, FP-TDA in benchmarks</li>
 </ul>
-<h3 id="features_11">🚀 Features<a class="headerlink" href="#features_11" title="Permanent link">&para;</a></h3>
+<h3 id="features_13">🚀 Features<a class="headerlink" href="#features_13" title="Permanent link">&para;</a></h3>
 <ul>
 <li>regression benchmark tests + fix warnings</li>
 <li>add FP-TDA algorithm (IJISRT25NOV1256)\n\nImplements the Frequent-Pattern Two-Dimensional Array algorithm as a\ndrop-in alternative to FP-Growth. Uses right-to-left column projection\non sorted transaction lists instead of conditional subtree construction.\n\n- src/fptda.rs: Rust core (fptda_from_dense / fptda_from_csr)\n- rusket/fptda.py: Python wrapper, identical API to fpgrowth()\n- rusket/<strong>init</strong>.py: export rusket.fptda\n- tests/test_fptda.py: 22 tests (mix-ins + cross-check vs fpgrowth)\n- src/fpgrowth.rs: made process_item_counts/flatten_results pub(crate)\n- src/lib.rs: register new pyfunction bindings</li>
@@ -2691,7 +2800,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>remove tracked site/ dir, rename fpgrowth-pyo3→rusket, fix docs workflow</li>
 </ul>
-<h3 id="documentation_9">📖 Documentation<a class="headerlink" href="#documentation_9" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_10">📖 Documentation<a class="headerlink" href="#documentation_10" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add CI/CD workflow guidance to AGENTS.md</li>
 <li>publish real benchmark numbers with Plotly interactive chart</li>
@@ -2699,7 +2808,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <li>replace cookbook notebook with clean markdown, simplify docs workflow</li>
 <li>add YOLO section to AGENTS.md; merge feat/regression-benchmarks</li>
 </ul>
-<h3 id="features_12">🚀 Features<a class="headerlink" href="#features_12" title="Permanent link">&para;</a></h3>
+<h3 id="features_14">🚀 Features<a class="headerlink" href="#features_14" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add benchmark against efficient-apriori</li>
 <li>Bump version to 0.1.3, refine FPGrowth Arrow data type handling, update dependencies, and refactor test and project files.</li>
@@ -2708,11 +2817,11 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>add mkdocs-jupyter dependency for github pages</li>
 </ul>
-<h3 id="miscellaneous_6">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_6" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_7">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_7" title="Permanent link">&para;</a></h3>
 <ul>
 <li>fix docs deployment and format readme</li>
 </ul>
-<h3 id="performance_3">⚡ Performance<a class="headerlink" href="#performance_3" title="Permanent link">&para;</a></h3>
+<h3 id="performance_5">⚡ Performance<a class="headerlink" href="#performance_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>zero-copy pyarrow backend implementation</li>
 </ul>
@@ -2720,21 +2829,21 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>resolve SIGABRT panic in fpgrowth.rs and restore missing validation checks in python port</li>
 </ul>
-<h3 id="documentation_10">📖 Documentation<a class="headerlink" href="#documentation_10" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_11">📖 Documentation<a class="headerlink" href="#documentation_11" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add comprehensive Jupyter cookbook with Plotly graphs and benchmark results</li>
 <li>add pyarrow zero-copy dataframe slicing examples</li>
 </ul>
-<h3 id="miscellaneous_7">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_7" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_8">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_8" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add pytest-timeout to dev dependencies</li>
 <li>bump version to 0.1.1</li>
 </ul>
-<h3 id="documentation_11">📖 Documentation<a class="headerlink" href="#documentation_11" title="Permanent link">&para;</a></h3>
+<h3 id="documentation_12">📖 Documentation<a class="headerlink" href="#documentation_12" title="Permanent link">&para;</a></h3>
 <ul>
 <li>emphasize ultimate blazing speed in README</li>
 </ul>
-<h3 id="miscellaneous_8">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_8" title="Permanent link">&para;</a></h3>
+<h3 id="miscellaneous_9">📦 Miscellaneous<a class="headerlink" href="#miscellaneous_9" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add maturin and pyright to dev dependencies for CI</li>
 </ul>
@@ -2742,10 +2851,12 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <ul>
 <li>configure automated pypi release and github tags workflow</li>
 </ul>
-<h3 id="features_13">🚀 Features<a class="headerlink" href="#features_13" title="Permanent link">&para;</a></h3>
+<h3 id="features_15">🚀 Features<a class="headerlink" href="#features_15" title="Permanent link">&para;</a></h3>
 <ul>
 <li>optimised FP-Growth (mimalloc + SmallVec + PAR_ITEMS_CUTOFF=4 + parallel freq count + dedup)</li>
 </ul>
+
+
 
 
 
@@ -2763,44 +2874,12 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
             </div>
           
           
-  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
-
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
-        
-          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
-  Back to top
-</button>
         
       </main>
       
         <footer class="md-footer">
-  
-    
-      
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
-        
-          
-          <a href="../architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Architecture">
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-            </div>
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              <div class="md-ellipsis">
-                Architecture
-              </div>
-            </div>
-          </a>
-        
-        
-      </nav>
-    
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -2808,8 +2887,8 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
   
   
     Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
     </a>
   
 </div>
@@ -2825,7 +2904,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
       
     
     <a href="https://github.com/bmsuisse/rusket" target="_blank" rel="noopener" title="github.com" class="md-social__link">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
     </a>
   
     
@@ -2836,7 +2915,7 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
       
     
     <a href="https://pypi.org/project/rusket/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
     </a>
   
 </div>
@@ -2854,10 +2933,11 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":[],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.5fcf0de6.min.js"></script>
       
     
   </body>
