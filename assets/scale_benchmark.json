@@ -4,9 +4,9 @@
     "n_rows": 1000000,
     "n_txns": 198687,
     "n_items": 10000,
-    "conv_time": 2.0933256219999805,
-    "fpg_time": 0.4618258720000199,
-    "mlx_time": 1.6262461640000083,
+    "conv_time": 2.3251577670000074,
+    "fpg_time": 0.47081815199999255,
+    "mlx_time": 1.6038970810000137,
     "mem_mb": 4.998832
   },
   {
@@ -14,7 +14,7 @@
     "n_rows": 5000000,
     "n_txns": 993157,
     "n_items": 20000,
-    "conv_time": 3.4993894639999894,
+    "conv_time": 3.5316959689999976,
     "fpg_time": null,
     "mlx_time": null,
     "mem_mb": 24.997137
@@ -24,7 +24,7 @@
     "n_rows": 10000000,
     "n_txns": 1986528,
     "n_items": 50000,
-    "conv_time": 8.82112056699998,
+    "conv_time": 9.023944306999965,
     "fpg_time": null,
     "mlx_time": null,
     "mem_mb": 49.997727
@@ -34,7 +34,7 @@
     "n_rows": 50000000,
     "n_txns": 9932543,
     "n_items": 100000,
-    "conv_time": 21.23028688999989,
+    "conv_time": 21.94954663900012,
     "fpg_time": null,
     "mlx_time": null,
     "mem_mb": 249.993937
@@ -44,7 +44,7 @@
     "n_rows": 100000000,
     "n_txns": 19865758,
     "n_items": 200000,
-    "conv_time": 43.21832693599981,
+    "conv_time": 44.64795213499997,
     "fpg_time": null,
     "mlx_time": null,
     "mem_mb": 499.993662
@@ -54,7 +54,7 @@
     "n_rows": 200000000,
     "n_txns": 39730167,
     "n_items": 200000,
-    "conv_time": 57.64850228999967,
+    "conv_time": 59.48998426299977,
     "fpg_time": null,
     "mlx_time": null,
     "mem_mb": 999.988087
