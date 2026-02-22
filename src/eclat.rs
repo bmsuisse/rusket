@@ -6,11 +6,11 @@ use crate::fpgrowth::{flatten_results, process_item_counts};
 
 #[derive(Clone)]
 pub(crate) struct BitSet {
-    blocks: Vec<u64>,
+    pub(crate) blocks: Vec<u64>,
 }
 
 impl BitSet {
-    fn new(num_bits: usize) -> Self {
+    pub(crate) fn new(num_bits: usize) -> Self {
         let num_blocks = num_bits.div_ceil(64);
         BitSet {
             blocks: vec![0; num_blocks],
@@ -18,17 +18,17 @@ impl BitSet {
     }
 
     #[inline]
-    fn set(&mut self, bit: usize) {
+    pub(crate) fn set(&mut self, bit: usize) {
         self.blocks[bit / 64] |= 1 << (bit % 64);
     }
 
     #[inline]
-    fn count_ones(&self) -> u64 {
+    pub(crate) fn count_ones(&self) -> u64 {
         self.blocks.iter().map(|b| b.count_ones() as u64).sum()
     }
 
     #[inline]
-    fn intersect_count_into(&self, other: &BitSet, out: &mut BitSet, min_count: u64) -> u64 {
+    pub(crate) fn intersect_count_into(&self, other: &BitSet, out: &mut BitSet, min_count: u64) -> u64 {
         let n = self.blocks.len();
         debug_assert_eq!(other.blocks.len(), n);
         debug_assert_eq!(out.blocks.len(), n);

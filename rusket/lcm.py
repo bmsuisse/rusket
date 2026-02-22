@@ -10,10 +10,12 @@ if TYPE_CHECKING:
     import polars as pl
 
 
-class FPGrowth(Miner, RuleMinerMixin):
-    """FP-Growth frequent itemset miner.
+class LCM(Miner, RuleMinerMixin):
+    """LCM (Linear Closed Itemset Miner) frequent itemset miner.
 
-    This class wraps the fast, core Rust FP-Growth implementation.
+    This class wraps the fast core Rust LCM implementation using Prefix-Preserving Closure Extension.
+    It produces only *closed* frequent itemsets, offering massive memory savings
+    and faster execution out-of-the-box compared to classic algorithms on dense datasets.
     """
 
     def __init__(
@@ -27,7 +29,7 @@ class FPGrowth(Miner, RuleMinerMixin):
         verbose: int = 0,
         **kwargs: Any,
     ):
-        """Initialize the FPGrowth miner.
+        """Initialize the LCM miner.
 
         Parameters
         ----------
@@ -47,7 +49,7 @@ class FPGrowth(Miner, RuleMinerMixin):
         max_len : int | None, default=None
             Maximum length of the itemsets generated. If None, no limit is applied.
         verbose : int, default=0
-            If > 0, print progress and backend selection details to standard output.
+            If > 0, print progress to standard output.
         """
         super().__init__(data=data, item_names=item_names, **kwargs)
         self.min_support = min_support
@@ -57,7 +59,7 @@ class FPGrowth(Miner, RuleMinerMixin):
         self.verbose = verbose
 
     def mine(self, **kwargs: Any) -> pd.DataFrame:
-        """Execute the FP-growth algorithm on the stored data.
+        """Execute the LCM algorithm on the stored data to find closed itemsets.
 
         Returns
         -------
@@ -79,84 +81,7 @@ class FPGrowth(Miner, RuleMinerMixin):
             self.null_values,
             self.use_colnames,
             self.max_len,
-            "fpgrowth",
+            "lcm",
             self.item_names,
             self.verbose,
         )  # type: ignore[arg-type]
-
-
-def fpgrowth(
-    df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    method: str = "auto",
-    verbose: int = 0,
-    column_names: list[str] | None = None,
-) -> pd.DataFrame:
-    """Find frequent itemsets using the optimal algorithm (Eclat or FP-growth).
-
-    This module-level function relies on the Object-Oriented APIs.
-    """
-    if method not in ("fpgrowth", "eclat", "fin", "lcm", "auto"):
-        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', 'fin', 'lcm', or 'auto'. Got: {method}")
-
-    if method == "eclat":
-        from .eclat import Eclat
-
-        return Eclat(
-            data=df,
-            item_names=column_names,
-            min_support=min_support,
-            null_values=null_values,
-            use_colnames=use_colnames,
-            max_len=max_len,
-            verbose=verbose,
-        ).mine()
-    elif method == "fin":
-        from .fin import FIN
-
-        return FIN(
-            data=df,
-            item_names=column_names,
-            min_support=min_support,
-            null_values=null_values,
-            use_colnames=use_colnames,
-            max_len=max_len,
-            verbose=verbose,
-        ).mine()
-    elif method == "lcm":
-        from .lcm import LCM
-
-        return LCM(
-            data=df,
-            item_names=column_names,
-            min_support=min_support,
-            null_values=null_values,
-            use_colnames=use_colnames,
-            max_len=max_len,
-            verbose=verbose,
-        ).mine()
-    elif method == "auto":
-        from .mine import AutoMiner
-
-        return AutoMiner(
-            data=df,
-            item_names=column_names,
-            min_support=min_support,
-            null_values=null_values,
-            use_colnames=use_colnames,
-            max_len=max_len,
-            verbose=verbose,
-        ).mine()
-
-    return FPGrowth(
-        data=df,
-        item_names=column_names,
-        min_support=min_support,
-        null_values=null_values,
-        use_colnames=use_colnames,
-        max_len=max_len,
-        verbose=verbose,
-    ).mine()

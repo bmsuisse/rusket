@@ -10,10 +10,14 @@ mod bpr;
 mod eclat;
 mod fpgrowth;
 mod hupm;
+mod lcm;
 mod miner;
 mod prefixspan;
+mod fin;
 mod ease;
 mod item_knn;
+mod fpmc;
+mod fm;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -21,6 +25,10 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fpgrowth::fpgrowth_from_csr, m)?)?;
     m.add_function(wrap_pyfunction!(eclat::eclat_from_dense, m)?)?;
     m.add_function(wrap_pyfunction!(eclat::eclat_from_csr, m)?)?;
+    m.add_function(wrap_pyfunction!(fin::fin_from_dense, m)?)?;
+    m.add_function(wrap_pyfunction!(fin::fin_from_csr, m)?)?;
+    m.add_function(wrap_pyfunction!(lcm::lcm_from_dense, m)?)?;
+    m.add_function(wrap_pyfunction!(lcm::lcm_from_csr, m)?)?;
     m.add_function(wrap_pyfunction!(
         association_rules::association_rules_inner,
         m
@@ -35,5 +43,8 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ease::ease_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_top_k, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(fpmc::fpmc_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(fm::fm_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(fm::fm_predict, m)?)?;
     Ok(())
 }
