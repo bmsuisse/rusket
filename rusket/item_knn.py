@@ -142,6 +142,11 @@ class ItemKNN(ImplicitRecommender):
         if self.w_indptr is None:
             raise RuntimeError("Model has not been fitted.")
 
+    @property
+    def fitted(self) -> bool:
+        """Return True if the model has been fitted."""
+        return self.w_indptr is not None
+
     def recommend_items(
         self,
         user_id: int,
