@@ -81,7 +81,7 @@ def association_rules(
     )
 
     if not antecedents_raw:
-        return pd.DataFrame(columns=["antecedents", "consequents"] + list(return_metrics))
+        return pd.DataFrame(columns=pd.Index(["antecedents", "consequents"] + list(return_metrics)))
 
     if has_string_labels:
         ant_fs = [frozenset(idx_to_label[i] for i in a) for a in antecedents_raw]
