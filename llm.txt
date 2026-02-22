@@ -1314,10 +1314,6 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-### 🐛 Bug Fixes
-
-- auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning
-
 ### Benchmark
 
 - add script comparing eALS vs iALS
@@ -1329,6 +1325,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### ⚡ Performance
 
 - SIMD unrolling for dot and axpy hot-loops in ALS solver
+
+### 🐛 Bug Fixes
+
+- auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning
+- add criterion dev-dependency for bench targets
+- validate DataFrame before coercing to bool so invalid values (e.g. 2) raise ValueError
 
 ### 📖 Documentation
 

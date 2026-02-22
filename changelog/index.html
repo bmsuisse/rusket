@@ -907,17 +907,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🐛 Bug Fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -944,6 +933,17 @@
     <span class="md-ellipsis">
       
         ⚡ Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
       
     </span>
   </a>
@@ -1731,17 +1731,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🐛 Bug Fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#benchmark" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1768,6 +1757,17 @@
     <span class="md-ellipsis">
       
         ⚡ Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🐛 Bug Fixes
       
     </span>
   </a>
@@ -2530,10 +2530,6 @@
 <p>All notable changes are documented here.
 This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <hr />
-<h3 id="bug-fixes">🐛 Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
-<ul>
-<li>auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning</li>
-</ul>
 <h3 id="benchmark">Benchmark<a class="headerlink" href="#benchmark" title="Permanent link">&para;</a></h3>
 <ul>
 <li>add script comparing eALS vs iALS</li>
@@ -2545,6 +2541,12 @@ This project follows <a href="https://semver.org/">Semantic Versioning</a>.</p>
 <h3 id="performance">⚡ Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
 <ul>
 <li>SIMD unrolling for dot and axpy hot-loops in ALS solver</li>
+</ul>
+<h3 id="bug-fixes">🐛 Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning</li>
+<li>add criterion dev-dependency for bench targets</li>
+<li>validate DataFrame before coercing to bool so invalid values (e.g. 2) raise ValueError</li>
 </ul>
 <h3 id="documentation">📖 Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <ul>
