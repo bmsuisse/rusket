@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 LLM_TXT = ROOT / "llm.txt"
+DOCS_LLM_TXT = ROOT / "docs" / "llm.txt"
 
 SOURCES = [
     ("API Reference", ROOT / "docs" / "api-reference.md"),
@@ -50,7 +51,9 @@ def main() -> None:
 
     content = "".join(parts)
     LLM_TXT.write_text(content, encoding="utf-8")
+    DOCS_LLM_TXT.write_text(content, encoding="utf-8")
     print(f"✔ Wrote {LLM_TXT.relative_to(ROOT)}  ({len(content):,} chars)")
+    print(f"✔ Wrote {DOCS_LLM_TXT.relative_to(ROOT)}  ({len(content):,} chars)")
 
 
 if __name__ == "__main__":

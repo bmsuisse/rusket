@@ -88,9 +88,20 @@ def online_retail_df():  # type: ignore[return]
         ].copy()
         df["Description"] = df["Description"].str.strip()
         df["Revenue"] = (df["Quantity"] * df["Price"]).round(2)
+        # Ensure uniform dtypes for Parquet serialisation (Excel reads mixed types)
+        df["StockCode"] = df["StockCode"].astype(str)
+        df["Invoice"] = df["Invoice"].astype(str)
+        df["Customer_ID"] = df["Customer_ID"].astype(str)
+        df["Description"] = df["Description"].astype(str)
 
-        # Reproducible 10k-row sample
-        sample = df.sample(n=min(UCI_SAMPLE_ROWS, len(df)), random_state=42).reset_index(drop=True)
+        # Reproducible sample of invoices to preserve basket integrity!
+        import numpy as np
+
+        all_invoices = df["Invoice"].unique()
+        rng = np.random.default_rng(42)
+        sample_invoices = rng.choice(all_invoices, size=min(1000, len(all_invoices)), replace=False)
+        sample = df[df["Invoice"].isin(sample_invoices)].reset_index(drop=True)
+
         sample.to_parquet(UCI_SAMPLE_PARQUET, index=False)
         return sample
 
