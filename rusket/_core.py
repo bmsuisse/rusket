@@ -249,14 +249,16 @@ def dispatch(
     min_count = math.ceil(min_support * n_rows)
     col_names = list(df_pd.columns)
 
+    import pandas as pd
+
     from ._validation import valid_input_check
 
-    # Coerce integer 0/1 DataFrames to bool so valid_input_check doesn't warn
-    import pandas as pd
+    # Validate first so invalid values (e.g. 2) are caught before we coerce
+    valid_input_check(df_pd, null_values)
+
+    # Coerce integer 0/1 DataFrames to bool to avoid DeprecationWarning on next use
     if not hasattr(df_pd, "sparse") and not bool(df_pd.dtypes.apply(pd.api.types.is_bool_dtype).all()):
         df_pd = df_pd.astype(bool)
-
-    valid_input_check(df_pd, null_values)
 
     if hasattr(df_pd, "sparse"):
         nnz = getattr(df_pd.sparse, "density", 0.0) * (n_rows * n_cols)
