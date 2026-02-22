@@ -8,25 +8,86 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 
-macro_rules! dot {
-    ($a:expr, $b:expr) => {{
-        let a: &[f32] = &$a;
-        let b: &[f32] = &$b;
-        debug_assert_eq!(a.len(), b.len());
-        a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>()
-    }};
+// SIMD optimized dot with explicit chunks for 64-bit vectors
+#[inline(always)]
+fn dot_f32(a: &[f32], b: &[f32]) -> f32 {
+    let mut sum = 0.0;
+    let mut i = 0;
+    while i + 16 <= a.len() {
+        sum += a[i] * b[i] 
+             + a[i + 1] * b[i + 1] 
+             + a[i + 2] * b[i + 2] 
+             + a[i + 3] * b[i + 3] 
+             + a[i + 4] * b[i + 4] 
+             + a[i + 5] * b[i + 5] 
+             + a[i + 6] * b[i + 6] 
+             + a[i + 7] * b[i + 7]
+             + a[i + 8] * b[i + 8]
+             + a[i + 9] * b[i + 9]
+             + a[i + 10] * b[i + 10]
+             + a[i + 11] * b[i + 11]
+             + a[i + 12] * b[i + 12]
+             + a[i + 13] * b[i + 13]
+             + a[i + 14] * b[i + 14]
+             + a[i + 15] * b[i + 15];
+        i += 16;
+    }
+    while i + 8 <= a.len() {
+        sum += a[i] * b[i] 
+             + a[i + 1] * b[i + 1] 
+             + a[i + 2] * b[i + 2] 
+             + a[i + 3] * b[i + 3] 
+             + a[i + 4] * b[i + 4] 
+             + a[i + 5] * b[i + 5] 
+             + a[i + 6] * b[i + 6] 
+             + a[i + 7] * b[i + 7];
+        i += 8;
+    }
+    while i < a.len() {
+        sum += a[i] * b[i];
+        i += 1;
+    }
+    sum
 }
 
-macro_rules! axpy {
-    ($alpha:expr, $x:expr, $y:expr) => {{
-        let alpha: f32 = $alpha;
-        let x: &[f32] = &$x;
-        let y: &mut [f32] = &mut *$y;
-        debug_assert_eq!(x.len(), y.len());
-        y.iter_mut().zip(x.iter()).for_each(|(yi, &xi)| {
-            *yi += alpha * xi;
-        });
-    }};
+// SIMD optimized axpy with explicit chunks
+#[inline(always)]
+fn axpy_f32(alpha: f32, x: &[f32], y: &mut [f32]) {
+    let mut i = 0;
+    while i + 16 <= x.len() {
+        y[i] += alpha * x[i];
+        y[i + 1] += alpha * x[i + 1];
+        y[i + 2] += alpha * x[i + 2];
+        y[i + 3] += alpha * x[i + 3];
+        y[i + 4] += alpha * x[i + 4];
+        y[i + 5] += alpha * x[i + 5];
+        y[i + 6] += alpha * x[i + 6];
+        y[i + 7] += alpha * x[i + 7];
+        y[i + 8] += alpha * x[i + 8];
+        y[i + 9] += alpha * x[i + 9];
+        y[i + 10] += alpha * x[i + 10];
+        y[i + 11] += alpha * x[i + 11];
+        y[i + 12] += alpha * x[i + 12];
+        y[i + 13] += alpha * x[i + 13];
+        y[i + 14] += alpha * x[i + 14];
+        y[i + 15] += alpha * x[i + 15];
+        i += 16;
+    }
+    while i + 8 <= x.len() {
+        y[i] += alpha * x[i];
+        y[i + 1] += alpha * x[i + 1];
+        y[i + 2] += alpha * x[i + 2];
+        y[i + 3] += alpha * x[i + 3];
+        y[i + 4] += alpha * x[i + 4];
+        y[i + 5] += alpha * x[i + 5];
+        y[i + 6] += alpha * x[i + 6];
+        y[i + 7] += alpha * x[i + 7];
+        i += 8;
+    }
+    while i < x.len() {
+        y[i] += alpha * x[i];
+        i += 1;
+    }
 }
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
@@ -85,7 +146,7 @@ fn solve_one_side_cg(
                 let i = indices[idx] as usize;
                 let c = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
-                axpy!(c, yi, b);
+                axpy_f32(c, yi, b);
             }
 
             let apply_a = |v: &[f32], out: &mut [f32]| {
@@ -100,15 +161,15 @@ fn solve_one_side_cg(
                     let i = indices[idx] as usize;
                     let c = 1.0 + alpha * data[idx];
                     let yi = &other[i * k..(i + 1) * k];
-                    let w = (c - 1.0) * dot!(yi, v);
-                    axpy!(w, yi, out);
+                    let w = (c - 1.0) * dot_f32(yi, v);
+                    axpy_f32(w, yi, out);
                 }
             };
 
             xu.fill(0.0);
             r.copy_from_slice(b);
             p.copy_from_slice(b);
-            let mut rsold = dot!(r, r);
+            let mut rsold = dot_f32(r, r);
 
             if rsold < 1e-20 {
                 return;
@@ -116,16 +177,16 @@ fn solve_one_side_cg(
 
             for _ in 0..cg_iters {
                 apply_a(p, ap);
-                let pap = dot!(p, ap);
+                let pap = dot_f32(p, ap);
                 if pap <= 0.0 {
                     break;
                 }
                 let ak = rsold / pap;
 
-                axpy!(ak, p, xu);
-                axpy!(-ak, ap, r);
+                axpy_f32(ak, p, xu);
+                axpy_f32(-ak, ap, r);
 
-                let rsnew = dot!(r, r);
+                let rsnew = dot_f32(r, r);
                 if rsnew < 1e-20 {
                     break;
                 }
@@ -191,11 +252,11 @@ fn solve_one_side_cholesky(
                 let ci = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
 
-                axpy!(ci, yi, b_buf);
+                axpy_f32(ci, yi, b_buf);
 
                 let w = ci - 1.0;
                 for r in 0..k {
-                    axpy!(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
+                    axpy_f32(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
                 }
             }
 
@@ -497,7 +558,7 @@ fn top_n_items(
         .filter(|i| !excluded.contains(i))
         .map(|i| {
             let y = &itf[(i as usize) * k..(i as usize + 1) * k];
-            (dot!(u, y), i)
+            (dot_f32(u, y), i)
         })
         .collect();
     let take = n.min(scored.len());
@@ -527,7 +588,7 @@ fn top_n_users(
     let mut scored: Vec<(f32, i32)> = (0..n_users as i32)
         .map(|u| {
             let x = &uf[(u as usize) * k..(u as usize + 1) * k];
-            (dot!(x, y), u)
+            (dot_f32(x, y), u)
         })
         .collect();
     let take = n.min(scored.len());
