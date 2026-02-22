@@ -1,773 +1,1153 @@
 # API Reference
 
-## `mine` (Recommended)
+> This file is **auto-generated** by `scripts/gen_api_reference.py`.  Do not edit by hand — update the Python docstrings instead.
+
+## Functional API
+
+Convenience module-level functions.  For most use-cases these are the only entry points you need.
+
+### `mine`
+
+Mine frequent itemsets using the optimal algorithm.
+
+This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket import mine
+from rusket.mine import mine
 
-mine(
-    df,
-    min_support=0.5,
-    null_values=False,
-    use_colnames=False,
-    max_len=None,
-    method="auto",
-    verbose=0,
-) -> pd.DataFrame
+mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
-
-Dynamically selects the optimal mining algorithm (`fpgrowth` or `eclat`) based on the dataset density heuristically. It's highly recommended to use this entry point instead of calling the algorithms directly.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `df` | `pd.DataFrame \| pl.DataFrame` | — | One-hot encoded DataFrame. Rows are transactions, columns are items. Accepts bool or 0/1 integer values. Sparse pandas DataFrames are supported via the CSR path. |
-| `min_support` | `float` | `0.5` | Minimum support threshold in `(0, 1]`. Items occurring in fewer than `ceil(min_support × n_rows)` transactions are excluded. |
-| `null_values` | `bool` | `False` | Allow NaN values in `df` (pandas only). When `True`, NaNs are treated as zeros. |
-| `use_colnames` | `bool` | `False` | If `True`, itemsets contain column names instead of integer column indices. |
-| `max_len` | `int \| None` | `None` | Maximum itemset length. `None` means unlimited. |
-| `method` | `"auto" \| "fpgrowth" \| "eclat"` | `"auto"` | Algorithm to use. "auto" selects Eclat for sparse datasets and FP-Growth for dense ones. |
-| `verbose` | `int` | `0` | Verbosity level. |
-
-### Returns
-
-`pandas.DataFrame` with columns:
-
-| Column | Type | Description |
-|---|---|---|
-| `support` | `float` | Support of the itemset (fraction of transactions). |
-| `itemsets` | `frozenset` | Set of column indices (or names when `use_colnames=True`). |
-
-### Raises
-
-| Exception | Condition |
-|---|---|
-| `ValueError` | `min_support` ≤ 0 |
-| `TypeError` | `df` is not a pandas or Polars DataFrame |
-
-### Examples
-
-=== "Dense pandas"
-
-    ```python
-    import pandas as pd
-    from rusket import mine
-
-    df = pd.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
-    freq = mine(df, min_support=0.5, use_colnames=True)
-    ```
-
-=== "Sparse pandas"
-
-    ```python
-    import pandas as pd
-    from pandas.arrays import SparseArray
-    from rusket import mine
-
-    df = pd.DataFrame.sparse.from_spmatrix(my_csr_matrix, columns=items)
-    freq = mine(df, min_support=0.1, use_colnames=True)
-    ```
-
-=== "Polars"
-
-    ```python
-    import polars as pl
-    from rusket import mine
-
-    df = pl.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
-    freq = mine(df, min_support=0.5, use_colnames=True)
-    ```
 
 ---
 
-## `fpgrowth`
+### `fpgrowth`
+
+Find frequent itemsets using the FP-growth algorithm.
+
+This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket import fpgrowth
+from rusket.fpgrowth import fpgrowth
 
-fpgrowth(
-    df,
-    min_support=0.5,
-    null_values=False,
-    use_colnames=False,
-    max_len=None,
-    verbose=0,
-) -> pd.DataFrame
+fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
-
-Find frequent itemsets in a one-hot encoded transaction DataFrame using the **FP-Growth** algorithm, implemented in Rust for maximum performance.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `df` | `pd.DataFrame \| pl.DataFrame` | — | One-hot encoded DataFrame. Rows are transactions, columns are items. Accepts bool or 0/1 integer values. Sparse pandas DataFrames are supported via the CSR path. |
-| `min_support` | `float` | `0.5` | Minimum support threshold in `(0, 1]`. Items occurring in fewer than `ceil(min_support × n_rows)` transactions are excluded. |
-| `null_values` | `bool` | `False` | Allow NaN values in `df` (pandas only). When `True`, NaNs are treated as zeros. |
-| `use_colnames` | `bool` | `False` | If `True`, itemsets contain column names instead of integer column indices. |
-| `max_len` | `int \| None` | `None` | Maximum itemset length. `None` means unlimited. |
-| `verbose` | `int` | `0` | Verbosity level. Currently unused; kept for API compatibility with mlxtend. |
-
-### Returns
-
-`pandas.DataFrame` with columns:
-
-| Column | Type | Description |
-|---|---|---|
-| `support` | `float` | Support of the itemset (fraction of transactions). |
-| `itemsets` | `frozenset` | Set of column indices (or names when `use_colnames=True`). |
-
-### Raises
-
-| Exception | Condition |
-|---|---|
-| `ValueError` | `min_support` ≤ 0 |
-| `TypeError` | `df` is not a pandas or Polars DataFrame |
-
-### Examples
-
-=== "Dense pandas"
-
-    ```python
-    import pandas as pd
-    from rusket import fpgrowth
-
-    df = pd.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
-    freq = fpgrowth(df, min_support=0.5, use_colnames=True)
-    ```
-
-=== "Sparse pandas"
-
-    ```python
-    import pandas as pd
-    from pandas.arrays import SparseArray
-    from rusket import fpgrowth
-
-    df = pd.DataFrame.sparse.from_spmatrix(my_csr_matrix, columns=items)
-    freq = fpgrowth(df, min_support=0.1, use_colnames=True)
-    ```
-
-=== "Polars"
-
-    ```python
-    import polars as pl
-    from rusket import fpgrowth
-
-    df = pl.DataFrame({"a": [1,1,0], "b": [1,0,1], "c": [0,1,1]})
-    freq = fpgrowth(df, min_support=0.5, use_colnames=True)
-    ```
 
 ---
 
-## `eclat`
+### `eclat`
+
+Find frequent itemsets using the Eclat algorithm.
+
+This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket import eclat
+from rusket.eclat import eclat
 
-eclat(
-    df,
-    min_support=0.5,
-    null_values=False,
-    use_colnames=False,
-    max_len=None,
-    verbose=0,
-) -> pd.DataFrame
+eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
-
-Find frequent itemsets using the **Eclat** algorithm (vertical bitset representation with hardware `popcnt` for support counting). Same parameters and return value as `fpgrowth`.
-
-### Parameters
-
-Same as `fpgrowth` — see above.
-
-### Returns
-
-`pandas.DataFrame` with columns `['support', 'itemsets']` — identical format to `fpgrowth`.
-
-### Examples
-
-```python
-import pandas as pd
-from rusket import eclat
-
-df = pd.DataFrame({"a": [True,True,False], "b": [True,False,True], "c": [False,True,True]})
-freq = eclat(df, min_support=0.5, use_colnames=True)
-```
-
-## `association_rules`
-
-```python
-from rusket import association_rules
-
-association_rules(
-    df,
-    num_itemsets,
-    df_orig=None,
-    null_values=False,
-    metric="confidence",
-    min_threshold=0.8,
-    support_only=False,
-    return_metrics=ALL_METRICS,
-) -> pd.DataFrame
-```
-
-Generate association rules from a DataFrame of frequent itemsets. The rule-generation and metric computation is performed in Rust.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `df` | `pd.DataFrame` | — | Output of `mine()` or `fpgrowth()` with columns `['support', 'itemsets']`. |
-| `num_itemsets` | `int` | — | **Total number of transactions** in the original dataset (= `len(original_df)`). |
-| `df_orig` | `pd.DataFrame \| None` | `None` | Original (non-binarised) DataFrame. Only needed when `null_values=True`. |
-| `null_values` | `bool` | `False` | Apply null-value correction (not yet on the Rust path; falls back gracefully). |
-| `metric` | `str` | `"confidence"` | Primary filter metric. See [Metrics](#metrics) below. |
-| `min_threshold` | `float` | `0.8` | Minimum value of `metric` for a rule to be included in the result. |
-| `support_only` | `bool` | `False` | If `True`, only compute support; fill all other metrics with `NaN`. |
-| `return_metrics` | `list[str]` | all 12 | Metric columns to include in the result DataFrame. |
-
-### Returns
-
-`pandas.DataFrame` with columns:
-
-| Column | Type | Description |
-|---|---|---|
-| `antecedents` | `frozenset` | Left-hand side (LHS) of the rule. |
-| `consequents` | `frozenset` | Right-hand side (RHS) of the rule. |
-| `antecedent support` | `float` | Support of the antecedent alone. |
-| `consequent support` | `float` | Support of the consequent alone. |
-| `support` | `float` | Support of the full rule (LHS ∪ RHS). |
-| `confidence` | `float` | P(RHS \| LHS). |
-| `lift` | `float` | Confidence / consequent support. |
-| `representativity` | `float` | Fraction of transactions covered by the rule. |
-| `leverage` | `float` | Support − antecedent_support × consequent_support. |
-| `conviction` | `float` | (1 − consequent_support) / (1 − confidence). |
-| `zhangs_metric` | `float` | Zhang's correlation metric. |
-| `jaccard` | `float` | Jaccard similarity of antecedent and consequent. |
-| `certainty` | `float` | Certainty factor. |
-| `kulczynski` | `float` | Kulczynski measure. |
-
-### Metrics
-
-The `metric` parameter accepts any of:
-
-`confidence` · `lift` · `support` · `leverage` · `conviction` ·
-`zhangs_metric` · `jaccard` · `certainty` · `kulczynski` ·
-`representativity` · `antecedent support` · `consequent support`
-
-### Raises
-
-| Exception | Condition |
-|---|---|
-| `ValueError` | `df` is missing `'support'` or `'itemsets'` columns |
-| `ValueError` | `df` is empty |
-| `ValueError` | Unknown `metric` value and `support_only=False` |
 
 ---
 
-## `FPMiner`
+### `association_rules`
 
 ```python
-from rusket import FPMiner
+from rusket.association_rules import association_rules
 
-miner = FPMiner(n_items=500_000)
+association_rules(df: 'pd.DataFrame | Any', num_itemsets: 'int', df_orig: 'pd.DataFrame | None' = None, null_values: 'bool' = False, metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, support_only: 'bool' = False, return_metrics: 'list[str]' = ['antecedent support', 'consequent support', 'support', 'confidence', 'lift', 'representativity', 'leverage', 'conviction', 'zhangs_metric', 'jaccard', 'certainty', 'kulczynski']) -> 'pd.DataFrame'
 ```
 
-**Streaming accumulator** for billion-scale datasets.  Accepts chunks of
-`(transaction_id, item_id)` integer arrays one at a time — Rust accumulates
-them in a `HashMap<i64, Vec<i32>>`.  Peak **Python** memory = one chunk.
+---
 
-### Constructor
+### `prefixspan`
+
+Mine sequential patterns using the PrefixSpan algorithm.
+
+This function discovers frequent sequences of items across multiple users/sessions.
+Currently, this assumes sequences where each event consists of a single item
+(e.g., a sequence of page views or a sequence of individual products bought over time).
+
+```python
+from rusket.prefixspan import prefixspan
+
+prefixspan(sequences: 'list[list[int]]', min_support: 'int', max_len: 'int | None' = None) -> 'pd.DataFrame'
+```
+
+**Parameters**
 
 | Parameter | Type | Description |
-|---|---|---|
-| `n_items` | `int` | Number of distinct items (column count). Item IDs must be in `[0, n_items)`. |
+| --- | --- | --- |
+| sequences | list of list of int | A list of sequences, where each sequence is a list of integers representing items. Example: `[[1, 2, 3], [1, 3], [2, 3]]`. |
+| min_support | int | The minimum absolute support (number of sequences a pattern must appear in). |
+| max_len | int, optional | The maximum length of the sequential patterns to mine. |
 
-### Methods
+**Returns**
 
-#### `add_chunk(txn_ids, item_ids) → self`
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame containing 'support' and 'sequence' columns. |
 
-Feed a chunk of integer pairs into the accumulator.
+---
+
+### `hupm`
+
+Mine high-utility itemsets.
+
+This function discovers combinations of items that generate a high total utility
+(e.g., profit) across all transactions, even if they aren't the most frequent.
+
+```python
+from rusket.hupm import hupm
+
+hupm(transactions: 'list[list[int]]', utilities: 'list[list[float]]', min_utility: 'float', max_len: 'int | None' = None) -> 'pd.DataFrame'
+```
+
+**Parameters**
 
 | Parameter | Type | Description |
-|---|---|---|
-| `txn_ids` | `np.ndarray[int64]` | Transaction IDs (arbitrary integers). |
-| `item_ids` | `np.ndarray[int32]` | Item column indices `[0, n_items)`. |
+| --- | --- | --- |
+| transactions | list of list of int | A list of transactions, where each transaction is a list of item IDs. |
+| utilities | list of list of float | A list of identical structure to `transactions`, but containing the numeric utility (e.g., profit) of that item in that specific transaction. |
+| min_utility | float | The minimum total utility required to consider a pattern "high-utility". |
+| max_len | int, optional | The maximum length of the itemsets to mine. |
 
-#### `mine(min_support, max_len, use_colnames, column_names, method) → pd.DataFrame`
+**Returns**
 
-Mine frequent itemsets from all accumulated data.
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame containing 'utility' and 'itemset' columns. |
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `min_support` | `float` | `0.5` | Minimum support in `(0, 1]`. |
-| `max_len` | `int \| None` | `None` | Maximum itemset length. |
-| `use_colnames` | `bool` | `False` | Return column names instead of indices. |
-| `column_names` | `list[str] \| None` | `None` | Names for columns when `use_colnames=True`. |
-| `method` | `"fpgrowth" \| "eclat"` | `"fpgrowth"` | Mining algorithm. |
+---
 
-#### `reset()`
+### `sequences_from_event_log`
+
+Convert an event log DataFrame into the sequence format required by PrefixSpan.
+
+Accepts Pandas, Polars, or PySpark DataFrames. Data is grouped by `user_col`,
+ordered by `time_col`, and `item_col` values are collected into sequences.
+
+```python
+from rusket.prefixspan import sequences_from_event_log
+
+sequences_from_event_log(df: 'Any', user_col: 'str', time_col: 'str', item_col: 'str') -> 'tuple[list[list[int]], dict[int, Any]]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df | pd.DataFrame \| pl.DataFrame \| pyspark.sql.DataFrame | Event log containing users, timestamps, and items. |
+| user_col | str | Column name identifying the sequence (e.g., user_id or session_id). |
+| time_col | str | Column name for ordering events. |
+| item_col | str | Column name for the items. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple of (sequences, item_mapping) |  | - sequences: The nested list of integers to pass to `prefixspan()`. - item_mapping: A dictionary mapping the integer IDs back to the original item labels. |
+
+---
+
+### `mine_hupm`
+
+Mine high-utility itemsets from a long-format DataFrame.
+
+Converts a Pandas or Polars DataFrame into the required list-of-lists format
+and runs the High-Utility Pattern Mining (HUPM) algorithm.
+
+```python
+from rusket.hupm import mine_hupm
+
+mine_hupm(data: 'Any', transaction_col: 'str', item_col: 'str', utility_col: 'str', min_utility: 'float', max_len: 'int | None' = None) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| data | pd.DataFrame or pl.DataFrame | A long-format DataFrame where each row represents an item in a transaction. |
+| transaction_col | str | Column name identifying the transaction ID. |
+| item_col | str | Column name identifying the item ID (must be numeric integers). |
+| utility_col | str | Column name identifying the numeric utility (e.g. price, profit) of the item. |
+| min_utility | float | The minimum total utility required to consider a pattern "high-utility". |
+| max_len | int, optional | Maximum length of the itemsets to mine. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame containing 'utility' and 'itemset' columns. |
+
+---
+
+### `mine_duckdb`
+
+Stream directly from a DuckDB query via Arrow RecordBatches.
+
+This is extremely memory efficient, bypassing Pandas entirely.
+
+```python
+from rusket.streaming import mine_duckdb
+
+mine_duckdb(con: 'Any', query: 'str', n_items: 'int', txn_col: 'str', item_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, chunk_size: 'int' = 1000000) -> 'pd.DataFrame'
+```
+
+---
+
+### `mine_spark`
+
+Stream natively from a PySpark DataFrame on Databricks via Arrow.
+
+Uses `toLocalIterator()` to fetch Arrow chunks incrementally directly
+to the driver node, avoiding massive memory spikes.
+
+```python
+from rusket.streaming import mine_spark
+
+mine_spark(spark_df: 'Any', n_items: 'int', txn_col: 'str', item_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None) -> 'pd.DataFrame'
+```
+
+---
+
+### `from_transactions`
+
+Convert long-format transactional data to a one-hot boolean matrix.
+
+```python
+from rusket.transactions import from_transactions
+
+from_transactions(data: 'pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| data |  | One of:  - **Pandas / Polars / Spark DataFrame** with (at least) two columns: one for the transaction identifier and one for the item. - **List of lists** where each inner list contains the items of a single transaction, e.g. ``[["bread", "milk"], ["bread", "eggs"]]``. |
+| transaction_col |  | Name of the column that identifies transactions.  If ``None`` the first column is used.  Ignored for list-of-lists input. |
+| item_col |  | Name of the column that contains item values.  If ``None`` the second column is used.  Ignored for list-of-lists input. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A boolean DataFrame ready for :func:`rusket.fpgrowth` or :func:`rusket.eclat`.  Column names correspond to the unique items. |
+
+**Examples**
+
+```python
+>>> import rusket
+>>> import pandas as pd
+>>> df = pd.DataFrame({
+...     "order_id": [1, 1, 1, 2, 2, 3],
+...     "item": [3, 4, 5, 3, 5, 8],
+... })
+>>> ohe = rusket.from_transactions(df)
+>>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
+```
+
+---
+
+### `from_transactions_csr`
+
+Convert long-format transactional data to a CSR matrix + column names.
+
+Unlike :func:`from_transactions`, this returns a raw
+``scipy.sparse.csr_matrix`` that can be passed directly to
+:func:`rusket.fpgrowth` or :func:`rusket.eclat` — **no pandas overhead**.
+
+For billion-row datasets, this processes data in chunks of ``chunk_size``
+rows, keeping peak memory to one chunk + the running CSR.
+
+```python
+from rusket.transactions import from_transactions_csr
+
+from_transactions_csr(data: 'pd.DataFrame | pl.DataFrame | str | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, chunk_size: 'int' = 10000000) -> 'tuple[Any, list[str]]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| data |  | One of:  - **Pandas DataFrame** with (at least) two columns. - **Polars DataFrame** or **Spark DataFrame** (converted internally). - **File path** (str / Path) to a Parquet file — read in chunks. |
+| transaction_col |  | Name of the transaction-id column. Defaults to the first column. |
+| item_col |  | Name of the item column. Defaults to the second column. |
+| chunk_size |  | Number of rows per chunk. Lower values use less memory. Default: 10 million rows. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[scipy.sparse.csr_matrix, list[str]] |  | A CSR matrix and the list of column (item) names.  Pass directly::  csr, names = from_transactions_csr(df) freq = fpgrowth(csr, min_support=0.001, use_colnames=True, column_names=names) |
+
+**Examples**
+
+```python
+>>> import rusket
+>>> csr, names = rusket.from_transactions_csr("orders.parquet")
+>>> freq = rusket.fpgrowth(csr, min_support=0.001,
+...                        use_colnames=True, column_names=names)
+```
+
+---
+
+### `from_pandas`
+
+Shorthand for ``from_transactions(df, transaction_col, item_col)``.
+
+```python
+from rusket.transactions import from_pandas
+
+from_pandas(df: 'pd.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+```
+
+---
+
+### `from_polars`
+
+Shorthand for ``from_transactions(df, transaction_col, item_col)``.
+
+```python
+from rusket.transactions import from_polars
+
+from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+```
+
+---
+
+### `from_spark`
+
+Shorthand for ``from_transactions(df, transaction_col, item_col)``.
+
+```python
+from rusket.transactions import from_spark
+
+from_spark(df: 'Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'pd.DataFrame'
+```
+
+---
+
+## OOP Mining API
+
+All mining classes share a common `Miner.from_transactions()` / `.mine()` interface. `FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` also inherit `RuleMinerMixin` which adds `.association_rules()` and `.recommend_items()` helpers.
+
+### `FPGrowth`
+
+FP-Growth frequent itemset miner.
+
+This class wraps the fast, core Rust FP-Growth implementation.
+
+```python
+from rusket.fpgrowth import FPGrowth
+
+FPGrowth(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `FPGrowth.mine`
+
+Execute the FP-growth algorithm on the stored data.
+
+```python
+from rusket.fpgrowth import FPGrowth.mine
+
+FPGrowth.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
+
+---
+
+---
+
+### `Eclat`
+
+Eclat frequent itemset miner.
+
+Eclat is typically faster than FP-growth on dense datasets due to
+efficient vertical bitset intersection logic.
+
+```python
+from rusket.eclat import Eclat
+
+Eclat(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `Eclat.mine`
+
+Execute the Eclat algorithm on the stored data.
+
+```python
+from rusket.eclat import Eclat.mine
+
+Eclat.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
+
+---
+
+---
+
+### `AutoMiner`
+
+Automatic frequent itemset miner.
+
+Selects the optimal miner (FP-Growth or Eclat) based on matrix density.
+
+```python
+from rusket.mine import AutoMiner
+
+AutoMiner(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `AutoMiner.mine`
+
+Execute the optimal algorithm on the stored data.
+
+```python
+from rusket.mine import AutoMiner.mine
+
+AutoMiner.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
+
+---
+
+---
+
+### `PrefixSpan`
+
+Sequential Pattern Mining (PrefixSpan) model.
+
+This class discovers frequent sequences of items across multiple users/sessions.
+
+```python
+from rusket.prefixspan import PrefixSpan
+
+PrefixSpan(data: 'list[list[int]]', min_support: 'int', max_len: 'int | None' = None, item_mapping: 'dict[int, Any] | None' = None)
+```
+
+#### `PrefixSpan.mine`
+
+Mine sequential patterns using PrefixSpan.
+
+```python
+from rusket.prefixspan import PrefixSpan.mine
+
+PrefixSpan.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame containing 'support' and 'sequence' columns. Sequences are mapped back to original item names if `from_transactions` was used. |
+
+---
+
+---
+
+### `HUPM`
+
+High-Utility Pattern Mining (HUPM) model.
+
+This class discovers combinations of items that generate a high total utility
+(e.g., profit) across all transactions, even if they aren't the most frequent.
+
+```python
+from rusket.hupm import HUPM
+
+HUPM(transactions: 'list[list[int]]', utilities: 'list[list[float]]', min_utility: 'float', max_len: 'int | None' = None)
+```
+
+#### `HUPM.mine`
+
+Mine high-utility itemsets.
+
+```python
+from rusket.hupm import HUPM.mine
+
+HUPM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame containing 'utility' and 'itemset' columns. |
+
+---
+
+---
+
+### `FPMiner`
+
+Streaming FP-Growth / Eclat accumulator for billion-row datasets.
+
+Feeds (transaction_id, item_id) integer arrays to Rust one chunk at a
+time.  Rust accumulates per-transaction item lists in a
+``HashMap<i64, Vec<i32>>``.  Peak **Python** memory = one chunk.
+
+```python
+from rusket.streaming import FPMiner
+
+FPMiner(n_items: 'int', max_ram_mb: 'int | None' = -1, hint_n_transactions: 'int | None' = None) -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| n_items | int | Number of distinct items (column count).  All item IDs fed via :meth:`add_chunk` must be in ``[0, n_items)``. |
+
+**Examples**
+
+```python
+Process a Parquet file 10 M rows at a time:
+
+>>> import pandas as pd
+>>> import numpy as np
+>>> from rusket import FPMiner
+>>> miner = FPMiner(n_items=500_000)
+>>> for chunk in pd.read_parquet("orders.parquet", chunksize=10_000_000):
+...     txn = chunk["txn_id"].to_numpy(dtype="int64")
+...     item = chunk["item_idx"].to_numpy(dtype="int32")
+...     miner.add_chunk(txn, item)
+>>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+```
+
+#### `FPMiner.add_arrow_batch`
+
+Feed a PyArrow RecordBatch directly into the miner.
+Zero-copy extraction is used if types match (Int64/Int32).
+
+```python
+from rusket.streaming import FPMiner.add_arrow_batch
+
+FPMiner.add_arrow_batch(batch: 'Any', txn_col: 'str', item_col: 'str') -> 'FPMiner'
+```
+
+---
+
+#### `FPMiner.add_chunk`
+
+Feed a chunk of (transaction_id, item_id) pairs.
+
+```python
+from rusket.streaming import FPMiner.add_chunk
+
+FPMiner.add_chunk(txn_ids: 'np.ndarray', item_ids: 'np.ndarray') -> 'FPMiner'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| txn_ids | np.ndarray[int64] | 1-D array of transaction identifiers (arbitrary 64-bit integers). |
+| item_ids | np.ndarray[int32] | 1-D array of item column indices (0-based). |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| self  (for chaining) |  |  |
+
+---
+
+#### `FPMiner.mine`
+
+Mine frequent itemsets from all accumulated transactions.
+
+```python
+from rusket.streaming import FPMiner.mine
+
+FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = False, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat', 'auto']" = 'auto', verbose: 'int' = 0) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| min_support | float | Minimum support threshold in ``(0, 1]``. |
+| max_len | int \| None | Maximum itemset length. |
+| use_colnames | bool | If ``True``, itemsets contain column names instead of indices. |
+| column_names | list[str] \| None | Column names to use when ``use_colnames=True``. |
+| method | "fpgrowth" \| "eclat" \| "auto" | Mining algorithm to use.  ``"auto"`` (default) picks the best algorithm automatically based on data density after pre-filtering rare items (Borgelt 2003 heuristic: density < 15% → Eclat, else FPGrowth). |
+| verbose | int | Level of verbosity: >0 prints progress logs and times. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | Columns ``support`` and ``itemsets``. |
+
+---
+
+#### `FPMiner.reset`
 
 Free all accumulated data.
 
-### Properties
-
-| Property | Type | Description |
-|---|---|---|
-| `n_transactions` | `int` | Distinct transactions accumulated so far. |
-| `n_items` | `int` | Column count (set at construction). |
-
-### Example
-
 ```python
-import numpy as np
-from rusket import FPMiner
+from rusket.streaming import FPMiner.reset
 
-miner = FPMiner(n_items=500_000)
-
-# Process a Parquet file in 10M-row chunks
-for chunk in pd.read_parquet("orders.parquet", chunksize=10_000_000):
-    txn = chunk["txn_id"].to_numpy(dtype="int64")
-    item = chunk["item_idx"].to_numpy(dtype="int32")
-    miner.add_chunk(txn, item)
-
-freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+FPMiner.reset() -> 'None'
 ```
 
 ---
 
-## Class-Based (OOP) Mining API
-
-All mining algorithms (`FPGrowth`, `Eclat`, `AutoMiner`, `HUPM`, `PrefixSpan`) expose a uniform OOP interface via `BaseModel`. This is convenient when you want to go from raw transactional data to association rules without handling intermediate DataFrames.
-
-### `Miner.from_transactions`
-
-```python
-model = FPGrowth.from_transactions(
-    data,                        # pd.DataFrame | pl.DataFrame | list[list]
-    transaction_col=None,        # defaults to first column
-    item_col=None,               # defaults to second column
-    verbose=0,
-    # + any algorithm kwargs: min_support, max_len, ...
-)
-```
-
-Also available as `.from_pandas(df, ...)` and `.from_polars(df, ...)`.
-
-### `Miner.mine`
-
-```python
-freq = model.mine(
-    min_support=0.5,
-    use_colnames=False,
-    max_len=None,
-) -> pd.DataFrame
-```
-
-### `RuleMinerMixin.association_rules`
-
-Available on all mining classes (`FPGrowth`, `Eclat`, `AutoMiner`, `HUPM`):
-
-```python
-rules = model.association_rules(
-    metric="confidence",
-    min_threshold=0.8,
-    return_metrics=None,   # None = all metrics
-) -> pd.DataFrame
-```
-
-`num_itemsets` is inferred automatically from the data passed to `from_transactions`.
-
-### `RuleMinerMixin.recommend_items`
-
-```python
-suggestions = model.recommend_items(
-    items=["bread", "milk"],  # current cart contents
-    n=5,
-) -> list[Any]
-```
-
-Generates association rules on-the-fly (lift ≥ 1.0) and returns the top `n` consequents ordered by lift and confidence.
-
-### Example
-
-```python
-from rusket import FPGrowth, AutoMiner
-import pandas as pd
-
-df = pd.DataFrame({
-    "order_id": [1, 1, 2, 2, 3, 3, 3],
-    "item":     ["bread", "milk", "bread", "eggs", "milk", "eggs", "butter"],
-})
-
-# All three lines are equivalent:
-model = FPGrowth.from_transactions(df, min_support=0.4)
-# model = Eclat.from_transactions(df, min_support=0.4)
-# model = AutoMiner.from_transactions(df, min_support=0.4)
-
-freq  = model.mine(use_colnames=True)
-rules = model.association_rules(metric="lift", min_threshold=1.0)
-cart_suggestions = model.recommend_items(["bread"], n=3)
-```
-
 ---
 
-## `ALS`
+## Recommenders
 
-**Alternating Least Squares** for implicit feedback collaborative filtering.
+### `ALS`
+
+Implicit ALS collaborative filtering model.
 
 ```python
-from rusket import ALS
+from rusket.als import ALS
 
-als = ALS(
-    factors=64,
-    regularization=0.01,
-    alpha=40.0,
-    iterations=15,
-    seed=42,
-    verbose=False,
-    cg_iters=10,
-    use_cholesky=False,
-    anderson_m=0,
-)
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'bool' = False, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
-### Constructor Parameters
-
-| Parameter | Default | Description |
-|---|---|---|
-| `factors` | `64` | Number of latent factors. |
-| `regularization` | `0.01` | L2 regularisation weight. |
-| `alpha` | `40.0` | Confidence scaling: `confidence = 1 + alpha × r`. |
-| `iterations` | `15` | Number of ALS outer iterations. |
-| `seed` | `42` | Random seed. |
-| `verbose` | `False` | Print per-iteration loss. |
-| `cg_iters` | `10` | Conjugate Gradient iterations per user/item solve. Use `3` for very large datasets. Ignored when `use_cholesky=True`. |
-| `use_cholesky` | `False` | Use a direct Cholesky solve instead of iterative CG. Exact; faster when users have many interactions relative to `factors`. |
-| `anderson_m` | `0` | Anderson Acceleration history window (0 = disabled). A value of `5` typically reduces ALS iterations by 30–50% at no quality cost. |
-
-### Methods
-
-#### `fit(interactions) → ALS`
-
-Fit the model to a user-item interaction matrix.
+**Parameters**
 
 | Parameter | Type | Description |
-|---|---|---|
-| `interactions` | `scipy.sparse.csr_matrix \| np.ndarray` | User × Item matrix with implicit feedback values. |
+| --- | --- | --- |
+| factors | int | Number of latent factors. |
+| regularization | float | L2 regularisation weight. |
+| alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
+| iterations | int | Number of ALS outer iterations. |
+| seed | int | Random seed. |
+| cg_iters | int | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``).  Reduce to 3 for very large datasets. |
+| use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
+| anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
 
-#### `from_transactions(data, user_col, item_col, rating_col, ...) → ALS`
+#### `ALS.fit`
 
-Fit directly from a long-format event log DataFrame.
+Fit the model to the user-item interaction matrix.
 
-#### `recommend_items(user_id, n, exclude_seen) → tuple[np.ndarray, np.ndarray]`
+```python
+from rusket.als import ALS.fit
+
+ALS.fit(interactions: 'Any') -> 'ALS'
+```
+
+---
+
+#### `ALS.recommend_items`
+
+Top-N items for a user. Set exclude_seen=False to include already-seen items.
+
+```python
+from rusket.als import ALS.recommend_items
+
+ALS.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
+
+---
+
+#### `ALS.recommend_users`
+
+Top-N users for an item.
+
+```python
+from rusket.als import ALS.recommend_users
+
+ALS.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
+```
+
+---
+
+---
+
+### `BPR`
+
+Bayesian Personalized Ranking (BPR) model for implicit feedback.
+
+BPR optimizes for ranking rather than reconstruction error (like ALS).
+It works by drawing positive items the user interacted with, and negative items
+they haven't, and adjusting latent factors to ensure the positive item scores higher.
+
+```python
+from rusket.bpr import BPR
+
+BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'bool' = False, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors (default: 64). |
+| learning_rate | float | SGD learning rate (default: 0.05). |
+| regularization | float | L2 regularization weight (default: 0.01). |
+| iterations | int | Number of passes over the entire interaction dataset (default: 150). |
+| seed | int | Random seed for Hogwild! SGD sampling (default: 42). |
+
+#### `BPR.fit`
+
+Fit the BPR model to the user-item interaction matrix.
+
+```python
+from rusket.bpr import BPR.fit
+
+BPR.fit(interactions: 'Any') -> 'BPR'
+```
+
+---
+
+#### `BPR.recommend_items`
 
 Top-N items for a user.
 
-| Parameter | Default | Description |
-|---|---|---|
-| `user_id` | — | Integer index of the user. |
-| `n` | `10` | Number of items to return. |
-| `exclude_seen` | `True` | Exclude items the user already interacted with. |
+```python
+from rusket.bpr import BPR.recommend_items
 
-#### `recommend_users(item_id, n) → tuple[np.ndarray, np.ndarray]`
-
-Top-N users for an item (reverse lookup).
-
-### Properties
-
-| Property | Description |
-|---|---|
-| `user_factors` | User factor matrix `(n_users, factors)`. |
-| `item_factors` | Item factor matrix `(n_items, factors)`. |
+BPR.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
 
 ---
 
-## `BPR`
+---
 
-**Bayesian Personalized Ranking** for implicit feedback collaborative filtering. Optimises for ranking rather than reconstruction error.
+### `Recommender`
+
+Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.
 
 ```python
-from rusket import BPR
+from rusket.recommend import Recommender
 
-bpr = BPR(
-    factors=64,
-    learning_rate=0.05,
-    regularization=0.01,
-    iterations=150,
-    seed=42,
-    verbose=False,
-)
+Recommender(als_model: 'ALS | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
 
-Same `fit()`, `from_transactions()`, `recommend_items()`, `user_factors`, and `item_factors` interface as `ALS`.
+#### `Recommender.predict_next_chunk`
+
+Batch-rank the next best products for every user in *user_history_df*.
+
+```python
+from rusket.recommend import Recommender.predict_next_chunk
+
+Recommender.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'pd.DataFrame'
+```
 
 ---
 
-## Recommendation & Analytics
+#### `Recommender.recommend_for_cart`
 
-### `rusket.recommend.Recommender`
-
-High-level Hybrid Recommender that combines ALS and Association Rules.
+Suggest items to add to an active cart using association rules.
 
 ```python
-from rusket import Recommender
+from rusket.recommend import Recommender.recommend_for_cart
 
-rec = Recommender(als_model=als, rules_df=rules_df, item_embeddings=None)
-
-# Personalized recommendations (ALS)
-items, scores = rec.recommend_for_user(
-    user_id=42,
-    n=5,
-    alpha=1.0,                      # 1.0 = pure CF, 0.0 = pure semantic
-    target_item_for_semantic=None,  # anchor item for semantic blending
-)
-
-# Cart cross-sell (Association Rules)
-rec.recommend_for_cart(cart_items=[14, 7], n=3)
-
-# Batch recommendations for a user history DataFrame
-batch_df = rec.predict_next_chunk(user_history_df, user_col="user_id", k=5)
+Recommender.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'list[int]'
 ```
 
-### `rusket.score_potential`
+---
 
-Calculates cross-selling potential scores to identify "missed opportunities".
+#### `Recommender.recommend_for_user`
+
+Top-N recommendations for a user via Hybrid ALS + Semantic.
 
 ```python
-from rusket import score_potential
+from rusket.recommend import Recommender.recommend_for_user
 
-scores = score_potential(user_history, als_model, target_categories=[101, 102])
+Recommender.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' = 0.5, target_item_for_semantic: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
 ```
 
-### `rusket.similar_items`
+**Parameters**
 
-Find the most similar items to a given item ID based on ALS/BPR latent factors.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | The user ID to generate recommendations for. |
+| n | int, default=5 | Number of items to return. |
+| alpha | float, default=0.5 | Weight blending CF vs Semantic. ``alpha=1.0`` is pure CF. ``alpha=0.0`` is pure semantic. |
+| target_item_for_semantic | int \| None, default=None | If provided, semantic similarity is computed against this item. If None, and alpha < 1.0, it computes semantic similarity against the user's most recently interacted item (if history is available) or falls back to pure CF. |
+
+---
+
+---
+
+### `NextBestAction`
+
+Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.
 
 ```python
-from rusket import similar_items
+from rusket.recommend import NextBestAction
 
-similar_ids, scores = similar_items(als_model, item_id=99, n=5)
+NextBestAction(als_model: 'ALS | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
 
-### `rusket.export_item_factors`
+#### `NextBestAction.predict_next_chunk`
 
-Export ALS/BPR item factors as a Pandas DataFrame for Vector DBs.
+Batch-rank the next best products for every user in *user_history_df*.
 
 ```python
-from rusket import export_item_factors
+from rusket.recommend import NextBestAction.predict_next_chunk
 
-df_vectors = export_item_factors(als_model, include_labels=True)
+NextBestAction.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'pd.DataFrame'
 ```
 
-### `rusket.find_substitutes`
+---
 
-Identify cannibalized / substitutable products via negative association rules (lift < 1.0).
+#### `NextBestAction.recommend_for_cart`
+
+Suggest items to add to an active cart using association rules.
 
 ```python
-from rusket import find_substitutes
+from rusket.recommend import NextBestAction.recommend_for_cart
 
-substitutes = find_substitutes(rules_df, max_lift=0.8)
-# Returns a DataFrame sorted ascending by lift (most severe cannibalization first)
+NextBestAction.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'list[int]'
 ```
 
-### `rusket.customer_saturation`
+---
 
-Segment users by their category/item purchase depth into deciles.
+#### `NextBestAction.recommend_for_user`
+
+Top-N recommendations for a user via Hybrid ALS + Semantic.
 
 ```python
-from rusket import customer_saturation
+from rusket.recommend import NextBestAction.recommend_for_user
 
-saturation = customer_saturation(
-    df,
-    user_col="user_id",
-    category_col="category_id",  # or item_col="item_id"
-)
-# Returns a DataFrame with unique_count, saturation_pct, and decile columns
+NextBestAction.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' = 0.5, target_item_for_semantic: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
 ```
 
-### `rusket.viz.to_networkx`
+**Parameters**
 
-Convert association rules into a NetworkX Directed Graph for community detection.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | The user ID to generate recommendations for. |
+| n | int, default=5 | Number of items to return. |
+| alpha | float, default=0.5 | Weight blending CF vs Semantic. ``alpha=1.0`` is pure CF. ``alpha=0.0`` is pure semantic. |
+| target_item_for_semantic | int \| None, default=None | If provided, semantic similarity is computed against this item. If None, and alpha < 1.0, it computes semantic similarity against the user's most recently interacted item (if history is available) or falls back to pure CF. |
+
+---
+
+---
+
+## Analytics & Utilities
+
+### `score_potential`
+
+Cross-selling potential scores — shape ``(n_users, n_items)`` or ``(n_users, len(target_categories))``.
+
+Items the user has already interacted with are masked to ``-inf``.
 
 ```python
-from rusket.viz import to_networkx
+from rusket.recommend import score_potential
 
-G = to_networkx(rules_df, edge_attr="lift")
+score_potential(user_history: 'list[list[int]]', als_model: 'ALS', target_categories: 'list[int] | None' = None) -> 'np.ndarray'
+```
+
+---
+
+### `similar_items`
+
+Find the most similar items to a given item ID based on ALS latent factors.
+
+Computes cosine similarity between the specified item's latent vector
+and all other item vectors in the ``item_factors`` matrix.
+
+```python
+from rusket.similarity import similar_items
+
+similar_items(als_model: rusket.als.ALS, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
+| item_id | int | The internal integer index of the target item. |
+| n | int | Number of most similar items to return. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, cosine_similarities)`` sorted in descending order. |
+
+---
+
+### `find_substitutes`
+
+Substitute/cannibalizing products via negative association rules.
+
+Items with high individual support but low co-occurrence (lift < 1.0)
+likely cannibalize each other.
+
+```python
+from rusket.analytics import find_substitutes
+
+find_substitutes(rules_df: 'pd.DataFrame', max_lift: 'float' = 0.8) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| rules_df |  | DataFrame output from ``rusket.association_rules``. |
+| max_lift |  | Upper bound for lift; lift < 1.0 implies negative correlation. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame sorted ascending by lift (most severe cannibalization first). |  |  |
+
+---
+
+### `customer_saturation`
+
+Customer saturation by unique items/categories bought, split into deciles.
+
+```python
+from rusket.analytics import customer_saturation
+
+customer_saturation(df: 'pd.DataFrame', user_col: 'str', category_col: 'str | None' = None, item_col: 'str | None' = None) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | Interaction DataFrame. |
+| user_col |  | Column identifying the user. |
+| category_col |  | Category column (optional; at least one of category/item required). |
+| item_col |  | Item column (optional). |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame with ``unique_count``, ``saturation_pct``, and ``decile`` columns. |  |  |
+
+---
+
+### `export_item_factors`
+
+Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.
+
+This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
+Retrieval-Augmented Generation (RAG) and semantic search.
+
+Args:
+    als_model: A fitted `rusket.ALS` model.
+    include_labels: Whether to include the string item labels (if available).
+
+Returns:
+    A Pandas DataFrame where each row is an item, containing its integer ID,
+    (optionally) its label, and a `vector` column containing the dense latent numpy array.
+
+```python
+from rusket.export import export_item_factors
+
+export_item_factors(als_model: 'ALS', include_labels: 'bool' = True) -> 'pd.DataFrame'
 ```
 
 ---
 
 ## Distributed Spark API (`rusket.spark`)
 
-### `mine_grouped`
+All functions in `rusket.spark` distribute computation across PySpark partitions using Apache Arrow (zero-copy) for maximum throughput.
 
-Distribute Market Basket Analysis across PySpark partitions (grouped by a key column).
+### `rusket.spark.mine_grouped`
 
-```python
-import rusket.spark
+Distribute Market Basket Analysis across PySpark partitions.
 
-freq_df = rusket.spark.mine_grouped(
-    df=spark_df,
-    group_col="store_id",
-    min_support=0.05,
-    method="auto",   # "auto" | "fpgrowth" | "eclat"
-    use_colnames=True,
-    max_len=None,
-) -> pyspark.sql.DataFrame  # store_id, support, itemsets (array<string>)
-```
+This function groups a PySpark DataFrame by `group_col` and applies
+`rusket.mine` to each group concurrently across the cluster.
 
-### `rules_grouped`
-
-Distribute Association Rule Mining across PySpark partitions using the output of `mine_grouped`.
+It assumes the input PySpark DataFrame is formatted like a dense
+boolean matrix (One-Hot Encoded) per group, where rows are transactions.
 
 ```python
-rules_df = rusket.spark.rules_grouped(
-    df=freq_spark_df,
-    group_col="store_id",
-    num_itemsets={"A": 10_000, "B": 5_000},  # or a single int for all groups
-    metric="confidence",
-    min_threshold=0.8,
-) -> pyspark.sql.DataFrame  # store_id, antecedents, consequents, + 11 metrics
+from rusket.spark import rusket.spark.mine_grouped
+
+rusket.spark.mine_grouped(df: 'Any', group_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, method: 'str' = 'auto', use_colnames: 'bool' = True) -> 'Any'
 ```
 
-### `prefixspan_grouped`
+**Parameters**
 
-Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | The input `pyspark.sql.DataFrame`. |
+| group_col |  | The column to group by (e.g. `store_id`). |
+| min_support |  | Minimum support threshold. |
+| max_len |  | Maximum itemset length. |
+| method |  | Algorithm to use: 'auto', 'fpgrowth', or 'eclat'. |
+| use_colnames |  | If True, returns item names instead of column indices. Must be True for PySpark `applyInArrow` schema consistency. |
 
-```python
-seq_df = rusket.spark.prefixspan_grouped(
-    df=spark_df,
-    group_col="store_id",
-    user_col="user_id",
-    time_col="timestamp",
-    item_col="item_id",
-    min_support=10,
-    max_len=None,
-) -> pyspark.sql.DataFrame  # store_id, support (long), sequence (array<string>)
-```
+**Returns**
 
-### `hupm_grouped`
-
-Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.
-
-```python
-hupm_df = rusket.spark.hupm_grouped(
-    df=spark_df,
-    group_col="store_id",
-    transaction_col="txn_id",
-    item_col="item_id",
-    utility_col="profit",
-    min_utility=50.0,
-    max_len=None,
-) -> pyspark.sql.DataFrame  # store_id, utility (double), itemset (array<long>)
-```
-
-### `recommend_batches`
-
-Distribute batch recommendations across PySpark partitions using a pre-fitted model.
-
-```python
-rec_df = rusket.spark.recommend_batches(
-    df=user_history_spark_df,
-    model=als_or_recommender,
-    user_col="user_id",
-    k=5,
-) -> pyspark.sql.DataFrame  # user_id, recommended_items (array<int>)
-```
-
-### `to_spark`
-
-Convert a Pandas or Polars DataFrame to a PySpark DataFrame.
-
-```python
-spark_df = rusket.spark.to_spark(spark_session, df)
-```
-
-
-Converts long-format transactional data to a raw `scipy.sparse.csr_matrix`
-and a list of column names, for direct input into `fpgrowth()` or `eclat()`.
-
-Accepts the **same input types** as `from_transactions`, plus a **file path**
-to a Parquet file, which is read in chunks to avoid loading all data into
-memory at once.
-
-### Parameters
-
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `data` | `pd.DataFrame \| str \| Path` | — | A pandas/Polars/Spark DataFrame, or a file path to a Parquet file. |
-| `transaction_col` | `str \| None` | `None` | Transaction ID column name (defaults to first column). |
-| `item_col` | `str \| None` | `None` | Item column name (defaults to second column). |
-| `chunk_size` | `int` | `10_000_000` | Rows per chunk for large files. |
-
-### Returns
-
-`tuple[scipy.sparse.csr_matrix, list[str]]` — CSR matrix + column names.
-
-### Example
-
-```python
-from rusket import from_transactions_csr, mine
-
-# From Parquet — never loads entire file
-csr, names = from_transactions_csr("orders.parquet", chunk_size=10_000_000)
-freq = mine(csr, min_support=0.001, use_colnames=True, column_names=names)
-```
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | A PySpark DataFrame containing: - `group_col` - `support` (float) - `itemsets` (array of strings) |
 
 ---
 
-## Recommendation & Analytics
+### `rusket.spark.rules_grouped`
 
-### `rusket.recommend.Recommender`
+Distribute Association Rule Mining across PySpark partitions.
 
-High-level Hybrid Recommender that combines ALS and Association Rules.
-
-```python
-from rusket import Recommender
-
-rec = Recommender(als_model=als, rules_df=rules_df)
-rec.recommend_for_user(user_id=42, n=5)
-rec.recommend_for_cart(cart_items=[14, 7], n=3)
-```
-
-### `rusket.score_potential`
-
-Calculates cross-selling potential scores to identify "missed opportunities" for users who should have bought an item by now but haven't.
+This takes the frequent itemsets DataFrame (output of `mine_grouped`)
+and applies `association_rules` uniformly across the groups.
 
 ```python
-from rusket import score_potential
+from rusket.spark import rusket.spark.rules_grouped
 
-scores = score_potential(user_history, als_model, target_categories=[101, 102])
+rusket.spark.rules_grouped(df: 'Any', group_col: 'str', num_itemsets: 'dict[Any, int] | int', metric: 'str' = 'confidence', min_threshold: 'float' = 0.8) -> 'Any'
 ```
 
-### `rusket.similar_items`
+**Parameters**
 
-Find the most similar items to a given item ID based on ALS/BPR latent factors using fast Cosine Similarity.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | The PySpark `DataFrame` containing frequent itemsets. |
+| group_col |  | The column to group by. |
+| num_itemsets |  | A dictionary mapping group IDs to their total transaction count, or a single integer if all groups have the same number of transactions. |
+| metric |  | The metric to filter by (e.g. "confidence", "lift"). |
+| min_threshold |  | The minimal threshold for the evaluation metric. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | A DataFrame containing antecedents, consequents, and all rule metrics, prepended with the `group_col`. |
+
+---
+
+### `rusket.spark.prefixspan_grouped`
+
+Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.
+
+This function groups a PySpark DataFrame by `group_col` and applies
+`PrefixSpan.from_transactions` to each group concurrently across the cluster.
 
 ```python
-from rusket import similar_items
+from rusket.spark import rusket.spark.prefixspan_grouped
 
-similar_ids, scores = similar_items(als_model, item_id=99, n=5)
+rusket.spark.prefixspan_grouped(df: 'Any', group_col: 'str', user_col: 'str', time_col: 'str', item_col: 'str', min_support: 'int' = 1, max_len: 'int | None' = None) -> 'Any'
 ```
 
-### `rusket.export_item_factors`
+**Parameters**
 
-Exports ALS/BPR latent item factors as a Pandas DataFrame for Vector DBs (FAISS, Qdrant, Pinecone) for Retrieval-Augmented Generation (RAG).
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | The input `pyspark.sql.DataFrame`. |
+| group_col |  | The column to group by (e.g. `store_id`). |
+| user_col |  | The column identifying the sequence within each group (e.g., `user_id` or `session_id`). |
+| time_col |  | The column used for ordering events within a sequence. |
+| item_col |  | The column containing the items. |
+| min_support |  | The minimum absolute support (number of sequences a pattern must appear in). |
+| max_len |  | Maximum length of the sequential patterns to mine. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | A PySpark DataFrame containing: - `group_col` - `support` (long/int64) - `sequence` (array of strings) |
+
+---
+
+### `rusket.spark.hupm_grouped`
+
+Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.
+
+This function groups a PySpark DataFrame by `group_col` and applies
+`HUPM.from_transactions` to each group concurrently across the cluster.
 
 ```python
-from rusket import export_item_factors
+from rusket.spark import rusket.spark.hupm_grouped
 
-df_vectors = export_item_factors(als_model, include_labels=True)
+rusket.spark.hupm_grouped(df: 'Any', group_col: 'str', transaction_col: 'str', item_col: 'str', utility_col: 'str', min_utility: 'float', max_len: 'int | None' = None) -> 'Any'
 ```
 
-### `rusket.viz.to_networkx`
+**Parameters**
 
-Converts a `rusket` association rules DataFrame into a NetworkX Directed Graph. Useful for product clustering and visualization.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | The input `pyspark.sql.DataFrame`. |
+| group_col |  | The column to group by (e.g. `store_id`). |
+| transaction_col |  | The column identifying the transaction within each group. |
+| item_col |  | The column containing the numeric item IDs. |
+| utility_col |  | The column containing the numeric utility (e.g., profit) of the item in the transaction. |
+| min_utility |  | The minimum total utility required to consider a pattern "high-utility". |
+| max_len |  | Maximum length of the itemsets to mine. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | A PySpark DataFrame containing: - `group_col` - `utility` (double/float64) - `itemset` (array of longs/int64) |
+
+---
+
+### `rusket.spark.recommend_batches`
+
+Distribute Batch Recommendations across PySpark partitions.
+
+This function uses `mapInArrow` to process partitions of users concurrently,
+applying a pre-fitted `Recommender` (or `ALS`) to each chunk.
 
 ```python
-from rusket.viz import to_networkx
+from rusket.spark import rusket.spark.recommend_batches
 
-G = to_networkx(rules_df, edge_attr="lift")
+rusket.spark.recommend_batches(df: 'Any', model: 'Any', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'Any'
 ```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df |  | The PySpark `DataFrame` containing user histories (must contain `user_col`). |
+| model |  | The pre-trained `Recommender` or `ALS` model instance to use for scoring. |
+| user_col |  | The column identifying the user. |
+| k |  | The number of top recommendations to return per user. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | A DataFrame with two columns: - `user_col` - `recommended_items` (array of longs/int64) |
+
+---
+
+### `rusket.spark.to_spark`
+
+Convert a Pandas or Polars DataFrame into a PySpark DataFrame.
+
+```python
+from rusket.spark import rusket.spark.to_spark
+
+rusket.spark.to_spark(spark_session: 'Any', df: 'Any') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| spark_session |  | The active PySpark `SparkSession`. |
+| df |  | The `pd.DataFrame` or `pl.DataFrame` to convert. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyspark.sql.DataFrame |  | The resulting PySpark DataFrame. |
+
+---
+

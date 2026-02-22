@@ -7,6 +7,8 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'benchmarks/**'
+      - 'rusket/**/*.py'   # re-generate API ref on source changes
+      - 'scripts/**'        # re-run if the generation scripts themselves change
   workflow_dispatch:
 
 permissions:
@@ -18,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # needed for git-cliff (full history)
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -31,6 +33,31 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      - name: Install Rust toolchain (needed to build rusket for import)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build rusket (needed for API introspection)
+        run: uv run maturin develop --release
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      # ── Doc generation ────────────────────────────────────────────────
+      - name: Sync changelog → docs/changelog.md
+        run: uv run python scripts/sync_changelog.py
+
+      - name: Generate API reference → docs/api-reference.md
+        run: uv run python scripts/gen_api_reference.py
+
+      - name: Rebuild llm.txt
+        run: uv run python scripts/gen_llm_txt.py
+
+      # ── Benchmarks ───────────────────────────────────────────────────
       - name: Generate Scale Benchmark
         run: uv run python benchmarks/bench_scale.py
 
