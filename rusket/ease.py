@@ -81,15 +81,11 @@ class EASE(ImplicitRecommender):
             print("EASE inverting Gram matrix (Cholesky)...")
 
         import scipy.linalg
+
         # Solve P = G^-1 using Cholesky decomposition inplace
         # np.eye is used as the RHS (b) to compute the inverse
         L = scipy.linalg.cholesky(G_dense, lower=True, overwrite_a=True, check_finite=False)
-        P = scipy.linalg.cho_solve(
-            (L, True), 
-            np.eye(n_items, dtype=np.float32), 
-            overwrite_b=True, 
-            check_finite=False
-        )
+        P = scipy.linalg.cho_solve((L, True), np.eye(n_items, dtype=np.float32), overwrite_b=True, check_finite=False)
         B = P / (-np.diag(P))
         B[diag_indices] = 0.0
 
@@ -127,7 +123,7 @@ class EASE(ImplicitRecommender):
             exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
             exc_indices = np.array([], dtype=np.int32)
 
-        ids, scores = _rust.ease_recommend_items(
+        ids, scores = _rust.ease_recommend_items(  # type: ignore[attr-defined]
             self.item_weights,
             self._fit_indptr,
             self._fit_indices,

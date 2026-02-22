@@ -11,7 +11,7 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python"></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-1.83%2B-orange?logo=rust" alt="Rust"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
-  <a href="https://bmsuisse.github.io/rusket/"><img src="https://img.shields.io/badge/docs-MkDocs-blue" alt="Docs"></a>
+  <a href="https://bmsuisse.github.io/rusket/"><img src="https://img.shields.io/badge/docs-Zensical-blue" alt="Docs"></a>
 </p>
 
 ---
@@ -929,7 +929,7 @@ To pass the "1 Billion Row" threshold without OOM crashes, `rusket` employs a ze
 │
 ├── tests/                        # Comprehensive test suite
 ├── benchmarks/                   # Real-world benchmark scripts
-├── docs/                         # MkDocs documentation
+├── docs/                         # Zensical documentation
 └── pyproject.toml                # Build config (maturin)
 ```
 

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import scipy.sparse as sp
 
-from rusket._rusket import lightgcn_fit
+from rusket._rusket import lightgcn_fit  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -57,22 +57,21 @@ class LightGCN:
     @classmethod
     def from_transactions(
         cls,
-        data: "pd.DataFrame | pl.DataFrame",
+        data: pd.DataFrame | pl.DataFrame,
         user_col: str | None = None,
         item_col: str | None = None,
         **kwargs,
-    ) -> "LightGCN":
+    ) -> LightGCN:
         model = cls(**kwargs)
         model._fit_from_df(data, user_col, item_col)
         return model
 
     def _fit_from_df(
         self,
-        data: "pd.DataFrame | pl.DataFrame",
+        data: pd.DataFrame | pl.DataFrame,
         user_col: str | None,
         item_col: str | None,
     ) -> None:
-        import pandas as pd
 
         if hasattr(data, "to_pandas"):
             data = data.to_pandas()
@@ -80,11 +79,11 @@ class LightGCN:
         user_col = user_col or "user_id"
         item_col = item_col or "item_id"
 
-        users = data[user_col].values
-        items = data[item_col].values
+        users = np.asarray(data[user_col])  # type: ignore[call-overload]
+        items = np.asarray(data[item_col])  # type: ignore[call-overload]
 
-        unique_users = np.unique(users)
-        unique_items = np.unique(items)
+        unique_users = np.unique(users.astype(object))  # type: ignore[arg-type]
+        unique_items = np.unique(items.astype(object))  # type: ignore[arg-type]
 
         self._user_map = {u: i for i, u in enumerate(unique_users)}
         self._item_map = {it: i for i, it in enumerate(unique_items)}
@@ -111,9 +110,7 @@ class LightGCN:
         i_indptr = iu_csr.indptr.astype(np.int64)
         i_indices = iu_csr.indices.astype(np.int32)
 
-        seed = (
-            self.random_state if self.random_state is not None else int(np.random.randint(1 << 31))
-        )
+        seed = self.random_state if self.random_state is not None else int(np.random.randint(1 << 31))
 
         eu, ei = lightgcn_fit(
             u_indptr,
@@ -137,9 +134,7 @@ class LightGCN:
         self._n_users = n_users
         self._n_items = n_items
 
-    def recommend_items(
-        self, user_id: int, n: int = 10
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def recommend_items(self, user_id: int, n: int = 10) -> tuple[np.ndarray, np.ndarray]:
         """Return top-n recommended item IDs and scores for a given user.
 
         Args:
@@ -155,6 +150,7 @@ class LightGCN:
         if uid is None:
             return np.array([], dtype=np.int64), np.array([], dtype=np.float32)
 
+        assert self._item_factors is not None
         scores = self._user_factors[uid] @ self._item_factors.T
         top_idx = np.argsort(scores)[::-1][:n]
         original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)

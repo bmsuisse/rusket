@@ -276,7 +276,7 @@ def from_transactions_csr(
         return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
 
     if type(data).__name__ == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
-        data = data.to_pandas()
+        data = data.to_pandas()  # type: ignore[union-attr]
 
     df = typing.cast("pd.DataFrame", data)
     cols = list(df.columns)

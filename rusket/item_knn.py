@@ -1,4 +1,3 @@
-import typing
 from typing import Any, Literal
 
 import numpy as np
@@ -13,12 +12,12 @@ def _bm25_weight(X: sp.csr_matrix, K1: float = 1.2, B: float = 0.75) -> sp.csr_m
     X_coo = X.tocoo()
 
     # Calculate item frequencies
-    N = float(X_coo.shape[0])
-    item_counts = np.bincount(X_coo.col, minlength=X_coo.shape[1])
+    N = float(X_coo.shape[0])  # type: ignore[index]
+    item_counts = np.bincount(X_coo.col, minlength=X_coo.shape[1])  # type: ignore[index]
     idf = np.log((N - item_counts + 0.5) / (item_counts + 0.5) + 1.0)
 
     # Calculate user frequencies
-    user_lens = np.bincount(X_coo.row, minlength=X_coo.shape[0])
+    user_lens = np.bincount(X_coo.row, minlength=X_coo.shape[0])  # type: ignore[index]
     avg_len = user_lens.mean()
     if avg_len == 0:
         avg_len = 1.0
@@ -34,8 +33,8 @@ def _tfidf_weight(X: sp.csr_matrix) -> sp.csr_matrix:
     """Weighs each item-user interaction by TF-IDF."""
     X_coo = X.tocoo()
 
-    N = float(X_coo.shape[0])
-    item_counts = np.bincount(X_coo.col, minlength=X_coo.shape[1])
+    N = float(X_coo.shape[0])  # type: ignore[index]
+    item_counts = np.bincount(X_coo.col, minlength=X_coo.shape[1])  # type: ignore[index]
     # Standard IDF
     idf = np.log(N / (item_counts + 1.0)) + 1.0
 
@@ -121,7 +120,7 @@ class ItemKNN(ImplicitRecommender):
         W.eliminate_zeros()
 
         # Optimize by pruning to Top-K neighbors per item in Rust
-        ip, ix, dt = _rust.itemknn_top_k(
+        ip, ix, dt = _rust.itemknn_top_k(  # type: ignore[attr-defined]
             W.indptr.astype(np.int64), W.indices.astype(np.int32), W.data.astype(np.float32), self.k
         )
 
@@ -174,10 +173,10 @@ class ItemKNN(ImplicitRecommender):
         else:
             user_data = self._fit_data
 
-        ids, scores = _rust.itemknn_recommend_items(
-            self.w_indptr.astype(np.int64),
-            self.w_indices.astype(np.int32),
-            self.w_data.astype(np.float32),
+        ids, scores = _rust.itemknn_recommend_items(  # type: ignore[attr-defined]
+            self.w_indptr.astype(np.int64),  # type: ignore[union-attr]
+            self.w_indices.astype(np.int32),  # type: ignore[union-attr]
+            self.w_data.astype(np.float32),  # type: ignore[union-attr]
             getattr(self, "_fit_indptr", np.zeros(self._n_users + 1, dtype=np.int64)).astype(np.int64),
             getattr(self, "_fit_indices", np.array([], dtype=np.int32)).astype(np.int32),
             user_data.astype(np.float32),

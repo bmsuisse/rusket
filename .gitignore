@@ -59,6 +59,7 @@ docs/notebooks/*.zip
 
 # AI slop
 test_faer*
+benches/
 
 # Profiling / benchmarking artifacts
 log_tensorboard/

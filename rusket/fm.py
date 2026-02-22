@@ -11,11 +11,11 @@ from .model import BaseModel
 
 class FM(BaseModel):
     """Factorization Machines (FM) context-aware model for predictive tasks (e.g. CTR).
-    
+
     This model supports binary classification tasks using Log Loss (Binary Cross Entropy).
     Inputs should be formatted as a scipy sparse CSR matrix where features are binary (0/1).
     Each row is a sample consisting of User, Item, and Context features.
-    
+
     Parameters
     ----------
     factors : int
@@ -49,11 +49,11 @@ class FM(BaseModel):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        
+
         self.w0_: float | None = None
         self.w_: Any = None
         self.v_: Any = None
-        
+
         self._n_features: int = 0
         self.fitted: bool = False
 
@@ -69,7 +69,7 @@ class FM(BaseModel):
 
     def fit(self, X: Any, y: Any) -> FM:
         """Fit the FM model to Context-aware Data.
-        
+
         Parameters
         ----------
         X : scipy.sparse.csr_matrix or numpy array
@@ -80,7 +80,7 @@ class FM(BaseModel):
         """
         import numpy as np
         from scipy import sparse as sp
-        
+
         if self.fitted:
             raise RuntimeError("Model is already fitted.")
 
@@ -95,14 +95,14 @@ class FM(BaseModel):
 
         y_arr = np.asarray(y, dtype=np.float32)
         n_samples, n_features = typing.cast(tuple[int, int], csr.shape)
-        
+
         if len(y_arr) != n_samples:
             raise ValueError(f"X has {n_samples} samples but y has {len(y_arr)} labels.")
 
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)
-        
-        self.w0_, self.w_, self.v_ = _rust.fm_fit(
+
+        self.w0_, self.w_, self.v_ = _rust.fm_fit(  # type: ignore[attr-defined]
             indptr,
             indices,
             y_arr,
@@ -122,12 +122,12 @@ class FM(BaseModel):
 
     def predict_proba(self, X: Any) -> Any:
         """Predict the probability (CTR) of interactions.
-        
+
         Parameters
         ----------
         X : scipy.sparse.csr_matrix or numpy array
             Sparse binary feature matrix of shape (n_samples, n_features).
-            
+
         Returns
         -------
         numpy.ndarray
@@ -135,7 +135,7 @@ class FM(BaseModel):
         """
         import numpy as np
         from scipy import sparse as sp
-        
+
         self._check_fitted()
         assert self.w0_ is not None
         assert self.w_ is not None
@@ -148,14 +148,14 @@ class FM(BaseModel):
 
         csr.eliminate_zeros()
         n_samples, n_features = typing.cast(tuple[int, int], csr.shape)
-        
+
         if n_features != self._n_features:
             raise ValueError(f"X has {n_features} features, but model expects {self._n_features}.")
-            
+
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)
 
-        return _rust.fm_predict(
+        return _rust.fm_predict(  # type: ignore[attr-defined]
             indptr,
             indices,
             self.w0_,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from rusket._rusket import sasrec_fit, sasrec_encode
+from rusket._rusket import sasrec_fit  # type: ignore[attr-defined]
 
 
 class SASRec:
@@ -47,7 +47,7 @@ class SASRec:
         self._item_map: dict[int, int] = {}
         self._rev_item_map: dict[int, int] = {}
 
-    def fit(self, sequences: list[list[int]]) -> "SASRec":
+    def fit(self, sequences: list[list[int]]) -> SASRec:
         """Train SASRec on integer-encoded sequences (0-indexed item IDs).
 
         Args:
@@ -57,11 +57,7 @@ class SASRec:
             self
         """
         n_items = max(max(s) for s in sequences if s) + 1 if any(sequences) else 0
-        seed = (
-            self.random_state
-            if self.random_state is not None
-            else int(np.random.randint(1 << 31))
-        )
+        seed = self.random_state if self.random_state is not None else int(np.random.randint(1 << 31))
 
         self._item_emb = sasrec_fit(
             sequences,
@@ -86,7 +82,7 @@ class SASRec:
         item_col: str | None = None,
         timestamp_col: str | None = None,
         **kwargs,
-    ) -> "SASRec":
+    ) -> SASRec:
         """Train SASRec from a transactions DataFrame.
 
         Args:
@@ -99,7 +95,6 @@ class SASRec:
         Returns:
             Fitted SASRec model.
         """
-        import pandas as pd
 
         if hasattr(data, "to_pandas"):
             data = data.to_pandas()
@@ -122,7 +117,7 @@ class SASRec:
         model._rev_item_map = rev_item_map
 
         sequences: dict[int, list[int]] = {}
-        for u, it in zip(users, items):
+        for u, it in zip(users, items, strict=False):
             sequences.setdefault(u, []).append(model._item_map[it])
 
         model.fit(list(sequences.values()))
@@ -150,7 +145,7 @@ class SASRec:
 
         # Build positional encoding placeholder (simplified: just use first row of pos_emb)
         d = self.factors
-        seq_cut = seq[-self.max_seq:]
+        seq_cut = seq[-self.max_seq :]
         # Compute sequence representation via inline embedding sum (simplified)
         seq_repr = np.zeros(d, dtype=np.float32)
         for item in seq_cut:
@@ -166,7 +161,5 @@ class SASRec:
                 scores[exc - 1] = -np.inf
 
         top_idx = np.argsort(scores)[::-1][:n]
-        original_ids = np.array(
-            [self._rev_item_map.get(i + 1, i + 1) for i in top_idx], dtype=np.int64
-        )
+        original_ids = np.array([self._rev_item_map.get(i + 1, i + 1) for i in top_idx], dtype=np.int64)
         return original_ids, scores[top_idx]

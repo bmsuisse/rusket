@@ -20,14 +20,14 @@ Method = Literal["fpgrowth", "eclat", "fin", "lcm", "auto"]
 _RUST_DENSE = {
     "fpgrowth": _rust.fpgrowth_from_dense,
     "eclat": _rust.eclat_from_dense,
-    "fin": _rust.fin_from_dense,
-    "lcm": _rust.lcm_from_dense,
+    "fin": _rust.fin_from_dense,  # type: ignore[attr-defined]
+    "lcm": _rust.lcm_from_dense,  # type: ignore[attr-defined]
 }
 _RUST_CSR = {
     "fpgrowth": _rust.fpgrowth_from_csr,
     "eclat": _rust.eclat_from_csr,
-    "fin": _rust.fin_from_csr,
-    "lcm": _rust.lcm_from_csr,
+    "fin": _rust.fin_from_csr,  # type: ignore[attr-defined]
+    "lcm": _rust.lcm_from_csr,  # type: ignore[attr-defined]
 }
 
 

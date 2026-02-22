@@ -30,12 +30,12 @@ rusket is a blazing fast library and a drop-in replacement for `mlxtend`'s FP-Gr
 
 ### General Development Guidelines
 - **File Size Limit**: No file should exceed 1000 lines of code.
-- **Branching**: Create a branch for each feature.
+- **Branching**: This project operates on the **`main` branch directly** — no feature branches are required. Just commit and push to `main`. Only create a branch if explicitly asked.
 - **Temporary / scratch files**: Never drop throwaway files (e.g. `test_*.rs`, `scratch_*.py`) in the repo root or anywhere tracked by git. If you need a sandbox file while investigating something, put it inside `.temp/` — that directory is in `.gitignore` and will never be committed.
 
-## YOLO
+## YOLO (Main-Branch Workflow)
 
-**YOLO** means: `git add -A && git commit && git push origin main` **and** release a new version — all on the `main` branch in one go.
+This project works directly on **`main`** — there is no PR/branch review step. **YOLO** means: `git add -A && git commit && git push origin main` **and** release a new version — all in one go.
 
 Steps:
 1. `git add -A`
@@ -115,14 +115,14 @@ uv run pyright
 - **PyPI publish** uses `PYPI_TOKEN` secret (already configured in repo settings).
 - **GitHub Release** is auto-created with a `git-cliff` changelog.
 
-### `docs.yml` — MkDocs → GitHub Pages
-- **Triggers**: push to `main` (only `docs/**` or `mkdocs.yml` changes), manual dispatch.
-- **Key**: uses `uv run --extra docs` to install mkdocs deps from `[project.optional-dependencies] docs` group, then `mkdocs gh-deploy --force`.
+### `docs.yml` — Zensical → GitHub Pages
+- **Triggers**: push to `main` (only `docs/**` or `zensical.toml` changes), manual dispatch.
+- **Key**: uses `uv sync --all-extras --dev` (Zensical is in the `docs` extra and `dev` group), then `uv run zensical build`. The `site/` output is deployed via `peaceiris/actions-gh-pages`.
 - **Published at**: `https://bmsuisse.github.io/rusket`
 
 ### Important CI/CD Rules
-- **Never commit `site/`** — it's the MkDocs build output and is in `.gitignore`. The `gh-deploy` command pushes it to the `gh-pages` branch automatically.
-- **GitHub Pages must be explicitly enabled** — `gh-deploy` creates the `gh-pages` branch but does NOT enable GitHub Pages serving. If the site is 404, run: `gh api repos/bmsuisse/rusket/pages --method POST -f 'source[branch]=gh-pages' -f 'source[path]=/'`
-- **All repo references must use `bmsuisse/rusket`** — the old name was `fpgrowth-pyo3`. Check `mkdocs.yml`, docs, and README if renaming.
+- **Never commit `site/`** — it's the Zensical build output and is in `.gitignore`. `peaceiris/actions-gh-pages` pushes it to the `gh-pages` branch automatically.
+- **GitHub Pages must be explicitly enabled** — if the site is 404 after the first deploy, run: `gh api repos/bmsuisse/rusket/pages --method POST -f 'source[branch]=gh-pages' -f 'source[path]=/'`
+- **All repo references must use `bmsuisse/rusket`** — the old name was `fpgrowth-pyo3`. Check `zensical.toml`, docs, and README if renaming.
 - **Action versions**: keep `actions/checkout`, `actions/setup-python`, `astral-sh/setup-uv` in sync across both workflows.
 - **uv consistency**: always use `uv run` — never `uv pip install --system` (deps won't be visible to `uv run`).

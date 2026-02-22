@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     #: * ``polars.DataFrame``
     #: * ``numpy.ndarray`` – 2-D boolean / 0-1 matrix
     #: * ``pyspark.sql.DataFrame`` – converted to Polars via Arrow zero-copy
-    DataFrame = Union["pd.DataFrame", "pl.DataFrame", "np.ndarray", "SparkDataFrame"]
+    DataFrame = Union[pd.DataFrame, pl.DataFrame, np.ndarray, SparkDataFrame]  # noqa: UP007
 
 
 def to_dataframe(data: Any) -> Any:
