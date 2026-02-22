@@ -109,3 +109,39 @@ def test_spark_bpr(spark_session) -> None:
 
     recs, scores = model.recommend_items(user_id=1, n=2)
     assert len(recs) > 0
+
+
+def test_spark_prefixspan(spark_session) -> None:
+    from rusket.prefixspan import prefixspan, sequences_from_event_log
+
+    df = pd.DataFrame({
+        "user_id": [1, 1, 1, 2, 2, 3, 3],
+        "time": [10, 20, 30, 10, 20, 10, 20],
+        "item": ["A", "B", "A", "B", "A", "A", "C"],
+    })
+    
+    spark_df = to_spark(spark_session, df)
+
+    # Use our Spark Arrow converter natively
+    seqs, mapping_dict = sequences_from_event_log(
+        df=spark_df, user_col="user_id", time_col="time", item_col="item"
+    )
+
+    # Seq 1: A, B, A (0, 1, 0)
+    # Seq 2: B, A (1, 0)
+    # Seq 3: A, C (0, 2)
+    assert len(seqs) == 3
+    
+    # Run mining
+    freq = prefixspan(seqs, min_support=2, max_len=2)
+
+    # Ensure decoding dictionary maps integer IDs back
+    # The longest frequent itemset with support >= 2 is [A] (3), [B] (2), [B, A] (2)
+    def decode_seq(s):
+        return [mapping_dict[i] for i in s]
+
+    freq["sequence_str"] = freq["sequence"].apply(decode_seq)
+    
+    # Check [B, A] support
+    ba = freq[freq["sequence_str"].apply(lambda x: x == ["B", "A"])].iloc[0]
+    assert ba["support"] == 2

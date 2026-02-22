@@ -48,16 +48,19 @@ def prefixspan(
 
 
 def sequences_from_event_log(
-    df: pd.DataFrame,
+    df: Any,
     user_col: str,
     time_col: str,
     item_col: str,
 ) -> tuple[list[list[int]], dict[int, Any]]:
     """Helper to convert an event log DataFrame into the sequence format required by PrefixSpan.
 
+    Accepts Pandas, Polars, or PySpark DataFrames. Data is grouped by `user_col`,
+    ordered by `time_col`, and `item_col` values are collected into sequences.
+
     Parameters
     ----------
-    df : pd.DataFrame
+    df : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
         Event log containing users, timestamps, and items.
     user_col : str
         Column name identifying the sequence (e.g., user_id or session_id).
@@ -72,21 +75,47 @@ def sequences_from_event_log(
         - sequences: The nested list of integers to pass to `prefixspan()`.
         - item_mapping: A dictionary mapping the integer IDs back to the original item labels.
     """
-    df_sorted = df.sort_values(by=[user_col, time_col])
+    from ._compat import to_dataframe
+    import pandas as pd
 
-    # Map items to integers if they aren't already
-    unique_items = df_sorted[item_col].unique()
-    item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
-    idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
+    data = to_dataframe(df)
 
-    # Map column to indices using .map with a callable
-    mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
+    try:
+        import polars as pl
 
-    # Group by user and collect sequences
-    # We use mapped_items to ensure we group the integer IDs.
-    grouped = mapped_items.groupby(df_sorted[user_col]).apply(list)
+        is_polars = isinstance(data, pl.DataFrame)
+    except ImportError:
+        is_polars = False
 
-    # Convert Pandas Series of lists to a regular Python list of lists
-    sequences = grouped.tolist()
+    if is_polars:
+        sorted_df = data.sort([user_col, time_col])
+        unique_items = sorted_df[item_col].unique(maintain_order=True).to_list()
+        
+        item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
+        idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
 
-    return sequences, idx_to_item
+        # Map to integer IDs and group
+        mapped = sorted_df.with_columns(
+            pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items")
+        )
+        grouped = mapped.group_by(user_col, maintain_order=True).agg(pl.col("_mapped_items"))
+        
+        # Rust pyo3 requires explicit list[list[int]], so we map elements natively
+        sequences = [[int(x) for x in seq] for seq in grouped["_mapped_items"].to_list()]
+        return sequences, idx_to_item
+
+    elif isinstance(data, pd.DataFrame):
+        df_sorted = data.sort_values(by=[user_col, time_col])
+
+        unique_items = df_sorted[item_col].unique()
+        item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
+        idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
+
+        mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
+        grouped = mapped_items.groupby(df_sorted[user_col]).apply(list)
+        
+        sequences = grouped.tolist()
+        return sequences, idx_to_item
+
+    else:
+        raise TypeError(f"Expected Pandas, Polars, or PySpark DataFrame, got {type(data)}")

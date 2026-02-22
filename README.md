@@ -506,7 +506,24 @@ cross_sell = rec.recommend_for_cart([14, 7], n=3)
 ### 📈 BPR & Sequential Patterns
 
 - **BPR (Bayesian Personalized Ranking):** Optimize for implicit feedback (clicks, views, purchases) directly by learning the ranking order of items instead of minimizing error.
-- **Sequential Pattern Mining (PrefixSpan):** Look at purchases over time instead of just single transactions (e.g., "Customer bought a Camera -> 1 month later bought a Lens").
+- **Sequential Pattern Mining (PrefixSpan):** Look at purchases over time instead of just single transactions (e.g., "Customer bought a Camera -> 1 month later bought a Lens"). 
+
+`rusket` natively extracts PrefixSpan sequences directly from **Pandas, Polars, and PySpark** event logs with zero-copy mapping logic:
+
+```python
+from rusket.prefixspan import sequences_from_event_log, prefixspan
+
+# df can be a pd.DataFrame, pl.DataFrame, or pyspark.sql.DataFrame
+sequences, mapping = sequences_from_event_log(
+    df=spark_df, 
+    user_col="user_id", 
+    time_col="timestamp", 
+    item_col="item_id"
+)
+
+# Mine patterns with absolute minimum support
+freq_seqs = prefixspan(sequences, min_support=10, max_len=4)
+```
 
 ### 🕸️ Graph Analytics & Embeddings
 
