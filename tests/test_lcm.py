@@ -16,6 +16,7 @@ def sample_transactions() -> pd.DataFrame:
 
 def test_lcm_mine() -> None:
     import pandas as pd
+
     dense_df = pd.DataFrame(
         {
             "1": [True, True, True, True],
@@ -43,8 +44,10 @@ def test_lcm_from_transactions(sample_transactions: pd.DataFrame) -> None:
     df = miner.mine()
     assert len(df) > 0
 
+
 def test_lcm_dense() -> None:
     import pandas as pd
+
     dense_df = pd.DataFrame(
         {
             "1": [1, 1, 1, 1],
@@ -55,7 +58,7 @@ def test_lcm_dense() -> None:
     )
     miner = LCM(data=dense_df, min_support=0.5, use_colnames=True)
     result = miner.mine()
-    
+
     # Check that LCM returned *closed* itemsets.
     # [1, 2] is in 4 transactions (support=1.0)
     # [1, 2, 3] is in 2 transactions (support=0.5)
@@ -64,6 +67,7 @@ def test_lcm_dense() -> None:
     assert {"1"} not in itemsets
     assert {"2"} not in itemsets
     assert {"1", "2"} in itemsets
+
 
 def test_lcm_invalid_support() -> None:
     with pytest.raises(ValueError):

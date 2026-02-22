@@ -1,0 +1,19 @@
+
+==================================================
+SPEED BENCHMARK: Rusket vs RecBole (ml-100k)
+==================================================
+
+[ItemKNN]
+RecBole Fit Time: 0.4164s
+Rusket Fit Time:  0.1610s
+Speedup: 2.6x faster
+
+[BPR (10 epochs)]
+RecBole Fit Time: 1.1240s
+Rusket Fit Time:  0.0616s
+Speedup: 18.2x faster
+
+[EASE]
+RecBole Fit Time: 0.1723s
+Rusket Fit Time:  0.3232s
+Speedup: 0.5x faster

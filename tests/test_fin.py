@@ -16,6 +16,7 @@ def sample_transactions() -> pd.DataFrame:
 
 def test_fin_mine() -> None:
     import pandas as pd
+
     dense_df = pd.DataFrame(
         {
             "A": [True, True, False, True],
@@ -42,8 +43,10 @@ def test_fin_from_transactions(sample_transactions: pd.DataFrame) -> None:
     df = miner.mine()
     assert len(df) > 0
 
+
 def test_fin_dense() -> None:
     import pandas as pd
+
     dense_df = pd.DataFrame(
         {
             "A": [1, 1, 0, 1],
@@ -54,6 +57,7 @@ def test_fin_dense() -> None:
     miner = FIN(data=dense_df, min_support=0.5, use_colnames=True)
     result = miner.mine()
     assert len(result) > 0
+
 
 def test_fin_invalid_support() -> None:
     with pytest.raises(ValueError):

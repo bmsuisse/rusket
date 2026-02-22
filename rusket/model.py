@@ -408,6 +408,7 @@ class SequentialRecommender(BaseModel):
 
     Inherited by FPMC.
     """
+
     def __init__(self, **kwargs: Any):
         self._user_labels: list[Any] | None = None
         self._item_labels: list[Any] | None = None

@@ -32,9 +32,7 @@ def test_item_knn_fit_sparse() -> None:
 
 
 def test_item_knn_from_transactions(sample_transactions: pd.DataFrame) -> None:
-    model = ItemKNN.from_transactions(
-        sample_transactions, user_col="tx_id", item_col="item_id", method="bm25", k=2
-    )
+    model = ItemKNN.from_transactions(sample_transactions, user_col="tx_id", item_col="item_id", method="bm25", k=2)
     assert hasattr(model, "w_indptr")
 
     ids, scores = model.recommend_items(0, 2)
@@ -49,7 +47,11 @@ def test_item_knn_from_transactions(sample_transactions: pd.DataFrame) -> None:
 def test_item_knn_methods(sample_transactions: pd.DataFrame) -> None:
     for method in ["bm25", "tfidf", "cosine", "count"]:
         model = ItemKNN.from_transactions(
-            sample_transactions, user_col="tx_id", item_col="item_id", method=method, k=2 # type: ignore
+            sample_transactions,
+            user_col="tx_id",
+            item_col="item_id",
+            method=method,
+            k=2,  # type: ignore
         )
         assert model.w_indptr is not None
 
@@ -61,8 +63,6 @@ def test_item_knn_unfitted() -> None:
 
 
 def test_item_knn_out_of_bounds(sample_transactions: pd.DataFrame) -> None:
-    model = ItemKNN.from_transactions(
-        sample_transactions, user_col="tx_id", item_col="item_id"
-    )
+    model = ItemKNN.from_transactions(sample_transactions, user_col="tx_id", item_col="item_id")
     with pytest.raises(ValueError, match="out of bounds"):
         model.recommend_items(99, 10)

@@ -71,10 +71,12 @@ def test_ease_fit_already_fitted() -> None:
     with pytest.raises(RuntimeError):
         model.fit(X)
 
+
 def test_ease_recommend_unfitted() -> None:
     model = EASE()
     with pytest.raises(RuntimeError):
         model.recommend_items(0)
+
 
 def test_ease_recommend_users_not_implemented() -> None:
     X = sp.csr_matrix(np.ones((2, 2)))
