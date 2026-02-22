@@ -208,7 +208,7 @@ def test_spark_mllib_fpgrowth_int() -> None:
         [1, 3],
         [1, 7],
     ]
-    df = _to_dataframe(transactions)
+    df = _to_dataframe(transactions)  # type: ignore
 
     # min_support = 0.9 -> 0 itemsets
     res6 = fpgrowth(df, min_support=0.9, use_colnames=True)

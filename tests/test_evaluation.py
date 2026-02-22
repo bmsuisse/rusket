@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from rusket import evaluate
-from rusket._rusket import hit_rate_at_k, ndcg_at_k, precision_at_k, recall_at_k
+from rusket._rusket import hit_rate_at_k, ndcg_at_k, precision_at_k, recall_at_k  # type: ignore
 
 
 def test_rust_metrics():
@@ -60,7 +60,7 @@ def test_python_evaluate_wrapper():
         "item": [2, 3, 99]
     })
 
-    res = evaluate(model, test_df, k=2, metrics=["hr", "precipitation", "recall", "ndcg"])
+    res = evaluate(model, test_df, k=2, metrics=["hr", "precipitation", "recall", "ndcg"])  # type: ignore
     
     # User 1 predictions: 2, 3 -> HR=1, Recall=1, NDCG=1
     # User 2 predictions: 3, 4 -> HR=0, Recall=0, NDCG=0

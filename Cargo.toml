@@ -1,6 +1,6 @@
 [package]
 name = "rusket"
-version = "0.1.25"
+version = "0.1.28"
 edition = "2021"
 license = "MIT"
 exclude = [

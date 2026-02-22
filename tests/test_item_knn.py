@@ -40,7 +40,7 @@ def test_item_knn_from_transactions(sample_transactions: pd.DataFrame) -> None:
 
     # recommend_users is not supported
     with pytest.raises(NotImplementedError):
-        model.recommend_users(0, 2)
+        model.recommend_users(0, 2)  # type: ignore
 
 
 def test_item_knn_methods(sample_transactions: pd.DataFrame) -> None:
@@ -52,7 +52,7 @@ def test_item_knn_methods(sample_transactions: pd.DataFrame) -> None:
             method=method,
             k=2,  # type: ignore
         )
-        assert model.w_indptr is not None
+        assert model.w_indptr is not None  # type: ignore
 
 
 def test_item_knn_unfitted() -> None:

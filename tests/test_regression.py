@@ -98,13 +98,13 @@ def test_fpgrowth_regression(
     print(
         f"\n[{name}] elapsed={elapsed:.3f}s (limit={max_seconds}s)  "
         f"peak={peak_mb:.1f}MB (limit={max_peak_mb}MB)  "
-        f"itemsets={result.shape[0]}"
+        f"itemsets={result.shape[0]}"  # type: ignore
     )
 
     assert elapsed <= max_seconds, f"[{name}] Wall-time regression: {elapsed:.3f}s > {max_seconds}s limit"
     assert peak_mb <= max_peak_mb, f"[{name}] Memory regression: {peak_mb:.1f}MB > {max_peak_mb}MB limit"
     assert result is not None
-    assert result.shape[0] >= 0
+    assert result.shape[0] >= 0  # type: ignore
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ def test_polars_medium_regression() -> None:
 
     print(
         f"\n[polars/medium] elapsed={elapsed:.3f}s (limit={max_seconds}s)  "
-        f"peak={peak_mb:.1f}MB  itemsets={result.shape[0]}"
+        f"peak={peak_mb:.1f}MB  itemsets={result.shape[0]}"  # type: ignore
     )
 
     assert elapsed <= max_seconds, f"Polars input regression: {elapsed:.3f}s > {max_seconds}s"

@@ -37,7 +37,7 @@ def assert_raises(error_type: type, substr: str, func: Callable, *args, **kwargs
     try:
         func(*args, **kwargs)
         raise AssertionError(f"Expected {error_type.__name__} to be raised")
-    except error_type as e:
+    except error_type as e:  # type: ignore
         assert substr in str(e), f"Expected '{substr}' in '{e}'"
 
 

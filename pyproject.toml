@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusket"
-version = "0.1.27"
+version = "0.1.28"
 description = "Blazing-fast FP-Growth and Association Rules — pure Rust via PyO3"
 readme = "README.md"
 license = "MIT"
@@ -64,7 +64,6 @@ dev = [
     "numpy>=1.24",
     "jupytext>=1.19.1",
     "jupyter>=1.1.1",
-
     "pyarrow>=23.0.1",
     "psutil>=6",
     "tqdm>=4",
@@ -73,6 +72,7 @@ dev = [
     "basedpyright>=1.38.1",
     "zensical>=0.0.23",
     "openpyxl>=3.1.5",
+    "prefixspan>=0.5.2",
 ]
 
 [tool.pytest.ini_options]

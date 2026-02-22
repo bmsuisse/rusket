@@ -178,7 +178,7 @@ def test_prefixspan_grouped(spark_session) -> None:
 
     import pyspark
 
-    assert isinstance(result, pyspark.sql.DataFrame)
+    assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
     pd_result = result.toPandas()
 
@@ -220,7 +220,7 @@ def test_hupm_grouped(spark_session) -> None:
 
     import pyspark
 
-    assert isinstance(result, pyspark.sql.DataFrame)
+    assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
     pd_result = result.toPandas()
 
@@ -265,7 +265,7 @@ def test_rules_grouped(spark_session) -> None:
 
     import pyspark
 
-    assert isinstance(rules_df, pyspark.sql.DataFrame)
+    assert isinstance(rules_df, pyspark.sql.DataFrame)  # type: ignore
 
     pd_rules = rules_df.toPandas()
 
@@ -326,7 +326,7 @@ def test_recommend_batches(spark_session) -> None:
 
     import pyspark
 
-    assert isinstance(result, pyspark.sql.DataFrame)
+    assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
     pd_result = result.toPandas()
 
@@ -374,7 +374,7 @@ def test_als_grouped(spark_session) -> None:
 
     import pyspark
 
-    assert isinstance(result, pyspark.sql.DataFrame)
+    assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
     pd_result = result.toPandas()
 

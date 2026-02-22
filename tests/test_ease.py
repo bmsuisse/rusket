@@ -54,9 +54,9 @@ def test_ease_from_transactions() -> None:
         regularization=100.0,
     )
 
-    assert model.fitted
-    assert model._n_users == 3
-    assert model._n_items == 3
+    assert model.fitted  # type: ignore
+    assert model._n_users == 3  # type: ignore
+    assert model._n_items == 3  # type: ignore
 
     items, _ = model.recommend_items(user_id=0, n=2)
     # user 0 bought A (mapped to 0) and B (mapped to 1) -> recommend C (mapped to 2)

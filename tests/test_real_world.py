@@ -93,7 +93,7 @@ class TestOnlineRetailBasketAnalysis:
             min_support=0.02,
             use_colnames=True,
         )
-        rules = model.association_rules(metric="confidence", min_threshold=0.5)
+        rules = model.association_rules(metric="confidence", min_threshold=0.5)  # type: ignore
         _check_df(rules, ["antecedents", "consequents", "support", "confidence", "lift"])
         assert (rules["confidence"] >= 0.05).all()
         assert (rules["lift"] > 0).all()
@@ -111,7 +111,7 @@ class TestOnlineRetailBasketAnalysis:
         )
         # Use the most common items as a realistic cart
         top_items = online_retail_df["Description"].value_counts().head(3).index.tolist()
-        recs = model.recommend_items(top_items, n=5)
+        recs = model.recommend_items(top_items, n=5)  # type: ignore
         # Recommendations must not include the input items
         for item in recs:
             assert item not in top_items, f"Recommended item {item!r} was in the input cart"
@@ -128,8 +128,8 @@ class TestOnlineRetailBasketAnalysis:
             use_colnames=True,
         )
         top_items = online_retail_df["Description"].value_counts().head(2).index.tolist()
-        recs1 = model.recommend_items(top_items, n=5)
-        recs2 = model.recommend_items(top_items, n=5)
+        recs1 = model.recommend_items(top_items, n=5)  # type: ignore
+        recs2 = model.recommend_items(top_items, n=5)  # type: ignore
         assert recs1 == recs2, "Cached recommend_items must be deterministic"
 
     def test_find_substitutes_no_negative_lift(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
@@ -144,7 +144,7 @@ class TestOnlineRetailBasketAnalysis:
             min_support=0.03,
             use_colnames=True,
         )
-        rules = model.association_rules(metric="confidence", min_threshold=0.1)
+        rules = model.association_rules(metric="confidence", min_threshold=0.1)  # type: ignore
         substitutes = rusket.find_substitutes(rules, max_lift=0.95)
         if not substitutes.empty:
             assert (substitutes["lift"] < 0.95).all()
@@ -189,7 +189,7 @@ class TestOnlineRetailBasketAnalysis:
         # Compare singleton support values (most stable across implementations)
         def _singleton_support(df: pd.DataFrame) -> dict[frozenset, float]:  # type: ignore[name-defined]
             return {
-                frozenset(row["itemsets"]): round(row["support"], 4)
+                frozenset(row["itemsets"]): round(row["support"], 4)  # type: ignore
                 for _, row in df.iterrows()
                 if len(row["itemsets"]) == 1
             }
@@ -286,9 +286,9 @@ class TestOnlineRetailALS:
         )
         n_users = online_retail_df["Customer_ID"].nunique()
         n_items = online_retail_df["Description"].nunique()
-        assert model.user_factors.shape == (n_users, 32)
+        assert model.user_factors.shape == (n_users, 32)  # type: ignore
         assert model.item_factors.shape == (n_items, 32)
-        assert np.isfinite(model.user_factors).all()
+        assert np.isfinite(model.user_factors).all()  # type: ignore
         assert np.isfinite(model.item_factors).all()
 
     def test_als_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
@@ -347,7 +347,7 @@ class TestOnlineRetailALS:
         df_factors = rusket.export_item_factors(model, include_labels=True)
         _check_df(df_factors, ["item_id", "vector"])
         assert len(df_factors) == model.item_factors.shape[0]
-        vectors = np.stack(df_factors["vector"].values)
+        vectors = np.stack(df_factors["vector"].values)  # type: ignore
         assert vectors.shape[1] == 32
 
 
@@ -373,8 +373,8 @@ class TestOnlineRetailEASE:
             regularization=100.0,
         )
         n_items = online_retail_df["Description"].nunique()
-        assert model.item_weights.shape == (n_items, n_items)
-        assert np.isfinite(model.item_weights).all()
+        assert model.item_weights.shape == (n_items, n_items)  # type: ignore
+        assert np.isfinite(model.item_weights).all()  # type: ignore
 
     def test_ease_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """EASE.recommend_items with exclude_seen=True never returns seen items."""
@@ -431,12 +431,12 @@ class TestOnlineRetailItemKNN:
             method="bm25",
             k=20,
         )
-        assert model.w_indptr is not None
-        assert model.w_indices is not None
-        assert model.w_data is not None
+        assert model.w_indptr is not None  # type: ignore
+        assert model.w_indices is not None  # type: ignore
+        assert model.w_data is not None  # type: ignore
 
         n_items = online_retail_df["Description"].nunique()
-        assert model.w_indptr.shape[0] == n_items + 1
+        assert model.w_indptr.shape[0] == n_items + 1  # type: ignore
 
     def test_itemknn_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ItemKNN.recommend_items with exclude_seen=True never returns seen items."""
@@ -480,7 +480,7 @@ class TestInstacartALS:
             iterations=10,
             seed=42,
         )
-        assert np.isfinite(model.user_factors).all()
+        assert np.isfinite(model.user_factors).all()  # type: ignore
         assert np.isfinite(model.item_factors).all()
 
     def test_bpr_trains_on_grocery(self, instacart_df: pd.DataFrame) -> None:
@@ -497,7 +497,7 @@ class TestInstacartALS:
             iterations=20,
             seed=42,
         )
-        assert np.isfinite(model.user_factors).all()
+        assert np.isfinite(model.user_factors).all()  # type: ignore
         assert np.isfinite(model.item_factors).all()
 
     def test_score_potential_shape(self, instacart_df: pd.DataFrame) -> None:
@@ -515,7 +515,7 @@ class TestInstacartALS:
         user_histories = instacart_df.groupby("user_id")["product_id"].apply(list).tolist()
         n_users = min(100, len(user_histories))
         target_items = list(range(min(20, model.item_factors.shape[0])))
-        potential = rusket.score_potential(user_histories[:n_users], model, target_categories=target_items)
+        potential = rusket.score_potential(user_histories[:n_users], model, target_categories=target_items)  # type: ignore
         assert potential.shape == (n_users, len(target_items))
 
     def test_prefixspan_grocery_sequences(self, instacart_df: pd.DataFrame) -> None:
@@ -580,7 +580,7 @@ class TestCrossAlgorithmSanity:
         n_baskets = basket.shape[0]
 
         # Spot-check: top-3 singletons
-        singletons = freq[freq["itemsets"].apply(len) == 1].sort_values("support", ascending=False)
+        singletons = freq[freq["itemsets"].apply(len) == 1].sort_values("support", ascending=False)  # type: ignore
         for _, row in singletons.head(3).iterrows():
             item = list(row["itemsets"])[0]
             expected_support = basket[item].sum() / n_baskets

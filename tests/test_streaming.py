@@ -25,7 +25,7 @@ def _to_sorted_frozensets(df: pd.DataFrame) -> set[tuple[float, frozenset]]:
             items = frozenset(str(x) for x in items)
         else:
             items = frozenset({str(items)})
-        result.add((round(float(row["support"]), 6), items))
+        result.add((round(float(row["support"]), 6), items))  # type: ignore
     return result
 
 
@@ -287,7 +287,7 @@ class TestFPMinerResultValidation:
         support_map: dict[frozenset, float] = {}
         for _, row in result.iterrows():
             items = frozenset(int(x) for x in row["itemsets"])
-            support_map[items] = float(row["support"])
+            support_map[items] = float(row["support"])  # type: ignore
 
         # Check: for every 2+ itemset, all subsets must have >= support
         for items, sup in support_map.items():
