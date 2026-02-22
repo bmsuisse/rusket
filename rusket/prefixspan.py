@@ -53,7 +53,7 @@ def sequences_from_event_log(
     time_col: str,
     item_col: str,
 ) -> tuple[list[list[int]], dict[int, Any]]:
-    """Helper to convert an event log DataFrame into the sequence format required by PrefixSpan.
+    """Convert an event log DataFrame into the sequence format required by PrefixSpan.
 
     Accepts Pandas, Polars, or PySpark DataFrames. Data is grouped by `user_col`,
     ordered by `time_col`, and `item_col` values are collected into sequences.
@@ -88,6 +88,7 @@ def sequences_from_event_log(
         is_polars = False
 
     if is_polars:
+        import polars as pl
         sorted_df = data.sort([user_col, time_col])
         unique_items = sorted_df[item_col].unique(maintain_order=True).to_list()
         

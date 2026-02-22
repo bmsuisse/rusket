@@ -32,23 +32,28 @@ rusket/
 ## Data flow
 
 ```mermaid
-flowchart TD
-    A["Python caller\nfpgrowth(df, ...)"] --> B{Input type?}
+graph TD
+    classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
+    classDef rust fill:#DEA584,stroke:#000,stroke-width:2px,color:black;
+    classDef data fill:#FFD43B,stroke:#306998,stroke-width:2px,color:black;
 
-    B -->|Dense pandas| C["np.ascontiguousarray\n(uint8, C-order)"]
-    B -->|Sparse pandas| D["df.sparse.to_coo().tocsr()\nindptr + indices as int32"]
-    B -->|Polars| E["df.to_numpy()\n(Arrow zero-copy)"]
-
-    C --> F["Rust: fpgrowth_from_dense\nPyReadonlyArray2<u8>"]
-    D --> G["Rust: fpgrowth_from_csr\nPyReadonlyArray1<i32>"]
+    A["Python Caller<br/>rusket.mine(df)"]:::python --> B{"Input Data Type"}:::python
+    
+    B -->|Dense Pandas| C["C-Contiguous Array<br/>(uint8)"]:::data
+    B -->|Sparse Pandas| D["CSR Matrix<br/>(indptr, indices)"]:::data
+    B -->|Polars| E["Numpy View<br/>(Zero-copy)"]:::data
+    
+    C --> F["Rust FFI<br/>fpgrowth_from_dense"]:::rust
+    D --> G["Rust FFI<br/>fpgrowth_from_csr"]:::rust
     E --> F
-
-    F --> H["FP-Tree construction\n(Rust, single-pass)"]
+    
+    F --> H["Tree Construction<br/>(Single Pass)"]:::rust
     G --> H
-
-    H --> I["Recursive mining\n(Rayon parallel)"]
-    I --> J["Vec<(count, Vec<usize>)>"]
-    J --> K["Python: build DataFrame\n(frozensets, support)"]
+    
+    H --> I["Recursive Mining<br/>(Rayon Parallel)"]:::rust
+    I --> J["Raw Vectors<br/>Vec<(count, Vec<usize>)>"]:::data
+    
+    J --> K["Python Transformation<br/>Build pd.DataFrame"]:::python
 ```
 
 ---

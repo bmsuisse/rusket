@@ -58,6 +58,8 @@ nav:
       - 🎬 MovieLens Hybrid Recommender: notebooks/2_movielens_recommendations.ipynb
       - ⏱️ E-Commerce Lifecycle Discovery: notebooks/3_ecommerce_lifecycle_mining.ipynb
     - Recommender Workflows: recommender.md
+    - Streaming & Big Data: streaming.md
+    - PySpark Integration: spark.md
     - Polars Support: polars.md
     - Benchmarks: benchmarks.md
     - The 1B Challenge: 1b-challenge.md

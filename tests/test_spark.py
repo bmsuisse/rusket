@@ -1,10 +1,15 @@
 import pandas as pd
 import pytest
+import shutil
 
-from rusket.spark import mine_grouped, to_spark
+# Check for Java before importing anything related to pyspark
+has_java = shutil.which("java") is not None
+if not has_java:
+    pytest.skip("Java is not installed. PySpark requires Java to run.", allow_module_level=True)
 
+# Safe to import now
 pyspark = pytest.importorskip("pyspark")
-
+from rusket.spark import mine_grouped, to_spark
 
 @pytest.fixture(scope="module")
 def spark_session():
@@ -19,7 +24,6 @@ def spark_session():
     yield spark
     spark.stop()
 
-
 def test_to_spark(spark_session) -> None:
     df = pd.DataFrame({"store_id": [1, 1], "bread": [1, 0]})
     # Test valid conversion from pandas to Spark
@@ -27,7 +31,6 @@ def test_to_spark(spark_session) -> None:
 
     # Let's count row instances
     assert spark_df.count() == 2
-
 
 def test_mine_grouped(spark_session) -> None:
     df = pd.DataFrame(
@@ -61,7 +64,6 @@ def test_mine_grouped(spark_session) -> None:
     assert "A" in groups
     assert "B" in groups
 
-
 def test_spark_als(spark_session) -> None:
     from rusket.als import ALS
 
@@ -87,7 +89,6 @@ def test_spark_als(spark_session) -> None:
     recs, scores = model.recommend_items(user_id=0, n=2)
     assert len(recs) > 0
 
-
 def test_spark_bpr(spark_session) -> None:
     from rusket.bpr import BPR
 
@@ -109,7 +110,6 @@ def test_spark_bpr(spark_session) -> None:
 
     recs, scores = model.recommend_items(user_id=1, n=2)
     assert len(recs) > 0
-
 
 def test_spark_prefixspan(spark_session) -> None:
     from rusket.prefixspan import prefixspan, sequences_from_event_log

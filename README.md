@@ -16,7 +16,8 @@
 
 ---
 
-`rusket` is a high-performance library for **Market Basket Analysis**, **Graph Analytics**, and **Recommender Engines**, backed by a **Rust core** (via [PyO3](https://pyo3.rs/)) that delivers **2–15× speed-ups** and dramatically lower memory usage.
+`rusket` is a **modern library for Market Basket Analysis and Recommender Engines**. 
+**Arrow-backed, fully compatible with Spark, and written entirely in Rust** (via [PyO3](https://pyo3.rs/)), it delivers **2–15× speed-ups** and dramatically lower memory usage compared to traditional Python implementations.
 
 It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Ranking (BPR)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon), **Eclat** (vertical bitset mining), and **PrefixSpan** (sequential pattern mining). It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s APIs, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
 

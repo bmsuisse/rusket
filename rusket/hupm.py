@@ -96,6 +96,7 @@ def mine_hupm(
         is_polars = False
 
     if is_polars:
+        import polars as pl
         # Polars native grouping
         grouped = data.group_by(transaction_col).agg([
             pl.col(item_col).alias("items"),

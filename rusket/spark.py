@@ -99,6 +99,9 @@ def mine_grouped(
 
         # Convert the Arrow Table to Polars for zero-copy
         pl_df = pl.from_arrow(table)
+        
+        if not isinstance(pl_df, pl.DataFrame):
+            pl_df = pl.DataFrame(pl_df)
 
         # Drop the group column so we only pass the OHE matrix into Rust
         pl_matrix = pl_df.drop(group_col)

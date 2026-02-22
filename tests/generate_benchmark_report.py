@@ -18,7 +18,7 @@ from faker import Faker
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from rusket import fpgrowth, fptda
+from rusket import fpgrowth, eclat
 
 try:
     from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
@@ -131,9 +131,9 @@ for label, n_rows, n_cols, min_sup in SIZES:
     n_fi = fpgrowth(df, min_support=min_sup).shape[0]
     print(f"{ours_t:.3f}s  peak={ours_mem / 1e6:.1f}MB  itemsets={n_fi:,}")
 
-    # rusket fptda (pandas dense)
-    print("  rusket fptda   (pandas)…", end=" ", flush=True)
-    _, tda_t, tda_mem = _timed(fptda, df, min_support=min_sup)
+    # rusket eclat (pandas dense)
+    print("  rusket eclat   (pandas)…", end=" ", flush=True)
+    _, tda_t, tda_mem = _timed(eclat, df, min_support=min_sup)
     print(f"{tda_t:.3f}s  peak={tda_mem / 1e6:.1f}MB  ratio={tda_t / ours_t:.2f}×")
 
     row = {
@@ -143,8 +143,8 @@ for label, n_rows, n_cols, min_sup in SIZES:
         "raw_mb": df.values.nbytes / 1e6,
         "fpgrowth_time_s": ours_t,
         "fpgrowth_mem_mb": ours_mem / 1e6,
-        "fptda_time_s": tda_t,
-        "fptda_mem_mb": tda_mem / 1e6,
+        "eclat_time_s": tda_t,
+        "eclat_mem_mb": tda_mem / 1e6,
         "n_itemsets": n_fi,
     }
 
@@ -202,7 +202,7 @@ df_res = pd.DataFrame(results)
 # ---------------------------------------------------------------------------
 
 RUSTKET_COLOR = "#6C63FF"
-FPTDA_COLOR = "#FF9F43"
+ECLAT_COLOR = "#FF9F43"
 MLXTEND_COLOR = "#FF6584"
 POLARS_COLOR = "#43C59E"
 HUGE_GLOW = "#FFD166"
@@ -264,7 +264,7 @@ def add_bars(col_idx, y_col, name, color, text_fmt, row=1, showlegend=True):
 
 # Time (col 1)
 add_bars(1, "fpgrowth_time_s", "🦀 fpgrowth (pandas)", RUSTKET_COLOR, "{:.3f}s")
-add_bars(1, "fptda_time_s", "🟠 fptda   (pandas)", FPTDA_COLOR, "{:.3f}s")
+add_bars(1, "eclat_time_s", "🟠 eclat   (pandas)", ECLAT_COLOR, "{:.3f}s")
 if HAS_MLXTEND and "mlxtend_time_s" in df_res:
     add_bars(1, "mlxtend_time_s", "🐍 mlxtend", MLXTEND_COLOR, "{:.3f}s")
 if HAS_POLARS and "polars_time_s" in df_res:
@@ -274,7 +274,7 @@ if HAS_POLARS and "polars_time_s" in df_res:
 add_bars(
     2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False
 )
-add_bars(2, "fptda_mem_mb", "🟠 fptda mem", FPTDA_COLOR, "{:.1f}MB", showlegend=False)
+add_bars(2, "eclat_mem_mb", "🟠 eclat mem", ECLAT_COLOR, "{:.1f}MB", showlegend=False)
 if HAS_MLXTEND and "mlxtend_mem_mb" in df_res:
     add_bars(
         2,
@@ -363,7 +363,7 @@ if not huge_rows.empty:
 
 fig.update_layout(
     title=dict(
-        text="🦀 <b>rusket</b> — FP-Growth vs FP-TDA Benchmark (Faker synthetic market-basket data)",
+        text="🦀 <b>rusket</b> — FP-Growth vs Eclat Benchmark (Faker synthetic market-basket data)",
         font=dict(size=20, color=TEXT, family="'Courier New', monospace"),
         x=0.5,
     ),
