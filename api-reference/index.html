@@ -2935,9 +2935,16 @@ to the driver node, avoiding massive memory spikes.</p>
 <hr />
 <h3 id="from_transactions"><code>from_transactions</code><a class="headerlink" href="#from_transactions" title="Permanent link">&para;</a></h3>
 <p>Convert long-format transactional data to a one-hot boolean matrix.</p>
+<p>The return type mirrors the input type:</p>
+<ul>
+<li><strong>Polars</strong> <code>DataFrame</code> → <strong>Polars</strong> <code>DataFrame</code></li>
+<li><strong>Pandas</strong> <code>DataFrame</code> → <strong>Pandas</strong> <code>DataFrame</code></li>
+<li><strong>Spark</strong> <code>DataFrame</code>  → <strong>Spark</strong>  <code>DataFrame</code></li>
+<li><code>list[list[...]]</code>      → <strong>Pandas</strong> <code>DataFrame</code></li>
+</ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.transactions</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_transactions</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">from_transactions</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="s1">&#39;DataFrame | Sequence[Sequence[str | int]] | Any&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">from_transactions</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="s1">&#39;DataFrame | Sequence[Sequence[str | int]] | Any&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -2977,9 +2984,9 @@ to the driver node, avoiding massive memory spikes.</p>
 </thead>
 <tbody>
 <tr>
-<td>pd.DataFrame</td>
+<td>DataFrame</td>
 <td></td>
-<td>A boolean DataFrame ready for :func:<code>rusket.fpgrowth</code> or :func:<code>rusket.eclat</code>.  Column names correspond to the unique items.</td>
+<td>A boolean DataFrame (same type as input) ready for :func:<code>rusket.fpgrowth</code> or :func:<code>rusket.eclat</code>. Column names correspond to the unique items.</td>
 </tr>
 </tbody>
 </table>
@@ -3072,14 +3079,14 @@ rows, keeping peak memory to one chunk + the running CSR.</p>
 <p>Shorthand for <code>from_transactions(df, transaction_col, item_col)</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.transactions</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_polars</span>
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">from_polars</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;pl.DataFrame&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">from_polars</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;pl.DataFrame&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pl.DataFrame&#39;</span>
 </span></code></pre></div>
 <hr />
 <h3 id="from_spark"><code>from_spark</code><a class="headerlink" href="#from_spark" title="Permanent link">&para;</a></h3>
 <p>Shorthand for <code>from_transactions(df, transaction_col, item_col)</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.transactions</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_spark</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">from_spark</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">from_spark</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;SparkDataFrame&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SparkDataFrame&#39;</span>
 </span></code></pre></div>
 <hr />
 <h2 id="oop-mining-api">OOP Mining API<a class="headerlink" href="#oop-mining-api" title="Permanent link">&para;</a></h2>
