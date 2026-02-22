@@ -1314,6 +1314,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🐛 Bug Fixes
+
+- auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning
+
 ### Benchmark
 
 - add script comparing eALS vs iALS
@@ -1337,6 +1341,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Remove Python profiling, benchmarking, and RecBole testing scripts, and update Cargo.toml and .gitignore.
 - untrack generated artifacts (tensorboard logs, dSYM, recbole_data, saved)
 - untrack ai slop benches/ directory
+- bump version to 0.1.25
 
 ### 🚀 Features
 
