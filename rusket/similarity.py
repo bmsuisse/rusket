@@ -1,10 +1,10 @@
-from typing import Any
-
 import numpy as np
+
+from .typing import SupportsItemFactors
 
 
 def similar_items(
-    model: Any,
+    model: SupportsItemFactors,
     item_id: int,
     n: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -15,7 +15,7 @@ def similar_items(
 
     Parameters
     ----------
-    model : Any
+    model : SupportsItemFactors
         A fitted model instance with an ``item_factors`` property.
     item_id : int
         The internal integer index of the target item.

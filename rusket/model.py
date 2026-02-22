@@ -137,6 +137,12 @@ class BaseModel(ABC):
         """
         pass
 
+    def __dir__(self) -> list[str]:
+        """Provides a clean public API surface for AI code assistants and REPLs.
+        Filters out internal properties starting with underscores.
+        """
+        return [k for k in super().__dir__() if not k.startswith("_")]
+
     @classmethod
     def from_pandas(
         cls,

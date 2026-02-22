@@ -21,6 +21,8 @@ Convenience module-level functions.  For most use-cases these are the only entry
 Mine frequent itemsets using the optimal algorithm.
 
 This module-level function relies on the Object-Oriented APIs.
+Automatically selects between FP-Growth and Eclat based on density,
+or falls back to FPMiner (streaming) if memory is low.
 
 ```python
 from rusket.mine import mine
@@ -418,6 +420,8 @@ Eclat.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 Automatic frequent itemset miner.
 
 Selects the optimal miner (FP-Growth or Eclat) based on matrix density.
+Automatically falls back to streaming (FPMiner) if the dataset exceeds
+available memory.
 
 ```python
 from rusket.mine import AutoMiner
@@ -734,6 +738,13 @@ from rusket.als import ALS.fit
 ALS.fit(interactions: 'Any') -> 'ALS'
 ```
 
+**Raises**
+
+| Exception | Condition |
+| --- | --- |
+| RuntimeError |  | If the model is already fitted. Create a new instance to refit. |
+| TypeError |  | If the input matrix is not a recognizable sparse matrix or numpy array. |
+
 ---
 
 #### `ALS.recommend_items`
@@ -795,6 +806,13 @@ from rusket.bpr import BPR.fit
 
 BPR.fit(interactions: 'Any') -> 'BPR'
 ```
+
+**Raises**
+
+| Exception | Condition |
+| --- | --- |
+| RuntimeError |  | If the model is already fitted. |
+| TypeError |  | If the input matrix is not a recognizable sparse matrix or numpy array. |
 
 ---
 
@@ -944,7 +962,7 @@ score_potential(user_history: 'list[list[int]]', als_model: 'ALS', target_catego
 
 ### `similar_items`
 
-Find the most similar items to a given item ID based on ALS latent factors.
+Find the most similar items to a given item ID based on latent factors.
 
 Computes cosine similarity between the specified item's latent vector
 and all other item vectors in the ``item_factors`` matrix.
@@ -952,14 +970,14 @@ and all other item vectors in the ``item_factors`` matrix.
 ```python
 from rusket.similarity import similar_items
 
-similar_items(als_model: rusket.als.ALS, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+similar_items(model: rusket.typing.SupportsItemFactors, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
+| model | SupportsItemFactors | A fitted model instance with an ``item_factors`` property. |
 | item_id | int | The internal integer index of the target item. |
 | n | int | Number of most similar items to return. |
 
@@ -1028,7 +1046,7 @@ customer_saturation(df: 'pd.DataFrame', user_col: 'str', category_col: 'str | No
 
 ### `export_item_factors`
 
-Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.
+Exports latent item factors as a Pandas DataFrame for Vector DBs.
 
 This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.
@@ -1036,15 +1054,15 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(als_model: 'ALS', include_labels: 'bool' = True) -> 'pd.DataFrame'
+export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True) -> 'pd.DataFrame'
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
-| include_labels | bool, default=True | Whether to include the string item labels (if available from ``ALS.from_transactions``). |
+| model | SupportsItemFactors | A fitted model instance with an ``item_factors`` property. |
+| include_labels | bool, default=True | Whether to include the string item labels (if available from the model's fitting method). |
 
 **Returns**
 
@@ -1320,6 +1338,26 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### Style
+
+- run ruff format and fix lints
+
+### 🐛 Bug Fixes
+
+- ensure Spark input is handled before Polars coercion in from_transactions
+
+### 📖 Documentation
+
+- update logo asset path to `logo_single.svg` in documentation and configuration.
+
+### 📦 Miscellaneous
+
+- update uv.lock for 0.1.26
+
+### 📖 Documentation
+
+- sync changelog and api reference for 0.1.26
 
 ### 📦 Miscellaneous
 

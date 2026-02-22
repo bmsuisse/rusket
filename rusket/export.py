@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import pandas as pd
 
+from .typing import SupportsItemFactors
 
-def export_item_factors(model: Any, include_labels: bool = True) -> pd.DataFrame:
+
+def export_item_factors(model: SupportsItemFactors, include_labels: bool = True) -> pd.DataFrame:
     """Exports latent item factors as a Pandas DataFrame for Vector DBs.
 
     This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
@@ -16,7 +16,7 @@ def export_item_factors(model: Any, include_labels: bool = True) -> pd.DataFrame
 
     Parameters
     ----------
-    model : Any
+    model : SupportsItemFactors
         A fitted model instance with an ``item_factors`` property.
     include_labels : bool, default=True
         Whether to include the string item labels (if available from

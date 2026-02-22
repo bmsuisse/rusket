@@ -64,7 +64,15 @@ class BPR(ImplicitRecommender):
         )
 
     def fit(self, interactions: Any) -> BPR:
-        """Fit the BPR model to the user-item interaction matrix."""
+        """Fit the BPR model to the user-item interaction matrix.
+        
+        Raises
+        ------
+        RuntimeError
+            If the model is already fitted.
+        TypeError
+            If the input matrix is not a recognizable sparse matrix or numpy array.
+        """
         import numpy as np
         from scipy import sparse as sp
 

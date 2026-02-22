@@ -89,7 +89,15 @@ class ALS(ImplicitRecommender):
         )
 
     def fit(self, interactions: Any) -> ALS:
-        """Fit the model to the user-item interaction matrix."""
+        """Fit the model to the user-item interaction matrix.
+        
+        Raises
+        ------
+        RuntimeError
+            If the model is already fitted. Create a new instance to refit.
+        TypeError
+            If the input matrix is not a recognizable sparse matrix or numpy array.
+        """
         import numpy as np
         from scipy import sparse as sp
 

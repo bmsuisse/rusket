@@ -7,6 +7,10 @@ import pytest
 
 import rusket
 from rusket import from_transactions
+import shutil
+
+if not shutil.which("java"):
+    pytest.skip("Java is required for PySpark tests.", allow_module_level=True)
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -5,6 +5,26 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Style
+
+- run ruff format and fix lints
+
+### 🐛 Bug Fixes
+
+- ensure Spark input is handled before Polars coercion in from_transactions
+
+### 📖 Documentation
+
+- update logo asset path to `logo_single.svg` in documentation and configuration.
+
+### 📦 Miscellaneous
+
+- update uv.lock for 0.1.26
+
+### 📖 Documentation
+
+- sync changelog and api reference for 0.1.26
+
 ### 📦 Miscellaneous
 
 - bump version to 0.1.26

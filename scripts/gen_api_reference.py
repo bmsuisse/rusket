@@ -412,19 +412,84 @@ def build_api_reference() -> str:
     return "\n".join(output_lines) + "\n"
 
 
+def build_api_schema() -> str:
+    """Build a JSON schema of the public API."""
+    import inspect
+    import json
+    import rusket
+    import rusket.spark as spark_mod
+    import rusket.viz as viz_mod
+    
+    def _get_type_str(annotation: Any) -> str:
+        if annotation == inspect._empty:
+            return "Any"
+        return str(annotation).replace("typing.", "")
+    
+    def _serialize_func(obj: Any) -> dict[str, Any]:
+        try:
+            sig = inspect.signature(obj)
+            params = {
+                k: _get_type_str(v.annotation)
+                for k, v in sig.parameters.items() if k not in ("self", "cls")
+            }
+            ret = _get_type_str(sig.return_annotation)
+            doc = inspect.getdoc(obj) or ""
+            return {"parameters": params, "returns": ret, "doc": doc.split("\n")[0]}
+        except Exception:
+            return {}
+            
+    def _serialize_class(cls: type) -> dict[str, Any]:
+        methods = {}
+        for name, val in inspect.getmembers(cls, predicate=inspect.isroutine):
+            if name.startswith("_") and name != "__init__": continue
+            if name in cls.__dict__ or name == "__init__":
+                methods[name] = _serialize_func(val)
+        return {"methods": methods, "doc": (inspect.getdoc(cls) or "").split("\n")[0]}
+
+    schema = {"functions": {}, "classes": {}, "spark": {}}
+    
+    func_names = [
+        "mine", "fpgrowth", "eclat", "association_rules", "prefixspan", "hupm",
+        "sequences_from_event_log", "mine_hupm", "mine_duckdb", "mine_spark",
+        "from_transactions", "from_transactions_csr", "from_pandas", "from_polars", "from_spark",
+        "score_potential", "similar_items", "find_substitutes", "customer_saturation", "export_item_factors"
+    ]
+    for fn in func_names:
+        schema["functions"][fn] = _serialize_func(getattr(rusket, fn))
+        
+    class_names = [
+        "FPGrowth", "Eclat", "AutoMiner", "PrefixSpan", "HUPM", "FPMiner",
+        "ALS", "BPR", "Recommender", "NextBestAction"
+    ]
+    for cn in class_names:
+        schema["classes"][cn] = _serialize_class(getattr(rusket, cn))
+        
+    spark_names = [
+        "mine_grouped", "rules_grouped", "prefixspan_grouped", "hupm_grouped", "recommend_batches", "to_spark"
+    ]
+    for sn in spark_names:
+        schema["spark"][sn] = _serialize_func(getattr(spark_mod, sn))
+        
+    return json.dumps(schema, indent=2)
+
+
 def main() -> None:
     target = ROOT / "docs" / "api-reference.md"
-    print("Generating API reference …")
+    schema_target = ROOT / "docs" / "schema.json"
+    print("Generating API reference and JSON schema …")
     try:
         content = build_api_reference()
+        schema_content = build_api_schema()
     except Exception as e:
-        print(f"ERROR: Failed to generate API reference: {e}", file=sys.stderr)
+        print(f"ERROR: Failed to generate docs: {e}", file=sys.stderr)
         import traceback
 
         traceback.print_exc()
         sys.exit(1)
     target.write_text(content, encoding="utf-8")
+    schema_target.write_text(schema_content, encoding="utf-8")
     print(f"✔ Wrote {target.relative_to(ROOT)}  ({len(content):,} chars)")
+    print(f"✔ Wrote {schema_target.relative_to(ROOT)}  ({len(schema_content):,} chars)")
 
 
 if __name__ == "__main__":

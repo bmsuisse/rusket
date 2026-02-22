@@ -1,0 +1,643 @@
+{
+  "functions": {
+    "mine": {
+      "parameters": {
+        "df": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+        "min_support": "float",
+        "null_values": "bool",
+        "use_colnames": "bool",
+        "max_len": "int | None",
+        "method": "str",
+        "verbose": "int",
+        "column_names": "list[str] | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Mine frequent itemsets using the optimal algorithm."
+    },
+    "fpgrowth": {
+      "parameters": {
+        "df": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+        "min_support": "float",
+        "null_values": "bool",
+        "use_colnames": "bool",
+        "max_len": "int | None",
+        "method": "str",
+        "verbose": "int",
+        "column_names": "list[str] | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Find frequent itemsets using the optimal algorithm (Eclat or FP-growth)."
+    },
+    "eclat": {
+      "parameters": {
+        "df": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+        "min_support": "float",
+        "null_values": "bool",
+        "use_colnames": "bool",
+        "max_len": "int | None",
+        "verbose": "int",
+        "column_names": "list[str] | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Find frequent itemsets using the Eclat algorithm."
+    },
+    "association_rules": {
+      "parameters": {
+        "df": "pd.DataFrame | Any",
+        "num_itemsets": "int | None",
+        "df_orig": "pd.DataFrame | None",
+        "null_values": "bool",
+        "metric": "str",
+        "min_threshold": "float",
+        "support_only": "bool",
+        "return_metrics": "list[str]"
+      },
+      "returns": "pd.DataFrame",
+      "doc": ""
+    },
+    "prefixspan": {
+      "parameters": {
+        "sequences": "list[list[int]]",
+        "min_support": "int",
+        "max_len": "int | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Mine sequential patterns using the PrefixSpan algorithm."
+    },
+    "hupm": {
+      "parameters": {
+        "transactions": "list[list[int]]",
+        "utilities": "list[list[float]]",
+        "min_utility": "float",
+        "max_len": "int | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Mine high-utility itemsets."
+    },
+    "sequences_from_event_log": {
+      "parameters": {
+        "df": "Any",
+        "user_col": "str",
+        "time_col": "str",
+        "item_col": "str"
+      },
+      "returns": "tuple[list[list[int]], dict[int, Any]]",
+      "doc": "Convert an event log DataFrame into the sequence format required by PrefixSpan."
+    },
+    "mine_hupm": {
+      "parameters": {
+        "data": "Any",
+        "transaction_col": "str",
+        "item_col": "str",
+        "utility_col": "str",
+        "min_utility": "float",
+        "max_len": "int | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Mine high-utility itemsets from a long-format DataFrame."
+    },
+    "mine_duckdb": {
+      "parameters": {
+        "con": "Any",
+        "query": "str",
+        "n_items": "int",
+        "txn_col": "str",
+        "item_col": "str",
+        "min_support": "float",
+        "max_len": "int | None",
+        "chunk_size": "int"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Stream directly from a DuckDB query via Arrow RecordBatches."
+    },
+    "mine_spark": {
+      "parameters": {
+        "spark_df": "Any",
+        "n_items": "int",
+        "txn_col": "str",
+        "item_col": "str",
+        "min_support": "float",
+        "max_len": "int | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Stream natively from a PySpark DataFrame on Databricks via Arrow."
+    },
+    "from_transactions": {
+      "parameters": {
+        "data": "DataFrame | Sequence[Sequence[str | int]] | Any",
+        "transaction_col": "str | None",
+        "item_col": "str | None",
+        "verbose": "int"
+      },
+      "returns": "Any",
+      "doc": "Convert long-format transactional data to a one-hot boolean matrix."
+    },
+    "from_transactions_csr": {
+      "parameters": {
+        "data": "DataFrame | str | Any",
+        "transaction_col": "str | None",
+        "item_col": "str | None",
+        "chunk_size": "int"
+      },
+      "returns": "tuple[Any, list[str]]",
+      "doc": "Convert long-format transactional data to a CSR matrix + column names."
+    },
+    "from_pandas": {
+      "parameters": {
+        "df": "pd.DataFrame",
+        "transaction_col": "str | None",
+        "item_col": "str | None",
+        "verbose": "int"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."
+    },
+    "from_polars": {
+      "parameters": {
+        "df": "pl.DataFrame",
+        "transaction_col": "str | None",
+        "item_col": "str | None",
+        "verbose": "int"
+      },
+      "returns": "pl.DataFrame",
+      "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."
+    },
+    "from_spark": {
+      "parameters": {
+        "df": "SparkDataFrame",
+        "transaction_col": "str | None",
+        "item_col": "str | None"
+      },
+      "returns": "SparkDataFrame",
+      "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."
+    },
+    "score_potential": {
+      "parameters": {
+        "user_history": "list[list[int]]",
+        "als_model": "ALS",
+        "target_categories": "list[int] | None"
+      },
+      "returns": "np.ndarray",
+      "doc": "Cross-selling potential scores \u2014 shape ``(n_users, n_items)`` or ``(n_users, len(target_categories))``."
+    },
+    "similar_items": {
+      "parameters": {
+        "model": "<class 'rusket.SupportsItemFactors'>",
+        "item_id": "<class 'int'>",
+        "n": "<class 'int'>"
+      },
+      "returns": "tuple[numpy.ndarray, numpy.ndarray]",
+      "doc": "Find the most similar items to a given item ID based on latent factors."
+    },
+    "find_substitutes": {
+      "parameters": {
+        "rules_df": "pd.DataFrame",
+        "max_lift": "float"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Substitute/cannibalizing products via negative association rules."
+    },
+    "customer_saturation": {
+      "parameters": {
+        "df": "pd.DataFrame",
+        "user_col": "str",
+        "category_col": "str | None",
+        "item_col": "str | None"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Customer saturation by unique items/categories bought, split into deciles."
+    },
+    "export_item_factors": {
+      "parameters": {
+        "model": "SupportsItemFactors",
+        "include_labels": "bool"
+      },
+      "returns": "pd.DataFrame",
+      "doc": "Exports latent item factors as a Pandas DataFrame for Vector DBs."
+    }
+  },
+  "classes": {
+    "FPGrowth": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the FPGrowth miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the FP-growth algorithm on the stored data."
+        }
+      },
+      "doc": "FP-Growth frequent itemset miner."
+    },
+    "Eclat": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the Eclat miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the Eclat algorithm on the stored data."
+        }
+      },
+      "doc": "Eclat frequent itemset miner."
+    },
+    "AutoMiner": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the automatic miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the optimal algorithm on the stored data."
+        }
+      },
+      "doc": "Automatic frequent itemset miner."
+    },
+    "PrefixSpan": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "list[list[int]]",
+            "min_support": "int",
+            "max_len": "int | None",
+            "item_mapping": "dict[int, Any] | None"
+          },
+          "returns": "Any",
+          "doc": "Initialize PrefixSpan with an already-formatted sequence list."
+        },
+        "from_transactions": {
+          "parameters": {
+            "data": "Any",
+            "transaction_col": "str | None",
+            "item_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "PrefixSpan",
+          "doc": "Initialize the PrefixSpan model from an event log DataFrame."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Mine sequential patterns using PrefixSpan."
+        }
+      },
+      "doc": "Sequential Pattern Mining (PrefixSpan) model."
+    },
+    "HUPM": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "transactions": "list[list[int]]",
+            "utilities": "list[list[float]]",
+            "min_utility": "float",
+            "max_len": "int | None"
+          },
+          "returns": "Any",
+          "doc": "Initialize HUPM with pre-formatted transactions and utilities."
+        },
+        "from_transactions": {
+          "parameters": {
+            "data": "Any",
+            "transaction_col": "str | None",
+            "item_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "HUPM",
+          "doc": "Initialize the HUPM model from a long-format DataFrame."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Mine high-utility itemsets."
+        }
+      },
+      "doc": "High-Utility Pattern Mining (HUPM) model."
+    },
+    "FPMiner": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "n_items": "int",
+            "max_ram_mb": "int | None",
+            "hint_n_transactions": "int | None"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "add_arrow_batch": {
+          "parameters": {
+            "batch": "Any",
+            "txn_col": "str",
+            "item_col": "str"
+          },
+          "returns": "FPMiner",
+          "doc": "Feed a PyArrow RecordBatch directly into the miner."
+        },
+        "add_chunk": {
+          "parameters": {
+            "txn_ids": "np.ndarray",
+            "item_ids": "np.ndarray"
+          },
+          "returns": "FPMiner",
+          "doc": "Feed a chunk of (transaction_id, item_id) pairs."
+        },
+        "mine": {
+          "parameters": {
+            "min_support": "float",
+            "max_len": "int | None",
+            "use_colnames": "bool",
+            "column_names": "list[str] | None",
+            "method": "Literal['fpgrowth', 'eclat', 'auto']",
+            "verbose": "int"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Mine frequent itemsets from all accumulated transactions."
+        },
+        "reset": {
+          "parameters": {},
+          "returns": "None",
+          "doc": "Free all accumulated data."
+        }
+      },
+      "doc": "Streaming FP-Growth / Eclat accumulator for billion-row datasets."
+    },
+    "ALS": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "regularization": "float",
+            "alpha": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "bool",
+            "cg_iters": "int",
+            "use_cholesky": "bool",
+            "anderson_m": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "ALS",
+          "doc": "Fit the model to the user-item interaction matrix."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N items for a user. Set exclude_seen=False to include already-seen items."
+        },
+        "recommend_users": {
+          "parameters": {
+            "item_id": "int",
+            "n": "int"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N users for an item."
+        }
+      },
+      "doc": "Implicit ALS collaborative filtering model."
+    },
+    "BPR": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "learning_rate": "float",
+            "regularization": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "bool",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "BPR",
+          "doc": "Fit the BPR model to the user-item interaction matrix."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N items for a user."
+        }
+      },
+      "doc": "Bayesian Personalized Ranking (BPR) model for implicit feedback."
+    },
+    "Recommender": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "als_model": "ALS | None",
+            "rules_df": "pd.DataFrame | None",
+            "item_embeddings": "np.ndarray | None"
+          },
+          "returns": "Any",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "predict_next_chunk": {
+          "parameters": {
+            "user_history_df": "pd.DataFrame",
+            "user_col": "str",
+            "k": "int"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Batch-rank the next best products for every user in *user_history_df*."
+        },
+        "recommend_for_cart": {
+          "parameters": {
+            "cart_items": "list[int]",
+            "n": "int"
+          },
+          "returns": "list[int]",
+          "doc": "Suggest items to add to an active cart using association rules."
+        },
+        "recommend_for_user": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "alpha": "float",
+            "target_item_for_semantic": "int | None"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Top-N recommendations for a user via Hybrid ALS + Semantic."
+        }
+      },
+      "doc": "Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules."
+    },
+    "NextBestAction": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "als_model": "ALS | None",
+            "rules_df": "pd.DataFrame | None",
+            "item_embeddings": "np.ndarray | None"
+          },
+          "returns": "Any",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "predict_next_chunk": {
+          "parameters": {
+            "user_history_df": "pd.DataFrame",
+            "user_col": "str",
+            "k": "int"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Batch-rank the next best products for every user in *user_history_df*."
+        },
+        "recommend_for_cart": {
+          "parameters": {
+            "cart_items": "list[int]",
+            "n": "int"
+          },
+          "returns": "list[int]",
+          "doc": "Suggest items to add to an active cart using association rules."
+        },
+        "recommend_for_user": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "alpha": "float",
+            "target_item_for_semantic": "int | None"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Top-N recommendations for a user via Hybrid ALS + Semantic."
+        }
+      },
+      "doc": "Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules."
+    }
+  },
+  "spark": {
+    "mine_grouped": {
+      "parameters": {
+        "df": "Any",
+        "group_col": "str",
+        "min_support": "float",
+        "max_len": "int | None",
+        "method": "str",
+        "use_colnames": "bool"
+      },
+      "returns": "Any",
+      "doc": "Distribute Market Basket Analysis across PySpark partitions."
+    },
+    "rules_grouped": {
+      "parameters": {
+        "df": "Any",
+        "group_col": "str",
+        "num_itemsets": "dict[Any, int] | int",
+        "metric": "str",
+        "min_threshold": "float"
+      },
+      "returns": "Any",
+      "doc": "Distribute Association Rule Mining across PySpark partitions."
+    },
+    "prefixspan_grouped": {
+      "parameters": {
+        "df": "Any",
+        "group_col": "str",
+        "user_col": "str",
+        "time_col": "str",
+        "item_col": "str",
+        "min_support": "int",
+        "max_len": "int | None"
+      },
+      "returns": "Any",
+      "doc": "Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions."
+    },
+    "hupm_grouped": {
+      "parameters": {
+        "df": "Any",
+        "group_col": "str",
+        "transaction_col": "str",
+        "item_col": "str",
+        "utility_col": "str",
+        "min_utility": "float",
+        "max_len": "int | None"
+      },
+      "returns": "Any",
+      "doc": "Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions."
+    },
+    "recommend_batches": {
+      "parameters": {
+        "df": "Any",
+        "model": "Any",
+        "user_col": "str",
+        "k": "int"
+      },
+      "returns": "Any",
+      "doc": "Distribute Batch Recommendations across PySpark partitions."
+    },
+    "to_spark": {
+      "parameters": {
+        "spark_session": "Any",
+        "df": "Any"
+      },
+      "returns": "Any",
+      "doc": "Convert a Pandas or Polars DataFrame into a PySpark DataFrame."
+    }
+  }
+}
