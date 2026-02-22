@@ -25,7 +25,7 @@ _ALL_METRICS = [
 
 def association_rules(
     df: pd.DataFrame | Any,
-    num_itemsets: int,
+    num_itemsets: int | None = None,
     df_orig: pd.DataFrame | None = None,
     null_values: bool = False,
     metric: str = "confidence",
@@ -43,6 +43,25 @@ def association_rules(
         raise ValueError("The input DataFrame must contain an 'itemsets' column")
     if df.empty:
         raise ValueError("The input DataFrame `df` containing the frequent itemsets is empty.")
+
+    if num_itemsets is None:
+        # Try to read from DataFrame metadata (set automatically by fpgrowth/mine/eclat)
+        if "num_itemsets" in df.attrs:
+            num_itemsets = int(df.attrs["num_itemsets"])
+        else:
+            # Infer from max support: the most frequent 1-item set has support == count/n,
+            # so n = round(max_support_of_singleton / max_support).  A simpler robust
+            # approach: n = round(1 / min_positive_support) is unreliable.  Instead,
+            # look for singles (len==1) and use their max support as an approximation.
+            singles = df[df["itemsets"].apply(len) == 1]
+            if not singles.empty:
+                max_support: float = singles["support"].astype(float).max()  # type: ignore[assignment]
+                num_itemsets = round(1.0 / max_support)
+            else:
+                # Last resort: use the single highest support row as proxy
+                max_support = df["support"].astype(float).max()  # type: ignore[assignment]
+                num_itemsets = round(1.0 / max_support)
+
 
     first_iset = next(iter(df["itemsets"]))
     has_string_labels = any(isinstance(x, str) for x in first_iset)

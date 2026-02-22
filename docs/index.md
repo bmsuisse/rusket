@@ -15,9 +15,9 @@
 
 ## What is rusket?
 
-`rusket` is a **drop-in replacement** for `mlxtend.frequent_patterns.fpgrowth` and `mlxtend.frequent_patterns.association_rules` — identical API, significantly faster, dramatically lower memory footprint.
+`rusket` turns raw transaction logs into **revenue intelligence** — "frequently bought together" rules, personalised recommendations, high-profit bundle discovery, and sequential customer journey analysis.
 
-The core algorithm is implemented in **Rust** via [PyO3](https://pyo3.rs) and [maturin](https://github.com/PyO3/maturin), with three optimised dispatch paths exposed to Python:
+The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and accept Pandas, Polars, and Spark DataFrames natively with zero-copy Arrow transfers:
 
 | Input | Rust path | Notes |
 |---|---|---|
@@ -36,21 +36,32 @@ The core algorithm is implemented in **Rust** via [PyO3](https://pyo3.rs) and [m
 | Zero Python dependencies | ✅ (`numpy`, `pandas`) | ❌ (many) |
 | 12 association metrics | ✅ | ✅ |
 
-## Quick Example
+## Quick Example — "Frequently Bought Together"
+
+Identify which products are bought together most often — the foundation of cross-sell widgets on any e-commerce site:
 
 ```python
 import pandas as pd
-from rusket import fpgrowth, association_rules
+from rusket import mine, association_rules
 
-df = pd.DataFrame({
-    "milk":  [1, 1, 0, 1],
-    "bread": [1, 0, 1, 1],
-    "eggs":  [0, 1, 1, 1],
-})
+# One week of grocery checkout data (1 row = 1 receipt, 1 col = 1 SKU)
+receipts = pd.DataFrame({
+    "milk":    [1, 1, 0, 1, 0, 1],
+    "bread":   [1, 0, 1, 1, 1, 0],
+    "butter":  [1, 0, 1, 0, 0, 1],
+    "eggs":    [0, 1, 1, 0, 1, 1],
+    "coffee":  [0, 1, 0, 0, 1, 1],
+}, dtype=bool)
 
-freq = fpgrowth(df, min_support=0.5, use_colnames=True)
-rules = association_rules(freq, num_itemsets=len(df), metric="confidence", min_threshold=0.6)
-print(rules[["antecedents", "consequents", "confidence"]])
+# Step 1 — find which product combinations appear in ≥40% of receipts
+freq = mine(receipts, min_support=0.4, use_colnames=True)
+
+# Step 2 — keep rules with ≥60% confidence
+rules = association_rules(
+    freq, num_itemsets=len(receipts), metric="confidence", min_threshold=0.6
+)
+print(rules[["antecedents", "consequents", "confidence", "lift"]]
+      .sort_values("lift", ascending=False))
 ```
 
 [Get Started](quickstart.md){ .md-button .md-button--primary }

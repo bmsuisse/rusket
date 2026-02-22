@@ -51,9 +51,9 @@
 
   <!-- === Basket Back === -->
   <!-- Handle arc (narrower) -->
-  <path d="M 150 200 C 150 80, 310 80, 310 200" fill="none" class="basket-glow" stroke-width="8" stroke-linecap="round"/>
+  <path d="M 150 200 C 150 80, 310 80, 310 200" fill="none" stroke="#C084FC" opacity="0.5" stroke-width="8" stroke-linecap="round"/>
   <!-- Basket interior dark depth (narrower and shorter) -->
-  <polygon points="120,200 150,290 310,290 340,200" fill="#2D1B3D" />
+  <polygon points="120,200 150,290 310,290 340,200" fill="none" />
 
   <!-- === Official Ferris (Crab) Inside Basket === -->
   <g clip-path="url(#basketInsideClip)">
@@ -94,7 +94,7 @@
 
   <!-- === Basket Front Face (Semi-transparent) === -->
   <!-- Matches smaller interior precisely -->
-  <polygon points="120,200 150,290 310,290 340,200" fill="#1A1124" opacity="0.6" />
+  <polygon points="120,200 150,290 310,290 340,200" fill="none" />
 
   <!-- === Basket Front Wires === -->
   <!-- Fully scaled down and moved inwards to create a smaller basket -->

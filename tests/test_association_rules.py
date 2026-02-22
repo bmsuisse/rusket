@@ -274,3 +274,58 @@ def test_spark_mllib_association_rules() -> None:
     ar_all_single_cons = ar_all[ar_all["consequents"].apply(len) == 1]
     assert len(ar_all_single_cons) == 30
     assert (ar_all_single_cons["confidence"] >= 0.999999).sum() == 23
+
+
+# ---------------------------------------------------------------------------
+# mlxtend-compatible API: association_rules without explicit num_itemsets
+# ---------------------------------------------------------------------------
+
+
+def test_association_rules_no_num_itemsets_attrs() -> None:
+    """When fpgrowth/mine returns a df with attrs['num_itemsets'], association_rules
+    should work without an explicit num_itemsets argument (mlxtend-compat)."""
+    freq = fpgrowth(df, min_support=0.6, use_colnames=True)
+    assert "num_itemsets" in freq.attrs, "fpgrowth result should have num_itemsets in attrs"
+
+    # mlxtend-style call: no num_itemsets positional argument
+    ar = association_rules(freq, metric="confidence", min_threshold=0.8)
+    # Should give the same result as passing len(df) explicitly
+    ar_explicit = association_rules(freq, len(df), metric="confidence", min_threshold=0.8)
+    assert len(ar) == len(ar_explicit)
+    assert ar.shape == ar_explicit.shape
+
+
+def test_association_rules_no_num_itemsets_inference() -> None:
+    """Fallback inference from singleton support when attrs are not present."""
+    freq = fpgrowth(df, min_support=0.6, use_colnames=True)
+    # Strip attrs to simulate an externally constructed DataFrame
+    freq_no_attrs = freq.copy()
+    freq_no_attrs.attrs.clear()
+
+    ar = association_rules(freq_no_attrs, metric="confidence", min_threshold=0.8)
+    ar_explicit = association_rules(freq, len(df), metric="confidence", min_threshold=0.8)
+    # Row count should match (singleton inference is exact for small integer n)
+    assert len(ar) == len(ar_explicit)
+
+
+def test_mlxtend_port_example() -> None:
+    """Direct port of the mlxtend quickstart pattern.
+
+    from mlxtend.frequent_patterns import fpgrowth, association_rules
+    frequent_itemsets = fpgrowth(df, min_support=0.6, use_colnames=True)
+    rules = association_rules(frequent_itemsets, metric='lift', min_threshold=1)
+
+    ↓ rusket equivalent ↓
+
+    from rusket import fpgrowth, association_rules
+    frequent_itemsets = fpgrowth(df, min_support=0.6, use_colnames=True)
+    rules = association_rules(frequent_itemsets, metric='lift', min_threshold=1)
+    """
+    frequent_itemsets = fpgrowth(df, min_support=0.6, use_colnames=True)
+    rules = association_rules(frequent_itemsets, metric="lift", min_threshold=1)
+    assert not rules.empty
+    assert "antecedents" in rules.columns
+    assert "consequents" in rules.columns
+    assert "lift" in rules.columns
+    assert (rules["lift"] >= 1.0).all()
+

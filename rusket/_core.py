@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+    from ._compat import DataFrame
+
 Method = Literal["fpgrowth", "eclat", "auto"]
 
 _RUST_DENSE = {"fpgrowth": _rust.fpgrowth_from_dense, "eclat": _rust.eclat_from_dense}
@@ -55,7 +57,9 @@ def _build_result(
     )
 
     filtered_df = result[result["support"] >= min_support].reset_index(drop=True)
+    filtered_df.attrs["num_itemsets"] = n_rows
     return typing.cast("pd.DataFrame", filtered_df)
+
 
 
 def _select_method(method: Method, density: float, verbose: int, label: str) -> Method:
@@ -155,8 +159,9 @@ def _run_polars(
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
 
 
+
 def dispatch(
-    df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
+    df: DataFrame | Any,
     min_support: float,
     null_values: bool,
     use_colnames: bool,

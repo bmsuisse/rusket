@@ -1,6 +1,22 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
+    import polars as pl
+    from pyspark.sql import DataFrame as SparkDataFrame
+
+    #: Union of all supported dense/tabular input types.
+    #:
+    #: Accepted by every ``df`` / ``data`` parameter in rusket:
+    #:
+    #: * ``pandas.DataFrame`` – including sparse-backed frames
+    #: * ``polars.DataFrame``
+    #: * ``numpy.ndarray`` – 2-D boolean / 0-1 matrix
+    #: * ``pyspark.sql.DataFrame`` – converted to Polars via Arrow zero-copy
+    DataFrame = Union["pd.DataFrame", "pl.DataFrame", "np.ndarray", "SparkDataFrame"]
 
 
 def to_dataframe(data: Any) -> Any:
