@@ -97,10 +97,10 @@ def online_retail_df():  # type: ignore[return]
         # Reproducible sample of invoices to preserve basket integrity!
         import numpy as np
 
-        all_invoices = df["Invoice"].unique()
+        all_invoices = df["Invoice"].unique()  # type: ignore[union-attr]
         rng = np.random.default_rng(42)
-        sample_invoices = rng.choice(all_invoices, size=min(1000, len(all_invoices)), replace=False)
-        sample = df[df["Invoice"].isin(sample_invoices)].reset_index(drop=True)
+        sample_invoices = rng.choice(all_invoices, size=min(1000, len(all_invoices)), replace=False)  # type: ignore[arg-type]
+        sample = df[df["Invoice"].isin(sample_invoices)].reset_index(drop=True)  # type: ignore[union-attr]
 
         sample.to_parquet(UCI_SAMPLE_PARQUET, index=False)
         return sample

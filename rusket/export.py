@@ -57,4 +57,4 @@ def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataF
         cols.append("item_label")
     cols.append("vector")
 
-    return pd.DataFrame(df_data, columns=cols)
+    return pd.DataFrame(df_data, columns=cols)  # type: ignore[arg-type]

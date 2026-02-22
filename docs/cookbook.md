@@ -14,8 +14,8 @@ pip install rusket
 import numpy as np
 import pandas as pd
 import polars as pl
-from rusket import mine, eclat, association_rules, ALS, BPR
-from rusket import prefixspan, sequences_from_event_log, hupm, similar_items, Recommender, score_potential
+from rusket import FPGrowth, Eclat, AutoMiner, association_rules
+from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender, similar_items, score_potential
 ```
 
 ---
@@ -30,12 +30,12 @@ A supermarket chain wants to identify which product combinations appear most fre
 - **Shelf adjacency** decisions (place high-lift pairs closer together)
 - **Promotional bundles** (discount pairs with high confidence but low current margin)
 
-### Prepare the basket data
+### Prepare the basket data and find frequent combinations
 
 ```python
 import numpy as np
 import pandas as pd
-from rusket import from_transactions
+from rusket import FPGrowth
 
 np.random.seed(42)
 
@@ -55,15 +55,14 @@ df_long = pd.DataFrame(
     columns=["receipt_id", "product"],
 )
 
-basket = from_transactions(df_long, transaction_col="receipt_id", item_col="product")
-```
-
-### Find frequent product combinations
-
-```python
-from rusket import mine
-
-freq = mine(basket, min_support=0.05, use_colnames=True)
+miner = FPGrowth.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.05,
+    use_colnames=True,
+)
+freq = miner.mine()
 print(f"Found {len(freq):,} frequent product combinations")
 top_combos = freq.sort_values("support", ascending=False)
 ```
@@ -81,7 +80,15 @@ print(actionable.sort_values("lift", ascending=False).head(10))
 ### Limit itemset length for large catalogues
 
 ```python
-freq_pairs = mine(basket, min_support=0.02, max_len=2, use_colnames=True)
+miner_pairs = FPGrowth.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.02,
+    max_len=2,
+    use_colnames=True,
+)
+freq_pairs = miner_pairs.mine()
 ```
 
 ---
@@ -91,41 +98,74 @@ freq_pairs = mine(basket, min_support=0.02, max_len=2, use_colnames=True)
 ECLAT uses a vertical bitset representation. It is **faster than FPGrowth for sparse datasets**.
 
 ```python
-freq_ec = eclat(basket, min_support=0.05, use_colnames=True)
+from rusket import Eclat
+
+freq_ec = Eclat.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.05,
+    use_colnames=True,
+).mine()
 ```
 
-| Condition | Recommended algorithm |
+| Condition | Recommended class |
 |---|---|
-| Dense dataset, few items | `mine(method="auto")` |
-| Sparse dataset, many items, low support | `mine(method="auto")` |
+| Dense dataset, few items | `AutoMiner` |
+| Sparse dataset, many items, low support | `Eclat` |
 | Very large dataset (100M+ rows) | `FPMiner` with streaming |
 
 ---
 
-## 3. Transaction Helpers
+## 3. Transaction Input Formats
 
 ### From a Pandas DataFrame
 
 ```python
-from rusket import from_transactions
+import pandas as pd
+from rusket import FPGrowth
 
 orders = pd.DataFrame({
     "order_id": [1, 1, 1, 2, 2, 3],
     "item":     ["Milk", "Bread", "Eggs", "Milk", "Butter", "Eggs"],
 })
 
-basket = from_transactions(orders, user_col="order_id", item_col="item")
-fi = mine(basket, min_support=0.3, use_colnames=True)
+freq = FPGrowth.from_transactions(
+    orders,
+    transaction_col="order_id",
+    item_col="item",
+    min_support=0.3,
+    use_colnames=True,
+).mine()
 ```
 
 ### From a Polars DataFrame
 
 ```python
+import polars as pl
+from rusket import FPGrowth
+
 orders_pl = pl.DataFrame({
     "order_id": [1, 1, 1, 2, 2, 3],
     "item":     ["Milk", "Bread", "Eggs", "Milk", "Butter", "Eggs"],
 })
-basket = from_transactions(orders_pl, user_col="order_id", item_col="item")
+
+freq = FPGrowth.from_transactions(
+    orders_pl,
+    transaction_col="order_id",
+    item_col="item",
+    min_support=0.3,
+    use_colnames=True,
+).mine()
+```
+
+### From a list of lists
+
+```python
+from rusket import FPGrowth
+
+baskets = [["Milk", "Bread"], ["Milk", "Eggs", "Butter"], ["Bread", "Eggs"]]
+freq = FPGrowth(baskets, min_support=0.5, use_colnames=True).mine()
 ```
 
 ---
@@ -135,6 +175,7 @@ basket = from_transactions(orders_pl, user_col="order_id", item_col="item")
 ### Fit from purchase history
 
 ```python
+import pandas as pd
 from rusket import ALS
 
 purchases = pd.DataFrame({
@@ -143,12 +184,15 @@ purchases = pd.DataFrame({
     "revenue":     [29.99, 49.00, 9.99,  29.99, 15.00, 49.00, 9.99, 22.00],
 })
 
-model = ALS(factors=64, iterations=15, alpha=40.0, cg_iters=3, verbose=True)
 model = ALS.from_transactions(
     purchases,
     transaction_col="customer_id",
     item_col="sku",
     rating_col="revenue",
+    factors=64,
+    iterations=15,
+    alpha=40.0,
+    cg_iters=3,
 )
 ```
 
@@ -203,6 +247,8 @@ mmap_data    = np.memmap("data.mmap",    dtype=np.float32, mode="w+", shape=(nnz
 ### Fit ALS on the out-of-core matrix
 
 ```python
+from rusket import ALS
+
 mat = sparse.csr_matrix((n_users, n_items))
 mat.indptr  = indptr
 mat.indices = mmap_indices
@@ -220,16 +266,25 @@ model.fit(mat)
 ## 6. Bayesian Personalized Ranking (BPR)
 
 ```python
-from rusket import BPR
-from scipy.sparse import csr_matrix
 import numpy as np
+import pandas as pd
+from rusket import BPR
 
-rows = np.random.randint(0, 1000, size=5000)
-cols = np.random.randint(0, 500, size=5000)
-mat = csr_matrix((np.ones(5000), (rows, cols)), shape=(1000, 500))
+purchases = pd.DataFrame({
+    "user_id": np.random.randint(0, 1000, size=5000),
+    "item_id": np.random.randint(0, 500, size=5000),
+})
 
-model = BPR(factors=64, learning_rate=0.01, regularization=0.01, iterations=100, seed=42)
-model.fit(mat)
+model = BPR.from_transactions(
+    purchases,
+    transaction_col="user_id",
+    item_col="item_id",
+    factors=64,
+    learning_rate=0.01,
+    regularization=0.01,
+    iterations=100,
+    seed=42,
+)
 
 items, scores = model.recommend_items(user_id=10, n=5)
 ```
@@ -240,7 +295,7 @@ items, scores = model.recommend_items(user_id=10, n=5)
 
 ```python
 import pandas as pd
-from rusket import prefixspan, sequences_from_event_log
+from rusket import PrefixSpan
 
 clickstream = pd.DataFrame({
     "session_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 4],
@@ -253,13 +308,16 @@ clickstream = pd.DataFrame({
     ],
 })
 
-seqs, mapping = sequences_from_event_log(
-    clickstream, user_col="session_id", time_col="timestamp", item_col="page"
+miner = PrefixSpan.from_transactions(
+    clickstream,
+    user_col="session_id",
+    time_col="timestamp",
+    item_col="page",
+    min_support=2,
+    max_len=4,
 )
-patterns_df = prefixspan(seqs, min_support=2, max_len=4)
-patterns_df["path"] = patterns_df["sequence"].apply(
-    lambda seq: " → ".join(mapping[s] for s in seq)
-)
+patterns_df = miner.mine()
+print(patterns_df.head(10))
 ```
 
 ---
@@ -267,8 +325,8 @@ patterns_df["path"] = patterns_df["sequence"].apply(
 ## 8. High-Utility Pattern Mining (HUPM)
 
 ```python
-from rusket import HUPM
 import pandas as pd
+from rusket import HUPM
 
 receipts = pd.DataFrame({
     "receipt_id": [1, 1, 1, 2, 2, 3, 3, 4, 4, 4],
@@ -292,9 +350,21 @@ high_value = HUPM.from_transactions(
 
 ## 9. Native Polars Integration
 
+All miners accept Polars DataFrames directly — no conversion needed:
+
 ```python
-df_pl = pl.from_pandas(df)
-fi_pl = mine(df_pl, min_support=0.05, use_colnames=True)
+import polars as pl
+from rusket import AutoMiner
+
+df_pl = pl.read_parquet("transactions.parquet")
+
+freq = AutoMiner.from_transactions(
+    df_pl,
+    transaction_col="order_id",
+    item_col="product_id",
+    min_support=0.05,
+    use_colnames=True,
+).mine()
 ```
 
 ---
@@ -304,14 +374,16 @@ fi_pl = mine(df_pl, min_support=0.05, use_colnames=True)
 ### Streaming 1B+ Rows from Spark
 
 ```python
-from rusket import mine_spark
+from rusket import FPMiner
 
 spark_df = spark.table("silver_transactions")
-frequent_itemsets = mine_spark(
-    spark_df, n_items=500_000,
-    txn_col="transaction_id", item_col="product_id",
-    min_support=0.001
-)
+frequent_itemsets = FPMiner(
+    spark_df,
+    n_items=500_000,
+    txn_col="transaction_id",
+    item_col="product_id",
+    min_support=0.001,
+).mine()
 ```
 
 ### Distributed Parallel Mining (Grouped)
@@ -329,19 +401,22 @@ from rusket import ALS
 
 model = ALS.from_transactions(
     spark.table("implicit_ratings"),
-    transaction_col="user_id", item_col="item_id", rating_col="clicks",
-    factors=64, iterations=10,
+    transaction_col="user_id",
+    item_col="item_id",
+    rating_col="clicks",
+    factors=64,
+    iterations=10,
 )
 ```
 
 !!! note "Out-of-Core Models"
-    For Spark tables spanning >100M rows, use `mine_spark` for Frequent Pattern mining, or export the table to an Out-of-Core disk map (Section 5) for ALS factorisation.
+    For Spark tables spanning >100M rows, use `FPMiner` for Frequent Pattern mining, or export the table to an Out-of-Core disk map (Section 5) for ALS factorisation.
 
 ---
 
 ## 11. Tuning Guide
 
-### FPGrowth / ECLAT
+### FPGrowth / Eclat / AutoMiner
 
 | Parameter | Default | Effect |
 |---|---|---|
@@ -357,6 +432,7 @@ model = ALS.from_transactions(
 | `iterations` | 15 | 5–15 is typical |
 | `alpha` | 40.0 | Higher → stronger signal |
 | `cg_iters` | 3 | CG solver steps |
+| `anderson_m` | 0 | Anderson acceleration history (5 recommended) |
 
 ---
 
@@ -388,7 +464,7 @@ suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 import lancedb
 from rusket import export_item_factors
 
-df_vectors = export_item_factors(als_model)
+df_vectors = export_item_factors(model)
 db = lancedb.connect("./lancedb")
 table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 ```
@@ -405,9 +481,9 @@ item_factors = model.item_factors
 item_norms = np.linalg.norm(item_factors, axis=1, keepdims=True)
 item_factors_norm = item_factors / np.clip(item_norms, a_min=1e-10, a_max=None)
 
-def compute_pca_3d(data):
+def compute_pca_3d(data: np.ndarray) -> np.ndarray:
     data_centered = data - np.mean(data, axis=0)
-    U, S, Vt = np.linalg.svd(data_centered, full_matrices=False)
+    _, _, Vt = np.linalg.svd(data_centered, full_matrices=False)
     return np.dot(data_centered, Vt[:3].T)
 
 item_pca = compute_pca_3d(item_factors_norm)

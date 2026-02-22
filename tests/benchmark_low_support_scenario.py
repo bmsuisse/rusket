@@ -53,7 +53,7 @@ def run_benchmark(n_rows, n_cols, min_sup):
         else:
             print("  mlxtend…", end=" ", flush=True)
             try:
-                mlx_res, mlx_t, mlx_mem = _timed(mlx_fpgrowth, df, min_support=min_sup)
+                mlx_res, mlx_t, mlx_mem = _timed(mlx_fpgrowth, df, min_support=min_sup)  # type: ignore[possibly-undefined]
                 speedup = mlx_t / ours_t
                 print(f"{mlx_t:.3f}s  peak={mlx_mem / 1e6:.1f}MB  speedup={speedup:.1f}x")
             except Exception as e:

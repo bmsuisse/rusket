@@ -23,14 +23,19 @@ The second and all subsequent runs load the parquet cache (< 1 s per fixture).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Helper — assert DataFrame is non-empty and has expected columns
 # ---------------------------------------------------------------------------
 
 
-def _check_df(df: "pd.DataFrame", cols: list[str], min_rows: int = 1) -> None:  # type: ignore[name-defined]
+def _check_df(df: pd.DataFrame, cols: list[str], min_rows: int = 1) -> None:  # type: ignore[name-defined]
     assert len(df) >= min_rows, f"Expected at least {min_rows} rows, got {len(df)}"
     for col in cols:
         assert col in df.columns, f"Missing column '{col}'"
@@ -45,7 +50,7 @@ def _check_df(df: "pd.DataFrame", cols: list[str], min_rows: int = 1) -> None:  
 class TestOnlineRetailBasketAnalysis:
     """FP-Growth, association rules, recommend_items, find_substitutes."""
 
-    def test_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_from_transactions_shape(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """from_transactions produces a valid one-hot matrix of expected size."""
         import rusket
 
@@ -61,7 +66,7 @@ class TestOnlineRetailBasketAnalysis:
         assert basket.values.min() >= 0
         assert basket.values.max() <= 1
 
-    def test_fpgrowth_oo_api_mine(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_fpgrowth_oo_api_mine(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """FPGrowth.from_transactions → .mine() returns itemsets with valid support."""
         from rusket.fpgrowth import FPGrowth
 
@@ -77,7 +82,7 @@ class TestOnlineRetailBasketAnalysis:
         assert (freq["support"] >= 0.05).all(), "All itemsets must meet min_support"
         assert (freq["support"] <= 1.0).all(), "Support must be ≤ 1.0"
 
-    def test_association_rules_from_oo_api(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_association_rules_from_oo_api(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """FPGrowth.association_rules returns rules with correct metric columns."""
         from rusket.fpgrowth import FPGrowth
 
@@ -93,7 +98,7 @@ class TestOnlineRetailBasketAnalysis:
         assert (rules["confidence"] >= 0.05).all()
         assert (rules["lift"] > 0).all()
 
-    def test_recommend_items_returns_unseen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_recommend_items_returns_unseen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """recommend_items returns products NOT in the query cart."""
         from rusket.fpgrowth import FPGrowth
 
@@ -111,7 +116,7 @@ class TestOnlineRetailBasketAnalysis:
         for item in recs:
             assert item not in top_items, f"Recommended item {item!r} was in the input cart"
 
-    def test_recommend_items_cache_is_consistent(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_recommend_items_cache_is_consistent(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """Calling recommend_items twice returns identical results (cache hit)."""
         from rusket.fpgrowth import FPGrowth
 
@@ -127,7 +132,7 @@ class TestOnlineRetailBasketAnalysis:
         recs2 = model.recommend_items(top_items, n=5)
         assert recs1 == recs2, "Cached recommend_items must be deterministic"
 
-    def test_find_substitutes_no_negative_lift(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_find_substitutes_no_negative_lift(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """find_substitutes returns only pairs with lift < max_lift."""
         import rusket
         from rusket.fpgrowth import FPGrowth
@@ -145,7 +150,7 @@ class TestOnlineRetailBasketAnalysis:
             assert (substitutes["lift"] < 0.95).all()
             assert (substitutes["lift"] > 0).all()
 
-    def test_customer_saturation_deciles(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_customer_saturation_deciles(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """customer_saturation produces 10 deciles and valid saturation percentages."""
         import rusket
 
@@ -158,9 +163,8 @@ class TestOnlineRetailBasketAnalysis:
         assert sat["saturation_pct"].between(0.0, 1.0).all()
         assert set(sat["decile"].unique()) <= {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 
-    def test_eclat_matches_fpgrowth_support(self, online_retail_df: "pd.DataFrame") -> None:
+    def test_eclat_matches_fpgrowth_support(self, online_retail_df: pd.DataFrame) -> None:
         """Eclat and FP-Growth must agree on support values for shared itemsets."""
-        import rusket
         from rusket.eclat import Eclat
         from rusket.fpgrowth import FPGrowth
 
@@ -183,7 +187,7 @@ class TestOnlineRetailBasketAnalysis:
         ).mine()
 
         # Compare singleton support values (most stable across implementations)
-        def _singleton_support(df: "pd.DataFrame") -> dict[frozenset, float]:  # type: ignore[name-defined]
+        def _singleton_support(df: pd.DataFrame) -> dict[frozenset, float]:  # type: ignore[name-defined]
             return {
                 frozenset(row["itemsets"]): round(row["support"], 4)
                 for _, row in df.iterrows()
@@ -210,12 +214,13 @@ class TestOnlineRetailBasketAnalysis:
 class TestOnlineRetailHUPM:
     """HUPM mines revenue-weighted bundles from real transaction data."""
 
-    def test_hupm_from_transactions_basic(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_hupm_from_transactions_basic(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """HUPM finds at least one high-revenue bundle.
 
         HUPM requires integer item IDs — use StockCode numerically encoded.
         """
         import pandas as pd
+
         from rusket.hupm import HUPM
 
         # Encode StockCode as integer IDs for HUPM
@@ -234,9 +239,10 @@ class TestOnlineRetailHUPM:
         _check_df(results, ["utility", "itemset"])
         assert (results["utility"] >= 50.0).all()
 
-    def test_hupm_singleton_utility_is_positive(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_hupm_singleton_utility_is_positive(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """All HUPM utilities must be strictly positive."""
         import pandas as pd
+
         from rusket.hupm import HUPM
 
         df = online_retail_df.copy()
@@ -264,9 +270,10 @@ class TestOnlineRetailHUPM:
 class TestOnlineRetailALS:
     """ALS from_transactions on real customer-product interactions."""
 
-    def test_als_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_als_from_transactions_shape(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ALS factor matrices have expected dimensions."""
         import numpy as np
+
         import rusket
 
         model = rusket.ALS.from_transactions(
@@ -284,7 +291,7 @@ class TestOnlineRetailALS:
         assert np.isfinite(model.user_factors).all()
         assert np.isfinite(model.item_factors).all()
 
-    def test_als_recommend_items_no_seen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_als_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ALS.recommend_items with exclude_seen=True never returns seen items."""
         import rusket
 
@@ -304,7 +311,7 @@ class TestOnlineRetailALS:
         for i in range(len(scores) - 1):
             assert scores[i] >= scores[i + 1], "Scores must be sorted descending"
 
-    def test_similar_items_returns_sorted_cosine(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_similar_items_returns_sorted_cosine(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """similar_items returns cosine similarities in descending order."""
         import rusket
 
@@ -323,9 +330,10 @@ class TestOnlineRetailALS:
         for i in range(len(sim_scores) - 1):
             assert sim_scores[i] >= sim_scores[i + 1]
 
-    def test_export_item_factors_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_export_item_factors_shape(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """export_item_factors produces one row per item with correct vector length."""
         import numpy as np
+
         import rusket
 
         model = rusket.ALS.from_transactions(
@@ -352,9 +360,10 @@ class TestOnlineRetailALS:
 class TestOnlineRetailEASE:
     """EASE from_transactions on real customer-product interactions."""
 
-    def test_ease_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_ease_from_transactions_shape(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """EASE factor matrices have expected dimensions."""
         import numpy as np
+
         import rusket
 
         model = rusket.EASE.from_transactions(
@@ -363,12 +372,11 @@ class TestOnlineRetailEASE:
             item_col="Description",
             regularization=100.0,
         )
-        n_users = online_retail_df["Customer_ID"].nunique()
         n_items = online_retail_df["Description"].nunique()
         assert model.item_weights.shape == (n_items, n_items)
         assert np.isfinite(model.item_weights).all()
 
-    def test_ease_recommend_items_no_seen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_ease_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """EASE.recommend_items with exclude_seen=True never returns seen items."""
         import rusket
 
@@ -384,7 +392,7 @@ class TestOnlineRetailEASE:
         for i in range(len(scores) - 1):
             assert scores[i] >= scores[i + 1], "Scores must be sorted descending"
 
-    def test_similar_items_returns_sorted_cosine(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_similar_items_returns_sorted_cosine(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """similar_items returns cosine similarities in descending order for EASE."""
         import rusket
 
@@ -416,9 +424,8 @@ class TestOnlineRetailEASE:
 class TestOnlineRetailItemKNN:
     """ItemKNN from_transactions on real customer-product interactions."""
 
-    def test_itemknn_from_transactions_shape(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_itemknn_from_transactions_shape(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ItemKNN factor matrices have expected dimensions."""
-        import numpy as np
         import rusket
 
         model = rusket.ItemKNN.from_transactions(
@@ -435,7 +442,7 @@ class TestOnlineRetailItemKNN:
         n_items = online_retail_df["Description"].nunique()
         assert model.w_indptr.shape[0] == n_items + 1
 
-    def test_itemknn_recommend_items_no_seen(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_itemknn_recommend_items_no_seen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ItemKNN.recommend_items with exclude_seen=True never returns seen items."""
         import rusket
 
@@ -463,9 +470,10 @@ class TestOnlineRetailItemKNN:
 class TestInstacartALS:
     """ALS collaborative filter on real Instacart grocery orders."""
 
-    def test_als_from_transactions_grocery(self, instacart_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_als_from_transactions_grocery(self, instacart_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """ALS trains on grocery orders and produces finite factor matrices."""
         import numpy as np
+
         import rusket
 
         model = rusket.ALS.from_transactions(
@@ -479,9 +487,10 @@ class TestInstacartALS:
         assert np.isfinite(model.user_factors).all()
         assert np.isfinite(model.item_factors).all()
 
-    def test_bpr_trains_on_grocery(self, instacart_df: "pd.DataFrame") -> None:
+    def test_bpr_trains_on_grocery(self, instacart_df: pd.DataFrame) -> None:
         """BPR trains on grocery orders without NaN in factors."""
         import numpy as np
+
         import rusket
 
         model = rusket.BPR.from_transactions(
@@ -495,7 +504,7 @@ class TestInstacartALS:
         assert np.isfinite(model.user_factors).all()
         assert np.isfinite(model.item_factors).all()
 
-    def test_score_potential_shape(self, instacart_df: "pd.DataFrame") -> None:
+    def test_score_potential_shape(self, instacart_df: pd.DataFrame) -> None:
         """score_potential returns (n_users, n_target_items) shaped matrix."""
         import rusket
 
@@ -513,7 +522,7 @@ class TestInstacartALS:
         potential = rusket.score_potential(user_histories[:n_users], model, target_categories=target_items)
         assert potential.shape == (n_users, len(target_items))
 
-    def test_prefixspan_grocery_sequences(self, instacart_df: "pd.DataFrame") -> None:
+    def test_prefixspan_grocery_sequences(self, instacart_df: pd.DataFrame) -> None:
         """PrefixSpan finds at least one frequent sequence on grocery data."""
         from rusket.prefixspan import PrefixSpan
 
@@ -545,10 +554,9 @@ class TestInstacartALS:
 class TestCrossAlgorithmSanity:
     """Tests that verify self-consistency across different algorithms."""
 
-    def test_mine_auto_agrees_with_fpgrowth(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_mine_auto_agrees_with_fpgrowth(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """rusket.mine() with method='fpgrowth' matches FPGrowth functional API."""
         import rusket
-        from rusket.fpgrowth import FPGrowth
 
         basket = rusket.from_transactions(
             online_retail_df,
@@ -563,7 +571,7 @@ class TestCrossAlgorithmSanity:
             f"mine() returned {len(auto_result)} itemsets, fpgrowth() returned {len(fp_result)}"
         )
 
-    def test_support_is_consistent_with_raw_counts(self, online_retail_df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def test_support_is_consistent_with_raw_counts(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """Support from FPGrowth matches manually-computed co-occurrence frequency."""
         import rusket
 

@@ -34,12 +34,14 @@ nav = [
 url = "https://github.com/bmsuisse/rusket"
 
 [project.theme]
+logo = "assets/logo.svg"
+favicon = "assets/logo_single.svg"
+
 [project.theme.font]
 text = "Inter"
 code = "JetBrains Mono"
 
 [project.theme.icon]
-logo = "material/basket"
 
 [[project.theme.palette]]
 scheme = "default"

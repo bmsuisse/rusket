@@ -103,7 +103,7 @@ def test_benchmark_large_skip(benchmark) -> None:
 @pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
 @pytest.mark.benchmark(group="polars_medium")
 def test_benchmark_polars_medium(benchmark) -> None:
-    df_pl = pl.from_pandas(DF_MEDIUM)
+    df_pl = pl.from_pandas(DF_MEDIUM)  # type: ignore[possibly-undefined]
     result = benchmark(fpgrowth, df_pl, min_support=0.01)
     assert result.shape[0] >= 0
 
@@ -111,7 +111,7 @@ def test_benchmark_polars_medium(benchmark) -> None:
 @pytest.mark.skipif(not HAS_POLARS, reason="polars not installed")
 @pytest.mark.benchmark(group="polars_large")
 def test_benchmark_polars_large(benchmark) -> None:
-    df_pl = pl.from_pandas(DF_LARGE)
+    df_pl = pl.from_pandas(DF_LARGE)  # type: ignore[possibly-undefined]
     result = benchmark(fpgrowth, df_pl, min_support=0.05)
     assert result.shape[0] >= 0
 
@@ -205,7 +205,7 @@ def test_benchmark_eclat_sparse_large(benchmark) -> None:
 @pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
 def test_vs_mlxtend_small() -> None:
     _, ours, our_mem = _timed(fpgrowth, DF_SMALL, min_support=0.1)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_SMALL, min_support=0.1)
+    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_SMALL, min_support=0.1)  # type: ignore[possibly-undefined]
     print(
         f"\n[small ] ours={ours * 1000:.1f}ms  mlxtend={mlx * 1000:.1f}ms  speedup={mlx / ours:.1f}×  "
         f"mem ours={our_mem / 1e3:.0f}KB  mlx={mlx_mem / 1e3:.0f}KB"
@@ -216,7 +216,7 @@ def test_vs_mlxtend_small() -> None:
 @pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
 def test_vs_mlxtend_medium() -> None:
     _, ours, our_mem = _timed(fpgrowth, DF_MEDIUM, min_support=0.01)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_MEDIUM, min_support=0.01)
+    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_MEDIUM, min_support=0.01)  # type: ignore[possibly-undefined]
     print(
         f"\n[medium] ours={ours:.3f}s  mlxtend={mlx:.3f}s  speedup={mlx / ours:.1f}×  "
         f"mem ours={our_mem / 1e6:.1f}MB  mlx={mlx_mem / 1e6:.1f}MB"

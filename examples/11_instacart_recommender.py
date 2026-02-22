@@ -45,7 +45,7 @@ DATA_DIR = Path(__file__).parent / "data" / "instacart"
 # ---------------------------------------------------------------------------
 
 
-def _make_synthetic() -> tuple["pd.DataFrame", "pd.DataFrame"]:  # type: ignore[name-defined]
+def _make_synthetic() -> tuple[pd.DataFrame, pd.DataFrame]:  # type: ignore[name-defined]
     """Return (orders_df, products_df) with synthetic grocery-like data."""
     import numpy as np
     import pandas as pd
@@ -87,7 +87,7 @@ def _make_synthetic() -> tuple["pd.DataFrame", "pd.DataFrame"]:  # type: ignore[
     return orders, products
 
 
-def _load_instacart() -> tuple["pd.DataFrame", "pd.DataFrame"] | None:
+def _load_instacart() -> tuple[pd.DataFrame, pd.DataFrame] | None:
     """Try to load real Instacart data. Returns None if unavailable."""
     import pandas as pd
 
@@ -129,8 +129,8 @@ def _load_instacart() -> tuple["pd.DataFrame", "pd.DataFrame"] | None:
 def main() -> None:
     use_synthetic = "--synthetic" in sys.argv
 
-    import pandas as pd
     import numpy as np
+
     import rusket
     from rusket.als import ALS
     from rusket.bpr import BPR

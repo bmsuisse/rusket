@@ -53,7 +53,7 @@ class RuleMinerMixin:
         if df_freq is None or df_freq.empty:
             import pandas as pd
 
-            return pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)
+            return pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)  # type: ignore[arg-type]
 
         # self._num_itemsets must be set by Model.__init__
         return _assoc_rules(

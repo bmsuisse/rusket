@@ -37,8 +37,8 @@ def test_factorize_reconstruction(factors: int) -> None:
     model = rusket.ALS(factors=factors, regularization=0.0, alpha=2.0, iterations=50, seed=42)
     model.fit(counts)
     reconstructed = model.user_factors @ model.item_factors.T
-    for i in range(counts.shape[0]):
-        for j in range(counts.shape[1]):
+    for i in range(counts.shape[0]):  # type: ignore[index]
+        for j in range(counts.shape[1]):  # type: ignore[index]
             expected = 1.0 if counts[i, j] > 0 else 0.0
             assert reconstructed[i, j] == pytest.approx(expected, abs=0.15), (
                 f"row={i}, col={j}, got={reconstructed[i, j]:.4f}"
@@ -67,7 +67,7 @@ def test_no_nan_in_factors() -> None:
 
 
 def test_no_nan_sparse() -> None:
-    Ciu = sparse.random(100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42)
+    Ciu = sparse.random(100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42)  # type: ignore[call-overload]
     model = rusket.ALS(factors=32, regularization=10.0, iterations=10, seed=23)
     model.fit(Ciu)
     assert np.isfinite(model.user_factors).all()

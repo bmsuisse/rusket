@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-
 from mlxtend.frequent_patterns import fpgrowth as mlxtend_fpgrowth
 
 from rusket import association_rules, mine

@@ -71,7 +71,7 @@ def download_dataset() -> None:
 # ---------------------------------------------------------------------------
 
 
-def load_retail() -> "pd.DataFrame":  # type: ignore[name-defined]
+def load_retail() -> pd.DataFrame:  # type: ignore[name-defined]
     import pandas as pd
 
     print("Loading Excel … (this may take 15-30 s on first run)")
@@ -114,7 +114,6 @@ def main() -> None:
     download_dataset()
     df = load_retail()
 
-    import pandas as pd
     import rusket
     from rusket.fpgrowth import FPGrowth
 

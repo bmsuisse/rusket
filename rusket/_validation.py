@@ -62,7 +62,7 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
             stacklevel=3,
         )
 
-        has_nans = pd.isna(df).any().any()
+        has_nans = pd.isna(df).any().any()  # type: ignore[union-attr]
         if null_values and not has_nans:
             warnings.warn(
                 "null_values=True is inefficient when there are no NaN values "

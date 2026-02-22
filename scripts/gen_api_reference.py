@@ -151,19 +151,19 @@ def _format_symbol(name: str, obj: Any, level: int = 2) -> str:
             sig = "()"
         # Get module path
         mod = getattr(obj, "__module__", "rusket")
-        lines.append(f"```python")
+        lines.append("```python")
         lines.append(f"from {mod} import {name}")
-        lines.append(f"")
+        lines.append("")
         lines.append(f"{name}{sig}")
-        lines.append(f"```")
+        lines.append("```")
     else:
         mod = getattr(obj, "__module__", "rusket")
         sig = _format_signature(obj)
-        lines.append(f"```python")
+        lines.append("```python")
         lines.append(f"from {mod} import {name}")
-        lines.append(f"")
+        lines.append("")
         lines.append(f"{name}{sig}")
-        lines.append(f"```")
+        lines.append("```")
     lines.append("")
 
     # ---- Parameters / Attributes -----------------------------------------
@@ -257,12 +257,6 @@ def build_api_reference() -> str:
     """Import rusket and build the full API reference markdown string."""
     import rusket
     import rusket.spark as spark_mod
-    import rusket.streaming as streaming_mod
-    import rusket.analytics as analytics_mod
-    import rusket.similarity as similarity_mod
-    import rusket.export as export_mod
-    import rusket.transactions as transactions_mod
-    import rusket.recommend as recommend_mod
     import rusket.viz as viz_mod
     from rusket.model import RuleMinerMixin
 

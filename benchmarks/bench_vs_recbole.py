@@ -1,10 +1,11 @@
+import os
+import sys
 import time
 import urllib.request
 import zipfile
-import os
-import pandas as pd
+
 import numpy as np
-import sys
+import pandas as pd
 
 # Ultimate monkeypatch to defeat RecBole's configurator crash on numpy 2.0
 np.float_ = np.float64
@@ -18,7 +19,7 @@ sys.modules["numpy"].bool = bool
 sys.modules["numpy"].bool_ = bool
 
 # We must mock it inside recbole before it crashes
-import recbole.config.configurator
+import recbole.config.configurator  # noqa: E402
 
 
 def silent_settings(self):
@@ -27,13 +28,14 @@ def silent_settings(self):
 
 recbole.config.configurator.Config.compatibility_settings = silent_settings
 
-import rusket
-from recbole.config import Config
-from recbole.data import create_dataset, data_preparation
-from recbole.model.general_recommender import BPR as RecBoleBPR
-from recbole.model.general_recommender import EASE as RecBoleEASE
-from recbole.model.general_recommender import ItemKNN as RecBoleItemKNN
-from recbole.trainer import Trainer
+from recbole.config import Config  # noqa: E402
+from recbole.data import create_dataset, data_preparation  # noqa: E402
+from recbole.model.general_recommender import BPR as RecBoleBPR  # noqa: E402
+from recbole.model.general_recommender import EASE as RecBoleEASE  # noqa: E402
+from recbole.model.general_recommender import ItemKNN as RecBoleItemKNN  # noqa: E402
+from recbole.trainer import Trainer  # noqa: E402
+
+import rusket  # noqa: E402
 
 os.makedirs("data/ml-100k", exist_ok=True)
 if not os.path.exists("data/ml-100k/ml-100k.inter"):
@@ -54,7 +56,7 @@ if not os.path.exists("data/ml-100k/ml-100k.inter"):
     )
     df.to_csv("data/ml-100k/ml-100k.inter", sep="\t", index=False)
 
-import logging
+import logging  # noqa: E402
 
 logging.getLogger("recbole").setLevel(logging.CRITICAL)
 

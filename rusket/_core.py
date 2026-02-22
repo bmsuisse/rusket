@@ -44,7 +44,7 @@ def _build_result(
     supports_arr, offsets_arr, items_arr = raw
 
     if len(supports_arr) == 0:
-        return pd.DataFrame(columns=["support", "itemsets"])
+        return pd.DataFrame(columns=["support", "itemsets"])  # type: ignore[arg-type]
 
     supports = supports_arr / n_rows
 

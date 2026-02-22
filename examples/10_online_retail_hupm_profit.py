@@ -44,7 +44,7 @@ def _ensure_dataset() -> None:
         ex09.download_dataset()
 
 
-def load_retail_with_revenue() -> "pd.DataFrame":  # type: ignore[name-defined]
+def load_retail_with_revenue() -> pd.DataFrame:  # type: ignore[name-defined]
     _ensure_dataset()
     import pandas as pd
 
