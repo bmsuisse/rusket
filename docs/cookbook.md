@@ -20,53 +20,82 @@ from rusket import prefixspan, sequences_from_event_log, hupm, similar_items, Re
 
 ---
 
-## 1. Market Basket Analysis with FPGrowth
+## 1. Market Basket Analysis — Grocery Retail
 
-### Generate a synthetic retail dataset
+### Business context
+
+A supermarket chain wants to identify which product combinations appear most frequently in customer baskets across all checkout terminals. The output drives:
+
+- **"Frequently Bought Together"** widgets on the self-checkout screen
+- **Shelf adjacency** decisions (place high-lift pairs closer together)
+- **Promotional bundles** (discount pairs with high confidence but low current margin)
+
+### Prepare the basket data
+
+In practice this comes from your POS system as a long-format order table. For demonstration we build a plausible synthetic dataset:
 
 ```python
+import numpy as np
+import pandas as pd
+from rusket import from_transactions
+
 np.random.seed(42)
 
-items = [
-    "Milk", "Bread", "Butter", "Eggs", "Cheese", "Yogurt",
-    "Coffee", "Tea", "Sugar", "Apples", "Bananas", "Oranges",
-    "Chicken", "Beef", "Fish", "Rice", "Pasta", "Tomato Sauce",
-    "Onions", "Garlic",
-]
+# Realistic grocery catalogue with purchase probabilities (power-law distributed)
+categories = {
+    "Milk": 0.55, "Bread": 0.52, "Butter": 0.36, "Eggs": 0.41,
+    "Cheese": 0.28, "Yogurt": 0.22, "Coffee": 0.31, "Tea": 0.18,
+    "Sugar": 0.20, "Apples": 0.25, "Bananas": 0.30, "Oranges": 0.15,
+    "Chicken": 0.35, "Pasta": 0.27, "Tomato Sauce": 0.26, "Onions": 0.40,
+}
 
-n_transactions = 10_000
-probs = np.power(np.arange(1, len(items) + 1, dtype=float), -0.7)
-probs = np.clip(probs / probs.max() * 0.3, 0.01, 0.8)
-
-df = pd.DataFrame(
-    np.random.rand(n_transactions, len(items)) < probs,
-    columns=items,
+n_receipts = 10_000
+df_long = pd.DataFrame(
+    [(receipt, product)
+     for receipt in range(n_receipts)
+     for product, prob in categories.items()
+     if np.random.rand() < prob],
+    columns=["receipt_id", "product"],
 )
+print(f"Simulated {n_receipts:,} receipts, {len(df_long):,} line items")
+
+# Convert to one-hot basket matrix
+basket = from_transactions(df_long, transaction_col="receipt_id", item_col="product")
 ```
 
-### Find frequent itemsets
+### Find frequent product combinations
 
 ```python
-fi = mine(df, min_support=0.05, use_colnames=True)
-# Returns a Pandas DataFrame with columns: support, itemsets
-print(f"Found {len(fi)} frequent itemsets")
-fi.sort_values("support", ascending=False).head(10)
+from rusket import mine
+
+# Keep combinations appearing in ≥5% of receipts
+freq = mine(basket, min_support=0.05, use_colnames=True)
+print(f"Found {len(freq):,} frequent product combinations")
+
+top_combos = freq.sort_values("support", ascending=False)
+print(top_combos.head(10))
+# e.g. (Milk,) 55%, (Bread,) 52%, (Milk, Bread) 28% ...
 ```
 
-### Generate association rules
+### Generate cross-sell rules
 
 ```python
-rules = association_rules(fi, num_itemsets=len(df), min_threshold=0.3)
-# Returns: antecedents, consequents, support, confidence, lift, ...
-strong = rules[(rules["confidence"] > 0.4) & (rules["lift"] > 1.2)]
-strong.sort_values("lift", ascending=False).head(10)
+from rusket import association_rules
+
+rules = association_rules(freq, num_itemsets=n_receipts, min_threshold=0.3)
+
+# Filter for actionable rules: high confidence AND lift (better than random)
+actionable = rules[(rules["confidence"] > 0.45) & (rules["lift"] > 1.2)]
+print(actionable.sort_values("lift", ascending=False).head(10))
+# antecedents     consequents   confidence  lift
+# (Butter,)       (Bread,)      0.72        1.38   → 72% of Butter buyers also buy Bread
 ```
 
-### Limit itemset length
+### Limit itemset length for large catalogues
 
 ```python
-# Only find pairs and triples — much faster for large catalogs
-fi_pairs = mine(df, min_support=0.02, max_len=2, use_colnames=True)
+# For a full supermarket with 5000 SKUs: cap at pairs and triples to avoid explosion
+freq_pairs = mine(basket, min_support=0.02, max_len=2, use_colnames=True)
 ```
 
 ---
@@ -128,61 +157,57 @@ basket = from_transactions(spark_df, user_col="order_id", item_col="item")
 
 ---
 
-## 4. Collaborative Filtering with ALS
+## 4. Collaborative Filtering with ALS — "For You" Personalisation
 
-`ALS` (Alternating Least Squares) learns user and item embeddings from implicit feedback (clicks, plays, purchases) and enables personalised recommendations.
+`ALS` (Alternating Least Squares) learns latent user and item embeddings from **implicit feedback** (purchases, clicks, plays) and enables personalised "For You" recommendations.
 
-### Prepare the interaction matrix
+### Business context
+
+An e-commerce platform wants to show a personalised homepage to each logged-in user. ALS learns from past purchase history which categories of products each user affinity group prefers — without any explicit ratings.
+
+### Fit from purchase history (event log)
 
 ```python
-from scipy.sparse import csr_matrix
+from rusket import ALS
 
-# Build a user × item interaction matrix (1 = interacted)
-n_users, n_items = 10_000, 5_000
-rows = np.random.randint(0, n_users, size=200_000)
-cols = np.random.randint(0, n_items, size=200_000)
+# Purchase history from your order management system
+purchases = pd.DataFrame({
+    "customer_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1003],
+    "sku":         ["A10", "B22", "C15",  "A10", "D33",  "B22", "C15", "E07"],
+    "revenue":     [29.99, 49.00, 9.99,  29.99, 15.00, 49.00, 9.99, 22.00],
+})
 
-mat = csr_matrix(
-    (np.ones(len(rows), dtype=np.float32), (rows, cols)),
-    shape=(n_users, n_items),
+# revenue used as confidence weight (alpha scaling)
+model = ALS(factors=64, iterations=15, alpha=40.0, cg_iters=3, verbose=True)
+model = ALS.from_transactions(
+    purchases,
+    transaction_col="customer_id",
+    item_col="sku",
+    rating_col="revenue",
 )
 ```
 
-### Fit the model
+### Get personalised recommendations
 
 ```python
-model = ALS(
-    factors=64,        # latent dimension
-    iterations=15,     # ALS alternating steps
-    alpha=40.0,        # confidence scaling
-    regularization=0.01,
-    verbose=True,      # print per-iteration timing
-    cg_iters=3,        # CG solver steps (3 is usually optimal)
-)
-model.fit(mat)
-```
+# Top-5 SKUs for customer 1002, excluding already-purchased items
+skus, scores = model.recommend_items(user_id=1002, n=5, exclude_seen=True)
+print(f"Recommended SKUs for customer 1002: {skus}")
 
-### Get recommendations
-
-```python
-# Top-10 items for user 0, excluding already-seen items
-item_ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
-
-# Top-10 users likely to enjoy item 5
-user_ids, scores = model.recommend_users(item_id=5, n=10)
+# Target: which customers should receive a promo for SKU B22 (high-margin item)?
+top_customers, scores = model.recommend_users(item_id="B22", n=100)
+print(f"Top customers to target with B22 promo: {top_customers[:5]}")
 ```
 
 ### Fit from transaction data
 
 ```python
-purchases = pd.DataFrame({
-    "user_id": [1, 1, 2, 3, 3, 3],
-    "item_id": [101, 102, 101, 103, 104, 101],
-})
-
-model = ALS(factors=32, iterations=10, verbose=True)
-model = ALS.from_transactions(purchases, transaction_col="user_id", item_col="item_id")
+# If you have pre-built purchase integers from your warehouse:
+model2 = ALS(factors=32, iterations=10, verbose=True)
+model2 = ALS.from_transactions(purchases, transaction_col="customer_id", item_col="sku")
 ```
+
+
 
 ### Access latent factors directly
 

@@ -68,43 +68,46 @@ pip install "rusket[pandas]"
 
 ## 🚀 Quick Start
 
-### Basic — Pandas
+### "Frequently Bought Together" — Grocery Checkout Data
+
+Identify which products co-occur most in customer baskets — the foundation of cross-sell widgets, promotional bundles, and shelf placement decisions.
 
 ```python
 import pandas as pd
 from rusket import mine, association_rules
 
-# One-hot encoded boolean DataFrame
-data = {
-    "bread":  [1, 1, 0, 1, 1],
-    "butter": [1, 0, 1, 1, 0],
-    "milk":   [1, 1, 1, 0, 1],
-    "eggs":   [0, 1, 1, 0, 1],
-    "cheese": [0, 0, 1, 0, 0],
-}
-df = pd.DataFrame(data).astype(bool)
+# One week of supermarket checkout data (1 row = 1 receipt, 1 col = 1 SKU)
+receipts = pd.DataFrame({
+    "milk":         [1, 1, 0, 1, 1, 0, 1],
+    "bread":        [1, 0, 1, 1, 0, 1, 1],
+    "butter":       [1, 0, 1, 0, 0, 1, 0],
+    "eggs":         [0, 1, 1, 0, 1, 0, 1],
+    "coffee":       [0, 1, 0, 0, 1, 1, 0],
+    "orange_juice": [1, 0, 0, 1, 0, 0, 1],
+}, dtype=bool)
 
-# 1. Mine frequent itemsets
-# method="auto" automatically selects FP-Growth or Eclat based on dataset density
-freq = mine(df, min_support=0.4, use_colnames=True)
+# Step 1 — which SKU combinations appear in ≥40% of receipts?
+# method="auto" selects FP-Growth or Eclat based on catalogue density
+freq = mine(receipts, min_support=0.4, use_colnames=True)
 
-# 2. Generate association rules
+# Step 2 — keep rules with ≥60% confidence
 rules = association_rules(
     freq,
-    num_itemsets=len(df),
+    num_itemsets=len(receipts),
     metric="confidence",
     min_threshold=0.6,
 )
 
+# Lift > 1 means customers buy these together more than chance alone
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
       .sort_values("lift", ascending=False))
 ```
 
 ---
 
-### 🛒 Transaction Data (Long Format)
+### 🛒 E-Commerce Order Lines (Long Format)
 
-Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices.
+Real-world data arrives as `(order_id, sku)` rows from a database — not one-hot matrices.
 
 #### Functional API
 
@@ -112,35 +115,40 @@ Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices.
 import pandas as pd
 from rusket import from_transactions, mine
 
-# Long-format transactional data
-df = pd.DataFrame({
-    "order_id": [1, 1, 1, 2, 2, 3],
-    "item":     [3, 4, 5, 3, 5, 8],
+# Order line export from your e-commerce backend
+orders = pd.DataFrame({
+    "order_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003],
+    "sku":      ["HDPHONES", "USB_DAC", "AUX_CABLE",
+                 "HDPHONES", "CARRY_CASE",
+                 "USB_DAC",  "AUX_CABLE"],
 })
 
-# Convert to one-hot boolean matrix, then mine
-ohe = from_transactions(df)
+# Convert long-format → one-hot boolean matrix, then mine
+ohe  = from_transactions(orders, transaction_col="order_id", item_col="sku")
 freq = mine(ohe, min_support=0.3, use_colnames=True)
 print(freq)
 ```
 
 #### OOP Class API
 
-All mining algorithms also expose a class-based API that goes straight from long-format data to results:
+All mining algorithms expose a class-based API that goes straight from order lines to recommendations:
 
 ```python
 from rusket import FPGrowth, Eclat, AutoMiner
 
-# Equivalent — all classes expose the same interface
-model = FPGrowth.from_transactions(df, min_support=0.3)
-# model = Eclat.from_transactions(df, min_support=0.3)
-# model = AutoMiner.from_transactions(df, min_support=0.3)  # auto-selects algorithm
+model = AutoMiner.from_transactions(
+    orders,
+    transaction_col="order_id",
+    item_col="sku",
+    min_support=0.3,
+)
 
 freq  = model.mine(use_colnames=True)
 rules = model.association_rules(metric="confidence", min_threshold=0.6)
 
-# Cart cross-sell recommendations directly from the model
-suggestions = model.recommend_items(["bread", "milk"], n=3)
+# Which accessories should be suggested when headphones are in the cart?
+suggestions = model.recommend_items(["HDPHONES"], n=3)
+# → e.g. ["USB_DAC", "AUX_CABLE", "CARRY_CASE"]
 ```
 
 Or use the explicit type variants:
@@ -148,33 +156,34 @@ Or use the explicit type variants:
 ```python
 from rusket import from_pandas, from_polars
 
-ohe = from_pandas(df)                      # Pandas DataFrame
-ohe = from_polars(pl_df)                   # Polars DataFrame
-ohe = from_transactions([[3, 4], [3, 5]])  # list of lists
+ohe = from_pandas(orders, transaction_col="order_id", item_col="sku")
+ohe = from_polars(pl_orders, transaction_col="order_id", item_col="sku")
+ohe = from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
 ```
 
 > **Spark** is also supported: `from_spark(spark_df)` calls `.toPandas()` internally.
 
 ---
 
-### ⚡ Eclat — Vertical Mining
+### ⚡ Eclat — Large SKU Catalogues
 
-`eclat` uses vertical bitset representation + hardware `popcnt` for fast support counting. Ideal for **sparse retail basket** data.
+`eclat` uses vertical bitset representation + hardware `popcnt` for fast support counting. Ideal for **large SKU catalogues** where baskets contain only a handful of items out of thousands (low density, typically < 0.15).
 
 ```python
 import pandas as pd
 from rusket import eclat, association_rules
 
-df = pd.DataFrame({
-    "bread":  [True, True, False, True, True],
-    "butter": [True, False, True, True, False],
-    "milk":   [True, True, True, False, True],
-    "eggs":   [False, True, True, False, True],
+# Fashion e-tailer: 5 receipts, basket contains only a subset of the catalogue
+baskets = pd.DataFrame({
+    "jeans":    [True, True, False, True, True],
+    "t_shirt":  [True, False, True,  True, False],
+    "sneakers": [True, True, True,  False, True],
+    "belt":     [False, True, True,  False, True],
 })
 
-# Eclat — same API as fpgrowth
-freq = eclat(df, min_support=0.4, use_colnames=True)
-rules = association_rules(freq, num_itemsets=len(df), min_threshold=0.6)
+# Eclat — same API as fpgrowth, typically faster on sparse catalogues
+freq  = eclat(baskets, min_support=0.4, use_colnames=True)
+rules = association_rules(freq, num_itemsets=len(baskets), min_threshold=0.6)
 print(rules)
 ```
 
@@ -184,55 +193,39 @@ You almost always want to use `rusket.mine(method="auto")`. This evaluates the d
 
 | Scenario | Algorithm chosen by `method="auto"` |
 |---|---|
-| Very sparse data (density < 0.15) | `eclat` (bitset/SIMD intersections) |
-| Dense data (density > 0.15) | `fpgrowth` (FP-tree traversals) |
+| Large SKU catalogue, small basket size (density < 0.15) | `eclat` (bitset/SIMD intersections) |
+| Smaller catalogue, dense baskets (density > 0.15) | `fpgrowth` (FP-tree traversals) |
 
 ---
 
-### 🐻‍❄️ Polars Input
+### 🐻‍❄️ Polars Input — Reading from Data Lake Parquet
 
-`rusket` natively accepts [Polars](https://pola.rs/) DataFrames. Data is transferred via Arrow zero-copy buffers — **no conversion overhead**.
+For teams running a modern data stack with Parquet files on S3/GCS/Azure Blob, `rusket` natively accepts [Polars](https://pola.rs/) DataFrames. Data is transferred via Arrow zero-copy buffers — **no conversion overhead**.
+
+The fastest path from a data lake to "Frequently Bought Together" rules:
 
 ```python
 import polars as pl
-import numpy as np
-from rusket import fpgrowth, association_rules
+from rusket import mine, association_rules
 
-# ── 1. Create a Polars DataFrame ────────────────────────────────────
-rng = np.random.default_rng(0)
-n_rows, n_cols = 20_000, 150
-products = [f"product_{i:03d}" for i in range(n_cols)]
+# ── 1. Read a one-hot basket matrix directly from S3/GCS/local Parquet ──
+# Columns = SKUs (bool), rows = receipts — produced by your dbt or Spark pipeline
+baskets = pl.read_parquet("s3://data-lake/gold/basket_ohe.parquet")
+print(f"Loaded {baskets.shape[0]:,} receipts × {baskets.shape[1]} SKUs")
 
-# Power-law popularity: top products appear often, tail products are rare
-support = np.clip(0.5 / np.arange(1, n_cols + 1, dtype=float) ** 0.5, 0.005, 0.5)
-matrix = rng.random((n_rows, n_cols)) < support
+# ── 2. Mine frequent combinations ────────────────────────────────────
+freq = mine(baskets, min_support=0.02, use_colnames=True, max_len=3)
+print(f"Found {len(freq):,} frequent itemsets")
+print(freq.sort_values("support", ascending=False).head(10))
 
-df_pl = pl.DataFrame({p: matrix[:, i].tolist() for i, p in enumerate(products)})
-print(f"Polars DataFrame: {df_pl.shape[0]:,} rows × {df_pl.shape[1]} columns")
-
-# ── 2. fpgrowth — same API as pandas ────────────────────────────────
-freq = fpgrowth(df_pl, min_support=0.05, use_colnames=True)
-print(f"Frequent itemsets: {len(freq):,}")
-print(freq.sort_values("support", ascending=False).head(8))
-
-# ── 3. Association rules ────────────────────────────────────────────
-rules = association_rules(freq, num_itemsets=n_rows, metric="lift", min_threshold=1.1)
-print(f"Rules: {len(rules):,}")
+# ── 3. Generate cross-sell rules ────────────────────────────────────
+rules = association_rules(freq, num_itemsets=len(baskets), metric="lift", min_threshold=1.2)
+print(f"Rules with lift > 1.2: {len(rules):,}")
 print(
     rules[["antecedents", "consequents", "confidence", "lift"]]
     .sort_values("lift", ascending=False)
-    .head(6)
+    .head(8)
 )
-```
-
-Or more concisely — just read a Parquet file:
-
-```python
-import polars as pl
-from rusket import mine
-
-df = pl.read_parquet("transactions.parquet")
-freq = mine(df, min_support=0.05, use_colnames=True)
 ```
 
 > **How it works under the hood:**  
@@ -240,31 +233,52 @@ freq = mine(df, min_support=0.05, use_colnames=True)
 
 ---
 
-### 💎 High-Utility Pattern Mining (HUPM)
+### 💎 High-Utility Pattern Mining (HUPM) — Profit-Driven Bundle Discovery
 
-Go beyond frequency by mining patterns that yield the highest total utility (e.g., profit), even if they appear rarely. `rusket` implements the state-of-the-art **EFIM** algorithm in Rust.
+Frequent items aren't always the most profitable. HUPM finds product combinations that generate the **highest total gross margin** — even if they appear rarely. `rusket` implements the state-of-the-art **EFIM** algorithm in Rust.
+
+#### OOP Class API
 
 ```python
 import pandas as pd
-from rusket import mine_hupm
+from rusket import HUPM
 
-# Long-format DataFrame with utilities (profits)
-df = pd.DataFrame({
-    "txn_id": [1, 1, 1, 2, 2, 3, 3],
-    "item": ["Apple", "Bread", "Milk", "Apple", "Milk", "Bread", "Milk"],
-    "profit": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]
+# Specialty foods retailer: receipt line items with gross margin per unit sold
+orders = pd.DataFrame({
+    "receipt_id": [1, 1, 1, 2, 2, 3, 3],
+    "product": ["aged_cheese", "wine_flight", "charcuterie",
+                "aged_cheese", "charcuterie",
+                "wine_flight", "charcuterie"],
+    "margin": [8.50, 12.00, 6.50,   # receipt 1 — margin per item
+               8.50, 6.50,           # receipt 2
+               12.00, 6.50],         # receipt 3
 })
 
-# Mine itemsets with at least $7 total profit
-# Returns a DataFrame sorted by utility
-high_utility = mine_hupm(
-    data=df,
-    transaction_col="txn_id",
-    item_col="item",
-    utility_col="profit",
-    min_utility=7.0
+# Find all product bundles generating ≥ €20 total margin across all receipts
+high_margin = HUPM.from_transactions(
+    orders,
+    transaction_col="receipt_id",
+    item_col="product",
+    utility_col="margin",
+    min_utility=20.0,
+).mine()
+print(high_margin.head())
+# e.g. aged_cheese + wine_flight + charcuterie → total margin 81.0
+```
+
+#### Functional API
+
+```python
+from rusket import mine_hupm
+
+high_margin = mine_hupm(
+    data=orders,
+    transaction_col="receipt_id",
+    item_col="product",
+    utility_col="margin",
+    min_utility=20.0,
 )
-print(high_utility.head())
+print(high_margin.head())
 ```
 
 ---
@@ -332,6 +346,130 @@ freq = miner.mine(min_support=0.001, max_len=3)
 
 ---
 
+### 🌩️ Distributed Computing with Apache Spark
+
+`rusket` ships a full Spark integration layer in `rusket.spark`. All algorithms run as **Native Arrow UDFs** via `applyInArrow` — Rust is called directly on each executor, with zero Python overhead per row.
+
+#### How it works
+
+```
+PySpark DataFrame
+  └─► groupby(group_col).applyInArrow(...)
+        └─► Arrow Table (per partition / per group)
+              └─► Polars zero-copy conversion
+                    └─► rusket Rust extension (on the executor)
+                          └─► results → PyArrow → PySpark DataFrame
+```
+
+#### Full Example — Retail Basket Analysis per Store
+
+```python
+from pyspark.sql import SparkSession
+from rusket.spark import mine_grouped, rules_grouped
+
+spark = SparkSession.builder.appName("rusket-demo").getOrCreate()
+
+# ── 1. Load your OHE transaction table (one row = one basket) ──────────────
+#    Schema: store_id (string), bread (bool), butter (bool), milk (bool), ...
+spark_df = spark.read.parquet("s3://data/baskets/")
+
+# ── 2. Mine frequent itemsets per store in parallel ──────────────────────────
+#    Each Spark task calls the Rust FP-Growth/Eclat engine on its Arrow batch.
+freq_df = mine_grouped(
+    spark_df,
+    group_col="store_id",
+    min_support=0.05,    # 5% support per store
+    method="auto",       # auto-selects FP-Growth or Eclat
+)
+# freq_df schema: store_id | support (double) | itemsets (array<string>)
+
+# ── 3. Count transactions per store (needed for rule support) ────────────────
+from pyspark.sql import functions as F
+counts = (
+    spark_df.groupby("store_id")
+    .agg(F.count("*").alias("n"))
+    .rdd.collectAsMap()          # {"store_1": 12000, "store_2": 8500, ...}
+)
+
+# ── 4. Generate association rules per store ──────────────────────────────────
+rules_df = rules_grouped(
+    freq_df,
+    group_col="store_id",
+    num_itemsets=counts,         # pass per-group counts as a dict
+    metric="confidence",
+    min_threshold=0.6,
+)
+# rules_df schema: store_id | antecedents | consequents | confidence | lift | ...
+
+rules_df.orderBy("lift", ascending=False).show(10, truncate=False)
+```
+
+#### Sequential Patterns per Category
+
+```python
+from rusket.spark import prefixspan_grouped
+
+# event_log schema: category_id, user_id, item_id, event_ts
+event_log = spark.read.parquet("s3://data/events/")
+
+seq_df = prefixspan_grouped(
+    event_log,
+    group_col="category_id",   # mine independently per product category
+    user_col="user_id",        # sequence identifier within the group
+    time_col="event_ts",       # ordering column
+    item_col="item_id",
+    min_support=50,            # absolute count: pattern must appear in ≥50 sessions
+    max_len=4,
+)
+# seq_df schema: category_id | support (long) | sequence (array<string>)
+seq_df.show(5, truncate=False)
+```
+
+#### High-Utility Patterns per Region
+
+```python
+from rusket.spark import hupm_grouped
+
+# profit_log schema: region_id, txn_id, item_id, profit
+profit_log = spark.read.parquet("s3://data/profit/")
+
+utility_df = hupm_grouped(
+    profit_log,
+    group_col="region_id",
+    transaction_col="txn_id",
+    item_col="item_id",
+    utility_col="profit",
+    min_utility=500.0,         # only itemsets with combined profit ≥ €500
+)
+# utility_df schema: region_id | utility (double) | itemset (array<long>)
+utility_df.show(5, truncate=False)
+```
+
+#### Batch Recommendations across the Cluster
+
+```python
+from rusket.spark import recommend_batches
+from rusket import ALS
+
+# 1. Train an ALS model locally (or load a pre-trained one)
+als = ALS(factors=64, iterations=15).from_transactions(
+    events_pd,
+    user_col="user_id",
+    item_col="item_id",
+)
+
+# 2. Scale-out scoring: one recommendation row per user
+user_df = spark.read.parquet("s3://data/users/").select("user_id")
+
+recs_df = recommend_batches(user_df, model=als, user_col="user_id", k=10)
+# recs_df schema: user_id (string) | recommended_items (array<int>)
+recs_df.show(5, truncate=False)
+```
+
+> **Tip — Databricks / Delta Lake:** All functions return a standard PySpark DataFrame, so you can write results back with `.write.format("delta").save(...)` or `.saveAsTable(...)` directly.
+
+---
+
 ### 🔄 Migrating from mlxtend
 
 `rusket` is a **drop-in replacement**. The only API difference is `num_itemsets`:
@@ -359,7 +497,55 @@ freq = miner.mine(min_support=0.001, max_len=3)
 
 ## 📖 API Reference
 
-### `mine`
+### OOP Class API
+
+Every algorithm in `rusket` exposes a **class-based API** in addition to the functional helpers. All classes share a unified interface inherited from `BaseModel`:
+
+| Class | Inherits from | Description |
+|-------|--------------|-------------|
+| `FPGrowth` | `Miner`, `RuleMinerMixin` | FP-Tree parallel mining |
+| `Eclat` | `Miner`, `RuleMinerMixin` | Vertical bitset mining |
+| `AutoMiner` | `Miner`, `RuleMinerMixin` | Auto-selects FP-Growth or Eclat |
+| `HUPM` | `Miner` | High-Utility Pattern Mining (EFIM) |
+| `PrefixSpan` | `Miner` | Sequential pattern mining |
+| `ALS` | `ImplicitRecommender` | Alternating Least Squares CF |
+| `BPR` | `ImplicitRecommender` | Bayesian Personalized Ranking CF |
+
+All classes share the following data-ingestion class methods inherited from `BaseModel`:
+
+```python
+# Load from long-format (transaction_id, item_id) DataFrame or list of lists
+model = FPGrowth.from_transactions(df, transaction_col="order_id", item_col="item", min_support=0.3)
+
+# Typed convenience aliases — same result
+model = FPGrowth.from_pandas(df,  ...)
+model = FPGrowth.from_polars(pl_df, ...)
+model = FPGrowth.from_spark(spark_df, ...)
+```
+
+`Miner` subclasses (`FPGrowth`, `Eclat`, `AutoMiner`) additionally expose `RuleMinerMixin`, giving a fluent pipeline:
+
+```python
+model  = AutoMiner.from_transactions(df, min_support=0.3)
+freq   = model.mine(use_colnames=True)             # pd.DataFrame [support, itemsets]
+rules  = model.association_rules(metric="lift")    # pd.DataFrame [antecedents, consequents, ...]
+recs   = model.recommend_items(["bread", "milk"])  # list of suggested items
+```
+
+`ImplicitRecommender` subclasses (`ALS`, `BPR`) expose:
+
+```python
+model = ALS(factors=64, iterations=15).fit(user_item_csr)
+# — or directly from an event log —
+model = ALS(factors=64).from_transactions(df, user_col="user_id", item_col="item_id")
+
+items, scores = model.recommend_items(user_id=42, n=10, exclude_seen=True)
+users, scores = model.recommend_users(item_id=99, n=5)
+```
+
+---
+
+### `mine` (functional)
 
 ```python
 rusket.mine(
@@ -373,7 +559,7 @@ rusket.mine(
 ) -> pd.DataFrame
 ```
 
-Dynamically selects the optimal mining algorithm based on the dataset density heuristically. It's highly recommended to use this instead of `fpgrowth` or `eclat` directly.
+Dynamically selects the optimal mining algorithm based on the dataset density heuristically. It's highly recommended to use this instead of `fpgrowth` or `eclat` directly. Equivalent to `AutoMiner(...).mine()`.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -389,7 +575,7 @@ Dynamically selects the optimal mining algorithm based on the dataset density he
 
 ---
 
-### `fpgrowth`
+### `fpgrowth` (functional)
 
 ```python
 rusket.fpgrowth(
@@ -401,6 +587,8 @@ rusket.fpgrowth(
     verbose: int = 0,
 ) -> pd.DataFrame
 ```
+
+Equivalent to `FPGrowth(...).mine()`. See class table above.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -415,7 +603,7 @@ rusket.fpgrowth(
 
 ---
 
-### `eclat`
+### `eclat` (functional)
 
 ```python
 rusket.eclat(
@@ -428,13 +616,13 @@ rusket.eclat(
 ) -> pd.DataFrame
 ```
 
-Same parameters as `fpgrowth`. Uses vertical bitset representation (Eclat algorithm) instead of FP-Tree.
+Equivalent to `Eclat(...).mine()`. Same parameters as `fpgrowth`. Uses vertical bitset representation (Eclat algorithm) instead of FP-Tree.
 
 **Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
 
 ---
 
-### `association_rules`
+### `association_rules` (functional)
 
 ```python
 rusket.association_rules(
@@ -446,6 +634,8 @@ rusket.association_rules(
     return_metrics: list[str] = [...],  # all 12 metrics by default
 ) -> pd.DataFrame
 ```
+
+Alternatively, if you used the OOP API, call `model.association_rules(metric=..., min_threshold=...)` directly — `num_itemsets` is tracked automatically.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -477,7 +667,7 @@ rusket.association_rules(
 
 ---
 
-### `from_transactions`
+### `from_transactions` (functional)
 
 ```python
 rusket.from_transactions(
@@ -507,62 +697,62 @@ rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 
 ### 🎯 ALS & BPR Collaborative Filtering
 
-Both models share the same `ImplicitRecommender` interface and support fitting from a sparse matrix or directly from a raw event log.
+Both models learn user and item embeddings from **implicit feedback** (purchases, clicks, plays) and power personalised recommendations at scale. Use **ALS** for broad serendipitous discovery; use **BPR** when you care only about top-N ranking.
 
 ```python
 from rusket import ALS, BPR
 
-# ── From a user-item sparse matrix ───────────────────────────────────
-als = ALS(
-    factors=64,
-    iterations=15,
-    cg_iters=3,          # Conjugate Gradient iterations per solve
-    use_cholesky=False,  # True = exact Cholesky solve (faster for dense data)
-    anderson_m=5,        # Anderson Acceleration (30–50% fewer ALS iterations)
-).fit(user_item_csr)
+# ── "For You" homepage — music streaming platform ────────────────────
+# event log: user_id | track_id | plays (optional weight)
+plays = pd.DataFrame({
+    "user_id":  [101, 101, 102, 102, 103, 103, 103],
+    "track_id": ["T01", "T03", "T01", "T05", "T02", "T03", "T05"],
+    "plays":    [12, 5, 8, 3, 20, 1, 7],  # play count as confidence weight
+})
 
-bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
-
-# ── Or directly from a long-format event log ─────────────────────────
-als = ALS(factors=64).from_transactions(
-    df,                        # pd.DataFrame / pl.DataFrame / Spark DataFrame
-    user_col="user_id",
-    item_col="item_id",
+als = ALS(factors=64, iterations=15, alpha=40.0).from_transactions(
+    plays, user_col="user_id", item_col="track_id", rating_col="plays"
 )
 
-# Recommendations
-items, scores = als.recommend_items(user_id=42, n=10, exclude_seen=True)
-users, scores = als.recommend_users(item_id=99, n=5)  # Top users for an item
+# Top-10 tracks for user 101, excluding already-played tracks
+tracks, scores = als.recommend_items(user_id=101, n=10, exclude_seen=True)
+
+# Which users are most likely to enjoy track T05? — useful for email campaigns
+users, scores = als.recommend_users(item_id="T05", n=50)
+
+# BPR — optimise ranking directly rather than reconstruction
+bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
 ```
 
 ### 🎯 Hybrid Recommender API
-Combine the serendipity of **Collaborative Filtering** (ALS/BPR) with the strict, deterministic logic of **Frequent Pattern Mining**.
+
+Combine **Collaborative Filtering** (ALS/BPR) with **Frequent Pattern Mining** to cover every placement surface — personalised homepage ("For You") and active cart ("Frequently Bought Together") — in a single engine.
 
 ```python
 from rusket import ALS, Recommender, mine, association_rules
 
-# 1. Train your Collaborative Filtering model
-als = ALS(factors=64).fit(user_item_matrix)
+# 1. Train on purchase history (implicit feedback)
+als = ALS(factors=64, iterations=15).fit(user_item_csr)
 
-# 2. Mine your Association Rules
-freq  = mine(basket_matrix, min_support=0.01)
-rules = association_rules(freq, num_itemsets=n_transactions)
+# 2. Mine co-purchase rules from basket data
+freq  = mine(basket_ohe, min_support=0.01)
+rules = association_rules(freq, num_itemsets=n_receipts)
 
 # 3. Create the Hybrid Engine
 rec = Recommender(als_model=als, rules_df=rules)
 
-# Personalized recommendations for a user (ALS)
-items, scores = rec.recommend_for_user(user_id=42, n=5)
+# "For You" homepage — personalised for customer 1001
+items, scores = rec.recommend_for_user(user_id=1001, n=5)
 
-# Hybrid: blend CF + external item embeddings (e.g. from a FAISS index)
-items, scores = rec.recommend_for_user(user_id=42, n=5, alpha=0.7,
-                                       target_item_for_semantic=99)
+# Blend CF + product embeddings (e.g. from a PIM or sentence-transformer)
+items, scores = rec.recommend_for_user(user_id=1001, n=5, alpha=0.7,
+                                       target_item_for_semantic="HDPHONES")
 
-# Next Best Action for an active shopping cart (Association Rules)
-cross_sell = rec.recommend_for_cart([14, 7], n=3)
+# Active cart cross-sell — "Frequently Bought Together"
+add_ons = rec.recommend_for_cart(["USB_DAC", "AUX_CABLE"], n=3)
 
-# Batch recommendations for all users in a DataFrame
-batch_df = rec.predict_next_chunk(user_history_df, user_col="user_id", k=5)
+# Overnight batch — score all customers, write to CRM
+batch_df = rec.predict_next_chunk(user_history_df, user_col="customer_id", k=5)
 ```
 
 ### 🔍 Analytics Helpers
@@ -570,36 +760,59 @@ batch_df = rec.predict_next_chunk(user_history_df, user_col="user_id", k=5)
 ```python
 from rusket import find_substitutes, customer_saturation
 
-# Find products that cannibalize each other (lift < 1.0)
-substitutes = find_substitutes(rules_df, max_lift=0.8)
+# Identify cannibalizing SKUs (lift < 1.0) for assortment rationalisation
+subs = find_substitutes(rules_df, max_lift=0.8)
+#  antecedents  consequents  lift
+#  (Cola A,)    (Cola B,)    0.61   ← these products hurt each other's sales
 
-# Segment users by their category/item purchase depth (deciles)
+# Segment customers by category penetration (decile 10 = buy everything; 1 = barely engaged)
 saturation = customer_saturation(
-    df, user_col="user_id", category_col="category_id"
+    purchases_df, user_col="customer_id", category_col="category_id"
 )
 ```
 
 ### 📈 BPR & Sequential Patterns
 
-- **BPR (Bayesian Personalized Ranking):** Optimize for implicit feedback (clicks, views, purchases) directly by learning the ranking order of items instead of minimizing error.
-- **Sequential Pattern Mining (PrefixSpan):** Look at purchases over time instead of just single transactions (e.g., "Customer bought a Camera -> 1 month later bought a Lens"). 
+- **BPR (Bayesian Personalized Ranking):** Directly optimises ranking of positive interactions over negative ones — ideal for newsfeeds, playlists, and app recommendation surfaces that prioritise top-N precision.
+- **Sequential Pattern Mining (PrefixSpan):** Discovers ordered patterns across time (e.g., "Subscriber signed up for broadband → mobile plan → premium bundle" or "Customer viewed Camera → 2 weeks later bought Lens"). 
 
-`rusket` natively extracts PrefixSpan sequences directly from **Pandas, Polars, and PySpark** event logs with zero-copy mapping logic:
+`rusket` natively extracts PrefixSpan sequences from **Pandas, Polars, and PySpark** event logs with zero-copy Arrow mapping:
+
+#### OOP Class API
+
+```python
+from rusket import PrefixSpan
+
+# Telco product adoption journeys — what sequence of subscriptions do customers follow?
+# df: customer_id | subscription_date | product_id
+model = PrefixSpan.from_transactions(
+    subscription_events,
+    transaction_col="customer_id",
+    item_col="product_id",
+    time_col="subscription_date",
+    min_support=50,    # at least 50 customers follow this path
+    max_len=4,
+)
+freq_seqs = model.mine()
+# e.g. [broadband] → [mobile] → [tv_bundle] appears in 312 journeys
+```
+
+#### Functional API
 
 ```python
 from rusket.prefixspan import sequences_from_event_log, prefixspan
 
-# df can be a pd.DataFrame, pl.DataFrame, or pyspark.sql.DataFrame
 sequences, mapping = sequences_from_event_log(
-    df=spark_df, 
-    user_col="user_id", 
-    time_col="timestamp", 
-    item_col="item_id"
+    df=subscription_events,
+    user_col="customer_id",
+    time_col="subscription_date",
+    item_col="product_id",
 )
 
-# Mine patterns with absolute minimum support
-freq_seqs = prefixspan(sequences, min_support=10, max_len=4)
+freq_seqs = prefixspan(sequences, min_support=50, max_len=4)
 ```
+
+
 
 ### 🕸️ Graph Analytics & Embeddings
 

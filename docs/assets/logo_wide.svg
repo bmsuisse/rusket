@@ -3,15 +3,7 @@
 
   <defs>
     <!-- Text gradient (outer scope so text can reference it) -->
-    <linearGradient id="tG9" x1="0%" y1="0%" x2="200%" y2="0%">
-      <stop offset="0%" stop-color="#9333EA" />
-      <stop offset="25%" stop-color="#C084FC" />
-      <stop offset="50%" stop-color="#E1B8FA" />
-      <stop offset="75%" stop-color="#C084FC" />
-      <stop offset="100%" stop-color="#9333EA" />
-      <animate attributeName="x1" values="0%;-100%" dur="4s" repeatCount="indefinite" />
-      <animate attributeName="x2" values="200%;100%" dur="4s" repeatCount="indefinite" />
-    </linearGradient>
+
   </defs>
 
   <!-- ============================================================
@@ -47,9 +39,9 @@
     </style>
 
     <!-- Handle arc -->
-    <path d="M 150 200 C 150 80, 310 80, 310 200" fill="none" class="b9" stroke-width="8" stroke-linecap="round"/>
+    <path d="M 150 200 C 150 80, 310 80, 310 200" fill="none" stroke="#C084FC" opacity="0.5" stroke-width="8" stroke-linecap="round"/>
     <!-- Basket interior dark depth -->
-    <polygon points="120,200 150,290 310,290 340,200" fill="#2D1B3D" />
+    <polygon points="120,200 150,290 310,290 340,200" fill="none" />
 
     <!-- Ferris crab — exact copy of logo.svg paths -->
     <g clip-path="url(#clip9)">
@@ -87,7 +79,7 @@
     </g>
 
     <!-- Front face (semi-transparent) -->
-    <polygon points="120,200 150,290 310,290 340,200" fill="#1A1124" opacity="0.6" />
+    <polygon points="120,200 150,290 310,290 340,200" fill="none" />
 
     <!-- Basket front wires — exact copy from logo.svg -->
     <g filter="url(#glow9)" opacity="0.5">
@@ -121,7 +113,7 @@
     font-family="Inter, system-ui, -apple-system, sans-serif"
     font-weight="800"
     font-size="92px"
-    fill="url(#tG9)"
+    fill="#C084FC"
     letter-spacing="-3px"
   >rusket</text>
 </svg>

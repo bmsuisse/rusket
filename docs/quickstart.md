@@ -46,112 +46,141 @@ To also enable **Polars** support:
 
 ---
 
+## Business Scenario — Supermarket Cross-Selling
+
+Suppose a supermarket chain wants to identify which products to promote together.
+The raw data arrives as a checkout log where each row is one receipt.
+
 ## Step 1 — Prepare your data
 
-`mine` expects a **one-hot encoded** DataFrame of boolean or 0/1 integer values where rows are transactions and columns are items.
+`mine` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
+
+Most real-world data comes as long-format order lines (one row per product per order). `from_transactions` converts that in one call:
 
 ```python
 import pandas as pd
+from rusket import from_transactions
 
-dataset = [
-    ["milk", "bread"],
-    ["milk", "eggs"],
-    ["bread", "eggs"],
-    ["milk", "bread", "eggs"],
-]
+# Raw checkout log from a POS system
+orders = pd.DataFrame({
+    "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
+    "product":    ["milk", "bread", "butter",
+                   "milk", "eggs",
+                   "bread", "butter",
+                   "milk", "bread", "eggs", "coffee"],
+})
 
-# Build a one-hot DataFrame
-items = ["milk", "bread", "eggs"]
-df = pd.DataFrame(
-    [[item in tx for item in items] for tx in dataset],
-    columns=items,
-    dtype=bool,
-)
-print(df)
-#    milk  bread   eggs
-# 0  True   True  False
-# 1  True  False   True
-# 2 False   True   True
-# 3  True   True   True
+# One-hot encode: rows = receipts, columns = products
+basket = from_transactions(orders, transaction_col="receipt_id", item_col="product")
+print(basket)
+#        milk  bread  butter  eggs  coffee
+# 1001   True   True    True False   False
+# 1002   True  False   False  True   False
+# 1003  False   True    True False   False
+# 1004   True   True   False  True    True
 ```
 
 ---
 
-## Step 2 — Mine frequent itemsets
+## Step 2 — Mine frequent product combinations
 
 ```python
 from rusket import mine
 
-# method="auto" automatically selects FP-Growth or Eclat based on dataset density
-freq = mine(df, min_support=0.5, use_colnames=True)
-print(freq)
+# method="auto" automatically selects FP-Growth or Eclat based on catalogue density
+freq = mine(basket, min_support=0.4, use_colnames=True)
+print(freq.sort_values("support", ascending=False))
 #    support          itemsets
 # 0     0.75          (milk,)
 # 1     0.75         (bread,)
-# 2     0.75          (eggs,)
-# 3     0.50   (milk, bread,)
-# 4     0.50    (milk, eggs,)
-# 5     0.50   (bread, eggs,)
-# 6     0.25  (milk, bread, eggs,)
+# 2     0.50         (butter,)
+# 3     0.50    (milk, bread,)
+# 4     0.50  (bread, butter,)
 ```
 
 ---
 
-## Step 2b — Or use Eclat
+## Step 2b — Or use Eclat for sparse, large catalogues
 
-`eclat` uses vertical bitset mining — same API, same results. It can be faster on certain data shapes.
+ECLAT is faster for retailers with thousands of SKUs and typical basket sizes of 3–5 items.
 
 ```python
 from rusket import eclat
 
-freq = eclat(df, min_support=0.5, use_colnames=True)
+freq = eclat(basket, min_support=0.4, use_colnames=True)
 print(freq)  # identical output to fpgrowth
 ```
 
 !!! tip "When to use which?"
-    The `mine(method="auto")` parameter handles this automatically for you. 
-    It evaluates the density of the dataset `nnz / (rows * cols)` and picks `eclat` for sparse datasets `< 0.15` and `fpgrowth` for dense datasets.
+    `mine(method="auto")` handles this automatically: it picks `eclat` for sparse data (density < 0.15, typical for large SKU catalogs) and `fpgrowth` for dense data.
 
 ---
 
-## Step 3 — Generate association rules
+## Step 3 — Generate "Frequently Bought Together" rules
 
 ```python
 from rusket import association_rules
 
 rules = association_rules(
     freq,
-    num_itemsets=len(df),
+    num_itemsets=len(basket),
     metric="confidence",
     min_threshold=0.6,
 )
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]])
+# antecedents consequents  support  confidence  lift
+# (bread,)    (butter,)      0.50        0.67   1.33
+# (butter,)   (bread,)       0.50        1.00   1.33
 ```
 
+**Interpreting the output:**
+
+- **Confidence 0.67** → 67% of customers who buy bread also buy butter.
+- **Lift 1.33** → customers who buy bread are 1.33× more likely to buy butter compared to random.
+
+Use these rules to power your "Customers also buy" widgets, shelf placement decisions, or promotional bundles.
+
 !!! note "num_itemsets"
-    Pass the **total transaction count** (`len(df)`) so that support-based metrics are computed correctly.
+    Pass the **total transaction count** (`len(basket)`) so that support-based metrics are computed correctly.
+
+---
+
+## OOP API — Fluent Pipeline
+
+If you prefer a single chained API from raw data down to recommendations:
+
+```python
+from rusket import AutoMiner
+
+model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
+freq  = model.mine(use_colnames=True)
+rules = model.association_rules(metric="lift", min_threshold=1.0)
+
+# "What else should go in the basket?" — cart recommendations
+basket_contents = ["milk", "bread"]
+suggestions = model.recommend_items(basket_contents, n=3)
+print(suggestions)  # e.g. ["butter", "eggs", "coffee"]
+```
 
 ---
 
 ## Billion-Scale Streaming
 
-For datasets with hundreds of millions or billions of rows, use ``FPMiner`` to
-stream data into Rust **one chunk at a time** — without ever holding the full
-dataset in memory.
+For retailers with hundreds of millions of transactions that don't fit in memory, use `FPMiner` to stream data chunk-by-chunk:
 
 ```python
 from rusket import FPMiner
 
-miner = FPMiner(n_items=500_000)  # total distinct items
+miner = FPMiner(n_items=500_000)  # total distinct SKUs
 
-# Feed chunks — e.g. from a Parquet file, Spark, or a database cursor
-for chunk in pd.read_parquet("orders.parquet", chunksize=10_000_000):
-    txn = chunk["txn_id"].to_numpy(dtype="int64")   # arbitrary int IDs
-    item = chunk["item_idx"].to_numpy(dtype="int32") # 0-based item index
+# Read your fact table in chunks — e.g. from S3 Parquet or an API cursor
+for chunk in pd.read_parquet("sales_fact.parquet", chunksize=10_000_000):
+    txn  = chunk["receipt_id"].to_numpy(dtype="int64")
+    item = chunk["product_idx"].to_numpy(dtype="int32")  # 0-based SKU index
     miner.add_chunk(txn, item)
 
 # Mine — all data in Rust, output is a normal pandas DataFrame
-freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+freq  = miner.mine(min_support=0.001, max_len=3)
 rules = association_rules(freq, num_itemsets=miner.n_transactions)
 ```
 
@@ -162,18 +191,17 @@ rules = association_rules(freq, num_itemsets=miner.n_transactions)
 
 ### Direct CSR path
 
-If you already have integer arrays (e.g. from a database query), skip
-``from_transactions`` entirely:
+If you already have integer arrays from a data warehouse query, skip `from_transactions` entirely:
 
 ```python
 from scipy import sparse as sp
 from rusket import mine
 
 csr = sp.csr_matrix(
-    (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
-    shape=(n_transactions, n_items),
+    (np.ones(len(receipt_ids), dtype=np.int8), (receipt_ids, sku_indices)),
+    shape=(n_receipts, n_skus),
 )
-freq = mine(csr, min_support=0.001, column_names=item_names)
+freq = mine(csr, min_support=0.001, column_names=sku_names)
 ```
 
 ---
@@ -183,4 +211,5 @@ freq = mine(csr, min_support=0.001, column_names=item_names)
 - [Migration from mlxtend](migration.md) — side-by-side comparison
 - [API Reference](api-reference.md) — all parameters and metrics explained
 - [Polars Support](polars.md) — zero-copy Arrow path
+- [Recommender Workflows](recommender.md) — personalised recommendations for users
 - [Benchmarks](benchmarks.md) — performance vs mlxtend

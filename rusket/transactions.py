@@ -11,9 +11,11 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+    from ._compat import DataFrame
+
 
 def from_transactions(
-    data: pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any,
+    data: DataFrame | Sequence[Sequence[str | int]] | Any,
     transaction_col: str | None = None,
     item_col: str | None = None,
     verbose: int = 0,
@@ -213,7 +215,7 @@ def _from_dataframe(
 
 
 def from_transactions_csr(
-    data: pd.DataFrame | pl.DataFrame | str | Any,
+    data: DataFrame | str | Any,
     transaction_col: str | None = None,
     item_col: str | None = None,
     chunk_size: int = 10_000_000,
