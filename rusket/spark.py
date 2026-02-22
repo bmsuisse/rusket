@@ -720,7 +720,6 @@ def als_grouped(
         import polars as pl
 
         from rusket.als import ALS
-        from rusket.recommend import Recommender
 
         group_id = str(table.column(group_col)[0].as_py())
 
@@ -747,20 +746,24 @@ def als_grouped(
                 rating_col=rating_col,
             )
 
-            recommender = Recommender(als_model=model)
+            # Recommend for all unique users in this group partition.
+            # We iterate over internal model indices (0..n_users-1) and map back
+            # to external user IDs via model._user_labels.
+            user_labels = model._user_labels or list(range(model._n_users))
+            records = []
+            for internal_idx in range(model._n_users):
+                try:
+                    item_ids, _ = model.recommend_items(user_id=internal_idx, n=k)
+                    records.append(
+                        {
+                            user_col: str(user_labels[internal_idx]),
+                            "recommended_items": [int(x) for x in item_ids],
+                        }
+                    )
+                except Exception:
+                    pass
 
-            # Recommend for all unique users in this group partition
-            users = pl_df[user_col].unique().to_list()
-            users_df = pd.DataFrame({user_col: users})
-
-            res_df = recommender.predict_next_chunk(users_df, user_col=user_col, k=k)
-
-            if not res_df.empty:
-                res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
-                res_df = res_df.loc[:, [user_col, "recommended_items"]]
-                res_df[user_col] = res_df[user_col].astype(str)
-            else:
-                res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+            res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
 
         except Exception as e:
             raise RuntimeError(f"als_grouped worker failed for group {group_id!r}: {e}") from e
@@ -795,7 +798,6 @@ def als_grouped(
 
         def _als_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
             from rusket.als import ALS
-            from rusket.recommend import Recommender
 
             group_id = str(pdf[group_col].iloc[0])
 
@@ -817,19 +819,22 @@ def als_grouped(
                     rating_col=rating_col,
                 )
 
-                recommender = Recommender(als_model=model)
+                # Iterate internal 0-based indices, map to external IDs via _user_labels
+                user_labels = model._user_labels or list(range(model._n_users))
+                records = []
+                for internal_idx in range(model._n_users):
+                    try:
+                        item_ids, _ = model.recommend_items(user_id=internal_idx, n=k)
+                        records.append(
+                            {
+                                user_col: str(user_labels[internal_idx]),
+                                "recommended_items": [int(x) for x in item_ids],
+                            }
+                        )
+                    except Exception:
+                        pass
 
-                users = pdf[user_col].unique()
-                users_df = pd.DataFrame({user_col: users})
-
-                res_df = recommender.predict_next_chunk(users_df, user_col=user_col, k=k)
-
-                if not res_df.empty:
-                    res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
-                    res_df = res_df.loc[:, [user_col, "recommended_items"]]
-                    res_df[user_col] = res_df[user_col].astype(str)
-                else:
-                    res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+                res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
 
             except Exception:
                 res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
