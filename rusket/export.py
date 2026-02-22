@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
-from .als import ALS
 
-
-def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataFrame:
-    """Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.
+def export_item_factors(model: Any, include_labels: bool = True) -> pd.DataFrame:
+    """Exports latent item factors as a Pandas DataFrame for Vector DBs.
 
     This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
     Retrieval-Augmented Generation (RAG) and semantic search.
 
     Parameters
     ----------
-    als_model : ALS
-        A fitted ``rusket.ALS`` model instance.
+    model : Any
+        A fitted model instance with an ``item_factors`` property.
     include_labels : bool, default=True
         Whether to include the string item labels (if available from
-        ``ALS.from_transactions``).
+        the model's fitting method).
 
     Returns
     -------
@@ -36,10 +36,10 @@ def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataF
     >>> # Ingest into FAISS / Pinecone / Qdrant
     >>> vectors = np.stack(df["vector"].values)
     """
-    if als_model.item_factors is None:
-        raise ValueError("ALS model has not been fitted yet.")
+    factors = model.item_factors
+    if factors is None:
+        raise ValueError("Model has not been fitted yet.")
 
-    factors = als_model.item_factors
     n_items = factors.shape[0]
 
     df_data = {
@@ -47,9 +47,9 @@ def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataF
         "vector": list(factors),  # List of 1D numpy arrays
     }
 
-    if include_labels and als_model._item_labels is not None:
-        if len(als_model._item_labels) == n_items:
-            df_data["item_label"] = als_model._item_labels
+    if include_labels and hasattr(model, "_item_labels") and model._item_labels is not None:
+        if len(model._item_labels) == n_items:
+            df_data["item_label"] = model._item_labels
 
     # Ordering columns nicely
     cols = ["item_id"]

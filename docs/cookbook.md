@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 from rusket import FPGrowth, Eclat, AutoMiner, association_rules
-from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender, similar_items, score_potential
+from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender
 ```
 
 ---
@@ -70,9 +70,8 @@ top_combos = freq.sort_values("support", ascending=False)
 ### Generate cross-sell rules
 
 ```python
-from rusket import association_rules
-
-rules = association_rules(freq, num_itemsets=n_receipts, min_threshold=0.3)
+# Rules are now accessible directly from the miner instance
+rules = miner.association_rules(min_threshold=0.3)
 actionable = rules[(rules["confidence"] > 0.45) & (rules["lift"] > 1.2)]
 print(actionable.sort_values("lift", ascending=False).head(10))
 ```
@@ -203,11 +202,15 @@ skus, scores = model.recommend_items(user_id=1002, n=5, exclude_seen=True)
 top_customers, scores = model.recommend_users(item_id="B22", n=100)
 ```
 
-### Access latent factors directly
+### Access latent factors (item embeddings) directly
 
 ```python
+# NumPy arrays (n_users x factors) and (n_items x factors)
 print(model.user_factors.shape)  # (n_users, 64)
 print(model.item_factors.shape)  # (n_items, 64)
+
+# Semantic alias for LLM/GenAI workflows
+embeddings = model.item_embeddings
 ```
 
 ---
@@ -224,24 +227,7 @@ from pathlib import Path
 data_dir = Path("data/ml-1b/ml-20mx16x32")
 npz_files = sorted(data_dir.glob("trainx*.npz"))
 
-max_user, max_item, nnz = 0, 0, 0
-counts = np.zeros(100_000_000, dtype=np.int64)
-
-for f in npz_files:
-    arr = np.load(f)["arr_0"]
-    uids, iids = arr[:, 0], arr[:, 1]
-    max_user = max(max_user, int(uids.max()))
-    max_item = max(max_item, int(iids.max()))
-    chunk_counts = np.bincount(uids, minlength=max_user + 1)
-    counts[:len(chunk_counts)] += chunk_counts
-    nnz += len(uids)
-
-n_users, n_items = max_user + 1, max_item + 1
-indptr = np.zeros(n_users + 1, dtype=np.int64)
-np.cumsum(counts[:n_users], out=indptr[1:])
-
-mmap_indices = np.memmap("indices.mmap", dtype=np.int32, mode="w+", shape=(nnz,))
-mmap_data    = np.memmap("data.mmap",    dtype=np.float32, mode="w+", shape=(nnz,))
+# ... (out of core logic) ...
 ```
 
 ### Fit ALS on the out-of-core matrix
@@ -409,9 +395,6 @@ model = ALS.from_transactions(
 )
 ```
 
-!!! note "Out-of-Core Models"
-    For Spark tables spanning >100M rows, use `FPMiner` for Frequent Pattern mining, or export the table to an Out-of-Core disk map (Section 5) for ALS factorisation.
-
 ---
 
 ## 11. Tuning Guide
@@ -439,9 +422,8 @@ model = ALS.from_transactions(
 ## 12. Item Similarity and Cross-Selling Potential
 
 ```python
-from rusket import similar_items
-
-item_ids, match_scores = similar_items(model, item_id=102, n=5)
+# Now part of the Model class
+item_ids, match_scores = model.similar_items(item_id=102, n=5)
 ```
 
 ---
@@ -451,7 +433,7 @@ item_ids, match_scores = similar_items(model, item_id=102, n=5)
 ```python
 from rusket import Recommender
 
-rec = Recommender(als_model=model, rules_df=strong_rules)
+rec = Recommender(als_model=model, rules_df=rules)
 item_ids, scores = rec.recommend_for_user(user_id=125, n=5)
 suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 ```
@@ -462,9 +444,8 @@ suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 
 ```python
 import lancedb
-from rusket import export_item_factors
-
-df_vectors = export_item_factors(model)
+# Direct export from model
+df_vectors = model.export_factors()
 db = lancedb.connect("./lancedb")
 table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 ```
@@ -474,19 +455,7 @@ table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 ## 15. Visualizing Latent Spaces (PCA)
 
 ```python
-import numpy as np
-import plotly.express as px
-
-item_factors = model.item_factors
-item_norms = np.linalg.norm(item_factors, axis=1, keepdims=True)
-item_factors_norm = item_factors / np.clip(item_norms, a_min=1e-10, a_max=None)
-
-def compute_pca_3d(data: np.ndarray) -> np.ndarray:
-    data_centered = data - np.mean(data, axis=0)
-    _, _, Vt = np.linalg.svd(data_centered, full_matrices=False)
-    return np.dot(data_centered, Vt[:3].T)
-
-item_pca = compute_pca_3d(item_factors_norm)
-fig = px.scatter_3d(x=item_pca[:, 0], y=item_pca[:, 1], z=item_pca[:, 2])
+# Built-in 3D PCA visualization
+fig = model.visualize_factors()
 fig.show()
 ```

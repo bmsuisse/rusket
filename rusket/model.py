@@ -402,6 +402,77 @@ class ImplicitRecommender(BaseModel):
         """
         pass
 
+    @property
+    @abstractmethod
+    def item_factors(self) -> Any:
+        """Item factor matrix (n_items, factors)."""
+        pass
+
+    @property
+    def item_embeddings(self) -> Any:
+        """Alias for item_factors, commonly used in GenAI/LLM contexts."""
+        return self.item_factors
+
+    def similar_items(self, item_id: int, n: int = 5) -> tuple[Any, Any]:
+        """Find the most similar items to a given item ID.
+
+        Computes cosine similarity between the specified item's latent vector
+        and all other item vectors in the ``item_factors`` matrix.
+
+        Parameters
+        ----------
+        item_id : int
+            The internal integer index of the target item.
+        n : int, default=5
+            Number of most similar items to return.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``(item_ids, cosine_similarities)`` sorted in descending order.
+        """
+        from .similarity import similar_items
+
+        return similar_items(self, item_id, n)
+
+    def export_factors(self, include_labels: bool = True) -> pd.DataFrame:
+        """Exports latent item factors as a Pandas DataFrame for Vector DBs.
+
+        Parameters
+        ----------
+        include_labels : bool, default=True
+            Whether to include the string item labels (if available).
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with columns ``item_id``, optionally ``item_label``,
+            and ``vector``.
+        """
+        from .export import export_item_factors
+
+        return export_item_factors(self, include_labels=include_labels)
+
+    def visualize_factors(self, labels: bool = True, n_items: int | None = None) -> Any:
+        """Visualizes the item latent space in 3D using PCA.
+
+        Requires ``plotly``.
+
+        Parameters
+        ----------
+        labels : bool, default=True
+            Whether to show item labels on hover.
+        n_items : int, optional
+            Limit visualization to the first N items.
+
+        Returns
+        -------
+        plotly.graph_objects.Figure
+        """
+        from .viz import visualize_latent_space
+
+        return visualize_latent_space(self, labels=labels, n_items=n_items)
+
 
 class SequentialRecommender(BaseModel):
     """Base class for sequential recommendation models.

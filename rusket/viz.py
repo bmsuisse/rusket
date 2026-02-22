@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import typing
+from typing import Any
 
+import numpy as np
 import pandas as pd
 
 if typing.TYPE_CHECKING:
@@ -96,3 +98,101 @@ def to_networkx(
                     G.add_edge(ant, con, weight=weight)
 
     return G
+
+
+def compute_pca_3d(data: np.ndarray) -> np.ndarray:
+    """Compute 3D PCA coordinates for the given data.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Data matrix of shape (n_samples, n_features).
+
+    Returns
+    -------
+    np.ndarray
+        3D projection of shape (n_samples, 3).
+    """
+    data_centered = data - np.mean(data, axis=0)
+    _, _, Vt = np.linalg.svd(data_centered, full_matrices=False)
+    return np.dot(data_centered, Vt[:3].T)
+
+
+def visualize_latent_space(
+    model: Any,
+    labels: bool = True,
+    n_items: int | None = None,
+) -> Any:
+    """Visualizes the item latent space in 3D using PCA.
+
+    Parameters
+    ----------
+    model : ImplicitRecommender
+        A fitted model with `item_factors`.
+    labels : bool, default=True
+        Whether to show item labels on hover.
+    n_items : int, optional
+        Limit visualization to the first N items (useful for very large models).
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        A Plotly figure object.
+    """
+    try:
+        import plotly.express as px
+    except ImportError as err:
+        raise ImportError(
+            "The 'plotly' library is required to use `visualize_latent_space()`. "
+            "Install it via `pip install plotly` or `uv add plotly`."
+        ) from err
+
+    factors = model.item_factors
+    if n_items is not None:
+        factors = factors[:n_items]
+
+    # Normalize factors for better visualization (cosine space)
+    norms = np.linalg.norm(factors, axis=1, keepdims=True)
+    factors_norm = factors / np.clip(norms, a_min=1e-10, a_max=None)
+
+    pca_coords = compute_pca_3d(factors_norm)
+
+    df_viz = pd.DataFrame(
+        {
+            "x": pca_coords[:, 0],
+            "y": pca_coords[:, 1],
+            "z": pca_coords[:, 2],
+        }
+    )
+
+    if labels and hasattr(model, "_item_labels") and model._item_labels is not None:
+        item_labels = model._item_labels
+        if n_items is not None:
+            item_labels = item_labels[:n_items]
+        df_viz["item"] = item_labels
+        hover_data = ["item"]
+    else:
+        hover_data = None
+
+    fig = px.scatter_3d(
+        df_viz,
+        x="x",
+        y="y",
+        z="z",
+        hover_data=hover_data,
+        template="plotly_dark",
+        title="Item Latent Space (3D PCA)",
+    )
+
+    # Tight layout and smaller markers for a premium look
+    fig.update_traces(marker={"size": 3, "opacity": 0.8})
+    fig.update_layout(
+        margin={"l": 0, "r": 0, "b": 0, "t": 30},
+        scene={
+            "xaxis": {"showticklabels": False, "title": ""},
+            "yaxis": {"showticklabels": False, "title": ""},
+            "zaxis": {"showticklabels": False, "title": ""},
+        },
+    )
+
+    return fig

@@ -1,22 +1,22 @@
-import numpy as np
+from typing import Any
 
-from .als import ALS
+import numpy as np
 
 
 def similar_items(
-    als_model: ALS,
+    model: Any,
     item_id: int,
     n: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Find the most similar items to a given item ID based on ALS latent factors.
+    """Find the most similar items to a given item ID based on latent factors.
 
     Computes cosine similarity between the specified item's latent vector
     and all other item vectors in the ``item_factors`` matrix.
 
     Parameters
     ----------
-    als_model : ALS
-        A fitted ``rusket.ALS`` model instance.
+    model : Any
+        A fitted model instance with an ``item_factors`` property.
     item_id : int
         The internal integer index of the target item.
     n : int
@@ -27,7 +27,7 @@ def similar_items(
     tuple[np.ndarray, np.ndarray]
         ``(item_ids, cosine_similarities)`` sorted in descending order.
     """
-    factors = als_model.item_factors  # raises if not fitted
+    factors = model.item_factors  # raises if not fitted
     n_items, _ = factors.shape
 
     if item_id < 0 or item_id >= n_items:
