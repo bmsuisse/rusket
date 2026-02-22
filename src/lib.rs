@@ -19,6 +19,8 @@ mod item_knn;
 mod fpmc;
 mod fm;
 mod lightgcn;
+mod metrics;
+mod model_selection;
 mod sasrec;
 
 #[pymodule]
@@ -51,5 +53,11 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(lightgcn::lightgcn_fit, m)?)?;
     m.add_function(wrap_pyfunction!(sasrec::sasrec_fit, m)?)?;
     m.add_function(wrap_pyfunction!(sasrec::sasrec_encode, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics::ndcg_at_k, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics::precision_at_k, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics::recall_at_k, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics::hit_rate_at_k, m)?)?;
+    m.add_function(wrap_pyfunction!(model_selection::leave_one_out, m)?)?;
+    m.add_function(wrap_pyfunction!(model_selection::train_test_split, m)?)?;
     Ok(())
 }

@@ -5,6 +5,7 @@ from .association_rules import association_rules
 from .bpr import BPR
 from .ease import EASE
 from .eclat import Eclat, eclat
+from .evaluation import evaluate
 from .export import export_item_factors
 from .fin import FIN
 from .fm import FM
@@ -16,6 +17,7 @@ from .lcm import LCM
 from .lightgcn import LightGCN
 from .mine import AutoMiner, mine
 from .model import BaseModel
+from .model_selection import leave_one_out_split, train_test_split
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
 from .recommend import NextBestAction, Recommender, score_potential
 from .sasrec import SASRec
@@ -70,4 +72,7 @@ __all__ = [
     "customer_saturation",
     "export_item_factors",
     "viz",
+    "evaluate",
+    "train_test_split",
+    "leave_one_out_split",
 ]
