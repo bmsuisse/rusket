@@ -44,6 +44,7 @@ DATA_DIR = Path(__file__).parent / "data" / "instacart"
 # Data loading helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_synthetic() -> tuple["pd.DataFrame", "pd.DataFrame"]:  # type: ignore[name-defined]
     """Return (orders_df, products_df) with synthetic grocery-like data."""
     import numpy as np
@@ -53,11 +54,13 @@ def _make_synthetic() -> tuple["pd.DataFrame", "pd.DataFrame"]:  # type: ignore[
     n_users, n_items, n_orders = 500, 120, 4_000
 
     categories = ["Produce", "Dairy", "Bakery", "Frozen", "Snacks", "Beverages", "Meat", "Seafood"]
-    products = pd.DataFrame({
-        "product_id": range(n_items),
-        "product_name": [f"Product_{i:03d}" for i in range(n_items)],
-        "department": [categories[i % len(categories)] for i in range(n_items)],
-    })
+    products = pd.DataFrame(
+        {
+            "product_id": range(n_items),
+            "product_name": [f"Product_{i:03d}" for i in range(n_items)],
+            "department": [categories[i % len(categories)] for i in range(n_items)],
+        }
+    )
 
     rows = []
     for order_id in range(n_orders):
@@ -121,6 +124,7 @@ def _load_instacart() -> tuple["pd.DataFrame", "pd.DataFrame"] | None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     use_synthetic = "--synthetic" in sys.argv
@@ -222,21 +226,13 @@ def main() -> None:
     if "department" in products.columns or "department_name" in orders.columns:
         dept_col = "department_name" if "department_name" in orders.columns else "department"
         if dept_col in products.columns:
-            dept_items = (
-                products.groupby(dept_col)["product_id"]
-                .apply(list)
-                .to_dict()
-            )
+            dept_items = products.groupby(dept_col)["product_id"].apply(list).to_dict()
             # Pick one department as target category
             target_dept = list(dept_items.keys())[0]
             target_item_ids = [i for i in dept_items[target_dept] if i < als.item_factors.shape[0]]
             if target_item_ids:
                 # Build user histories
-                user_histories = (
-                    orders.groupby("user_id")["product_id"]
-                    .apply(list)
-                    .tolist()
-                )
+                user_histories = orders.groupby("user_id")["product_id"].apply(list).tolist()
                 potential = rusket.score_potential(
                     user_histories[:50],  # first 50 users for demo
                     als,

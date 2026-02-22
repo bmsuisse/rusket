@@ -32,9 +32,8 @@ from pathlib import Path
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 EXCEL_PATH = DATA_DIR / "online_retail_II.xlsx"
-UCI_URL = (
-    "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
-)
+UCI_URL = "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
+
 
 def download_dataset() -> None:
     if EXCEL_PATH.exists():
@@ -44,6 +43,7 @@ def download_dataset() -> None:
     try:
         import urllib.request
         import zipfile
+
         zip_path = DATA_DIR / "online_retail_II.zip"
         urllib.request.urlretrieve(UCI_URL, zip_path)
         with zipfile.ZipFile(zip_path, "r") as z:
@@ -65,9 +65,11 @@ def download_dataset() -> None:
         )
         sys.exit(1)
 
+
 # ---------------------------------------------------------------------------
 # 2. Load and clean
 # ---------------------------------------------------------------------------
+
 
 def load_retail() -> "pd.DataFrame":  # type: ignore[name-defined]
     import pandas as pd
@@ -106,6 +108,7 @@ def load_retail() -> "pd.DataFrame":  # type: ignore[name-defined]
 # ---------------------------------------------------------------------------
 # 3. Main workflow
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     download_dataset()
@@ -149,10 +152,7 @@ def main() -> None:
     rules = model.association_rules(metric="confidence", min_threshold=0.5)
     print(f"  Found {len(rules):,} rules")
     top_rules = rules.sort_values("lift", ascending=False).head(10)
-    print(
-        top_rules[["antecedents", "consequents", "support", "confidence", "lift"]]
-        .to_string(index=False)
-    )
+    print(top_rules[["antecedents", "consequents", "support", "confidence", "lift"]].to_string(index=False))
 
     # -----------------------------------------------------------------------
     # 3d. Cart recommendations
@@ -179,6 +179,7 @@ def main() -> None:
     print("\n── Step 6: Export to NetworkX graph ──")
     try:
         import networkx as nx
+
         G = rusket.viz.to_networkx(rules, edge_attr="lift")
         print(f"  Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
 
@@ -187,7 +188,7 @@ def main() -> None:
             communities = list(nx.algorithms.community.greedy_modularity_communities(G.to_undirected()))
             print(f"  Communities detected: {len(communities)}")
             for i, comm in enumerate(sorted(communities, key=len, reverse=True)[:3]):
-                print(f"    Cluster {i+1} ({len(comm)} items): {list(comm)[:3]} …")
+                print(f"    Cluster {i + 1} ({len(comm)} items): {list(comm)[:3]} …")
         except Exception as e:
             print(f"  (Community detection skipped: {e})")
     except ImportError:

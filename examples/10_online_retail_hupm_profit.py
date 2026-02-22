@@ -39,6 +39,7 @@ def _ensure_dataset() -> None:
         # Reuse download logic from example 09
         sys.path.insert(0, str(Path(__file__).parent))
         from importlib import import_module
+
         ex09 = import_module("09_online_retail_basket_analysis")
         ex09.download_dataset()
 
@@ -70,10 +71,7 @@ def load_retail_with_revenue() -> "pd.DataFrame":  # type: ignore[name-defined]
     df["Description"] = df["Description"].str.strip()
     # Derive revenue (utility) per line
     df["Revenue"] = (df["Quantity"] * df["Price"]).round(2)
-    print(
-        f"  Rows: {len(df):,} | Invoices: {df['Invoice'].nunique():,} | "
-        f"Total revenue: £{df['Revenue'].sum():,.0f}"
-    )
+    print(f"  Rows: {len(df):,} | Invoices: {df['Invoice'].nunique():,} | Total revenue: £{df['Revenue'].sum():,.0f}")
     return df
 
 

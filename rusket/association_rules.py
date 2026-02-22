@@ -62,7 +62,6 @@ def association_rules(
                 max_support = df["support"].astype(float).max()  # type: ignore[assignment]
                 num_itemsets = round(1.0 / max_support)
 
-
     first_iset = next(iter(df["itemsets"]))
     has_string_labels = any(isinstance(x, str) for x in first_iset)
 

@@ -35,7 +35,7 @@ def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataF
     >>> df = rusket.export_item_factors(model)
     >>> # Ingest into FAISS / Pinecone / Qdrant
     >>> vectors = np.stack(df["vector"].values)
-"""
+    """
     if als_model.item_factors is None:
         raise ValueError("ALS model has not been fitted yet.")
 

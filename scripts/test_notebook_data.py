@@ -1,4 +1,5 @@
 """Verify the fixed notebook data generates non-empty rules and substitutes."""
+
 import numpy as np
 import pandas as pd
 
@@ -16,15 +17,26 @@ def generate_basket_data(n_transactions: int = 30_000, seed: int = 42) -> pd.Dat
     rng = np.random.default_rng(seed)
     cols = [
         # Electronics accessories cluster
-        "Wireless_Mouse", "Mechanical_Keyboard", "USB_Hub", "Monitor_Stand",
-        "Webcam", "Laptop_Sleeve",
+        "Wireless_Mouse",
+        "Mechanical_Keyboard",
+        "USB_Hub",
+        "Monitor_Stand",
+        "Webcam",
+        "Laptop_Sleeve",
         # Coffee / barista cluster
-        "Espresso_Beans", "Milk_Frother", "Coffee_Grinder", "Travel_Mug",
+        "Espresso_Beans",
+        "Milk_Frother",
+        "Coffee_Grinder",
+        "Travel_Mug",
         "Descaler_Tablets",
         # Home office cluster
-        "Notebook_A5", "Gel_Pen_Set", "Desk_Lamp", "Sticky_Notes",
+        "Notebook_A5",
+        "Gel_Pen_Set",
+        "Desk_Lamp",
+        "Sticky_Notes",
         # Competing brands (substitutes)
-        "Cola_Brand_A", "Cola_Brand_B",
+        "Cola_Brand_A",
+        "Cola_Brand_B",
     ]
     n = n_transactions
 

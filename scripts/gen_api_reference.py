@@ -96,7 +96,9 @@ def _escape_pipes(s: str) -> str:
     return s.replace("|", "\\|")
 
 
-def _params_to_table(rows: list[tuple[str, str, str]], cols: tuple[str, ...] = ("Parameter", "Type", "Description")) -> str:
+def _params_to_table(
+    rows: list[tuple[str, str, str]], cols: tuple[str, ...] = ("Parameter", "Type", "Description")
+) -> str:
     if not rows:
         return ""
     header = "| " + " | ".join(cols) + " |"
@@ -112,11 +114,7 @@ def _format_signature(obj: Any) -> str:
     try:
         sig = inspect.signature(obj)
         # Remove 'self' / 'cls'
-        params = {
-            k: v
-            for k, v in sig.parameters.items()
-            if k not in ("self", "cls")
-        }
+        params = {k: v for k, v in sig.parameters.items() if k not in ("self", "cls")}
         new_sig = sig.replace(parameters=list(params.values()))
         return str(new_sig)
     except (ValueError, TypeError):
@@ -184,7 +182,11 @@ def _format_symbol(name: str, obj: Any, level: int = 2) -> str:
         lines.append("**Returns**")
         lines.append("")
         if rows:
-            lines.append(_params_to_table(rows, cols=("Type", "Description") if len(rows[0]) == 2 else ("Name", "Type", "Description")))
+            lines.append(
+                _params_to_table(
+                    rows, cols=("Type", "Description") if len(rows[0]) == 2 else ("Name", "Type", "Description")
+                )
+            )
         else:
             # Free-form return description
             lines.append(sections["Returns"])
@@ -250,6 +252,7 @@ def _collect_class_methods(cls: type) -> list[tuple[str, Any]]:
 # Main generator
 # ---------------------------------------------------------------------------
 
+
 def build_api_reference() -> str:
     """Import rusket and build the full API reference markdown string."""
     import rusket
@@ -278,7 +281,9 @@ def build_api_reference() -> str:
     # ------------------------------------------------------------------
     output_lines.append("## Functional API")
     output_lines.append("")
-    output_lines.append("Convenience module-level functions.  For most use-cases these are the only entry points you need.")
+    output_lines.append(
+        "Convenience module-level functions.  For most use-cases these are the only entry points you need."
+    )
     output_lines.append("")
 
     func_symbols: list[tuple[str, Any]] = [
@@ -379,9 +384,7 @@ def build_api_reference() -> str:
     # ------------------------------------------------------------------
     output_lines.append("## Visualization (`rusket.viz`)")
     output_lines.append("")
-    output_lines.append(
-        "Graph and visualization utilities.  Requires `networkx` (`pip install networkx`)."
-    )
+    output_lines.append("Graph and visualization utilities.  Requires `networkx` (`pip install networkx`).")
     output_lines.append("")
 
     viz_symbols: list[tuple[str, Any]] = [
@@ -423,6 +426,7 @@ def main() -> None:
     except Exception as e:
         print(f"ERROR: Failed to generate API reference: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     target.write_text(content, encoding="utf-8")

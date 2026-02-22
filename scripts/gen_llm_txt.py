@@ -33,6 +33,7 @@ HEADER = """\
 
 def _strip_html_comments(text: str) -> str:
     import re
+
     return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
 
 

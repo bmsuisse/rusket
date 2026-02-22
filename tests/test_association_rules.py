@@ -328,4 +328,3 @@ def test_mlxtend_port_example() -> None:
     assert "consequents" in rules.columns
     assert "lift" in rules.columns
     assert (rules["lift"] >= 1.0).all()
-

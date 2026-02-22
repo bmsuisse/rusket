@@ -61,7 +61,6 @@ def _build_result(
     return typing.cast("pd.DataFrame", filtered_df)
 
 
-
 def _select_method(method: Method, density: float, verbose: int, label: str) -> Method:
     if method != "auto":
         return method
@@ -157,7 +156,6 @@ def _run_polars(
             f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
         )
     return _build_result(raw, n_rows, min_support, df.columns, use_colnames)
-
 
 
 def dispatch(
