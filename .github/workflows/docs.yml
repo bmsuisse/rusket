@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'zensical.toml'
       - 'benchmarks/**'
       - 'rusket/**/*.py'   # re-generate API ref on source changes
       - 'scripts/**'        # re-run if the generation scripts themselves change
@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
@@ -61,13 +63,16 @@ jobs:
       - name: Generate Scale Benchmark
         run: uv run python benchmarks/bench_scale.py
 
-      - name: Generate ALS Benchmark (1M & 10M)
+      - name: Generate ALS Benchmark (1M)
         run: uv run python benchmarks/bench_als.py --size 1m
         # Note: 25M/1B are excluded from CI due to runner time/memory limits.
-        # Run them locally and commit the resulting JSON/HTML as needed.
 
-      - name: Commit generated docs back to main
-        uses: stefanzweifel/git-auto-commit-action@v5
+      # ── Build & deploy to GitHub Pages ───────────────────────────────
+      - name: Build docs with Zensical
+        run: uv run zensical build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          commit_message: "docs: auto-update API reference, changelog, and llm.txt"
-          file_pattern: "docs/api-reference.md docs/changelog.md docs/llm.txt"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
