@@ -340,3 +340,52 @@ def test_recommend_batches(spark_session) -> None:
     user_1_recs = pd_result[pd_result["user_id"] == "1"].iloc[0]["recommended_items"]
     assert isinstance(user_1_recs, np.ndarray) or isinstance(user_1_recs, list)
     assert len(user_1_recs) <= 2
+
+
+def test_als_grouped(spark_session) -> None:
+    from rusket.spark import als_grouped
+
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "A", "B", "B", "B", "B"],
+            "user_id": [1, 1, 2, 2, 3, 3, 4, 4],
+            "item_id": [10, 20, 10, 30, 10, 20, 10, 30],
+            "rating": [5.0, 3.0, 4.0, 5.0, 5.0, 3.0, 4.0, 5.0],
+        }
+    )
+
+    spark_df = to_spark(spark_session, df)
+
+    # Turn off DeprecationWarning for fit_transactions
+    import warnings
+    warnings.simplefilter("ignore", DeprecationWarning)
+
+    result = als_grouped(
+        spark_df,
+        group_col="store_id",
+        user_col="user_id",
+        item_col="item_id",
+        rating_col="rating",
+        factors=4,
+        iterations=3,
+        k=2,
+    )
+
+    import pyspark
+
+    assert isinstance(result, pyspark.sql.DataFrame)
+
+    pd_result = result.toPandas()
+
+    assert "store_id" in pd_result.columns
+    assert "user_id" in pd_result.columns
+    assert "recommended_items" in pd_result.columns
+
+    # Store A has 2 users, Store B has 2 users -> total 4 users
+    assert len(pd_result) == 4
+
+    # Check store A users
+    store_a_res = pd_result[pd_result["store_id"] == "A"]
+    assert len(store_a_res) == 2
+    user_1_recs = store_a_res[store_a_res["user_id"] == "1"].iloc[0]["recommended_items"]
+    assert len(user_1_recs) > 0
