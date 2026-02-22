@@ -67,7 +67,7 @@ def evaluate(
     # Note: A real world implementation can be optimized further in rust.
     # For now we use python dict to aggregate by user, which is fast enough for test lists.
     user_test_items: dict[int, list[int]] = {}
-    for u, i in zip(users, items):
+    for u, i in zip(users, items, strict=False):
         if u not in user_test_items:
             user_test_items[u] = []
         user_test_items[u].append(i)
@@ -78,21 +78,21 @@ def evaluate(
         # Bulk predict top-k for all test users
         try:
             r_users, r_items, r_scores = model.recommend_users(unique_users, n=k, filter_already_liked_items=True)
-            
+
             # Form dict mapping user -> predicted items
             predictions: dict[int, list[int]] = {u: [] for u in unique_users}
-            for u, i in zip(r_users, r_items):
+            for u, i in zip(r_users, r_items, strict=False):
                 predictions[u].append(i)
-                
+
         except Exception as e:
             warnings.warn(f"Failed to use bulk recommend_users: {e}. Falling back to 0.0 metrics.", stacklevel=2)
-            res: dict[str, float] = {m: 0.0 for m in metrics}
+            res: dict[str, float] = dict.fromkeys(metrics, 0.0)
             return res
     else:
         # Try a slower fallback (can be implemented later)
         raise TypeError("Model must support rank-based `recommend_users()`.")
 
-    results: dict[str, float] = {m: 0.0 for m in metrics}
+    results: dict[str, float] = dict.fromkeys(metrics, 0.0)
     n_users = len(unique_users)
 
     if n_users == 0:
@@ -102,7 +102,7 @@ def evaluate(
     for u in unique_users:
         actual = user_test_items[u]
         pred = predictions[u]
-        
+
         if "ndcg" in metrics:
             results["ndcg"] += _rusket.ndcg_at_k(actual, pred, k)  # type: ignore
         if "hr" in metrics:

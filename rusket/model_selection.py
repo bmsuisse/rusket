@@ -42,13 +42,11 @@ def train_test_split(
     if not isinstance(df, pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame.")
 
-    user_ids = df[user_col].values
-    
     # Normally we do integer coercion when fitting, so here we assume
     # basic random splitting doesn't require actual encoded integers
     # but the Rust backend requires i32 for types (we use user_ids array just for length currently).
     # Since train_test_split algorithm randomly splits row indices, we can pass dummy int array
-    
+
     dummy_ids = np.zeros(len(df), dtype=np.int32)
     train_idx, test_idx = _rusket.train_test_split(list(dummy_ids), test_size)  # type: ignore
 

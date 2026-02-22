@@ -51,7 +51,7 @@ class MockRecommender:
 
 def test_python_evaluate_wrapper():
     model = MockRecommender()
-    
+
     # Ground truth:
     # User 1 likes 2, 3
     # User 2 likes 99 (not in recommendations)
@@ -61,10 +61,10 @@ def test_python_evaluate_wrapper():
     })
 
     res = evaluate(model, test_df, k=2, metrics=["hr", "precipitation", "recall", "ndcg"])  # type: ignore
-    
+
     # User 1 predictions: 2, 3 -> HR=1, Recall=1, NDCG=1
     # User 2 predictions: 3, 4 -> HR=0, Recall=0, NDCG=0
-    
+
     assert np.isclose(res["hr"], 0.5, atol=1e-6)
     assert np.isclose(res["recall"], 0.5, atol=1e-6)
     assert np.isclose(res["ndcg"], 0.5, atol=1e-6)
