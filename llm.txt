@@ -1318,6 +1318,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - add script comparing eALS vs iALS
 
+### Debug
+
+- re-raise exception in als_grouped worker to reveal root cause
+
 ### Merge
 
 - feature/fin-lcm-miner into main (FIN/LCM algorithms, FM/FPMC)
