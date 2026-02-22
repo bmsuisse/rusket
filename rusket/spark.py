@@ -763,7 +763,7 @@ def als_grouped(
                 except Exception:
                     pass
 
-            res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
+            res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
 
         except Exception as e:
             raise RuntimeError(f"als_grouped worker failed for group {group_id!r}: {e}") from e
@@ -834,7 +834,7 @@ def als_grouped(
                     except Exception:
                         pass
 
-                res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
+                res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
 
             except Exception:
                 res_df = pd.DataFrame(columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
