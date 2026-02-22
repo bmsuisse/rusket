@@ -3,6 +3,22 @@ name = "rusket"
 version = "0.1.25"
 edition = "2021"
 license = "MIT"
+exclude = [
+    "benchmarks/**/*",
+    "tests/**/*",
+    "docs/**/*",
+    "benchdata/**/*",
+    "data/**/*",
+    "saved/**/*",
+    "site/**/*",
+    "recbole_data/**/*",
+    "log_tensorboard/**/*",
+    ".github/**/*",
+    ".agents/**/*",
+    "benches/**/*",
+    "scripts/**/*",
+    "examples/**/*",
+]
 
 
 [lib]
