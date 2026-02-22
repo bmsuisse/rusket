@@ -158,8 +158,8 @@ def instacart_df():  # type: ignore[return]
         except Exception as exc:
             pytest.skip(f"Instacart data not available and auto-download failed: {exc}")
 
-    prior = pd.read_csv(_INSTACART_PRIOR, usecols=["order_id", "product_id"])
-    orders = pd.read_csv(_INSTACART_ORDERS, usecols=["order_id", "user_id"])
+    prior = pd.read_csv(_INSTACART_PRIOR, usecols=["order_id", "product_id"])  # type: ignore
+    orders = pd.read_csv(_INSTACART_ORDERS, usecols=["order_id", "user_id"])  # type: ignore
     products = pd.read_csv(_INSTACART_PRODUCTS)
 
     df = (

@@ -20,7 +20,7 @@ def _make_transaction_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> 
     support = np.clip(support, 0.0001, 0.5)
     matrix = rng.random((n_rows, n_cols)) < support
     columns = [f"Item_{i}" for i in range(n_cols)]
-    return pd.DataFrame(matrix.astype(bool), columns=columns)
+    return pd.DataFrame(matrix.astype(bool), columns=columns)  # type: ignore
 
 
 def _timed(fn, *args, **kwargs):

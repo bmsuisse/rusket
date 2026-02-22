@@ -154,7 +154,7 @@ class FPMiner:
         if self._n_rows == 0:
             import pandas as pd
 
-            return pd.DataFrame(columns=["support", "itemsets"])
+            return pd.DataFrame(columns=["support", "itemsets"])  # type: ignore
 
         import numpy as np
 

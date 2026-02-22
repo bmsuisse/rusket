@@ -78,7 +78,7 @@ def _make_transaction_df(
 
     # Generate boolean matrix vectorised — no Python loops
     matrix = rng.random((n_rows, n_cols)) < support
-    return pd.DataFrame(matrix.astype(bool), columns=products)
+    return pd.DataFrame(matrix.astype(bool), columns=products)  # type: ignore
 
 
 def _timed(fn, *args, **kwargs):
