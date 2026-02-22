@@ -60,3 +60,52 @@ def test_mine_grouped(spark_session) -> None:
     groups = pd_result["store_id"].unique()
     assert "A" in groups
     assert "B" in groups
+
+
+def test_spark_als(spark_session) -> None:
+    from rusket.als import ALS
+
+    df = pd.DataFrame(
+        {
+            "user_id": [0, 0, 1, 1, 2],
+            "item_id": [10, 20, 10, 30, 20],
+            "rating": [5.0, 3.0, 4.0, 5.0, 1.0],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    model = ALS(factors=4, iterations=3, seed=42)
+    # The spark_df will be natively ingested via arrow buffers
+    model.fit_transactions(
+        spark_df, user_col="user_id", item_col="item_id", rating_col="rating"
+    )
+
+    assert model.fitted
+    assert model.user_factors.shape[0] == 3
+    assert model.item_factors.shape[0] == 3
+
+    recs, scores = model.recommend_items(user_id=0, n=2)
+    assert len(recs) > 0
+
+
+def test_spark_bpr(spark_session) -> None:
+    from rusket.bpr import BPR
+
+    df = pd.DataFrame(
+        {
+            "user_id": [0, 0, 1, 1, 2],
+            "item_id": [10, 20, 10, 30, 20],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    model = BPR(factors=4, iterations=3, seed=42)
+    # The spark_df will be natively ingested via arrow buffers
+    model.fit_transactions(spark_df, user_col="user_id", item_col="item_id")
+
+    assert model.fitted
+    assert model.user_factors.shape[0] == 3
+    assert model.item_factors.shape[0] == 3
+
+    recs, scores = model.recommend_items(user_id=1, n=2)
+    assert len(recs) > 0

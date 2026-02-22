@@ -16,7 +16,11 @@ def to_dataframe(data: Any) -> Any:
         # Older PySpark may not have it, so we fallback gracefully but warn.
         if hasattr(data, "toArrow"):
             try:
-                table = pa.Table.from_batches(data.toArrow())
+                arrow_data = data.toArrow()
+                if isinstance(arrow_data, pa.Table):
+                    table = arrow_data
+                else:
+                    table = pa.Table.from_batches(arrow_data)
                 return pl.from_arrow(table)
             except Exception as e:
                 import warnings
