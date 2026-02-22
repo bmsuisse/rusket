@@ -2,18 +2,17 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-
-use crate::fpgrowth::{process_item_counts, flatten_results};
+use crate::fpgrowth::{flatten_results, process_item_counts};
 
 /// Simple BitSet backed by `Vec<u64>`
 #[derive(Clone)]
-struct BitSet {
+pub(crate) struct BitSet {
     blocks: Vec<u64>,
 }
 
 impl BitSet {
     fn new(num_bits: usize) -> Self {
-        let num_blocks = (num_bits + 63) / 64;
+        let num_blocks = num_bits.div_ceil(64);
         BitSet {
             blocks: vec![0; num_blocks],
         }
@@ -46,21 +45,15 @@ impl BitSet {
             let remaining_max = ((n - i - 1) * 64) as u64;
             if count + remaining_max < min_count {
                 // zero out remaining blocks so `out` is consistent if caller checks
-                for j in (i+1)..n { out.blocks[j] = 0; }
+                for j in (i + 1)..n {
+                    out.blocks[j] = 0;
+                }
                 return 0;
             }
         }
         count
     }
-
-    #[inline]
-    fn intersect(&self, other: &BitSet) -> BitSet {
-        let blocks = self.blocks.iter().zip(other.blocks.iter())
-            .map(|(a, b)| a & b).collect();
-        BitSet { blocks }
-    }
 }
-
 
 pub(crate) fn eclat_mine(
     prefix: &[u32],
@@ -72,19 +65,23 @@ pub(crate) fn eclat_mine(
     let new_len = prefix.len() + 1;
     // Scratch buffer reused across pairs at this level — one allocation per call.
     let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
-    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
+    let mut scratch = BitSet {
+        blocks: vec![0u64; n_blocks],
+    };
 
     for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
         let count = bs_a.count_ones();
-        if count < min_count { continue; }
+        if count < min_count {
+            continue;
+        }
 
-        if max_len.map_or(true, |ml| new_len <= ml) {
+        if max_len.is_none_or(|ml| new_len <= ml) {
             let mut iset = Vec::with_capacity(new_len);
             iset.extend_from_slice(prefix);
             iset.push(*item_a);
             results.push((count, iset.clone()));
 
-            if max_len.map_or(true, |ml| new_len < ml) {
+            if max_len.is_none_or(|ml| new_len < ml) {
                 let mut next_active: Vec<(u32, BitSet)> =
                     Vec::with_capacity(active_items.len() - i - 1);
                 for (item_b, bs_b) in &active_items[i + 1..] {
@@ -104,7 +101,6 @@ pub(crate) fn eclat_mine(
 
     results
 }
-
 
 #[pyfunction]
 #[pyo3(signature = (data, min_count, max_len=None))]
@@ -163,7 +159,7 @@ pub fn eclat_from_dense(
 
     let active_items: Vec<(u32, BitSet)> = original_items
         .into_iter()
-        .zip(bitsets.into_iter())
+        .zip(bitsets)
         .collect();
 
     let results: Vec<(u64, Vec<u32>)> = active_items
@@ -176,9 +172,11 @@ pub fn eclat_from_dense(
                 let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
 
-                if max_len.map_or(true, |ml| ml > 1) {
+                if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
-                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
+                    let mut scratch = BitSet {
+                        blocks: vec![0u64; n_blocks],
+                    };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
@@ -261,7 +259,7 @@ pub fn eclat_from_csr(
     // 3. Prepare initial active set
     let active_items: Vec<(u32, BitSet)> = original_items
         .into_iter()
-        .zip(bitsets.into_iter())
+        .zip(bitsets)
         .collect();
 
     // 4. Mine (Parallel top level)
@@ -275,9 +273,11 @@ pub fn eclat_from_csr(
                 let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
 
-                if max_len.map_or(true, |ml| ml > 1) {
+                if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
-                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
+                    let mut scratch = BitSet {
+                        blocks: vec![0u64; n_blocks],
+                    };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
@@ -312,7 +312,7 @@ pub(crate) fn _eclat_mine_csr(
     min_count: u64,
     max_len: Option<usize>,
 ) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
-    use crate::fpgrowth::{process_item_counts, flatten_results};
+    use crate::fpgrowth::{flatten_results, process_item_counts};
 
     let n_rows = indptr.len().saturating_sub(1);
     if n_rows == 0 || n_cols == 0 {
@@ -348,7 +348,7 @@ pub(crate) fn _eclat_mine_csr(
 
     let active_items: Vec<(u32, BitSet)> = original_items
         .into_iter()
-        .zip(bitsets.into_iter())
+        .zip(bitsets)
         .collect();
 
     use rayon::prelude::*;
@@ -361,9 +361,11 @@ pub(crate) fn _eclat_mine_csr(
             if count >= min_count {
                 let iset = vec![*item_a];
                 sub_results.push((count, iset.clone()));
-                if max_len.map_or(true, |ml| ml > 1) {
+                if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
-                    let mut scratch = BitSet { blocks: vec![0u64; n_blocks] };
+                    let mut scratch = BitSet {
+                        blocks: vec![0u64; n_blocks],
+                    };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);

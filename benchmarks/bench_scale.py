@@ -164,7 +164,7 @@ def run_all() -> list[dict]:
             mlx_str = f"{t_mlx:.3f}s" if t_mlx is not None else "TIMEOUT(30s)"
             print(f"  mlxtend:  {mlx_str}", flush=True)
         elif HAS_MLX:
-            print(f"  mlxtend:  SKIPPED (n_rows > 1M)", flush=True)
+            print("  mlxtend:  SKIPPED (n_rows > 1M)", flush=True)
 
         results.append(
             {
@@ -293,7 +293,7 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
         title_text="Time (seconds)",
         row=1,
         col=1,
-        range=[-1, 3.5], # 0.1s to 3000s
+        range=[-1, 3.5],  # 0.1s to 3000s
         gridcolor="rgba(128,128,128,0.15)",
     )
     fig.update_yaxes(

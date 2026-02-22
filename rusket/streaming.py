@@ -54,6 +54,7 @@ class FPMiner:
         if max_ram_mb == -1:
             try:
                 import psutil
+
                 available_mb = psutil.virtual_memory().available // (1024 * 1024)
                 max_ram_mb = max(100, int(available_mb * 0.90))
             except ImportError:
@@ -108,6 +109,16 @@ class FPMiner:
         self._n_rows += len(txn)
         return self
 
+    def add_arrow_batch(self, batch: Any, txn_col: str, item_col: str) -> FPMiner:
+        """Feed a PyArrow RecordBatch directly into the miner.
+        Zero-copy extraction is used if types match (Int64/Int32).
+        """
+        txn_array = batch.column(txn_col).to_numpy(zero_copy_only=False)
+        item_array = batch.column(item_col).to_numpy(zero_copy_only=False)
+
+        return self.add_chunk(txn_array, item_array)
+
+
     def mine(
         self,
         min_support: float = 0.5,
@@ -143,6 +154,7 @@ class FPMiner:
         """
         if self._n_rows == 0:
             import pandas as pd
+
             return pd.DataFrame(columns=["support", "itemsets"])
 
         import numpy as np
@@ -186,3 +198,63 @@ class FPMiner:
         """Free all accumulated data."""
         self._inner.reset()
         self._n_rows = 0
+
+def mine_duckdb(
+    con: Any,
+    query: str,
+    n_items: int,
+    txn_col: str,
+    item_col: str,
+    min_support: float = 0.5,
+    max_len: int | None = None,
+    chunk_size: int = 1_000_000,
+) -> "pd.DataFrame":
+    """Stream directly from a DuckDB query via Arrow RecordBatches.
+
+    This is extremely memory efficient, bypassing Pandas entirely.
+    """
+    miner = FPMiner(n_items=n_items)
+    arrow_reader = con.execute(query).fetch_record_batch(chunk_size=chunk_size)
+
+    for batch in arrow_reader:
+        miner.add_arrow_batch(batch, txn_col, item_col)
+
+    return miner.mine(min_support=min_support, max_len=max_len)
+
+
+def mine_spark(
+    spark_df: Any,
+    n_items: int,
+    txn_col: str,
+    item_col: str,
+    min_support: float = 0.5,
+    max_len: int | None = None,
+) -> "pd.DataFrame":
+    """Stream natively from a PySpark DataFrame on Databricks via Arrow.
+
+    Uses `toLocalIterator()` to fetch Arrow chunks incrementally directly
+    to the driver node, avoiding massive memory spikes.
+    """
+    miner = FPMiner(n_items=n_items)
+
+    # Enable Arrow-based data transfers implicitly via spark-pandas interop
+    # Spark 3.3+ supports fetching Arrow batches via mapInArrow/toLocalIterator
+
+    try:
+        # Databricks DBR 13+ / PySpark 3.4+ native Arrow stream
+        batches = spark_df.select(txn_col, item_col).toArrow()
+        # Returns an Arrow Table
+        for batch in batches.to_batches():
+            miner.add_arrow_batch(batch, txn_col, item_col)
+    except Exception:
+        # Fallback to older spark iterator
+        for row_chunk in spark_df.select(txn_col, item_col).toLocalIterator():
+            import numpy as np
+
+            if hasattr(row_chunk, "asDict"):
+                txn = np.array([row_chunk[txn_col]], dtype=np.int64)
+                item = np.array([row_chunk[item_col]], dtype=np.int32)
+                miner.add_chunk(txn, item)
+
+    return miner.mine(min_support=min_support, max_len=max_len)
+

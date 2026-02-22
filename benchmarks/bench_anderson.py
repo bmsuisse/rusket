@@ -43,7 +43,7 @@ def load_ml1m() -> sp.csr_matrix:
             vals.append(float(r))
     mat = sp.csr_matrix(
         (np.array(vals, dtype=np.float32), (rows, cols)),
-        shape=(max(rows) + 1, max(cols) + 1)
+        shape=(max(rows) + 1, max(cols) + 1),
     )
     print(f"  {mat.shape[0]:,} users × {mat.shape[1]:,} items  {mat.nnz:,} ratings")
     return mat
@@ -100,26 +100,30 @@ def main():
 
     print()
     print("── Baseline: plain CG ALS ──────────────────────────────────────────")
-    t_baseline, q_baseline = bench(mat, "Plain  CG-3  iters=15", iterations=15, cg_iters=3)
-    bench(mat, "Plain  CG-3  iters=10",   iterations=10, cg_iters=3)
-    bench(mat, "Plain  CG-3  iters=8",    iterations=8,  cg_iters=3)
-    bench(mat, "Plain  CG-3  iters=5",    iterations=5,  cg_iters=3)
+    t_baseline, q_baseline = bench(
+        mat, "Plain  CG-3  iters=15", iterations=15, cg_iters=3
+    )
+    bench(mat, "Plain  CG-3  iters=10", iterations=10, cg_iters=3)
+    bench(mat, "Plain  CG-3  iters=8", iterations=8, cg_iters=3)
+    bench(mat, "Plain  CG-3  iters=5", iterations=5, cg_iters=3)
 
     print()
     print("── Anderson(m=5) acceleration ──────────────────────────────────────")
     bench(mat, "AA(m=5) CG-3  iters=15", iterations=15, cg_iters=3, anderson_m=5)
     bench(mat, "AA(m=5) CG-3  iters=10", iterations=10, cg_iters=3, anderson_m=5)
-    bench(mat, "AA(m=5) CG-3  iters=8",  iterations=8,  cg_iters=3, anderson_m=5)
-    bench(mat, "AA(m=5) CG-3  iters=5",  iterations=5,  cg_iters=3, anderson_m=5)
+    bench(mat, "AA(m=5) CG-3  iters=8", iterations=8, cg_iters=3, anderson_m=5)
+    bench(mat, "AA(m=5) CG-3  iters=5", iterations=5, cg_iters=3, anderson_m=5)
 
     print()
     print("── Anderson(m=3) acceleration ──────────────────────────────────────")
     bench(mat, "AA(m=3) CG-3  iters=15", iterations=15, cg_iters=3, anderson_m=3)
     bench(mat, "AA(m=3) CG-3  iters=10", iterations=10, cg_iters=3, anderson_m=3)
-    bench(mat, "AA(m=3) CG-3  iters=5",  iterations=5,  cg_iters=3, anderson_m=3)
+    bench(mat, "AA(m=3) CG-3  iters=5", iterations=5, cg_iters=3, anderson_m=3)
 
     print()
-    print(f"  Baseline (iters=15, no AA): {t_baseline:.1f}s  mean_pred={q_baseline:.3f}")
+    print(
+        f"  Baseline (iters=15, no AA): {t_baseline:.1f}s  mean_pred={q_baseline:.3f}"
+    )
     print("  Look for configs that match quality with fewer iterations → faster.")
 
 

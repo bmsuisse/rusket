@@ -64,8 +64,14 @@ def customer_saturation(
     total_unique = df[target_col].nunique()
     user_stats["saturation_pct"] = user_stats["unique_count"] / total_unique
 
-    user_stats["rank"] = user_stats["unique_count"].rank(method="first", ascending=False)
-    user_stats["decile"] = pd.qcut(user_stats["rank"], q=10, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    user_stats["rank"] = user_stats["unique_count"].rank(
+        method="first", ascending=False
+    )
+    user_stats["decile"] = pd.qcut(
+        user_stats["rank"], q=10, labels=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    )
     user_stats.drop(columns=["rank"], inplace=True)
 
-    return user_stats.sort_values(by="saturation_pct", ascending=False).reset_index(drop=True)
+    return user_stats.sort_values(by="saturation_pct", ascending=False).reset_index(
+        drop=True
+    )

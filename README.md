@@ -216,6 +216,35 @@ freq = mine(df, min_support=0.05, use_colnames=True)
 
 ---
 
+### 💎 High-Utility Pattern Mining (HUPM)
+
+Go beyond frequency by mining patterns that yield the highest total utility (e.g., profit), even if they appear rarely. `rusket` implements the state-of-the-art **EFIM** algorithm in Rust.
+
+```python
+import pandas as pd
+from rusket import mine_hupm
+
+# Long-format DataFrame with utilities (profits)
+df = pd.DataFrame({
+    "txn_id": [1, 1, 1, 2, 2, 3, 3],
+    "item": ["Apple", "Bread", "Milk", "Apple", "Milk", "Bread", "Milk"],
+    "profit": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]
+})
+
+# Mine itemsets with at least $7 total profit
+# Returns a DataFrame sorted by utility
+high_utility = mine_hupm(
+    data=df,
+    transaction_col="txn_id",
+    item_col="item",
+    utility_col="profit",
+    min_utility=7.0
+)
+print(high_utility.head())
+```
+
+---
+
 ### 📊 Sparse Pandas Input
 
 For very sparse datasets (e.g. e-commerce with thousands of SKUs), use Pandas `SparseDtype` to minimize memory. `rusket` passes the raw CSR arrays straight to Rust — **no densification ever happens**.

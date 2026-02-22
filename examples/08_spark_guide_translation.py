@@ -2,7 +2,7 @@
 Translating Spark MLlib to rusket
 =================================
 
-This example translates the famous Recommendation example from Chapter 28 
+This example translates the famous Recommendation example from Chapter 28
 of 'Spark: The Definitive Guide' directly into `rusket` using pure Python and Pandas.
 
 It demonstrates how to:
@@ -21,30 +21,32 @@ import numpy as np
 from rusket import ALS
 from rusket.recommend import score_potential
 
+
 def download_sample_movielens(data_dir: Path) -> Path:
     """Downloads the sample movielens ratings dataset from the Spark repository."""
     url = "https://raw.githubusercontent.com/apache/spark/master/data/mllib/als/sample_movielens_ratings.txt"
     txt_path = data_dir / "sample_movielens_ratings.txt"
-    
+
     if not txt_path.exists():
         print(f"Downloading sample movielens ratings dataset to {data_dir}...")
         data_dir.mkdir(parents=True, exist_ok=True)
         urllib.request.urlretrieve(url, txt_path)
         print("Download complete.")
-        
+
     return txt_path
+
 
 def main():
     # 1. Load the data using Pandas
     data_dir = Path(__file__).parent.parent / "benchdata"
     txt_path = download_sample_movielens(data_dir)
-    
+
     print(f"Loading data from {txt_path}...")
     ratings = pd.read_csv(
-        txt_path, 
-        sep="::", 
-        engine="python", 
-        names=["userId", "movieId", "rating", "timestamp"]
+        txt_path,
+        sep="::",
+        engine="python",
+        names=["userId", "movieId", "rating", "timestamp"],
     )
     print(f"Loaded {len(ratings):,} ratings.")
 
@@ -60,7 +62,9 @@ def main():
     # Note: rusket uses `factors` instead of `rank`, and `iterations` instead of `maxIter`.
     print("Training rusket.ALS model...")
     model = ALS(factors=10, iterations=5, regularization=0.01, seed=42)
-    model.fit_transactions(training, user_col="userId", item_col="movieId", rating_col="rating")
+    model.fit_transactions(
+        training, user_col="userId", item_col="movieId", rating_col="rating"
+    )
     print(f"Trained model with {model._n_users} users and {model._n_items} items.")
 
     # 4. Generate Predictions for the test set
@@ -83,27 +87,38 @@ def main():
     # Map the raw pandas IDs to rusket's internal 0-indexed matrix IDs
     try:
         internal_user_ids = np.array([model._user_labels.index(u) for u in test_users])
-        internal_movie_ids = np.array([model._item_labels.index(str(m)) for m in test_movies])
-        
+        internal_movie_ids = np.array(
+            [model._item_labels.index(str(m)) for m in test_movies]
+        )
+
         # Extract predicted ratings
         predicted_ratings = all_predictions[internal_user_ids, internal_movie_ids]
-        
+
         # Calculate RMSE
         valid_mask = ~np.isinf(predicted_ratings) & ~np.isnan(predicted_ratings)
-        
+
         if not np.any(valid_mask):
-            print("Could not evaluate RMSE: No valid predictions found. "
-                  "(Likely due to cold-start users/items missing from the training set).")
+            print(
+                "Could not evaluate RMSE: No valid predictions found. "
+                "(Likely due to cold-start users/items missing from the training set)."
+            )
         else:
-            rmse = np.sqrt(np.mean((predicted_ratings[valid_mask] - actual_ratings[valid_mask]) ** 2))
+            rmse = np.sqrt(
+                np.mean(
+                    (predicted_ratings[valid_mask] - actual_ratings[valid_mask]) ** 2
+                )
+            )
             print(f"Root-mean-square error = {rmse:.4f}")
             print(f"Evaluated on {np.sum(valid_mask)} valid predictions.")
-        
+
     except ValueError as e:
         # Handle cold-start users/items in the test set not seen in training
-        print(f"Cold start warning: Some users/items in test set were not in training. Error: {e}")
-        
+        print(
+            f"Cold start warning: Some users/items in test set were not in training. Error: {e}"
+        )
+
     print("\n--- Spark Script Equivalent Execution Complete ---")
+
 
 if __name__ == "__main__":
     main()

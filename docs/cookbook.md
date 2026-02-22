@@ -409,21 +409,68 @@ top_10["sets"] = top_10["itemsets"].apply(set)
 
 ## 10. Spark / Databricks Integration
 
+`rusket` provides native integration with PySpark out of the box, leaning heavily on **Apache Arrow** to completely bypass Python-to-JVM serialization and Pandas memory bloat.
+
+### 10.1 Streaming 1B+ Rows from Spark (Zero-Copy)
+
+Instead of using `.toPandas()` (which will OOM driver nodes instantly on large tables), use `mine_spark`, which streams Arrow partitions dynamically.
+
 ```python
-from rusket import from_transactions
-from rusket import ALS
+from rusket import mine_spark
 
-# FPGrowth from Spark
-fi = mine(spark_df.toPandas(), min_support=0.05, use_colnames=True)
+spark_df = spark.table("silver_transactions")
 
-# ALS from Spark ratings table
-ratings_spark = spark.table("ratings")  # user_id, item_id, rating
-model = ALS(factors=64, iterations=10, verbose=True)
-model.fit_transactions(ratings_spark, user_col="user_id", item_col="item_id", rating_col="rating")
+# Streams Arrow RecordBatches directly to the Rust backend
+frequent_itemsets = mine_spark(
+    spark_df, 
+    n_items=500_000, 
+    txn_col="transaction_id", 
+    item_col="product_id", 
+    min_support=0.001
+)
 ```
 
-!!! note "Large Spark tables"
-    For tables with >100M rows, collect a representative sample or use the out-of-core loader from Section 5.
+### 10.2 Distributed Parallel Mining (Grouped)
+
+If you have multi-tenant data (e.g., you want to mine *distinct* association rules per region, store, or customer segment), you can distribute `rusket` across your entire Databricks cluster using PySpark's `applyInArrow`.
+
+```python
+from rusket.spark import mine_grouped
+
+spark_df = spark.table("retail_transactions")
+
+# Rusket maps the workload across executor nodes. Each node runs pure Rust 
+# on its Spark partition and yields the regional itemsets back.
+regional_rules_df = mine_grouped(
+    spark_df, 
+    group_col="store_id", 
+    min_support=0.05
+)
+
+display(regional_rules_df)
+```
+
+### 10.3 Collaborative Filtering (ALS) from Spark
+
+For recommendation workloads, you can seamlessly feed Spark DataFrames containing `(user, item, rating)` triplets into ALS.
+
+```python
+from rusket import ALS
+
+ratings_spark = spark.table("implicit_ratings") 
+model = ALS(factors=64, iterations=10, verbose=True)
+
+# Coerces to Pandas internally for fit (only for tables that fit in driver RAM)
+model.fit_transactions(
+    ratings_spark, 
+    user_col="user_id", 
+    item_col="item_id", 
+    rating_col="clicks"
+)
+```
+
+!!! note "Out-of-Core Models"
+    For Spark tables spanning >100M rows, use `mine_spark` for Frequent Pattern mining, or export the table to an Out-of-Core disk map (Section 5) for ALS factorisation.
 
 ---
 

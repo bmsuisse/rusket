@@ -3,8 +3,11 @@
 Compares FPGrowth vs Eclat at 100M, 200M, 500M, 1B on the sparse
 catalogue dataset (2,603 items, avg 4.4 items/txn).
 """
+
 from __future__ import annotations
-import gc, time, urllib.request
+import gc
+import time
+import urllib.request
 from pathlib import Path
 import numpy as np
 from rusket import FPMiner
@@ -67,9 +70,11 @@ def run(n_items, probs, avg, target, method):
         mine_t = time.perf_counter() - t1
         n = len(freq)
     except Exception as e:
-        mine_t = -1.0; n = -1
+        mine_t = -1.0
+        n = -1
         print(f"  ERROR: {e}")
-    del miner; gc.collect()
+    del miner
+    gc.collect()
     return actual, add_t, mine_t, n
 
 
@@ -82,7 +87,9 @@ def main():
     probs = counts / counts.sum()
     del txn_ids, item_ids
 
-    print(f"\nandi_data2: {n_txns_real:,} real txns × {n_items} items, avg {avg:.1f} items/txn")
+    print(
+        f"\nandi_data2: {n_txns_real:,} real txns × {n_items} items, avg {avg:.1f} items/txn"
+    )
     print(f"min_support={MIN_SUPPORT}, max_len={MAX_LEN}")
     print()
     hdr = f"  {'rows':>14}  {'method':>10}  {'add_t':>8}  {'mine_t':>8}  {'total':>8}  {'M rows/s':>9}  {'itemsets':>10}"
@@ -95,10 +102,14 @@ def main():
             rows, add_t, mine_t, n = run(n_items, probs, avg, target, method)
             total = add_t + mine_t
             tput = rows / total / 1e6 if total > 0 else 0
-            print(f"  {rows:>14,}  {method:>10}  {add_t:>7.1f}s  {mine_t:>7.1f}s  "
-                  f"{total:>7.1f}s  {tput:>9.2f}  {n:>10,}", flush=True)
+            print(
+                f"  {rows:>14,}  {method:>10}  {add_t:>7.1f}s  {mine_t:>7.1f}s  "
+                f"{total:>7.1f}s  {tput:>9.2f}  {n:>10,}",
+                flush=True,
+            )
 
     print("\n✅ Done!")
+
 
 if __name__ == "__main__":
     main()

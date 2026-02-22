@@ -19,7 +19,9 @@ def fpgrowth(
     column_names: list[str] | None = None,
 ) -> pd.DataFrame:
     if method not in ("fpgrowth", "eclat", "auto"):
-        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}")
+        raise ValueError(
+            f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}"
+        )
     if min_support <= 0.0:
         raise ValueError(
             f"`min_support` must be a positive number within the interval `(0, 1]`. Got {min_support}."

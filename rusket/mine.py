@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+
 def mine(
     df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
     min_support: float = 0.5,
@@ -44,7 +45,9 @@ def mine(
         DataFrame containing `support` and `itemsets` columns.
     """
     if method not in ("fpgrowth", "eclat", "auto"):
-        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}")
+        raise ValueError(
+            f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}"
+        )
     if min_support <= 0.0:
         raise ValueError(
             f"`min_support` must be a positive number within the interval `(0, 1]`. Got {min_support}."

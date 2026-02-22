@@ -5,7 +5,7 @@ import typing
 from typing import Any
 
 from . import _rusket as _rust  # type: ignore
-from ._compat import to_pandas
+from ._compat import to_dataframe
 
 
 class ALS:
@@ -91,7 +91,9 @@ class ALS:
         from scipy import sparse as sp
 
         if self.fitted:
-            raise RuntimeError("Model is already fitted. Create a new instance to refit.")
+            raise RuntimeError(
+                "Model is already fitted. Create a new instance to refit."
+            )
 
         if sp.issparse(interactions):
             csr = sp.csr_matrix(interactions, dtype=np.float32)
@@ -152,17 +154,27 @@ class ALS:
         import pandas as _pd
         from scipy import sparse as sp
 
-        data = to_pandas(data)
-
-        if not isinstance(data, _pd.DataFrame):
-            raise TypeError(f"Expected Pandas/Polars/Spark DataFrame, got {type(data)}")
+        data = to_dataframe(data)
 
         cols = list(data.columns)
         u_col = user_col or str(cols[0])
         i_col = item_col or str(cols[1])
 
-        user_codes, user_uniques = _pd.factorize(data[u_col], sort=False)
-        item_codes, item_uniques = _pd.factorize(data[i_col], sort=True)
+        try:
+            import polars as pl
+
+            is_polars = isinstance(data, pl.DataFrame)
+        except ImportError:
+            is_polars = False
+
+        if not (isinstance(data, _pd.DataFrame) or is_polars):
+            raise TypeError(f"Expected Pandas/Polars/Spark DataFrame, got {type(data)}")
+
+        u_data = data[u_col].to_numpy() if is_polars else data[u_col]
+        i_data = data[i_col].to_numpy() if is_polars else data[i_col]
+
+        user_codes, user_uniques = _pd.factorize(u_data, sort=False)
+        item_codes, item_uniques = _pd.factorize(i_data, sort=True)
         n_users = len(user_uniques)
         n_items = len(item_uniques)
 

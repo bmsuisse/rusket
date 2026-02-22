@@ -1,5 +1,9 @@
-use faer::{MatRef, linalg::matmul::matmul, Accum, Par};
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2, PyUntypedArrayMethods};
+use faer::linalg::solvers::Solve;
+use faer::{linalg::matmul::matmul, Accum, MatRef, Par, Side};
+use numpy::{
+    IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
+    PyUntypedArrayMethods,
+};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
@@ -19,14 +23,14 @@ fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
     let chunks = n / 8 * 8;
     let mut i = 0;
     while i < chunks {
-        y[i]   += alpha * x[i];
-        y[i+1] += alpha * x[i+1];
-        y[i+2] += alpha * x[i+2];
-        y[i+3] += alpha * x[i+3];
-        y[i+4] += alpha * x[i+4];
-        y[i+5] += alpha * x[i+5];
-        y[i+6] += alpha * x[i+6];
-        y[i+7] += alpha * x[i+7];
+        y[i] += alpha * x[i];
+        y[i + 1] += alpha * x[i + 1];
+        y[i + 2] += alpha * x[i + 2];
+        y[i + 3] += alpha * x[i + 3];
+        y[i + 4] += alpha * x[i + 4];
+        y[i + 5] += alpha * x[i + 5];
+        y[i + 6] += alpha * x[i + 6];
+        y[i + 7] += alpha * x[i + 7];
         i += 8;
     }
     while i < n {
@@ -43,14 +47,7 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
     let yt = y.transpose();
 
     let mut g = faer::Mat::<f32>::zeros(k, k);
-    matmul(
-        g.as_mut(),
-        Accum::Replace,
-        yt,
-        y,
-        1.0f32,
-        Par::rayon(0),
-    );
+    matmul(g.as_mut(), Accum::Replace, yt, y, 1.0f32, Par::rayon(0));
 
     let mut r = vec![0.0f32; k * k];
     for a in 0..k {
@@ -74,7 +71,7 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
 // Thread-local scratch buffers — allocated once per thread, reused across users.
 thread_local! {
     static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
-        RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new()));
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_cg(
@@ -100,10 +97,14 @@ fn solve_one_side_cg(
         SCRATCH.with(|cell| {
             let mut borrow = cell.borrow_mut();
             let (ref mut b, ref mut r, ref mut p, ref mut ap) = *borrow;
-            b.clear(); b.resize(k, 0.0);
-            r.clear(); r.resize(k, 0.0);
-            p.clear(); p.resize(k, 0.0);
-            ap.clear(); ap.resize(k, 0.0);
+            b.clear();
+            b.resize(k, 0.0);
+            r.clear();
+            r.resize(k, 0.0);
+            p.clear();
+            p.resize(k, 0.0);
+            ap.clear();
+            ap.resize(k, 0.0);
 
             // Compute RHS: b = Σᵢ cᵢ yᵢ
             for idx in start..end {
@@ -117,7 +118,9 @@ fn solve_one_side_cg(
             let apply_a = |v: &[f32], out: &mut [f32]| {
                 for a in 0..k {
                     let mut s = 0.0f32;
-                    for bb in 0..k { s += gram[a * k + bb] * v[bb]; }
+                    for bb in 0..k {
+                        s += gram[a * k + bb] * v[bb];
+                    }
                     out[a] = s + eff_lambda * v[a];
                 }
                 for idx in start..end {
@@ -134,21 +137,29 @@ fn solve_one_side_cg(
             p.copy_from_slice(b);
             let mut rsold = dot(r, r);
 
-            if rsold < 1e-20 { return; }
+            if rsold < 1e-20 {
+                return;
+            }
 
             for _ in 0..cg_iters {
                 apply_a(p, ap);
                 let pap = dot(p, ap);
-                if pap <= 0.0 { break; }
+                if pap <= 0.0 {
+                    break;
+                }
                 let ak = rsold / pap;
 
                 axpy(ak, p, xu);
                 axpy(-ak, ap, r);
 
                 let rsnew = dot(r, r);
-                if rsnew < 1e-20 { break; }
+                if rsnew < 1e-20 {
+                    break;
+                }
                 let beta = rsnew / rsold;
-                for j in 0..k { p[j] = r[j] + beta * p[j]; }
+                for j in 0..k {
+                    p[j] = r[j] + beta * p[j];
+                }
                 rsold = rsnew;
             }
         }); // end SCRATCH.with
@@ -167,52 +178,18 @@ fn solve_one_side_cg(
 // Cholesky: we do the LL' factorisation in-place (lower-triangular).
 
 fn cholesky_solve_inplace(a: &mut [f32], b: &mut [f32], k: usize) {
-    // LL' factorisation of a (column-major k×k, lower triangle overwritten)
-    for j in 0..k {
-        // Compute diagonal
-        let mut sum = a[j * k + j];
-        for p in 0..j {
-            sum -= a[j * k + p] * a[j * k + p];
-        }
-        if sum <= 0.0 {
-            sum = 1e-8; // numerical guard
-        }
-        let ljj = sum.sqrt();
-        a[j * k + j] = ljj;
-        let inv_ljj = 1.0 / ljj;
+    let a_mat = faer::MatMut::from_row_major_slice_mut(a, k, k);
+    let mut b_mat = faer::MatMut::from_column_major_slice_mut(b, k, 1);
 
-        // Fill column j below diagonal
-        for i in (j + 1)..k {
-            let mut s = a[i * k + j];
-            for p in 0..j {
-                s -= a[i * k + p] * a[j * k + p];
-            }
-            a[i * k + j] = s * inv_ljj;
-        }
-    }
-
-    // Forward substitution: L·y = b
-    for i in 0..k {
-        let mut s = b[i];
-        for j in 0..i {
-            s -= a[i * k + j] * b[j];
-        }
-        b[i] = s / a[i * k + i];
-    }
-
-    // Backward substitution: L'·x = y
-    for i in (0..k).rev() {
-        let mut s = b[i];
-        for j in (i + 1)..k {
-            s -= a[j * k + i] * b[j];
-        }
-        b[i] = s / a[i * k + i];
+    if let Ok(llt) = a_mat.as_ref().llt(Side::Lower) {
+        let x = llt.solve(b_mat.as_ref());
+        b_mat.copy_from(x.as_ref());
     }
 }
 
 thread_local! {
     static SCRATCH_CHOL: RefCell<(Vec<f32>, Vec<f32>)> =
-        RefCell::new((Vec::new(), Vec::new()));
+        const { RefCell::new((Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_cholesky(
@@ -231,17 +208,21 @@ fn solve_one_side_cholesky(
 
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
-        let end   = indptr[u + 1] as usize;
+        let end = indptr[u + 1] as usize;
 
         SCRATCH_CHOL.with(|cell| {
             let mut borrow = cell.borrow_mut();
             let (ref mut a_buf, ref mut b_buf) = *borrow;
             // a_buf = k×k matrix A (row-major), b_buf = rhs of length k
-            a_buf.clear(); a_buf.extend_from_slice(gram); // start with YᵀY
-            b_buf.clear(); b_buf.resize(k, 0.0);
+            a_buf.clear();
+            a_buf.extend_from_slice(gram); // start with YᵀY
+            b_buf.clear();
+            b_buf.resize(k, 0.0);
 
             // Add λI to diagonal
-            for j in 0..k { a_buf[j * k + j] += eff_lambda; }
+            for j in 0..k {
+                a_buf[j * k + j] += eff_lambda;
+            }
 
             // Add sparse part: Σᵢ (cᵢ-1) yᵢ yᵢᵀ  and accumulate rhs
             for idx in start..end {
@@ -259,7 +240,9 @@ fn solve_one_side_cholesky(
                 }
             }
 
-            if b_buf.iter().all(|&v| v == 0.0) { return; }
+            if b_buf.iter().all(|&v| v == 0.0) {
+                return;
+            }
 
             cholesky_solve_inplace(a_buf, b_buf, k);
             xu.copy_from_slice(b_buf);
@@ -340,7 +323,11 @@ struct AndersonAccel {
 
 impl AndersonAccel {
     fn new(m: usize) -> Self {
-        Self { m, x_hist: Vec::new(), f_hist: Vec::new() }
+        Self {
+            m,
+            x_hist: Vec::new(),
+            f_hist: Vec::new(),
+        }
     }
 
     /// Push x_old (before the ALS step) and f = x_new - x_old.
@@ -371,7 +358,11 @@ impl AndersonAccel {
         let mut g = vec![0.0f32; h * h];
         for i in 0..h {
             for j in i..h {
-                let d: f32 = self.f_hist[i].iter().zip(&self.f_hist[j]).map(|(a, b)| a * b).sum();
+                let d: f32 = self.f_hist[i]
+                    .iter()
+                    .zip(&self.f_hist[j])
+                    .map(|(a, b)| a * b)
+                    .sum();
                 g[i * h + j] = d;
                 g[j * h + i] = d;
             }
@@ -429,17 +420,27 @@ fn gauss_solve_inplace(mat: &mut Vec<f32>, rhs: &mut Vec<f32>, n: usize) -> bool
         let mut max_val = mat[col * n + col].abs();
         for row in (col + 1)..n {
             let v = mat[row * n + col].abs();
-            if v > max_val { max_val = v; max_row = row; }
+            if v > max_val {
+                max_val = v;
+                max_row = row;
+            }
         }
-        if max_val < 1e-12 { return false; }
+        if max_val < 1e-12 {
+            return false;
+        }
         if max_row != col {
-            for j in 0..n { mat.swap(col * n + j, max_row * n + j); }
+            for j in 0..n {
+                mat.swap(col * n + j, max_row * n + j);
+            }
             rhs.swap(col, max_row);
         }
         let pivot = mat[col * n + col];
         for row in (col + 1)..n {
             let factor = mat[row * n + col] / pivot;
-            for j in col..n { let v = factor * mat[col * n + j]; mat[row * n + j] -= v; }
+            for j in col..n {
+                let v = factor * mat[col * n + j];
+                mat[row * n + j] -= v;
+            }
             rhs[row] -= factor * rhs[col];
         }
     }
@@ -477,7 +478,11 @@ fn als_train(
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
 
     if verbose {
-        let solver_name = if use_cholesky { "Cholesky" } else { &format!("CG(iters={})", cg_iters) };
+        let solver_name = if use_cholesky {
+            "Cholesky"
+        } else {
+            &format!("CG(iters={})", cg_iters)
+        };
         println!("  Solver: {}  factors={}", solver_name, k);
         println!("  ITER | USER FACTORS | ITEM FACTORS | TOTAL TIME ");
         println!("  ------------------------------------------------");
@@ -544,7 +549,7 @@ fn als_train(
             );
         }
     }
-    
+
     if verbose {
         println!("  ------------------------------------------------");
         println!("  Done in {:.1}s", total_time.as_secs_f64());
@@ -584,9 +589,7 @@ fn top_n_items(
         b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
     });
     scored.truncate(take);
-    scored.sort_unstable_by(|a, b| {
-        b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     (
         scored.iter().map(|(_, i)| *i).collect(),
         scored.iter().map(|(s, _)| *s).collect(),
@@ -616,9 +619,7 @@ fn top_n_users(
         b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
     });
     scored.truncate(take);
-    scored.sort_unstable_by(|a, b| {
-        b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     (
         scored.iter().map(|(_, i)| *i).collect(),
         scored.iter().map(|(s, _)| *s).collect(),
@@ -654,8 +655,23 @@ pub fn als_fit_implicit<'py>(
 
     let (uf, itf) = py.detach(|| {
         als_train(
-            ip, ix, id, &ti, &tx, &td, n_users, n_items, factors, regularization,
-            alpha, iterations, seed, verbose, cg_iters, use_cholesky, anderson_m,
+            ip,
+            ix,
+            id,
+            &ti,
+            &tx,
+            &td,
+            n_users,
+            n_items,
+            factors,
+            regularization,
+            alpha,
+            iterations,
+            seed,
+            verbose,
+            cg_iters,
+            use_cholesky,
+            anderson_m,
         )
     });
 

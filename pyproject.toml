@@ -47,6 +47,7 @@ dev = [
     "pyarrow>=23.0.1",
     "psutil>=6",
     "tqdm>=4",
+    "pyspark>=4.1.1",
 ]
 
 [tool.pytest.ini_options]

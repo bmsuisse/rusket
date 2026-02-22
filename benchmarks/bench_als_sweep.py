@@ -9,11 +9,11 @@ Usage:
     uv run python benchmarks/bench_als_sweep.py
     uv run python benchmarks/bench_als_sweep.py --iters 5  # fewer ALS iters for faster runs
 """
+
 from __future__ import annotations
 
 import argparse
 import gc
-import os
 import time
 import zipfile
 import urllib.request
@@ -30,13 +30,14 @@ import rusket
 DATA_DIR = Path("data/movielens")
 ML25_URL = "https://files.grouplens.org/datasets/movielens/ml-25m.zip"
 ALPHA = 40.0
-REG   = 0.01
+REG = 0.01
 TOP_N = 200
 
 
 # ---------------------------------------------------------------------------
 # Data loading (cached)
 # ---------------------------------------------------------------------------
+
 
 def get_ml25m() -> sparse.csr_matrix:
     dest = DATA_DIR / "ml-25m"
@@ -59,7 +60,10 @@ def get_ml25m() -> sparse.csr_matrix:
     n_users = int(df["user"].max()) + 1
     n_items = int(df["item"].max()) + 1
     mat = sparse.csr_matrix(
-        (df["rating"].to_numpy(np.float32), (df["user"].to_numpy(), df["item"].to_numpy())),
+        (
+            df["rating"].to_numpy(np.float32),
+            (df["user"].to_numpy(), df["item"].to_numpy()),
+        ),
         shape=(n_users, n_items),
     )
     mat.sum_duplicates()
@@ -70,6 +74,7 @@ def get_ml25m() -> sparse.csr_matrix:
 # ---------------------------------------------------------------------------
 # Single benchmark run
 # ---------------------------------------------------------------------------
+
 
 def bench(
     mat: sparse.csr_matrix,
@@ -108,48 +113,75 @@ def bench(
         f"  {label:<32}  fit={fit_s:>6.1f}s  {throughput:.2f}M rat/s  rec={rec_ms:.2f}ms",
         flush=True,
     )
-    return {"label": label, "factors": factors, "fit_s": fit_s,
-            "throughput": throughput, "rec_ms": rec_ms,
-            "cg_iters": cg_iters, "use_cholesky": use_cholesky}
+    return {
+        "label": label,
+        "factors": factors,
+        "fit_s": fit_s,
+        "throughput": throughput,
+        "rec_ms": rec_ms,
+        "cg_iters": cg_iters,
+        "use_cholesky": use_cholesky,
+    }
 
 
 # ---------------------------------------------------------------------------
 # Chart
 # ---------------------------------------------------------------------------
 
+
 def make_chart(results: list[dict], output_dir: Path) -> None:
-    labels     = [r["label"] for r in results]
-    fit_times  = [r["fit_s"] for r in results]
+    labels = [r["label"] for r in results]
+    fit_times = [r["fit_s"] for r in results]
     throughput = [r["throughput"] for r in results]
-    rec_times  = [r["rec_ms"] for r in results]
+    rec_times = [r["rec_ms"] for r in results]
 
     # Color by solver family
     def color(r: dict) -> str:
-        if r["use_cholesky"]:    return "#f59e0b"
-        if r["cg_iters"] <= 1:   return "#06b6d4"
-        if r["cg_iters"] <= 3:   return "#22c55e"
-        if r["cg_iters"] <= 5:   return "#6366f1"
+        if r["use_cholesky"]:
+            return "#f59e0b"
+        if r["cg_iters"] <= 1:
+            return "#06b6d4"
+        if r["cg_iters"] <= 3:
+            return "#22c55e"
+        if r["cg_iters"] <= 5:
+            return "#6366f1"
         return "#a78bfa"
 
     colors = [color(r) for r in results]
 
     fig = make_subplots(
-        rows=1, cols=3,
-        subplot_titles=("⏱ Fit Time (s)", "🚀 Throughput (M ratings/s)", "🔍 Rec latency (ms)"),
+        rows=1,
+        cols=3,
+        subplot_titles=(
+            "⏱ Fit Time (s)",
+            "🚀 Throughput (M ratings/s)",
+            "🔍 Rec latency (ms)",
+        ),
         horizontal_spacing=0.1,
     )
     kw = dict(marker_color=colors, textposition="outside")
 
-    fig.add_trace(go.Bar(x=labels, y=fit_times,
-                         text=[f"{v:.1f}" for v in fit_times], **kw), row=1, col=1)
-    fig.add_trace(go.Bar(x=labels, y=throughput,
-                         text=[f"{v:.2f}" for v in throughput], **kw), row=1, col=2)
-    fig.add_trace(go.Bar(x=labels, y=rec_times,
-                         text=[f"{v:.2f}" for v in rec_times], **kw), row=1, col=3)
+    fig.add_trace(
+        go.Bar(x=labels, y=fit_times, text=[f"{v:.1f}" for v in fit_times], **kw),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Bar(x=labels, y=throughput, text=[f"{v:.2f}" for v in throughput], **kw),
+        row=1,
+        col=2,
+    )
+    fig.add_trace(
+        go.Bar(x=labels, y=rec_times, text=[f"{v:.2f}" for v in rec_times], **kw),
+        row=1,
+        col=3,
+    )
 
     fig.update_layout(
         title=dict(text="rusket ALS — 25M Optimization Sweep", font=dict(size=20)),
-        template="plotly_dark", height=500, width=1400,
+        template="plotly_dark",
+        height=500,
+        width=1400,
         showlegend=False,
         margin=dict(t=70, b=120),
     )
@@ -166,12 +198,17 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--iters", type=int, default=15,
-                        help="Number of ALS iterations (default 15)")
-    parser.add_argument("--quick", action="store_true",
-                        help="Only run CG-1/3/10 + Cholesky at factors=64")
+    parser.add_argument(
+        "--iters", type=int, default=15, help="Number of ALS iterations (default 15)"
+    )
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Only run CG-1/3/10 + Cholesky at factors=64",
+    )
     args = parser.parse_args()
 
     print("=" * 65)
@@ -182,7 +219,9 @@ def main() -> None:
     mat = get_ml25m()
     results: list[dict] = []
 
-    print("\n── CG iterations sweep (factors=64) ──────────────────────────", flush=True)
+    print(
+        "\n── CG iterations sweep (factors=64) ──────────────────────────", flush=True
+    )
     for cg in [1, 3, 5, 10]:
         r = bench(mat, f"CG cg_iters={cg}  k=64", 64, args.iters, cg, False)
         results.append(r)
@@ -192,7 +231,9 @@ def main() -> None:
     results.append(r)
 
     if not args.quick:
-        print("\n── Factor dimension sweep (CG cg_iters=3) ──────────────────", flush=True)
+        print(
+            "\n── Factor dimension sweep (CG cg_iters=3) ──────────────────", flush=True
+        )
         for k in [32, 128]:
             r = bench(mat, f"CG cg_iters=3  k={k}", k, args.iters, 3, False)
             results.append(r)
@@ -203,7 +244,9 @@ def main() -> None:
     best = min(results, key=lambda r: r["fit_s"])
     for r in results:
         marker = " ◀ fastest" if r is best else ""
-        print(f"  {r['label']:<32}  {r['fit_s']:>7.1f}  {r['throughput']:>8.2f}  {r['rec_ms']:>9.2f}{marker}")
+        print(
+            f"  {r['label']:<32}  {r['fit_s']:>7.1f}  {r['throughput']:>8.2f}  {r['rec_ms']:>9.2f}{marker}"
+        )
 
     output_dir = Path(__file__).resolve().parent.parent / "docs" / "assets"
     make_chart(results, output_dir)

@@ -51,25 +51,27 @@ def bench_mlxtend(
     # Create one-hot encoded dataframe
     # mlxtend expects boolean DataFrame
     try:
-        grouped = df.groupby(['t', 'i']).size().unstack(fill_value=0)
+        grouped = df.groupby(["t", "i"]).size().unstack(fill_value=0)
         ohe = grouped > 0
     except MemoryError:
         print(" [MemoryError during OHE prep] ", end="")
         return Result("mlxtend", n_rows, n_txns, n_items, -1, -1, 0)
-        
+
     prep_s = time.perf_counter() - t0
     del df
     gc.collect()
 
     t0 = time.perf_counter()
     try:
-        freq = mlxtend_fpgrowth(ohe, min_support=min_support, use_colnames=True, max_len=max_len)
+        freq = mlxtend_fpgrowth(
+            ohe, min_support=min_support, use_colnames=True, max_len=max_len
+        )
         mine_s = time.perf_counter() - t0
         res_len = len(freq)
     except Exception as e:
         print(f" [Error: {type(e).__name__}] ", end="")
         return Result("mlxtend", n_rows, n_txns, n_items, prep_s, -1, 0)
-        
+
     del ohe
     gc.collect()
 
@@ -113,9 +115,13 @@ def print_table(results: list[Result]) -> None:
     print("-" * len(hdr))
     for r in results:
         if r.prep_s < 0:
-            print(f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {'OOM':>8} {'-':>8} {'-':>8} {'-':>10}")
+            print(
+                f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {'OOM':>8} {'-':>8} {'-':>8} {'-':>10}"
+            )
         elif r.mine_s < 0:
-            print(f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {r.prep_s:>7.1f}s {'FAIL':>8} {'-':>8} {'-':>10}")
+            print(
+                f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {r.prep_s:>7.1f}s {'FAIL':>8} {'-':>8} {'-':>10}"
+            )
         else:
             total = r.prep_s + r.mine_s
             print(
@@ -126,9 +132,9 @@ def print_table(results: list[Result]) -> None:
 
 SCENARIOS = [
     # (n_rows, n_txns, n_items, min_support, max_len)
-    (50_000, 10_000, 100, 0.05, 3),        # Small dataset
-    (500_000, 50_000, 500, 0.02, 3),       # Medium dataset
-    (2_000_000, 500_000, 2000, 0.01, 3),   # Larger dataset
+    (50_000, 10_000, 100, 0.05, 3),  # Small dataset
+    (500_000, 50_000, 500, 0.02, 3),  # Medium dataset
+    (2_000_000, 500_000, 2000, 0.01, 3),  # Larger dataset
 ]
 
 if __name__ == "__main__":
@@ -136,7 +142,6 @@ if __name__ == "__main__":
     results: list[Result] = []
 
     for n_rows, n_txns, n_items, min_support, max_len in SCENARIOS:
-        
         # Test mlxtend first
         rng = np.random.default_rng(42)
         print(f"[{n_rows:,} rows] mlxtend ...", end=" ", flush=True)
@@ -146,9 +151,11 @@ if __name__ == "__main__":
             print(f"done ({r.prep_s + r.mine_s:.1f}s)", flush=True)
         else:
             print("FAILED", flush=True)
-            
+
         # Test rusket
-        rng = np.random.default_rng(42)  # Reset RNG so the generated data is EXACTLY the same
+        rng = np.random.default_rng(
+            42
+        )  # Reset RNG so the generated data is EXACTLY the same
         print(f"[{n_rows:,} rows] rusket  ...", end=" ", flush=True)
         r = bench_fpminer(rng, n_rows, n_txns, n_items, min_support, max_len)
         results.append(r)

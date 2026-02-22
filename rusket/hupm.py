@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 import pandas as pd
+from typing import Any
 
 from . import _rusket as _rust  # type: ignore
+
 
 def hupm(
     transactions: list[list[int]],
@@ -12,22 +14,22 @@ def hupm(
     max_len: int | None = None,
 ) -> pd.DataFrame:
     """Mine high-utility itemsets.
-    
-    This function discovers combinations of items that generate a high total utility 
+
+    This function discovers combinations of items that generate a high total utility
     (e.g., profit) across all transactions, even if they aren't the most frequent.
-    
+
     Parameters
     ----------
     transactions : list of list of int
         A list of transactions, where each transaction is a list of item IDs.
     utilities : list of list of float
-        A list of identical structure to `transactions`, but containing the 
+        A list of identical structure to `transactions`, but containing the
         numeric utility (e.g., profit) of that item in that specific transaction.
     min_utility : float
         The minimum total utility required to consider a pattern "high-utility".
     max_len : int, optional
         The maximum length of the itemsets to mine.
-    
+
     Returns
     -------
     pd.DataFrame
@@ -36,8 +38,85 @@ def hupm(
     total_utils, patterns = _rust.hupm_mine_py(
         transactions, utilities, min_utility, max_len
     )
-    
-    return pd.DataFrame({
-        "utility": total_utils,
-        "itemset": patterns,
-    }).sort_values(by="utility", ascending=False).reset_index(drop=True)
+
+    return (
+        pd.DataFrame(
+            {
+                "utility": total_utils,
+                "itemset": patterns,
+            }
+        )
+        .sort_values(by="utility", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
+def mine_hupm(
+    data: Any,
+    transaction_col: str,
+    item_col: str,
+    utility_col: str,
+    min_utility: float,
+    max_len: int | None = None,
+) -> pd.DataFrame:
+    """Mine high-utility itemsets from a long-format DataFrame.
+
+    Converts a Pandas or Polars DataFrame into the required list-of-lists format
+    and runs the High-Utility Pattern Mining (HUPM) algorithm.
+
+    Parameters
+    ----------
+    data : pd.DataFrame or pl.DataFrame
+        A long-format DataFrame where each row represents an item in a transaction.
+    transaction_col : str
+        Column name identifying the transaction ID.
+    item_col : str
+        Column name identifying the item ID (must be numeric integers).
+    utility_col : str
+        Column name identifying the numeric utility (e.g. price, profit) of the item.
+    min_utility : float
+        The minimum total utility required to consider a pattern "high-utility".
+    max_len : int, optional
+        Maximum length of the itemsets to mine.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing 'utility' and 'itemset' columns.
+    """
+    from ._compat import to_dataframe
+    import pandas as pd
+
+    data = to_dataframe(data)
+
+    try:
+        import polars as pl
+        is_polars = isinstance(data, pl.DataFrame)
+    except ImportError:
+        is_polars = False
+
+    if is_polars:
+        # Polars native grouping
+        grouped = data.group_by(transaction_col).agg([
+            pl.col(item_col).alias("items"),
+            pl.col(utility_col).alias("utils")
+        ])
+        transactions = grouped["items"].to_list()
+        utilities = grouped["utils"].to_list()
+    elif isinstance(data, pd.DataFrame):
+        # Pandas native grouping
+        grouped = data.groupby(transaction_col).agg(
+            items=(item_col, list),
+            utils=(utility_col, list)
+        )
+        transactions = grouped["items"].tolist()
+        utilities = grouped["utils"].tolist()
+    else:
+        raise TypeError(f"Expected Pandas or Polars DataFrame, got {type(data)}")
+
+    return hupm(
+        transactions=transactions,
+        utilities=utilities,
+        min_utility=min_utility,
+        max_len=max_len,
+    )

@@ -4,7 +4,7 @@ import time
 import typing
 from typing import TYPE_CHECKING, Any, Sequence
 
-from ._compat import to_pandas
+from ._compat import to_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -54,18 +54,22 @@ def from_transactions(
     >>> ohe = rusket.from_transactions(df)
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
-    data = to_pandas(data)
+    data = to_dataframe(data)
 
     if isinstance(data, (list, tuple)):
         return _from_list(data, verbose=verbose)
 
     import pandas as _pd
+    import polars as _pl
 
-    if not isinstance(data, _pd.DataFrame):
+    if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
         raise TypeError(
             f"Expected a Pandas/Polars/Spark DataFrame or list of lists, "
             f"got {type(data)}"
         )
+
+    if isinstance(data, _pl.DataFrame):
+        data = data.to_pandas()
 
     return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
 
@@ -136,6 +140,7 @@ def _from_list(
     if verbose:
         try:
             from tqdm.auto import tqdm
+
             iterator = tqdm(iterator, total=n_txn, desc="Transactions")
         except ImportError:
             pass
@@ -283,10 +288,15 @@ def from_transactions_csr(
     from pathlib import Path
     from scipy import sparse as sp
 
-    data = to_pandas(data)
+    data = to_dataframe(data)
 
     if isinstance(data, (str, Path)):
         return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
+
+    if type(data).__name__ == "DataFrame" and getattr(
+        data, "__module__", ""
+    ).startswith("polars"):
+        data = data.to_pandas()
 
     df = typing.cast("pd.DataFrame", data)
     cols = list(df.columns)

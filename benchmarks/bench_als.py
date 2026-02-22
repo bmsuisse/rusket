@@ -107,12 +107,14 @@ def load_ratings_sampled_200m(folder: Path) -> sparse.csr_matrix:
 
     Builds a proper in-memory CSR without mmap so the solver runs at full speed.
     """
-    import pandas as pd
 
     npz_files = sorted(folder.glob("train*.npz"))
     all_u, all_i, all_r = [], [], []
 
-    print(f"  Sampling ~{TARGET_200M // 1_000_000}M ratings from 1B dataset...", flush=True)
+    print(
+        f"  Sampling ~{TARGET_200M // 1_000_000}M ratings from 1B dataset...",
+        flush=True,
+    )
     total = 0
     for npz in tqdm(npz_files, desc="  Reading NPZ files"):
         data = np.load(npz)
@@ -387,7 +389,10 @@ def _check_ram(fact_mb: float, csr_mb: float, is_mmap: bool) -> tuple[bool, str]
     avail_mb = psutil.virtual_memory().available / 1e6
     required_mb = fact_mb if is_mmap else (fact_mb + csr_mb)
     if avail_mb - required_mb < 2_000:
-        return False, f"not enough RAM (need {required_mb:.0f} MB, have {avail_mb:.0f} MB)"
+        return (
+            False,
+            f"not enough RAM (need {required_mb:.0f} MB, have {avail_mb:.0f} MB)",
+        )
     return True, ""
 
 
@@ -401,8 +406,13 @@ def run_method_rusket(
     """Benchmark rusket ALS with given cg_iters."""
     t0 = time.perf_counter()
     model = rusket.ALS(
-        factors=FACTORS, regularization=REG, alpha=ALPHA,
-        iterations=ITERS, seed=42, verbose=verbose, cg_iters=cg_iters,
+        factors=FACTORS,
+        regularization=REG,
+        alpha=ALPHA,
+        iterations=ITERS,
+        seed=42,
+        verbose=verbose,
+        cg_iters=cg_iters,
         use_cholesky=use_cholesky,
     )
     model.fit(mat)
@@ -426,7 +436,10 @@ def run_method_implicit(mat: sparse.csr_matrix) -> dict | None:
     try:
         import implicit  # type: ignore[import-untyped]
     except ImportError:
-        print("    ⚠️  `implicit` not installed — skipping (pip install implicit)", flush=True)
+        print(
+            "    ⚠️  `implicit` not installed — skipping (pip install implicit)",
+            flush=True,
+        )
         return None
 
     # implicit expects item × user CSR
@@ -448,7 +461,9 @@ def run_method_implicit(mat: sparse.csr_matrix) -> dict | None:
     n_rec = min(TOP_N, n_users)
     t0 = time.perf_counter()
     for uid in range(n_rec):
-        model.recommend(uid, mat_T.T.tocsr()[uid], N=10, filter_already_liked_items=True)
+        model.recommend(
+            uid, mat_T.T.tocsr()[uid], N=10, filter_already_liked_items=True
+        )
     rec_ms = (time.perf_counter() - t0) / n_rec * 1000
 
     print(f"    fit: {fit_s:.1f}s  |  rec/user: {rec_ms:.2f}ms", flush=True)
@@ -475,8 +490,15 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
     ok, reason = _check_ram(fact_mb, csr_mb, is_mmap)
     if not ok:
         print(f"  ⚠️  Skipping: {reason}")
-        return {"label": label, "n_users": n_users, "n_items": n_items, "nnz": nnz,
-                "methods": [], "csr_mb": csr_mb, "fact_mb": fact_mb}
+        return {
+            "label": label,
+            "n_users": n_users,
+            "n_items": n_items,
+            "nnz": nnz,
+            "methods": [],
+            "csr_mb": csr_mb,
+            "fact_mb": fact_mb,
+        }
 
     method_results = []
 
@@ -485,7 +507,9 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
     method_results.append(r)
 
     print("\n  Method: rusket ALS  Cholesky (exact)", flush=True)
-    r = run_method_rusket(mat, "rusket cholesky", cg_iters=3, use_cholesky=True, verbose=False)
+    r = run_method_rusket(
+        mat, "rusket cholesky", cg_iters=3, use_cholesky=True, verbose=False
+    )
     method_results.append(r)
 
     print("\n  Method: rusket ALS  cg_iters=10 (default)", flush=True)
@@ -499,13 +523,18 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
 
     # Summary
     print(f"\n  {'Method':<20} {'Fit (s)':>10} {'Rec (ms)':>10}")
-    print(f"  {'-'*42}")
+    print(f"  {'-' * 42}")
     for m in method_results:
         print(f"  {m['method']:<20} {m['fit_s']:>10.1f} {m['rec_ms']:>10.2f}")
 
     return {
-        "label": label, "n_users": n_users, "n_items": n_items, "nnz": nnz,
-        "methods": method_results, "csr_mb": csr_mb, "fact_mb": fact_mb,
+        "label": label,
+        "n_users": n_users,
+        "n_items": n_items,
+        "nnz": nnz,
+        "methods": method_results,
+        "csr_mb": csr_mb,
+        "fact_mb": fact_mb,
     }
 
 
@@ -530,7 +559,8 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
     dataset_labels = [r["label"] for r in valid]
 
     fig = make_subplots(
-        rows=1, cols=2,
+        rows=1,
+        cols=2,
         subplot_titles=("⚡ Fit Time (lower = faster)", "🔍 Rec Latency per User"),
         horizontal_spacing=0.14,
     )
@@ -544,31 +574,53 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
             rec_times.append(match["rec_ms"] if match else None)
 
         color = colors[idx % len(colors)]
-        fig.add_trace(go.Bar(
-            name=method, x=dataset_labels, y=fit_times,
-            marker_color=color,
-            text=[f"{t:.1f}s" if t else "N/A" for t in fit_times],
-            textposition="outside",
-            legendgroup=method,
-        ), row=1, col=1)
-        fig.add_trace(go.Bar(
-            name=method, x=dataset_labels, y=rec_times,
-            marker_color=color,
-            text=[f"{t:.2f}ms" if t else "N/A" for t in rec_times],
-            textposition="outside",
-            legendgroup=method, showlegend=False,
-        ), row=1, col=2)
+        fig.add_trace(
+            go.Bar(
+                name=method,
+                x=dataset_labels,
+                y=fit_times,
+                marker_color=color,
+                text=[f"{t:.1f}s" if t else "N/A" for t in fit_times],
+                textposition="outside",
+                legendgroup=method,
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Bar(
+                name=method,
+                x=dataset_labels,
+                y=rec_times,
+                marker_color=color,
+                text=[f"{t:.2f}ms" if t else "N/A" for t in rec_times],
+                textposition="outside",
+                legendgroup=method,
+                showlegend=False,
+            ),
+            row=1,
+            col=2,
+        )
 
     fig.add_hline(
-        y=SPARK_REFERENCE, line_dash="dash", line_color="#ef4444",
+        y=SPARK_REFERENCE,
+        line_dash="dash",
+        line_color="#ef4444",
         annotation_text=f"Spark MLlib ~{SPARK_REFERENCE}s (4-node, ML-25M)",
-        annotation_position="top right", row=1, col=1,
+        annotation_position="top right",
+        row=1,
+        col=1,
     )
 
     fig.update_layout(
         title=dict(text="rusket ALS — Multi-Method Benchmark", font=dict(size=20)),
-        template="plotly_dark", height=480, width=1100, barmode="group",
-        legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
+        template="plotly_dark",
+        height=480,
+        width=1100,
+        barmode="group",
+        legend=dict(
+            orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
+        ),
         margin=dict(t=60, b=100),
     )
     fig.update_yaxes(title_text="seconds", row=1, col=1)
@@ -615,7 +667,7 @@ def main() -> None:
         size_label = size.upper()
         print(f"\n{'=' * 65}\n  MovieLens {size_label}")
         try:
-            # 200M is a sampled subset of the 1B dataset 
+            # 200M is a sampled subset of the 1B dataset
             dl_size = "1b" if size == "200m" else size
             folder = download_movielens(dl_size, data_dir)
 

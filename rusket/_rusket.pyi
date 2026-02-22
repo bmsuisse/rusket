@@ -61,7 +61,6 @@ def als_recommend_users(
     item_id: int,
     n: int,
 ) -> Tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
-
 def bpr_fit_implicit(
     indptr: npt.NDArray[np.int64],
     indices: npt.NDArray[np.int32],
@@ -74,14 +73,12 @@ def bpr_fit_implicit(
     seed: int,
     verbose: bool,
 ) -> Tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
-
 def hupm_mine_py(
     items_list: List[List[int]],
     utils_list: List[List[float]],
     min_utility: float,
     max_len: Optional[int] = None,
 ) -> Tuple[List[float], List[List[int]]]: ...
-
 def prefixspan_mine_py(
     sequences: List[List[int]],
     min_count: int,
