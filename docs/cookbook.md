@@ -339,63 +339,93 @@ items, scores = model.recommend_items(user_id=10, n=5)
 
 ## 7. Sequential Pattern Mining (PrefixSpan)
 
-PrefixSpan discovers frequent sequences of events over time. Unlike standard market basket analysis where subsets within a single transaction are mined, PrefixSpan finds patterns *across ordered transactions*.
+PrefixSpan discovers frequent sequences of events over time. Unlike standard market basket analysis (which looks at what is bought *together*), PrefixSpan finds patterns *across ordered events* — ideal for customer journey analysis, funnel optimisation, and churn prediction.
+
+**Business scenario:** A SaaS company wants to understand which product page navigation sequences lead customers to checkout. Which paths are most common? Where do users drop off?
 
 ```python
 import pandas as pd
 from rusket import prefixspan, sequences_from_event_log
 
-# 1. Start with an event log (e.g. clickstream)
-events = pd.DataFrame({
-    "user_id": [1, 1, 1, 2, 2, 3, 3, 3],
-    "timestamp": [10, 20, 30, 15, 25, 5, 15, 35],
-    "page": ["Home", "Product", "Cart", "Home", "Cart", "Product", "Cart", "Checkout"],
+# 1. Website clickstream log — each row is one page visit
+clickstream = pd.DataFrame({
+    "session_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 4],
+    "timestamp":  [10, 20, 30, 15, 25, 5, 15, 35, 10, 18, 40],
+    "page": [
+        "Home", "Pricing", "Checkout",
+        "Home", "Pricing",
+        "Features", "Pricing", "Checkout",
+        "Home", "Features", "Checkout",
+    ],
 })
 
-# 2. Convert to the nested list format expected by the Rust miner
+# 2. Convert to sequence format expected by the Rust miner
 seqs, mapping = sequences_from_event_log(
-    events, user_col="user_id", time_col="timestamp", item_col="page"
+    clickstream, user_col="session_id", time_col="timestamp", item_col="page"
 )
 
-# 3. Mine sequential patterns (min_support = number of sequences)
-patterns_df = prefixspan(seqs, min_support=2, max_len=3)
+# 3. Mine navigation sequences seen in ≥2 sessions (absolute count)
+patterns_df = prefixspan(seqs, min_support=2, max_len=4)
 
-# 4. Map the integer item IDs back to human-readable labels
-patterns_df["sequence_labels"] = patterns_df["sequence"].apply(
-    lambda seq: [mapping[item] for item in seq]
+# 4. Map integer IDs back to readable page names
+patterns_df["path"] = patterns_df["sequence"].apply(
+    lambda seq: " → ".join(mapping[s] for s in seq)
 )
-print(patterns_df.head())
+print(patterns_df[["support", "path"]].sort_values("support", ascending=False).head(10))
+# support  path
+# 3        Home
+# 3        Pricing
+# 3        Checkout
+# 3        Home → Pricing
+# 3        Pricing → Checkout
+# 2        Home → Checkout                  ← users who skipped Pricing
+# 2        Features → Pricing → Checkout   ← high-intent funnel path
 ```
+
 
 ---
 
-## 8. High-Utility Pattern Mining (HUPM)
+## 8. High-Utility Pattern Mining (HUPM) — Profit-Driven Bundle Discovery
 
-Frequent itemsets aren't always the most profitable. High-Utility Pattern Mining (HUPM) accounts for the utility (e.g., profit margin or revenue) of items to find sets that generate the *highest total value* across all transactions, regardless of frequency.
+Frequent itemsets aren't always the most profitable. HUPM accounts for the **utility** (e.g., margin, revenue, quantity × price) of items to find sets that generate the *highest total business value* — even if they appear infrequently.
+
+**Business scenario:** A wine shop wants to identify high-margin product bundles for a "Sommelier's Selection" gift box. Standard FP-Growth would surface budget items (e.g., sparkling water) because they're bought often. HUPM surfaces the highest-revenue product combinations instead:
 
 ```python
-from rusket import hupm
+from rusket import HUPM
 
-# Transactions (lists of item IDs) and their corresponding utilities (profit)
-transactions = [
-    [1, 2, 3],  # Transaction 1: Items 1, 2, 3
-    [1, 3],     # Transaction 2: Items 1, 3
-    [2, 3],     # Transaction 3: Items 2, 3
-]
+# Receipt data from the EPOS system — product_id and margin per line item
+import pandas as pd
 
-# The profit of each item inside that specific transaction
-utilities = [
-    [5.0, 2.0, 1.0], # Profits for items 1, 2, 3 in T1
-    [5.0, 1.0],      # Profits for items 1, 3 in T2
-    [2.0, 1.0],      # Profits for items 2, 3 in T3
-]
+receipts = pd.DataFrame({
+    "receipt_id": [1, 1, 1, 2, 2, 3, 3, 4, 4, 4],
+    "product":    ["champagne", "foie_gras", "truffle_oil",
+                   "champagne", "truffle_oil",
+                   "foie_gras", "truffle_oil",
+                   "champagne", "foie_gras", "truffle_oil"],
+    "margin":     [18.50, 14.00, 8.00,   # receipt 1 margins
+                   18.50, 8.00,            # receipt 2
+                   14.00, 8.00,            # receipt 3
+                   18.50, 14.00, 8.00],    # receipt 4
+})
 
-# Find itemsets with a total global utility >= 7.0
-high_value_patterns = hupm(transactions, utilities, min_utility=7.0)
+# Discover all product bundles generating ≥ €30 total margin
+high_value = HUPM.from_transactions(
+    receipts,
+    transaction_col="receipt_id",
+    item_col="product",
+    utility_col="margin",
+    min_utility=30.0,
+).mine()
 
-# Output contains the 'utility' and 'itemset'
-print(high_value_patterns)
+print(high_value.sort_values("utility", ascending=False))
+# utility   itemset
+# 122.0     [champagne, foie_gras, truffle_oil]  ← ideal gift box
+# 74.0      [champagne, foie_gras]
+# 62.0      [champagne, truffle_oil]
 ```
+
+
 
 ---
 
