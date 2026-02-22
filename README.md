@@ -75,7 +75,7 @@ Identify which products co-occur most in customer baskets — the foundation of 
 
 ```python
 import pandas as pd
-from rusket import mine, association_rules
+from rusket import AutoMiner
 
 # One week of supermarket checkout data (1 row = 1 receipt, 1 col = 1 SKU)
 receipts = pd.DataFrame({
@@ -88,16 +88,12 @@ receipts = pd.DataFrame({
 }, dtype=bool)
 
 # Step 1 — which SKU combinations appear in ≥40% of receipts?
-# method="auto" selects FP-Growth or Eclat based on catalogue density
-freq = mine(receipts, min_support=0.4, use_colnames=True)
+# AutoMiner selects FP-Growth or Eclat based on catalogue density
+model = AutoMiner(receipts, min_support=0.4)
+freq = model.mine(use_colnames=True)
 
 # Step 2 — keep rules with ≥60% confidence
-rules = association_rules(
-    freq,
-    num_itemsets=len(receipts),
-    metric="confidence",
-    min_threshold=0.6,
-)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
 
 # Lift > 1 means customers buy these together more than chance alone
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
@@ -110,11 +106,11 @@ print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
 
 Real-world data arrives as `(order_id, sku)` rows from a database — not one-hot matrices.
 
-#### Functional API
+All mining algorithms expose a class-based API that goes straight from order lines to recommendations:
 
 ```python
 import pandas as pd
-from rusket import from_transactions, mine
+from rusket import AutoMiner
 
 # Order line export from your e-commerce backend
 orders = pd.DataFrame({
@@ -123,19 +119,6 @@ orders = pd.DataFrame({
                  "HDPHONES", "CARRY_CASE",
                  "USB_DAC",  "AUX_CABLE"],
 })
-
-# Convert long-format → one-hot boolean matrix, then mine
-ohe  = from_transactions(orders, transaction_col="order_id", item_col="sku")
-freq = mine(ohe, min_support=0.3, use_colnames=True)
-print(freq)
-```
-
-#### OOP Class API
-
-All mining algorithms expose a class-based API that goes straight from order lines to recommendations:
-
-```python
-from rusket import FPGrowth, Eclat, AutoMiner
 
 model = AutoMiner.from_transactions(
     orders,
@@ -172,7 +155,7 @@ ohe = from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  
 
 ```python
 import pandas as pd
-from rusket import eclat, association_rules
+from rusket import Eclat
 
 # Fashion e-tailer: 5 receipts, basket contains only a subset of the catalogue
 baskets = pd.DataFrame({
@@ -182,9 +165,10 @@ baskets = pd.DataFrame({
     "belt":     [False, True, True,  False, True],
 })
 
-# Eclat — same API as fpgrowth, typically faster on sparse catalogues
-freq  = eclat(baskets, min_support=0.4, use_colnames=True)
-rules = association_rules(freq, num_itemsets=len(baskets), min_threshold=0.6)
+# Eclat — same API as AutoMiner, typically faster on sparse catalogues
+model = Eclat(baskets, min_support=0.4)
+freq  = model.mine(use_colnames=True)
+rules = model.association_rules(min_threshold=0.6)
 print(rules)
 ```
 
@@ -207,20 +191,23 @@ The fastest path from a data lake to "Frequently Bought Together" rules:
 
 ```python
 import polars as pl
-from rusket import mine, association_rules
+from rusket import AutoMiner
 
 # ── 1. Read a one-hot basket matrix directly from S3/GCS/local Parquet ──
 # Columns = SKUs (bool), rows = receipts — produced by your dbt or Spark pipeline
 baskets = pl.read_parquet("s3://data-lake/gold/basket_ohe.parquet")
 print(f"Loaded {baskets.shape[0]:,} receipts × {baskets.shape[1]} SKUs")
 
-# ── 2. Mine frequent combinations ────────────────────────────────────
-freq = mine(baskets, min_support=0.02, use_colnames=True, max_len=3)
+# ── 2. Instantiate AutoMiner (zero-copy from Polars) ─────────────────
+model = AutoMiner(baskets, min_support=0.02, max_len=3)
+
+# ── 3. Mine frequent combinations ────────────────────────────────────
+freq = model.mine(use_colnames=True)
 print(f"Found {len(freq):,} frequent itemsets")
 print(freq.sort_values("support", ascending=False).head(10))
 
-# ── 3. Generate cross-sell rules ────────────────────────────────────
-rules = association_rules(freq, num_itemsets=len(baskets), metric="lift", min_threshold=1.2)
+# ── 4. Generate cross-sell rules ────────────────────────────────────
+rules = model.association_rules(metric="lift", min_threshold=1.2)
 print(f"Rules with lift > 1.2: {len(rules):,}")
 print(
     rules[["antecedents", "consequents", "confidence", "lift"]]
@@ -237,8 +224,6 @@ print(
 ### 💎 High-Utility Pattern Mining (HUPM) — Profit-Driven Bundle Discovery
 
 Frequent items aren't always the most profitable. HUPM finds product combinations that generate the **highest total gross margin** — even if they appear rarely. `rusket` implements the state-of-the-art **EFIM** algorithm in Rust.
-
-#### OOP Class API
 
 ```python
 import pandas as pd
@@ -267,21 +252,6 @@ print(high_margin.head())
 # e.g. aged_cheese + wine_flight + charcuterie → total margin 81.0
 ```
 
-#### Functional API
-
-```python
-from rusket import mine_hupm
-
-high_margin = mine_hupm(
-    data=orders,
-    transaction_col="receipt_id",
-    item_col="product",
-    utility_col="margin",
-    min_utility=20.0,
-)
-print(high_margin.head())
-```
-
 ---
 
 ### 📊 Sparse Pandas Input
@@ -291,7 +261,7 @@ For very sparse datasets (e.g. e-commerce with thousands of SKUs), use Pandas `S
 ```python
 import pandas as pd
 import numpy as np
-from rusket import fpgrowth
+from rusket import AutoMiner
 
 rng = np.random.default_rng(7)
 n_rows, n_cols = 30_000, 500
@@ -310,7 +280,7 @@ print(f"Dense  memory: {dense_mb:.1f} MB")
 print(f"Sparse memory: {sparse_mb:.1f} MB  ({dense_mb / sparse_mb:.1f}× smaller)")
 
 # Same API, same results — just faster and lighter
-freq = mine(df_sparse, min_support=0.01, use_colnames=True)
+freq = AutoMiner(df_sparse, min_support=0.01).mine(use_colnames=True)
 print(f"Frequent itemsets: {len(freq):,}")
 ```
 
@@ -730,14 +700,15 @@ bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
 Combine **Collaborative Filtering** (ALS/BPR) with **Frequent Pattern Mining** to cover every placement surface — personalised homepage ("For You") and active cart ("Frequently Bought Together") — in a single engine.
 
 ```python
-from rusket import ALS, Recommender, mine, association_rules
+from rusket import ALS, Recommender, AutoMiner
 
 # 1. Train on purchase history (implicit feedback)
 als = ALS(factors=64, iterations=15).fit(user_item_csr)
 
 # 2. Mine co-purchase rules from basket data
-freq  = mine(basket_ohe, min_support=0.01)
-rules = association_rules(freq, num_itemsets=n_receipts)
+miner = AutoMiner(basket_ohe, min_support=0.01)
+freq  = miner.mine()
+rules = miner.association_rules()
 
 # 3. Create the Hybrid Engine
 rec = Recommender(als_model=als, rules_df=rules)
@@ -842,15 +813,16 @@ Integrate natively with the modern GenAI/LLM stack:
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import mine
+from rusket import AutoMiner
 
 # Build CSR directly from integer IDs (no pandas!)
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
-freq = mine(csr, min_support=0.001, max_len=3,
-            use_colnames=True, column_names=item_names)
+freq = AutoMiner(csr, item_names=item_names).mine(
+    min_support=0.001, max_len=3, use_colnames=True
+)
 ```
 
 > At 100M rows, the mining step takes **1.3 seconds** — the bottleneck is entirely the CSR build.

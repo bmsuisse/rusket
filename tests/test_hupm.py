@@ -1,5 +1,3 @@
-
-
 def test_hupm_basic():
     """Test High-Utility Pattern Mining on a toy dataset."""
     # Transactions:
@@ -26,10 +24,19 @@ def test_hupm_basic():
     # {A, B, C} = 5+2+1 = 8
 
     # Minimum utility of 7
+    import pandas as pd
+
+    data = []
+    for tx_id, (txn, util) in enumerate(zip(transactions, utilities, strict=False)):
+        for item, u in zip(txn, util, strict=False):
+            data.append({"txn": tx_id, "item": item, "util": u})
+    df_raw = pd.DataFrame(data)
+
     from rusket.hupm import HUPM
-    df = HUPM.from_transactions(transactions,
-                                utilities,
-                                min_utility=7.0).mine()
+
+    df = HUPM.from_transactions(
+        df_raw, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
+    ).mine()
 
     # Convert itemsets to sets for easy matching
     df["itemset_set"] = df["itemset"].apply(set)
@@ -52,15 +59,16 @@ def test_mine_hupm_pandas():
     """Test the DataFrame wrapper for High-Utility Pattern Mining using Pandas."""
     import pandas as pd
 
-
-
     # Same toy dataset as above
     data = pd.DataFrame(
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
     from rusket.hupm import HUPM
-    df = HUPM.from_transactions(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0).mine()
+
+    df = HUPM.from_transactions(
+        data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
+    ).mine()
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4
@@ -78,14 +86,15 @@ def test_mine_hupm_polars():
     except ImportError:
         pytest.skip("Polars not installed")
 
-
-
     data = pl.DataFrame(
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
     from rusket.hupm import HUPM
-    df = HUPM.from_transactions(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0).mine()
+
+    df = HUPM.from_transactions(
+        data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
+    ).mine()
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4

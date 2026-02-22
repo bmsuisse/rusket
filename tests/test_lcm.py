@@ -55,7 +55,7 @@ def test_lcm_dense() -> None:
             "3": [1, 1, 0, 0],
             "4": [0, 0, 0, 1],
         }
-    )
+    ).astype(bool)
     miner = LCM(data=dense_df, min_support=0.5, use_colnames=True)
     result = miner.mine()
 

@@ -26,6 +26,7 @@ def test_prefixspan_basic():
     # A -> B -> C appears in 1 (S1)
 
     from rusket.prefixspan import PrefixSpan
+
     df = PrefixSpan(sequences, min_support=2).mine()
 
     # Should find length 1: [1], [2], [3]

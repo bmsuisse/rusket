@@ -101,13 +101,18 @@ class PrefixSpan(Miner):
         else:
             from typing import cast
 
+            import numpy as np
+
             # Fallback for manual user lists
             data_list = cast(list[list[int]], self.data)
-            indptr = [0]
-            indices = []
+            indptr_list = [0]
+            indices_list = []
             for seq in data_list:
-                indices.extend(seq)
-                indptr.append(len(indices))
+                indices_list.extend(seq)
+                indptr_list.append(len(indices_list))
+
+            indptr = np.array(indptr_list, dtype=np.uintp)
+            indices = np.array(indices_list, dtype=np.uint32)
 
         supports, patterns = _rust.prefixspan_mine_py(indptr, indices, self.min_support, self.max_len)
 
@@ -162,11 +167,16 @@ def prefixspan(
         DeprecationWarning,
         stacklevel=2,
     )
-    indptr = [0]
-    indices = []
+    import numpy as np
+
+    indptr_list = [0]
+    indices_list = []
     for seq in sequences:
-        indices.extend(seq)
-        indptr.append(len(indices))
+        indices_list.extend(seq)
+        indptr_list.append(len(indices_list))
+
+    indptr = np.array(indptr_list, dtype=np.uintp)
+    indices = np.array(indices_list, dtype=np.uint32)
 
     supports, patterns = _rust.prefixspan_mine_py(indptr, indices, min_support, max_len)
 
@@ -231,14 +241,17 @@ def sequences_from_event_log(
         item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
         idx_to_item = dict(enumerate(unique_items))
 
-        # Map to integer IDs and group
-        mapped = sorted_df.with_columns(pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items"))
-        grouped = mapped.group_by(user_col, maintain_order=True).agg(pl.col("_mapped_items"))
+        import numpy as np
 
-        # Fast flat list representation via polars explode avoiding python objects
-        indptr_series = grouped["_mapped_items"].list.len().cum_sum()
-        indptr = [0] + indptr_series.to_list()
-        indices = grouped["_mapped_items"].explode().to_list()
+        # Map to integer IDs
+        mapped = sorted_df.with_columns(pl.col(item_col).replace(item_to_idx).cast(pl.UInt32).alias("_mapped_items"))
+
+        # Fast flat list representation tracking sizes straight from dataframe
+        indices = mapped["_mapped_items"].to_numpy()
+        sizes = mapped.group_by(user_col, maintain_order=True).len()["len"].to_numpy()
+
+        indptr = np.zeros(len(sizes) + 1, dtype=np.uintp)
+        np.cumsum(sizes, out=indptr[1:])
 
         return (indptr, indices), idx_to_item
 
@@ -249,12 +262,14 @@ def sequences_from_event_log(
         item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
         idx_to_item = dict(enumerate(unique_items))
 
-        mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
-        grouped = mapped_items.groupby(df_sorted[user_col]).apply(list)
+        import numpy as np
 
-        sizes = grouped.apply(len)
-        indptr = [0] + sizes.cumsum().tolist()
-        indices = mapped_items.tolist()
+        mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
+        indices = mapped_items.to_numpy(dtype=np.uint32)
+
+        sizes = df_sorted.groupby(user_col, sort=False).size().to_numpy()
+        indptr = np.zeros(len(sizes) + 1, dtype=np.uintp)
+        np.cumsum(sizes, out=indptr[1:])
 
         return (indptr, indices), idx_to_item
 
