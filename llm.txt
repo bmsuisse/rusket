@@ -1321,6 +1321,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🐛 Bug Fixes
+
+- ensure Spark input is handled before Polars coercion in from_transactions
+
 ### 📖 Documentation
 
 - update logo asset path to `logo_single.svg` in documentation and configuration.
