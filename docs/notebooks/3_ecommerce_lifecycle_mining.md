@@ -60,19 +60,6 @@ events.head()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -132,8 +119,10 @@ print(f"Compiled {len(sequences)} distinct user sequences.")
 print(f"Internal Mapping Table: {label_mapping}")
 ```
 
+    ```text
     Compiled 4 distinct user sequences.
     Internal Mapping Table: {0: 'signup', 1: 'view_product', 2: 'add_to_cart', 3: 'checkout', 4: 'churn'}
+    ```
 
 
 ## 3. Mining Sequential Patterns
@@ -160,19 +149,6 @@ patterns_df.sort_values("support", ascending=False)[["support", "event_path"]]
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
