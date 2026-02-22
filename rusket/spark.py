@@ -375,7 +375,7 @@ def hupm_grouped(
             if not result_pd.empty:
                 result_pd["itemset"] = result_pd["itemset"].apply(lambda seq: [int(x) for x in seq])
         except Exception:
-            result_pd = pd.DataFrame(columns=["utility", "itemset"])
+            result_pd = pd.DataFrame(columns=["utility", "itemset"])  # type: ignore[reportArgumentType]
 
         if len(result_pd) == 0:
             return pa.Table.from_batches(
@@ -423,7 +423,7 @@ def hupm_grouped(
                 if not res.empty:
                     res["itemset"] = res["itemset"].apply(lambda seq: [int(x) for x in seq])
             except Exception:
-                res = pd.DataFrame(columns=["utility", "itemset"])
+                res = pd.DataFrame(columns=["utility", "itemset"])  # type: ignore[reportArgumentType]
 
             res.insert(0, group_col, group_id)
             return res
@@ -523,10 +523,10 @@ def rules_grouped(
                 res_df["antecedents"] = res_df["antecedents"].apply(list)
                 res_df["consequents"] = res_df["consequents"].apply(list)
             else:
-                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)  # type: ignore[reportArgumentType]
 
         except Exception:
-            res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+            res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)  # type: ignore[reportArgumentType]
 
         res_df.insert(0, group_col, group_id)
 
@@ -572,9 +572,9 @@ def rules_grouped(
                     res_df["antecedents"] = res_df["antecedents"].apply(list)
                     res_df["consequents"] = res_df["consequents"].apply(list)
                 else:
-                    res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+                    res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)  # type: ignore[reportArgumentType]
             except Exception:
-                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)  # type: ignore[reportArgumentType]
 
             res_df.insert(0, group_col, group_id)
             return res_df
@@ -837,7 +837,7 @@ def als_grouped(
                 res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
 
             except Exception:
-                res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+                res_df = pd.DataFrame(columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
 
             res_df.insert(0, group_col, group_id)
             return res_df
