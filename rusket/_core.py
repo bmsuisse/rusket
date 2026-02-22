@@ -170,8 +170,6 @@ def dispatch(
     column_names: list[str] | None = None,
     verbose: int = 0,
 ) -> pd.DataFrame:
-    import math
-
     import numpy as np
 
     t0 = 0.0

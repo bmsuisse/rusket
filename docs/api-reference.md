@@ -53,7 +53,7 @@ eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float'
 ```python
 from rusket.association_rules import association_rules
 
-association_rules(df: 'pd.DataFrame | Any', num_itemsets: 'int', df_orig: 'pd.DataFrame | None' = None, null_values: 'bool' = False, metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, support_only: 'bool' = False, return_metrics: 'list[str]' = ['antecedent support', 'consequent support', 'support', 'confidence', 'lift', 'representativity', 'leverage', 'conviction', 'zhangs_metric', 'jaccard', 'certainty', 'kulczynski']) -> 'pd.DataFrame'
+association_rules(df: 'pd.DataFrame | Any', num_itemsets: 'int | None' = None, df_orig: 'pd.DataFrame | None' = None, null_values: 'bool' = False, metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, support_only: 'bool' = False, return_metrics: 'list[str]' = ['antecedent support', 'consequent support', 'support', 'confidence', 'lift', 'representativity', 'leverage', 'conviction', 'zhangs_metric', 'jaccard', 'certainty', 'kulczynski']) -> 'pd.DataFrame'
 ```
 
 ---
@@ -216,7 +216,7 @@ Convert long-format transactional data to a one-hot boolean matrix.
 ```python
 from rusket.transactions import from_transactions
 
-from_transactions(data: 'pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
 
 **Parameters**
@@ -262,7 +262,7 @@ rows, keeping peak memory to one chunk + the running CSR.
 ```python
 from rusket.transactions import from_transactions_csr
 
-from_transactions_csr(data: 'pd.DataFrame | pl.DataFrame | str | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, chunk_size: 'int' = 10000000) -> 'tuple[Any, list[str]]'
+from_transactions_csr(data: 'DataFrame | str | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, chunk_size: 'int' = 10000000) -> 'tuple[Any, list[str]]'
 ```
 
 **Parameters**
@@ -610,6 +610,78 @@ FPMiner.reset() -> 'None'
 
 ---
 
+## `RuleMinerMixin` — Shared Miner Interface
+
+`FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` all inherit these methods from `RuleMinerMixin`.  You do not construct `RuleMinerMixin` directly.
+
+### `RuleMinerMixin.association_rules`
+
+Generate association rules from the mined frequent itemsets.
+
+```python
+from rusket.model import RuleMinerMixin.association_rules
+
+RuleMinerMixin.association_rules(metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, return_metrics: 'list[str] | None' = None) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| metric | str, default='confidence' | The metric to evaluate if a rule is of interest. |
+| min_threshold | float, default=0.8 | The minimum threshold for the evaluation metric. |
+| return_metrics | list[str] \| None, default=None | List of metrics to include in the resulting DataFrame. Defaults to all available metrics. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | DataFrame of strong association rules. |
+
+---
+
+### `RuleMinerMixin.recommend_items`
+
+Suggest items to add to an active cart using association rules.
+
+```python
+from rusket.model import RuleMinerMixin.recommend_items
+
+RuleMinerMixin.recommend_items(items: 'list[Any]', n: 'int' = 5) -> 'list[Any]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| items | list[Any] | The items currently in the cart or basket. |
+| n | int, default=5 | The maximum number of items to recommend. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| list[Any] |  | List of recommended items, ordered by lift and then confidence. |
+
+> **Notes**
+> Rules are computed once and cached with the key ``(metric="lift",
+min_threshold=1.0)``.  Call :meth:`_invalidate_rules_cache` to force
+a re-computation after re-mining.
+
+---
+
+### `RuleMinerMixin._invalidate_rules_cache`
+
+Clear the cached association rules (call after re-mining).
+
+```python
+from rusket.model import RuleMinerMixin._invalidate_rules_cache
+
+RuleMinerMixin._invalidate_rules_cache() -> 'None'
+```
+
+---
+
 ## Recommenders
 
 ### `ALS`
@@ -944,18 +1016,86 @@ Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.
 This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.
 
-Args:
-    als_model: A fitted `rusket.ALS` model.
-    include_labels: Whether to include the string item labels (if available).
-
-Returns:
-    A Pandas DataFrame where each row is an item, containing its integer ID,
-    (optionally) its label, and a `vector` column containing the dense latent numpy array.
-
 ```python
 from rusket.export import export_item_factors
 
 export_item_factors(als_model: 'ALS', include_labels: 'bool' = True) -> 'pd.DataFrame'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
+| include_labels | bool, default=True | Whether to include the string item labels (if available from ``ALS.from_transactions``). |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | A DataFrame where each row is an item with columns ``item_id``, optionally ``item_label``, and ``vector`` (a dense 1-D numpy array of the item's latent factors). |
+
+**Examples**
+
+```python
+>>> model = rusket.ALS(factors=32).fit(interactions)
+>>> df = rusket.export_item_factors(model)
+>>> # Ingest into FAISS / Pinecone / Qdrant
+>>> vectors = np.stack(df["vector"].values)
+```
+
+---
+
+## Visualization (`rusket.viz`)
+
+Graph and visualization utilities.  Requires `networkx` (`pip install networkx`).
+
+### `rusket.viz.to_networkx`
+
+Convert a Rusket association rules DataFrame into a NetworkX Directed Graph.
+
+Nodes represent individual items. Directed edges represent rules
+(antecedent → consequent). Edge weights are set by the ``edge_attr``
+parameter (typically lift or confidence).
+
+This is extremely useful for running community detection algorithms
+(e.g., Louvain, Girvan-Newman) to automatically discover **product clusters**,
+or for visualising cross-selling patterns as a force-directed graph.
+
+```python
+from rusket.viz import rusket.viz.to_networkx
+
+rusket.viz.to_networkx(rules_df: 'pd.DataFrame', source_col: 'str' = 'antecedents', target_col: 'str' = 'consequents', edge_attr: 'str' = 'lift') -> 'networkx.DiGraph'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| rules_df | pd.DataFrame | A Pandas DataFrame generated by ``rusket.association_rules()``. |
+| source_col | str, default='antecedents' | Column name containing antecedents (graph edge sources). |
+| target_col | str, default='consequents' | Column name containing consequents (graph edge targets). |
+| edge_attr | str, default='lift' | The metric to use as edge weight/thickness. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| networkx.DiGraph |  | A directed graph of the association rules. If ``rules_df`` is empty, returns an empty ``DiGraph``. |
+
+> **Notes**
+> Requires the ``networkx`` package (``pip install networkx``).
+When multiple rules produce the same directed edge, only the highest-weight
+rule is retained.
+
+**Examples**
+
+```python
+>>> import rusket
+>>> G = rusket.viz.to_networkx(rules_df, edge_attr="lift")
+>>> # Community detection with networkx
+>>> import networkx.algorithms.community as nx_comm
+>>> communities = nx_comm.greedy_modularity_communities(G.to_undirected())
 ```
 
 ---

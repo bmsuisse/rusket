@@ -14,14 +14,28 @@ def export_item_factors(als_model: ALS, include_labels: bool = True) -> pd.DataF
     This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
     Retrieval-Augmented Generation (RAG) and semantic search.
 
-    Args:
-        als_model: A fitted `rusket.ALS` model.
-        include_labels: Whether to include the string item labels (if available).
+    Parameters
+    ----------
+    als_model : ALS
+        A fitted ``rusket.ALS`` model instance.
+    include_labels : bool, default=True
+        Whether to include the string item labels (if available from
+        ``ALS.from_transactions``).
 
-    Returns:
-        A Pandas DataFrame where each row is an item, containing its integer ID,
-        (optionally) its label, and a `vector` column containing the dense latent numpy array.
-    """
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame where each row is an item with columns ``item_id``,
+        optionally ``item_label``, and ``vector`` (a dense 1-D numpy array
+        of the item's latent factors).
+
+    Examples
+    --------
+    >>> model = rusket.ALS(factors=32).fit(interactions)
+    >>> df = rusket.export_item_factors(model)
+    >>> # Ingest into FAISS / Pinecone / Qdrant
+    >>> vectors = np.stack(df["vector"].values)
+"""
     if als_model.item_factors is None:
         raise ValueError("ALS model has not been fitted yet.")
 

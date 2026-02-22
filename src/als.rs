@@ -259,16 +259,16 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
 
 struct AndersonAccel {
     m: usize,
-    x_hist: Vec<Vec<f32>>,
-    f_hist: Vec<Vec<f32>>,
+    x_hist: std::collections::VecDeque<Vec<f32>>,
+    f_hist: std::collections::VecDeque<Vec<f32>>,
 }
 
 impl AndersonAccel {
     fn new(m: usize) -> Self {
         Self {
             m,
-            x_hist: Vec::new(),
-            f_hist: Vec::new(),
+            x_hist: std::collections::VecDeque::new(),
+            f_hist: std::collections::VecDeque::new(),
         }
     }
 
@@ -278,11 +278,11 @@ impl AndersonAccel {
         let dim = x_old.len();
 
         if self.x_hist.len() == self.m {
-            self.x_hist.remove(0);
-            self.f_hist.remove(0);
+            self.x_hist.pop_front();
+            self.f_hist.pop_front();
         }
-        self.x_hist.push(x_old);
-        self.f_hist.push(f.clone());
+        self.x_hist.push_back(x_old);
+        self.f_hist.push_back(f.clone());
 
         let h = self.f_hist.len();
 

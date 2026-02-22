@@ -62,9 +62,9 @@ min_rounds = 3
 warmup = false
 
 [tool.basedpyright]
-pythonVersion = "3.14"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
-include = ["rusket"]
+include = ["rusket", "tests"]
 venvPath = "."
 venv = ".venv"
 

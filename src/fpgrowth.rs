@@ -375,6 +375,8 @@ fn _mine_dense(
             |mut acc, row| {
                 for (col, &val) in row.iter().enumerate() {
                     if val != 0 {
+                        // SAFETY: `col` is bounded by `row.len() == n_cols == acc.len()`
+                        // guaranteed by `par_chunks(n_cols)` producing exact-length slices.
                         unsafe {
                             *acc.get_unchecked_mut(col) += 1;
                         }
@@ -405,7 +407,11 @@ fn _mine_dense(
             let items: Vec<u32> = frequent_cols
                 .iter()
                 .enumerate()
-                .filter(|&(_, &col)| unsafe { *row.get_unchecked(col) != 0 })
+                .filter(|&(_, &col)| {
+                    // SAFETY: `col` is a pre-filtered index known to be < n_cols (the row length),
+                    // which equals the chunk size established by `par_chunks(n_cols)`.
+                    unsafe { *row.get_unchecked(col) != 0 }
+                })
                 .map(|(local_id, _)| local_id as u32)
                 .collect();
             if items.is_empty() {
@@ -438,6 +444,7 @@ pub(crate) fn _mine_csr(
                 for &col in &indices[start..end] {
                     let c = col as usize;
                     if c < n_cols {
+                        // SAFETY: `c < n_cols == acc.len()` checked by the enclosing `if`.
                         unsafe {
                             *acc.get_unchecked_mut(c) += 1;
                         }

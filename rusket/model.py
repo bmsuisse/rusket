@@ -12,6 +12,13 @@ if TYPE_CHECKING:
 class RuleMinerMixin:
     """Mixin for association rules and recommendations on frequent itemset models."""
 
+    # Cache: (metric, min_threshold) -> rules DataFrame
+    _rules_cache: dict[tuple[str, float], Any] | None = None
+
+    def _invalidate_rules_cache(self) -> None:
+        """Clear the cached association rules (call after re-mining)."""
+        self._rules_cache = None
+
     def association_rules(
         self,
         metric: str = "confidence",
@@ -71,8 +78,20 @@ class RuleMinerMixin:
         -------
         list[Any]
             List of recommended items, ordered by lift and then confidence.
+
+        Notes
+        -----
+        Rules are computed once and cached with the key ``(metric="lift",
+        min_threshold=1.0)``.  Call :meth:`_invalidate_rules_cache` to force
+        a re-computation after re-mining.
         """
-        rules_df = self.association_rules(metric="lift", min_threshold=1.0)
+        cache_key = ("lift", 1.0)
+        if self._rules_cache is None:
+            self._rules_cache = {}
+        if cache_key not in self._rules_cache:
+            self._rules_cache[cache_key] = self.association_rules(metric="lift", min_threshold=1.0)
+
+        rules_df = self._rules_cache[cache_key]
 
         if rules_df.empty:
             return []

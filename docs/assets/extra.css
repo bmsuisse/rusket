@@ -12,7 +12,7 @@
 }
 
 /* Badge row spacing */
-.md-content p > a > img {
+.md-content p>a>img {
   margin-right: 0.25rem;
   vertical-align: middle;
 }
@@ -26,4 +26,89 @@
 /* Highlight the first column of comparison tables */
 .md-typeset table:not([class]) td:first-child {
   font-weight: 500;
+}
+
+/* ============================================================
+   Orange brand theme — pin to exact Ferris orange #F74C00
+   ============================================================ */
+
+:root {
+  --brand: #F74C00;
+  --brand-dark: #c93c00;
+  --brand-light: #ff7043;
+}
+
+/* Header & nav bar */
+.md-header,
+.md-tabs {
+  background-color: var(--brand) !important;
+}
+
+/* Active tab underline + links */
+.md-tabs__link--active,
+.md-tabs__link:hover {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Sidebar active item + links */
+.md-nav__link--active,
+.md-nav__link:hover {
+  color: var(--brand) !important;
+}
+
+/* Inline links */
+.md-typeset a {
+  color: var(--brand) !important;
+}
+
+.md-typeset a:hover {
+  color: var(--brand-dark) !important;
+}
+
+/* Buttons */
+.md-button--primary {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+.md-button--primary:hover {
+  background-color: var(--brand-dark) !important;
+  border-color: var(--brand-dark) !important;
+}
+
+.md-button:not(.md-button--primary) {
+  color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}
+
+/* Search highlight */
+.md-search-result mark {
+  color: var(--brand) !important;
+}
+
+/* Code copy icon hover */
+.md-clipboard:hover {
+  color: var(--brand) !important;
+}
+
+/* Admonition accent (tip/note borders) */
+.md-typeset .admonition,
+.md-typeset details {
+  border-left-color: var(--brand) !important;
+}
+
+/* Footer "back to top" button */
+.md-top:hover {
+  background-color: var(--brand) !important;
+}
+
+/* Dark mode tweaks */
+[data-md-color-scheme="slate"] .md-typeset a {
+  color: var(--brand-light) !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active,
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: var(--brand-light) !important;
 }

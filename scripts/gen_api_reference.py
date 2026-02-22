@@ -260,6 +260,8 @@ def build_api_reference() -> str:
     import rusket.export as export_mod
     import rusket.transactions as transactions_mod
     import rusket.recommend as recommend_mod
+    import rusket.viz as viz_mod
+    from rusket.model import RuleMinerMixin
 
     output_lines: list[str] = []
 
@@ -323,6 +325,25 @@ def build_api_reference() -> str:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
 
     # ------------------------------------------------------------------
+    # 2b. RuleMinerMixin — shared mixin inherited by all item-set miners
+    # ------------------------------------------------------------------
+    output_lines.append("## `RuleMinerMixin` — Shared Miner Interface")
+    output_lines.append("")
+    output_lines.append(
+        "`FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` all inherit these methods from "
+        "`RuleMinerMixin`.  You do not construct `RuleMinerMixin` directly."
+    )
+    output_lines.append("")
+
+    mixin_methods: list[tuple[str, Any]] = [
+        ("RuleMinerMixin.association_rules", RuleMinerMixin.association_rules),
+        ("RuleMinerMixin.recommend_items", RuleMinerMixin.recommend_items),
+        ("RuleMinerMixin._invalidate_rules_cache", RuleMinerMixin._invalidate_rules_cache),
+    ]
+    for sym_name, obj in mixin_methods:
+        output_lines.append(_format_symbol(sym_name, obj, level=3))
+
+    # ------------------------------------------------------------------
     # 3. Recommender / Collaborative Filtering
     # ------------------------------------------------------------------
     output_lines.append("## Recommenders")
@@ -352,6 +373,22 @@ def build_api_reference() -> str:
     ]
     for sym_name, obj in util_symbols:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
+
+    # ------------------------------------------------------------------
+    # 4b. Visualization (rusket.viz)
+    # ------------------------------------------------------------------
+    output_lines.append("## Visualization (`rusket.viz`)")
+    output_lines.append("")
+    output_lines.append(
+        "Graph and visualization utilities.  Requires `networkx` (`pip install networkx`)."
+    )
+    output_lines.append("")
+
+    viz_symbols: list[tuple[str, Any]] = [
+        ("to_networkx", viz_mod.to_networkx),
+    ]
+    for sym_name, obj in viz_symbols:
+        output_lines.append(_format_symbol(f"rusket.viz.{sym_name}", obj, level=3))
 
     # ------------------------------------------------------------------
     # 5. Distributed Spark API
