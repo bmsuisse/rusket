@@ -754,7 +754,7 @@ def als_grouped(
 
             if not res_df.empty:
                 res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
-                res_df = res_df[[user_col, "recommended_items"]].copy()
+                res_df = res_df.loc[:, [user_col, "recommended_items"]]
                 res_df[user_col] = res_df[user_col].astype(str)
             else:
                 res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
@@ -820,7 +820,7 @@ def als_grouped(
 
                 if not res_df.empty:
                     res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
-                    res_df = res_df[[user_col, "recommended_items"]].copy()
+                    res_df = res_df.loc[:, [user_col, "recommended_items"]]
                     res_df[user_col] = res_df[user_col].astype(str)
                 else:
                     res_df = pd.DataFrame(columns=[user_col, "recommended_items"])

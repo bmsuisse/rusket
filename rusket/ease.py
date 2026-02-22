@@ -14,13 +14,13 @@ class EASE(ImplicitRecommender):
 
     An implicit collaborative filtering algorithm that computes a closed-form
     item-item similarity matrix by solving a ridge regression problem. EASE
-    often achieves state-of-the-art recommendation quality and very fast 
+    often achieves state-of-the-art recommendation quality and very fast
     inference, particularly on datasets with strong item-item correlations.
 
     Parameters
     ----------
     regularization : float
-        L2 regularization weight (lambda). Higher values encourage smaller weights 
+        L2 regularization weight (lambda). Higher values encourage smaller weights
         and reduce overfitting. Default is 500.0.
     """
 
@@ -33,14 +33,14 @@ class EASE(ImplicitRecommender):
         super().__init__(data=None, **kwargs)
         self.regularization = float(regularization)
         self.verbose = verbose
-        
+
         self.item_weights: Any = None
         self._n_users: int = 0
         self._n_items: int = 0
         self._fit_indptr: Any = None
         self._fit_indices: Any = None
         self._fit_data: Any = None
-        
+
         self._user_labels: list[Any] | None = None
         self._item_labels: list[Any] | None = None
         self.fitted: bool = False
@@ -85,17 +85,17 @@ class EASE(ImplicitRecommender):
         B[diag_indices] = 0.0
 
         self.item_weights = B.astype(np.float32)
-        
+
         self._n_users = n_users
         self._n_items = n_items
         self._fit_indptr = np.asarray(csr.indptr, dtype=np.int64)
         self._fit_indices = np.asarray(csr.indices, dtype=np.int32)
         self._fit_data = np.asarray(csr.data, dtype=np.float32)
         self.fitted = True
-        
+
         if self.verbose:
             print("EASE fit complete.")
-            
+
         return self
 
     def recommend_items(
@@ -110,14 +110,14 @@ class EASE(ImplicitRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
-            
+
         if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices
         else:
             exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
             exc_indices = np.array([], dtype=np.int32)
-            
+
         ids, scores = _rust.ease_recommend_items(
             self.item_weights,
             self._fit_indptr,

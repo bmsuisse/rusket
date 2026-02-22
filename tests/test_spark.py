@@ -358,6 +358,7 @@ def test_als_grouped(spark_session) -> None:
 
     # Turn off DeprecationWarning for fit_transactions
     import warnings
+
     warnings.simplefilter("ignore", DeprecationWarning)
 
     result = als_grouped(

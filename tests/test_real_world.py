@@ -347,6 +347,7 @@ class TestOnlineRetailALS:
 # UCI Online Retail II — EASE Recommender
 # ===========================================================================
 
+
 @pytest.mark.integration
 class TestOnlineRetailEASE:
     """EASE from_transactions on real customer-product interactions."""
@@ -397,7 +398,7 @@ class TestOnlineRetailEASE:
         # We need to temporarily mock .item_factors to allow `similar_items` to work out of the box
         # similar_items uses model.item_factors
         model.item_factors = model.item_weights
-        
+
         item_ids, sim_scores = rusket.similar_items(model, item_id=0, n=5)
         assert len(item_ids) >= 1
         assert (sim_scores <= 1.0).all()
@@ -409,6 +410,7 @@ class TestOnlineRetailEASE:
 # ===========================================================================
 # UCI Online Retail II — ItemKNN Recommender
 # ===========================================================================
+
 
 @pytest.mark.integration
 class TestOnlineRetailItemKNN:
@@ -429,7 +431,7 @@ class TestOnlineRetailItemKNN:
         assert model.w_indptr is not None
         assert model.w_indices is not None
         assert model.w_data is not None
-        
+
         n_items = online_retail_df["Description"].nunique()
         assert model.w_indptr.shape[0] == n_items + 1
 

@@ -48,19 +48,19 @@ class FPMC(SequentialRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        
+
         # Vu, Viu, Vil, Vli
         self._vu: Any = None
         self._viu: Any = None
         self._vil: Any = None
         self._vli: Any = None
-        
+
         self._n_users: int = 0
         self._n_items: int = 0
-        
+
         # Last items for users to make predictions
         self._user_last_items: dict[int, int] = {}
-        
+
         self.fitted: bool = False
 
     def __repr__(self) -> str:
@@ -91,20 +91,20 @@ class FPMC(SequentialRecommender):
         self._n_users = len(sequences)
         max_item_in_data = max((max(seq) for seq in sequences if seq), default=-1)
         self._n_items = max_item_in_data + 1 if n_items is None else n_items
-        
+
         if max_item_in_data >= self._n_items:
             raise ValueError(f"Observed item ID {max_item_in_data} but n_items is {self._n_items}.")
 
         # Flatten sequences into CSR-like structure for Rust
         indptr = np.zeros(self._n_users + 1, dtype=np.int64)
         indices = []
-        
+
         for u, seq in enumerate(sequences):
             if seq:
                 self._user_last_items[u] = seq[-1]
                 indices.extend(seq)
             indptr[u + 1] = len(indices)
-            
+
         indices_arr = np.array(indices, dtype=np.int32)
 
         self._vu, self._viu, self._vil, self._vli = _rust.fpmc_fit(
@@ -119,7 +119,7 @@ class FPMC(SequentialRecommender):
             self.seed,
             self.verbose,
         )
-        
+
         self.fitted = True
         return self
 
@@ -135,30 +135,30 @@ class FPMC(SequentialRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
-            
+
         prev_item = self._user_last_items.get(user_id, -1)
-        
+
         # Calculate scores: x_{u,l,i} = dot(V_u, V_iu) + dot(V_il, V_li) if prev_item >= 0 else dot(V_u, V_iu)
         v_u = self._vu[user_id]
-        
+
         # MF term
         scores = np.dot(self._viu, v_u)
-        
+
         # Markov Chain term
         if prev_item >= 0:
             v_l = self._vli[prev_item]
             scores += np.dot(self._vil, v_l)
-            
+
         # Top-N selection
         if exclude_seen:
-            # We don't track full sequence in Python directly after fitting, 
+            # We don't track full sequence in Python directly after fitting,
             # but usually in sequential RecSys we don't strictly exclude seen.
             # If strictly needed, we should extract seen items.
             pass
 
         idx = np.argpartition(scores, -n)[-n:]
         sorted_idx = idx[np.argsort(scores[idx])[::-1]]
-        
+
         return sorted_idx, scores[sorted_idx]
 
     def _check_fitted(self) -> None:
