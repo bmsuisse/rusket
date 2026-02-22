@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
 
 # # Market Basket Analysis Cookbook
 #
@@ -12,11 +11,11 @@
 
 import numpy as np
 import pandas as pd
-import polars as pl
 import plotly.express as px
+import polars as pl
 import pyarrow.compute as pc
-from rusket import fpgrowth, association_rules
 
+from rusket import association_rules, fpgrowth
 
 # ## 1. Synthetic Dataset Generation
 #
