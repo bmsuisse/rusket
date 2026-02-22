@@ -1332,6 +1332,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add criterion dev-dependency for bench targets
 - validate DataFrame before coercing to bool so invalid values (e.g. 2) raise ValueError
 - add fitted property to ItemKNN
+- suppress DeprecationWarning in als_grouped Spark worker
 
 ### 📖 Documentation
 
