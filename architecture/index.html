@@ -786,6 +786,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming & Big Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../polars/" class="md-nav__link">
         
   
@@ -1250,23 +1306,28 @@
 </span></code></pre></div>
 <hr />
 <h2 id="data-flow">Data flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>flowchart TD
-    A["Python caller\nfpgrowth(df, ...)"] --&gt; B{Input type?}
+<pre class="mermaid"><code>graph TD
+    classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
+    classDef rust fill:#DEA584,stroke:#000,stroke-width:2px,color:black;
+    classDef data fill:#FFD43B,stroke:#306998,stroke-width:2px,color:black;
 
-    B --&gt;|Dense pandas| C["np.ascontiguousarray\n(uint8, C-order)"]
-    B --&gt;|Sparse pandas| D["df.sparse.to_coo().tocsr()\nindptr + indices as int32"]
-    B --&gt;|Polars| E["df.to_numpy()\n(Arrow zero-copy)"]
+    A["Python Caller&lt;br/&gt;rusket.mine(df)"]:::python --&gt; B{"Input Data Type"}:::python
 
-    C --&gt; F["Rust: fpgrowth_from_dense\nPyReadonlyArray2&lt;u8&gt;"]
-    D --&gt; G["Rust: fpgrowth_from_csr\nPyReadonlyArray1&lt;i32&gt;"]
+    B --&gt;|Dense Pandas| C["C-Contiguous Array&lt;br/&gt;(uint8)"]:::data
+    B --&gt;|Sparse Pandas| D["CSR Matrix&lt;br/&gt;(indptr, indices)"]:::data
+    B --&gt;|Polars| E["Numpy View&lt;br/&gt;(Zero-copy)"]:::data
+
+    C --&gt; F["Rust FFI&lt;br/&gt;fpgrowth_from_dense"]:::rust
+    D --&gt; G["Rust FFI&lt;br/&gt;fpgrowth_from_csr"]:::rust
     E --&gt; F
 
-    F --&gt; H["FP-Tree construction\n(Rust, single-pass)"]
+    F --&gt; H["Tree Construction&lt;br/&gt;(Single Pass)"]:::rust
     G --&gt; H
 
-    H --&gt; I["Recursive mining\n(Rayon parallel)"]
-    I --&gt; J["Vec&lt;(count, Vec&lt;usize&gt;)&gt;"]
-    J --&gt; K["Python: build DataFrame\n(frozensets, support)"]</code></pre>
+    H --&gt; I["Recursive Mining&lt;br/&gt;(Rayon Parallel)"]:::rust
+    I --&gt; J["Raw Vectors&lt;br/&gt;Vec&lt;(count, Vec&lt;usize&gt;)&gt;"]:::data
+
+    J --&gt; K["Python Transformation&lt;br/&gt;Build pd.DataFrame"]:::python</code></pre>
 <hr />
 <h2 id="fp-growth-algorithm">FP-Growth algorithm<a class="headerlink" href="#fp-growth-algorithm" title="Permanent link">&para;</a></h2>
 <p>The Rust implementation follows the classic Han et al. (2000) FP-Growth algorithm:</p>
