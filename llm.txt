@@ -1359,6 +1359,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 🚀 Features
 
 - Add strict UI typings (SupportsItemFactors), classes API filtering, and generated Schema
+- add natively rust-backed evaluation metrics and model selection splitters
 
 ### 📖 Documentation
 
