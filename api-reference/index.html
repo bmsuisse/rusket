@@ -3804,12 +3804,12 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 </span></code></pre></div>
 <hr />
 <h3 id="similar_items"><code>similar_items</code><a class="headerlink" href="#similar_items" title="Permanent link">&para;</a></h3>
-<p>Find the most similar items to a given item ID based on ALS latent factors.</p>
+<p>Find the most similar items to a given item ID based on latent factors.</p>
 <p>Computes cosine similarity between the specified item's latent vector
 and all other item vectors in the <code>item_factors</code> matrix.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
 </span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>
-</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">als</span><span class="o">.</span><span class="n">ALS</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3822,9 +3822,9 @@ and all other item vectors in the <code>item_factors</code> matrix.</p>
 </thead>
 <tbody>
 <tr>
-<td>als_model</td>
-<td>ALS</td>
-<td>A fitted <code>rusket.ALS</code> model instance.</td>
+<td>model</td>
+<td>Any</td>
+<td>A fitted model instance with an <code>item_factors</code> property.</td>
 </tr>
 <tr>
 <td>item_id</td>
@@ -3961,12 +3961,12 @@ likely cannibalize each other.</p>
 </table>
 <hr />
 <h3 id="export_item_factors"><code>export_item_factors</code><a class="headerlink" href="#export_item_factors" title="Permanent link">&para;</a></h3>
-<p>Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.</p>
+<p>Exports latent item factors as a Pandas DataFrame for Vector DBs.</p>
 <p>This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_item_factors</span>
 </span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>
-</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS&#39;</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3979,14 +3979,14 @@ Retrieval-Augmented Generation (RAG) and semantic search.</p>
 </thead>
 <tbody>
 <tr>
-<td>als_model</td>
-<td>ALS</td>
-<td>A fitted <code>rusket.ALS</code> model instance.</td>
+<td>model</td>
+<td>Any</td>
+<td>A fitted model instance with an <code>item_factors</code> property.</td>
 </tr>
 <tr>
 <td>include_labels</td>
 <td>bool, default=True</td>
-<td>Whether to include the string item labels (if available from <code>ALS.from_transactions</code>).</td>
+<td>Whether to include the string item labels (if available from the model's fitting method).</td>
 </tr>
 </tbody>
 </table>

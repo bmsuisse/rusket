@@ -944,7 +944,7 @@ score_potential(user_history: 'list[list[int]]', als_model: 'ALS', target_catego
 
 ### `similar_items`
 
-Find the most similar items to a given item ID based on ALS latent factors.
+Find the most similar items to a given item ID based on latent factors.
 
 Computes cosine similarity between the specified item's latent vector
 and all other item vectors in the ``item_factors`` matrix.
@@ -952,14 +952,14 @@ and all other item vectors in the ``item_factors`` matrix.
 ```python
 from rusket.similarity import similar_items
 
-similar_items(als_model: rusket.als.ALS, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+similar_items(model: Any, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
+| model | Any | A fitted model instance with an ``item_factors`` property. |
 | item_id | int | The internal integer index of the target item. |
 | n | int | Number of most similar items to return. |
 
@@ -1028,7 +1028,7 @@ customer_saturation(df: 'pd.DataFrame', user_col: 'str', category_col: 'str | No
 
 ### `export_item_factors`
 
-Exports ALS latent item factors as a Pandas DataFrame for Vector DBs.
+Exports latent item factors as a Pandas DataFrame for Vector DBs.
 
 This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.
@@ -1036,15 +1036,15 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(als_model: 'ALS', include_labels: 'bool' = True) -> 'pd.DataFrame'
+export_item_factors(model: 'Any', include_labels: 'bool' = True) -> 'pd.DataFrame'
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| als_model | ALS | A fitted ``rusket.ALS`` model instance. |
-| include_labels | bool, default=True | Whether to include the string item labels (if available from ``ALS.from_transactions``). |
+| model | Any | A fitted model instance with an ``item_factors`` property. |
+| include_labels | bool, default=True | Whether to include the string item labels (if available from the model's fitting method). |
 
 **Returns**
 
