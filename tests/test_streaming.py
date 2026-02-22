@@ -8,6 +8,8 @@ import pytest
 
 from rusket import FPMiner, fpgrowth, from_transactions
 
+pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

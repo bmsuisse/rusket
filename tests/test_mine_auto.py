@@ -8,7 +8,7 @@ import rusket
 
 def test_auto_dense_pandas():
     # Dense dataset: 4 transactions, 3 items -> density is 6/12 = 0.5 > 0.15 (FPGrowth)
-    df = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]})
+    df = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}).astype(bool)
     res_auto = rusket.mine(df, min_support=0.5, method="auto")
     res_fpgrowth = rusket.fpgrowth(df, min_support=0.5)
 
@@ -31,7 +31,7 @@ def test_auto_sparse_pandas():
     data[1, 1] = 1
     data[2, 2] = 1
 
-    df = pd.DataFrame(data).astype(pd.SparseDtype("uint8", 0))
+    df = pd.DataFrame(data).astype(pd.SparseDtype(bool, False))
     res_auto = rusket.mine(df, min_support=0.1, method="auto")
     res_eclat = rusket.eclat(df, min_support=0.1)
 
@@ -52,7 +52,7 @@ def test_auto_scipy_csr_sparse():
 
 def test_auto_numpy_dense():
     # Dense -> FPGrowth
-    data = np.ones((10, 10), dtype=np.uint8)
+    data = np.ones((10, 10), dtype=bool)
     res_auto = rusket.mine(data, min_support=0.5, method="auto")
     assert len(res_auto) > 0
 
@@ -66,7 +66,7 @@ def test_rule_miner_mixin_api():
             "Butter": [1, 0, 1, 1, 0],
             "Eggs": [0, 1, 1, 1, 1],
         }
-    )
+    ).astype(bool)
     # Using the OO API AutoMiner
     from rusket.mine import AutoMiner
 

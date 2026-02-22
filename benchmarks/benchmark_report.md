@@ -38,7 +38,7 @@ Tested against the standalone Python `prefixspan` package on 2000 users with seq
 
 | Algorithm | Rusket Time | `prefixspan` (PyPI) | Speedup | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **PrefixSpan** | 0.229s | 0.149s | **0.65x** (Slower) | The pure Python package currently edges out due to PyO3 serialization overhead mapping lists into Rust. An optimization target for `rusket`. |
+| **PrefixSpan** | 0.166s | 0.190s | **1.15x faster** | Core recursive execution optimized to pass unallocated flat `indptr` sequences via PyO3 without expensive stdlib HashMaps. |
 
 ---
 

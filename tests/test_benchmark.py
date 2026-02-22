@@ -227,7 +227,7 @@ def test_vs_mlxtend_medium() -> None:
 @pytest.mark.skipif(not HAS_MLXTEND, reason="mlxtend not installed")
 def test_vs_mlxtend_large() -> None:
     _, ours, our_mem = _timed(fpgrowth, DF_LARGE, min_support=0.05)
-    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_LARGE, min_support=0.05)
+    _, mlx, mlx_mem = _timed(mlx_fpgrowth, DF_LARGE, min_support=0.05)  # type: ignore[possibly-unbound]
     print(
         f"\n[large ] ours={ours:.3f}s  mlxtend={mlx:.3f}s  speedup={mlx / ours:.1f}×  "
         f"mem ours={our_mem / 1e6:.1f}MB  mlx={mlx_mem / 1e6:.1f}MB"
@@ -247,7 +247,7 @@ def test_vs_mlxtend_assoc_rules_medium() -> None:
         return association_rules(fi, len(DF_MEDIUM), min_threshold=0.5)
 
     def mlx():
-        fi = mlx_fpgrowth(DF_MEDIUM, min_support=0.01)
+        fi = mlx_fpgrowth(DF_MEDIUM, min_support=0.01)  # type: ignore[possibly-unbound]
         return mlx_assoc_rules(fi, len(DF_MEDIUM), min_threshold=0.5)  # type: ignore
 
     _, ours_t, _ = _timed(ours)

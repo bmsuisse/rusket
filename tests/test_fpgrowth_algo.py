@@ -23,37 +23,37 @@ eclat_algo = functools.partial(fpgrowth, method="eclat")
 
 
 class TestEdgeCases_FPGrowth(unittest.TestCase, FPTestEdgeCases):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEdgeCases.setUp(self, fpgrowth_algo)
 
 
 class TestEdgeCases_Eclat(unittest.TestCase, FPTestEdgeCases):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEdgeCases.setUp(self, eclat_algo)
 
 
 class TestErrors_FPGrowth(unittest.TestCase, FPTestErrors):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestErrors.setUp(self, fpgrowth_algo)
 
 
 class TestErrors_Eclat(unittest.TestCase, FPTestErrors):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestErrors.setUp(self, eclat_algo)
 
 
 class TestEx1_FPGrowth(unittest.TestCase, FPTestEx1All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx1All.setUp(self, fpgrowth_algo)
 
 
 class TestEx1_Eclat(unittest.TestCase, FPTestEx1All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx1All.setUp(self, eclat_algo)
 
 
 class Ex1BoolInputBase(unittest.TestCase, FPTestEx1All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         one_ary = np.array(
             [
                 [False, False, False, True, False, True, True, True, True, False, True],
@@ -103,22 +103,22 @@ class Ex1BoolInputBase(unittest.TestCase, FPTestEx1All):
 
 
 class TestEx2_FPGrowth(unittest.TestCase, FPTestEx2All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx2All.setUp(self, fpgrowth_algo)
 
 
 class TestEx2_Eclat(unittest.TestCase, FPTestEx2All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx2All.setUp(self, eclat_algo)
 
 
 class TestEx3_FPGrowth(unittest.TestCase, FPTestEx3All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx3All.setUp(self, fpgrowth_algo)
 
 
 class TestEx3_Eclat(unittest.TestCase, FPTestEx3All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx3All.setUp(self, eclat_algo)
 
 

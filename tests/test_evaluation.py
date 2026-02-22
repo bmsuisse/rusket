@@ -55,10 +55,7 @@ def test_python_evaluate_wrapper():
     # Ground truth:
     # User 1 likes 2, 3
     # User 2 likes 99 (not in recommendations)
-    test_df = pd.DataFrame({
-        "user": [1, 1, 2],
-        "item": [2, 3, 99]
-    })
+    test_df = pd.DataFrame({"user": [1, 1, 2], "item": [2, 3, 99]})
 
     res = evaluate(model, test_df, k=2, metrics=["hr", "precipitation", "recall", "ndcg"])  # type: ignore
 

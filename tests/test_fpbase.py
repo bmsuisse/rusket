@@ -59,7 +59,7 @@ def compare_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
 
 
 class FPTestEdgeCases:
-    def setUp(self, fpalgo: Callable) -> None:
+    def setUp(self, fpalgo: Callable) -> None:  # type: ignore[override]
         self.fpalgo = fpalgo
 
     def test_all_ones(self) -> None:
@@ -79,7 +79,7 @@ class FPTestEdgeCases:
 
 
 class FPTestErrors:
-    def setUp(self, fpalgo: Callable) -> None:
+    def setUp(self, fpalgo: Callable) -> None:  # type: ignore[override]
         self.one_ary = np.array(
             [
                 [0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1],
@@ -277,7 +277,7 @@ class FPTestEx2:
 
 
 class FPTestEx2All(FPTestEx2):
-    def setUp(self, fpalgo: Callable) -> None:
+    def setUp(self, fpalgo: Callable) -> None:  # type: ignore[override]
         self.fpalgo = fpalgo
         FPTestEx2.setUp(self)
 
@@ -313,7 +313,7 @@ class FPTestEx3:
 
 
 class FPTestEx3All(FPTestEx3):
-    def setUp(self, fpalgo: Callable) -> None:
+    def setUp(self, fpalgo: Callable) -> None:  # type: ignore[override]
         self.fpalgo = fpalgo
         FPTestEx3.setUp(self)
 

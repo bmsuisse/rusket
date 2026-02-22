@@ -4,10 +4,7 @@ from rusket import leave_one_out_split, train_test_split
 
 
 def test_train_test_split():
-    df = pd.DataFrame({
-        "user": [1, 1, 1, 2, 2, 3, 3, 3, 3, 4],
-        "item": [10, 20, 30, 10, 40, 50, 60, 70, 80, 90]
-    })
+    df = pd.DataFrame({"user": [1, 1, 1, 2, 2, 3, 3, 3, 3, 4], "item": [10, 20, 30, 10, 40, 50, 60, 70, 80, 90]})
 
     train_df, test_df = train_test_split(df, "user", "item", test_size=0.3)
 
@@ -17,10 +14,7 @@ def test_train_test_split():
 
 
 def test_leave_one_out_split_random():
-    df = pd.DataFrame({
-        "user": [1, 1, 1, 2, 2, 3, 4],
-        "item": [10, 20, 30, 10, 40, 50, 90]
-    })
+    df = pd.DataFrame({"user": [1, 1, 1, 2, 2, 3, 4], "item": [10, 20, 30, 10, 40, 50, 90]})
 
     train_df, test_df = leave_one_out_split(df, "user", "item")
 
@@ -34,11 +28,7 @@ def test_leave_one_out_split_random():
 
 
 def test_leave_one_out_split_temporal():
-    df = pd.DataFrame({
-        "user": [1, 1, 1, 2, 2],
-        "item": [10, 20, 30, 10, 40],
-        "ts": [1.0, 3.0, 2.0, 10.0, 20.0]
-    })
+    df = pd.DataFrame({"user": [1, 1, 1, 2, 2], "item": [10, 20, 30, 10, 40], "ts": [1.0, 3.0, 2.0, 10.0, 20.0]})
 
     train_df, test_df = leave_one_out_split(df, "user", "item", timestamp_col="ts")
 

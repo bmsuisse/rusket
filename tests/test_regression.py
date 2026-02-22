@@ -144,7 +144,7 @@ except ImportError:
 def test_polars_medium_regression() -> None:
     """Polars input path must not be slower than 30 s on medium dataset."""
     max_seconds = 30.0
-    df_pl = pl.from_pandas(DF_MEDIUM)
+    df_pl = pl.from_pandas(DF_MEDIUM)  # type: ignore[possibly-unbound]
 
     result, elapsed, peak_bytes = _timed(fpgrowth, df_pl, min_support=0.01)
     peak_mb = peak_bytes / 1e6

@@ -19,22 +19,22 @@ from rusket import fpgrowth
 
 
 class TestEdgeCases(unittest.TestCase, FPTestEdgeCases):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEdgeCases.setUp(self, fpgrowth)
 
 
 class TestErrors(unittest.TestCase, FPTestErrors):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestErrors.setUp(self, fpgrowth)
 
 
 class TestEx1(unittest.TestCase, FPTestEx1All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx1All.setUp(self, fpgrowth)
 
 
 class TestEx1BoolInput(unittest.TestCase, FPTestEx1All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         one_ary = np.array(
             [
                 [False, False, False, True, False, True, True, True, True, False, True],
@@ -84,12 +84,12 @@ class TestEx1BoolInput(unittest.TestCase, FPTestEx1All):
 
 
 class TestEx2(unittest.TestCase, FPTestEx2All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx2All.setUp(self, fpgrowth)
 
 
 class TestEx3(unittest.TestCase, FPTestEx3All):
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # type: ignore[override]
         FPTestEx3All.setUp(self, fpgrowth)
 
 

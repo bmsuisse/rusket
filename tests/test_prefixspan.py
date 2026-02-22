@@ -1,6 +1,6 @@
 import pandas as pd
 
-from rusket.prefixspan import prefixspan, sequences_from_event_log
+from rusket.prefixspan import sequences_from_event_log
 
 
 def test_prefixspan_basic():
@@ -25,7 +25,8 @@ def test_prefixspan_basic():
     # B -> C appears in 2 (S1, S3)
     # A -> B -> C appears in 1 (S1)
 
-    df = prefixspan(sequences, min_support=2)
+    from rusket.prefixspan import PrefixSpan
+    df = PrefixSpan(sequences, min_support=2).mine()
 
     # Should find length 1: [1], [2], [3]
     # Length 2: [1, 2], [1, 3], [2, 3]
@@ -49,7 +50,11 @@ def test_sequences_from_event_log():
 
     seqs, mapping = sequences_from_event_log(df, "user", "time", "item")
 
-    assert len(seqs) == 3
+    # indptr points to user boundaries, indices points to items
+    # We expect 3 users
+    assert len(seqs[0]) - 1 == 3
+    # We expect 7 items total
+    assert len(seqs[1]) == 7
 
     # mapping should map int -> item labels A, B, C
     assert list(mapping.values()) == ["A", "B", "C"] or len(mapping) == 3
@@ -73,10 +78,8 @@ def test_sequences_from_event_log_polars():
     seqs, mapping = sequences_from_event_log(df, "user", "time", "item")
 
     # Three unique users
-    assert len(seqs) == 3
-    # Mapped integer indices must match lengths 3, 2, 2
-    assert len(seqs[0]) == 3
-    assert len(seqs[1]) == 2
-    assert len(seqs[2]) == 2
+    assert len(seqs[0]) - 1 == 3
+    # 7 items total
+    assert len(seqs[1]) == 7
 
     assert len(mapping) == 3

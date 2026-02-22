@@ -148,7 +148,7 @@ for label, n_rows, n_cols, min_sup in SIZES:
 
     # polars
     if HAS_POLARS:
-        df_pl = pl.from_pandas(df)
+        df_pl = pl.from_pandas(df)  # type: ignore[possibly-unbound]
         print("  rusket (polars)…", end=" ", flush=True)
         _, pol_t, pol_mem = _timed(fpgrowth, df_pl, min_support=min_sup)
         print(f"{pol_t:.3f}s  peak={pol_mem / 1e6:.1f}MB")
@@ -157,8 +157,8 @@ for label, n_rows, n_cols, min_sup in SIZES:
     # mlxtend — run on all sizes (no skipping; HUGE is slow but doesn't OOM)
     if HAS_MLXTEND:
         print("  mlxtend…", end=" ", flush=True)
-        _, mlx_t, mlx_mem = _timed(mlx_fpgrowth, df, min_support=min_sup)
-        mlx_result = mlx_fpgrowth(df, min_support=min_sup, use_colnames=True)
+        _, mlx_t, mlx_mem = _timed(mlx_fpgrowth, df, min_support=min_sup)  # type: ignore[possibly-unbound]
+        mlx_result = mlx_fpgrowth(df, min_support=min_sup, use_colnames=True)  # type: ignore[possibly-unbound]
         speedup = mlx_t / ours_t
         print(f"{mlx_t:.3f}s  peak={mlx_mem / 1e6:.1f}MB  speedup={speedup:.1f}×")
 
@@ -209,7 +209,7 @@ x_labels = [
 ]
 
 # Decide layout
-has_compare = HAS_MLXTEND and "speedup" in df_res.columns and df_res["speedup"].notna().any()
+has_compare = HAS_MLXTEND and "speedup" in df_res.columns and len(df_res[df_res["speedup"].notna()]) > 0
 n_plot_rows = 2 if has_compare else 1
 subplot_titles_all = [
     "⏱ Execution Time (s, log scale)",
@@ -276,7 +276,7 @@ if HAS_POLARS and "polars_mem_mb" in df_res:
     add_bars(2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False)
 
 # Speedup + memory ratio (row 2, only where mlxtend ran)
-if has_compare:
+if has_compare:  # type: ignore[reportGeneralTypeIssues]
     sub = df_res[df_res["speedup"].notna()]
     colors = [f"hsl({min(140, int(s * 6))},75%,55%)" for s in sub["speedup"]]
     fig.add_trace(
@@ -358,7 +358,7 @@ fig.update_layout(
     plot_bgcolor=PANEL,
     font={"color": TEXT, "family": "'Inter', 'Segoe UI', sans-serif", "size": 12},
     legend={"bgcolor": PANEL, "bordercolor": GRID, "borderwidth": 1, "font": {"size": 13}},
-    height=800 if has_compare else 480,
+    height=800 if has_compare else 480,  # type: ignore[reportGeneralTypeIssues]
     margin={"t": 110, "b": 70, "l": 70, "r": 70},
 )
 

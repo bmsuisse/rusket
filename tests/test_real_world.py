@@ -522,7 +522,7 @@ class TestInstacartALS:
         """PrefixSpan finds at least one frequent sequence on grocery data."""
         from rusket.prefixspan import PrefixSpan
 
-        top_users = instacart_df["user_id"].value_counts().head(500).index
+        top_users = instacart_df["user_id"].value_counts().head(500).index.tolist()
         sample = instacart_df[instacart_df["user_id"].isin(top_users)].copy()
         sample["event_order"] = sample.groupby("user_id").cumcount()
 

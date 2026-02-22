@@ -50,9 +50,7 @@ def evaluate(
 
     if pd is not None and isinstance(test_interactions, pd.DataFrame):
         if "user" not in test_interactions.columns or "item" not in test_interactions.columns:
-            raise ValueError(
-                "When passing a DataFrame to evaluate(), it must contain 'user' and 'item' columns."
-            )
+            raise ValueError("When passing a DataFrame to evaluate(), it must contain 'user' and 'item' columns.")
         users = test_interactions["user"].values.astype(np.int32)
         items = test_interactions["item"].values.astype(np.int32)
     else:

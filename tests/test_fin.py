@@ -53,7 +53,7 @@ def test_fin_dense() -> None:
             "B": [1, 0, 1, 0],
             "C": [0, 1, 1, 1],
         }
-    )
+    ).astype(bool)
     miner = FIN(data=dense_df, min_support=0.5, use_colnames=True)
     result = miner.mine()
     assert len(result) > 0

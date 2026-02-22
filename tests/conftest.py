@@ -86,7 +86,7 @@ def online_retail_df():  # type: ignore[return]
             & df_raw["Customer_ID"].notna()
             & df_raw["StockCode"].astype(str).str.match(r"^\d{5}")
         ].copy()
-        df["Description"] = df["Description"].str.strip()
+        df["Description"] = df["Description"].astype(str).str.strip()  # type: ignore[operator]
         df["Revenue"] = (df["Quantity"] * df["Price"]).round(2)
         # Ensure uniform dtypes for Parquet serialisation (Excel reads mixed types)
         df["StockCode"] = df["StockCode"].astype(str)

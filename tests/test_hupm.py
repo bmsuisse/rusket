@@ -1,4 +1,3 @@
-from rusket.hupm import hupm
 
 
 def test_hupm_basic():
@@ -27,7 +26,10 @@ def test_hupm_basic():
     # {A, B, C} = 5+2+1 = 8
 
     # Minimum utility of 7
-    df = hupm(transactions, utilities, min_utility=7.0)
+    from rusket.hupm import HUPM
+    df = HUPM.from_transactions(transactions,
+                                utilities,
+                                min_utility=7.0).mine()
 
     # Convert itemsets to sets for easy matching
     df["itemset_set"] = df["itemset"].apply(set)
@@ -50,14 +52,15 @@ def test_mine_hupm_pandas():
     """Test the DataFrame wrapper for High-Utility Pattern Mining using Pandas."""
     import pandas as pd
 
-    from rusket.hupm import mine_hupm
+
 
     # Same toy dataset as above
     data = pd.DataFrame(
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
-    df = mine_hupm(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0)
+    from rusket.hupm import HUPM
+    df = HUPM.from_transactions(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0).mine()
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4
@@ -75,13 +78,14 @@ def test_mine_hupm_polars():
     except ImportError:
         pytest.skip("Polars not installed")
 
-    from rusket.hupm import mine_hupm
+
 
     data = pl.DataFrame(
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
-    df = mine_hupm(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0)
+    from rusket.hupm import HUPM
+    df = HUPM.from_transactions(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0).mine()
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4

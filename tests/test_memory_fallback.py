@@ -13,7 +13,7 @@ def test_autominer_memory_fallback_pandas():
             "B": [1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
             "C": [0, 1, 1, 0, 0, 1, 1, 0, 0, 1],
         }
-    )
+    ).astype(bool)
 
     # Mock available memory to be very low (e.g. 100 bytes)
     # 10 * 3 = 30 bytes for dense matrix, so 100 * 0.7 = 70 bytes.
@@ -44,7 +44,7 @@ def test_autominer_memory_fallback_correctness():
             "A": [1, 1, 0, 1],
             "B": [1, 0, 1, 1],
         }
-    )
+    ).astype(bool)
 
     # Force fallback
     with patch("rusket._core._get_available_memory", return_value=1):

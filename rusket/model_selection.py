@@ -93,7 +93,9 @@ def leave_one_out_split(
         user_ids = df[user_col].values.astype(np.int32)
         item_ids = df[item_col].values.astype(np.int32)
     except ValueError as e:
-        raise ValueError(f"Columns {user_col} and {item_col} must be numeric/integer to use leave_one_out_split.") from e
+        raise ValueError(
+            f"Columns {user_col} and {item_col} must be numeric/integer to use leave_one_out_split."
+        ) from e
 
     timestamps = None
     if timestamp_col is not None:

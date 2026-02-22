@@ -95,10 +95,21 @@ class PrefixSpan(Miner):
             A DataFrame containing 'support' and 'sequence' columns.
             Sequences are mapped back to original item names if `from_transactions` was used.
         """
-        from typing import cast
+        # If already CSR-format from our internal loader:
+        if isinstance(self.data, tuple) and len(self.data) == 2:
+            indptr, indices = self.data
+        else:
+            from typing import cast
 
-        data_list = cast(list[list[int]], self.data)
-        supports, patterns = _rust.prefixspan_mine_py(data_list, self.min_support, self.max_len)
+            # Fallback for manual user lists
+            data_list = cast(list[list[int]], self.data)
+            indptr = [0]
+            indices = []
+            for seq in data_list:
+                indices.extend(seq)
+                indptr.append(len(indices))
+
+        supports, patterns = _rust.prefixspan_mine_py(indptr, indices, self.min_support, self.max_len)
 
         if self.item_mapping is not None:
             mapped_patterns = []
@@ -151,7 +162,13 @@ def prefixspan(
         DeprecationWarning,
         stacklevel=2,
     )
-    supports, patterns = _rust.prefixspan_mine_py(sequences, min_support, max_len)
+    indptr = [0]
+    indices = []
+    for seq in sequences:
+        indices.extend(seq)
+        indptr.append(len(indices))
+
+    supports, patterns = _rust.prefixspan_mine_py(indptr, indices, min_support, max_len)
 
     return (
         pd.DataFrame(
@@ -189,8 +206,9 @@ def sequences_from_event_log(
 
     Returns
     -------
-    tuple of (sequences, item_mapping)
-        - sequences: The nested list of integers to pass to `prefixspan()`.
+    tuple of (indptr, indices, item_mapping)
+        - indptr: CSR-style index pointer list.
+        - indices: Flattened item index list.
         - item_mapping: A dictionary mapping the integer IDs back to the original item labels.
     """
     import pandas as pd
@@ -217,9 +235,12 @@ def sequences_from_event_log(
         mapped = sorted_df.with_columns(pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items"))
         grouped = mapped.group_by(user_col, maintain_order=True).agg(pl.col("_mapped_items"))
 
-        # Rust pyo3 requires explicit list[list[int]], so we map elements natively
-        sequences = [[int(x) for x in seq] for seq in grouped["_mapped_items"].to_list()]
-        return sequences, idx_to_item
+        # Fast flat list representation via polars explode avoiding python objects
+        indptr_series = grouped["_mapped_items"].list.len().cum_sum()
+        indptr = [0] + indptr_series.to_list()
+        indices = grouped["_mapped_items"].explode().to_list()
+
+        return (indptr, indices), idx_to_item
 
     elif isinstance(data, pd.DataFrame):
         df_sorted = data.sort_values(by=[user_col, time_col])
@@ -231,8 +252,11 @@ def sequences_from_event_log(
         mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
         grouped = mapped_items.groupby(df_sorted[user_col]).apply(list)
 
-        sequences = grouped.tolist()
-        return sequences, idx_to_item
+        sizes = grouped.apply(len)
+        indptr = [0] + sizes.cumsum().tolist()
+        indices = mapped_items.tolist()
+
+        return (indptr, indices), idx_to_item
 
     else:
         raise TypeError(f"Expected Pandas, Polars, or PySpark DataFrame, got {type(data)}")

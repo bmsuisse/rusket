@@ -194,6 +194,9 @@ class TestFromPolars:
 class TestFromSpark:
     @pytest.fixture(scope="class")
     def spark(self):  # type: ignore[no-untyped-def]
+        import shutil
+        if not shutil.which("java"):
+            pytest.skip("Java is not installed, skipping PySpark tests")
         pytest.importorskip("pyspark")
         from pyspark.sql import SparkSession
 
@@ -255,8 +258,8 @@ class TestFromSpark:
 
         common_cols = sorted(set(spark_result.columns) & set(pd_result.columns))
         pd.testing.assert_frame_equal(
-            spark_result[common_cols].astype(bool).sort_values(common_cols).reset_index(drop=True),
-            pd_result[common_cols].astype(bool).sort_values(common_cols).reset_index(drop=True),
+            spark_result[common_cols].astype(bool).sort_values(by=common_cols).reset_index(drop=True),  # type: ignore
+            pd_result[common_cols].astype(bool).sort_values(by=common_cols).reset_index(drop=True),  # type: ignore
             check_dtype=False,
         )
 

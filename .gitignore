@@ -71,3 +71,5 @@ saved/
 pyright_errors.txt
 recbole_test_model_auto.py
 recbole_tests.json
+tests_*
+warnings_*

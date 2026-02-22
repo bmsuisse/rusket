@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="rusket logo" width="200" height="200" />
+  <img src="docs/assets/logo_wide.svg" alt="rusket logo" width="520" height="200" />
 </p>
 
 <p align="center">
