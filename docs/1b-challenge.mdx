@@ -166,8 +166,8 @@ The jump from **k-way merge → HashMap** changed 5-minute runs into 30-second r
 
 | data density | winner | why |
 |---|---|---|
-| Dense (avg >10 items/txn) | **Eclat** | Tidlist intersections are O(n), very cache-friendly |
-| Sparse (avg <5 items/txn) | FP-Growth or similar | Fewer candidates, conditional bases are small |
+| Dense (avg &gt;10 items/txn) | **Eclat** | Tidlist intersections are O(n), very cache-friendly |
+| Sparse (avg &lt;5 items/txn) | FP-Growth or similar | Fewer candidates, conditional bases are small |
 
 The default `method="eclat"` is now recommended for most real-world transaction data.
 
