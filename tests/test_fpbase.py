@@ -217,10 +217,10 @@ class FPTestEx1:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", FutureWarning)
             sdf = pd.DataFrame.sparse.from_spmatrix(sparse_ary, columns=self.df.columns)
-            
+
         if hasattr(pd, "SparseDtype"):
             sdf = sdf.astype(pd.SparseDtype(bool, False))
-            
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             res_df2 = self.fpalgo(sdf)
