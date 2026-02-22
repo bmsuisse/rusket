@@ -1342,6 +1342,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### Style
 
 - run ruff format and fix lints
+- Auto-format with Ruff
 
 ### 🐛 Bug Fixes
 
