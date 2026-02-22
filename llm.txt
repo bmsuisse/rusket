@@ -738,6 +738,13 @@ from rusket.als import ALS.fit
 ALS.fit(interactions: 'Any') -> 'ALS'
 ```
 
+**Raises**
+
+| Exception | Condition |
+| --- | --- |
+| RuntimeError |  | If the model is already fitted. Create a new instance to refit. |
+| TypeError |  | If the input matrix is not a recognizable sparse matrix or numpy array. |
+
 ---
 
 #### `ALS.recommend_items`
@@ -799,6 +806,13 @@ from rusket.bpr import BPR.fit
 
 BPR.fit(interactions: 'Any') -> 'BPR'
 ```
+
+**Raises**
+
+| Exception | Condition |
+| --- | --- |
+| RuntimeError |  | If the model is already fitted. |
+| TypeError |  | If the input matrix is not a recognizable sparse matrix or numpy array. |
 
 ---
 
@@ -956,14 +970,14 @@ and all other item vectors in the ``item_factors`` matrix.
 ```python
 from rusket.similarity import similar_items
 
-similar_items(model: Any, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+similar_items(model: rusket.typing.SupportsItemFactors, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| model | Any | A fitted model instance with an ``item_factors`` property. |
+| model | SupportsItemFactors | A fitted model instance with an ``item_factors`` property. |
 | item_id | int | The internal integer index of the target item. |
 | n | int | Number of most similar items to return. |
 
@@ -1040,14 +1054,14 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(model: 'Any', include_labels: 'bool' = True) -> 'pd.DataFrame'
+export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True) -> 'pd.DataFrame'
 ```
 
 **Parameters**
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| model | Any | A fitted model instance with an ``item_factors`` property. |
+| model | SupportsItemFactors | A fitted model instance with an ``item_factors`` property. |
 | include_labels | bool, default=True | Whether to include the string item labels (if available from the model's fitting method). |
 
 **Returns**
@@ -1340,6 +1354,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - update uv.lock for 0.1.26
+
+### 🚀 Features
+
+- Add strict UI typings (SupportsItemFactors), classes API filtering, and generated Schema
 
 ### 📖 Documentation
 
