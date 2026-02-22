@@ -1,69 +1,145 @@
 # PySpark Integration
 
-`rusket` provides seamless integration with massive datasets hosted on PySpark clusters.
+`rusket` provides seamless integration with massive datasets hosted on PySpark clusters, leveraging zero-copy Apache Arrow transfers between Spark workers and the Rust core.
 
-While standard Pandas DataFrames might struggle with memory constraints when handling highly granular transaction logs (e.g., millions of POS receipts or user web sessions), PySpark enables distributed data preparation. Rather than running a custom JVM algorithm, `rusket` can perform distributed Market Basket Analysis by partitioning the data logically and running its native Rust extensions directly on the PySpark worker nodes.
+All distributed functions live in `rusket.spark` and use `applyInArrow` (Spark 3.4+) with `applyInPandas` as a fallback for older versions.
 
-## Distributing Workloads (Grouped Mining)
+---
 
-A common use case in enterprise environments is to run association rule mining *per store*, *per region*, or *per customer segment*, rather than globally across the entire business.
-
-The `rusket.mine_grouped` function handles this natively by leveraging PySpark's `applyInArrow` (or `applyInPandas` for older Spark versions) capabilities. The dataset is grouped by a partition column, and the fast Rust-powered `rusket` engine is executed concurrently across your cluster.
-
-### Fast Grouped Mining
-
-Here is how you can process a multi-tenant or multi-store dataset:
+## Setup
 
 ```python
-from pyspark.sql import SparkSession
-import rusket.spark
-
-spark = SparkSession.builder.getOrCreate()
-
-# Ensure Arrow-based optimizations are enabled in Spark
 spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "true")
-
-# Example: 10 Million row Spark DataFrame 
-# columns: store_id, milk, bread, butter (One-Hot Encoded)
-spark_df = spark.read.parquet("s3://data/one_hot_receipts.parquet")
-
-# Mine frequent itemsets PER store, entirely distributed!
-freq_df = rusket.spark.mine_grouped(
-    df=spark_df,
-    group_col="store_id",
-    min_support=0.05,        # 5% minimum support per store
-    method="auto",
-    use_colnames=True
-)
-
-# freq_df is a new PySpark DataFrame containing:
-# store_id (String) | support (Double) | itemsets (Array[String])
-display(freq_df)
 ```
 
-## Collecting Large Summaries via Arrow (Streaming)
+---
 
-Sometimes you want to analyze global patterns but the raw transactional event log is too large to `.toPandas()` directly to the driver memory.
+## `mine_grouped` — Distributed Market Basket Analysis
 
-`rusket.streaming.mine_spark` allows you to stream integer `(transaction_id, item_id)` chunks directly from the PySpark workers into the `rusket.FPMiner` single-node streaming accumulator running on the driver, leveraging zero-copy Apache Arrow transfers.
+Group a PySpark DataFrame by a key column and run `rusket.mine` concurrently on each partition across the cluster. Input must be a One-Hot Encoded (wide) boolean matrix per partition.
+
+```python
+import rusket.spark
+
+freq_df = rusket.spark.mine_grouped(
+    df=spark_df,       # pyspark.sql.DataFrame (wide OHE format)
+    group_col="store_id",
+    min_support=0.05,
+    method="auto",     # "auto" | "fpgrowth" | "eclat"
+    use_colnames=True, # must be True for schema safety
+    max_len=None,
+)
+# Output columns: store_id (string) | support (double) | itemsets (array<string>)
+```
+
+---
+
+## `rules_grouped` — Distributed Association Rules
+
+Takes the frequent itemsets output of `mine_grouped` and applies `association_rules` per group.
+
+```python
+rules_df = rusket.spark.rules_grouped(
+    df=freq_spark_df,
+    group_col="store_id",
+    num_itemsets={"store_A": 10_000, "store_B": 5_000},  # or a single int
+    metric="confidence",
+    min_threshold=0.8,
+)
+# Output columns: store_id | antecedents | consequents | confidence | lift | ...
+# (all 11 metrics are always included)
+```
+
+**Full end-to-end grouped pipeline:**
+
+```python
+import rusket.spark
+
+freq_df  = rusket.spark.mine_grouped(spark_df, group_col="store_id", min_support=0.05)
+rules_df = rusket.spark.rules_grouped(freq_df, group_col="store_id", num_itemsets=10_000)
+```
+
+---
+
+## `prefixspan_grouped` — Distributed Sequential Pattern Mining
+
+Applies PrefixSpan to a user event log grouped by a partition key (e.g. per store or per tenant).
+
+```python
+seq_df = rusket.spark.prefixspan_grouped(
+    df=spark_df,
+    group_col="store_id",
+    user_col="user_id",      # sequence identifier within each group
+    time_col="timestamp",    # ordering column
+    item_col="item_id",
+    min_support=10,          # absolute minimum (number of sequences)
+    max_len=None,
+)
+# Output columns: store_id | support (long) | sequence (array<string>)
+```
+
+---
+
+## `hupm_grouped` — Distributed High-Utility Pattern Mining
+
+Applies the EFIM High-Utility Pattern Mining algorithm per partition.
+
+```python
+hupm_df = rusket.spark.hupm_grouped(
+    df=spark_df,
+    group_col="store_id",
+    transaction_col="txn_id",
+    item_col="item_id",
+    utility_col="profit",
+    min_utility=50.0,
+    max_len=None,
+)
+# Output columns: store_id | utility (double) | itemset (array<long>)
+```
+
+---
+
+## `recommend_batches` — Distributed Batch Recommendations
+
+Distribute batch user recommendations across PySpark workers using a pre-trained `ALS` or `Recommender` model. The model is broadcast to each worker via `mapInArrow`.
+
+```python
+rec_df = rusket.spark.recommend_batches(
+    df=user_history_spark_df,   # must contain user_col
+    model=als,                  # ALS, BPR, or Recommender instance
+    user_col="user_id",
+    k=5,
+)
+# Output columns: user_id (string) | recommended_items (array<int>)
+```
+
+---
+
+## `mine_spark` — Streaming Global Mining via FPMiner
+
+When you need **global** patterns but the raw event log is too large to `.toPandas()` in one shot, stream integer `(txn_id, item_id)` chunks from Spark workers into the `FPMiner` streaming accumulator on the driver via zero-copy Arrow transfers.
 
 ```python
 from rusket.streaming import mine_spark
 
-# Assuming an event log Spark DataFrame
-# columns: session_id (Long), item_id (Int)
-events_df = spark.read.parquet("s3://data/clickstream_events.parquet")
-
-# Process the entire distributed DataFrame via a memory-safe stream
 freq_df = mine_spark(
-    spark_df=events_df,
-    n_items=50_000,       # Total number of unique items
-    txn_col="session_id", # The grouping ID
-    item_col="item_id",   # The integer ID of the item
-    min_support=0.01,     # 1% support globally
-    max_len=3             # Max basket length
+    spark_df=events_df,     # pyspark.sql.DataFrame with txn_col + item_col
+    n_items=50_000,         # total number of unique items
+    txn_col="session_id",   # transaction grouping ID (integer-typed)
+    item_col="item_id",     # item index column (integer-typed)
+    min_support=0.01,
+    max_len=3,
 )
-
-# freq_df is a standard Pandas DataFrame on the driver
+# Returns a standard Pandas DataFrame on the driver
 print(freq_df.head())
+```
+
+---
+
+## `to_spark`
+
+Convert a Pandas or Polars DataFrame to a PySpark DataFrame.
+
+```python
+spark_df = rusket.spark.to_spark(spark_session, df)
 ```

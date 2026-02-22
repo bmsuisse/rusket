@@ -54,9 +54,9 @@ nav:
     - API Reference: api-reference.md
     - Cookbook (Code): cookbook.md
     - Cookbook (Interactive Notebooks):
-      - 🛒 Retail Assortment Optimization: notebooks/1_online_retail_basket_analysis.ipynb
-      - 🎬 MovieLens Hybrid Recommender: notebooks/2_movielens_recommendations.ipynb
-      - ⏱️ E-Commerce Lifecycle Discovery: notebooks/3_ecommerce_lifecycle_mining.ipynb
+      - 🛒 Retail Assortment Optimization: notebooks/1_online_retail_basket_analysis.md
+      - 🎬 MovieLens Hybrid Recommender: notebooks/2_movielens_recommendations.md
+      - ⏱️ E-Commerce Lifecycle Discovery: notebooks/3_ecommerce_lifecycle_mining.md
     - Recommender Workflows: recommender.md
     - Streaming & Big Data: streaming.md
     - PySpark Integration: spark.md

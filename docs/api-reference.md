@@ -337,18 +337,354 @@ freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
 
 ---
 
-## `from_transactions_csr`
+## Class-Based (OOP) Mining API
+
+All mining algorithms (`FPGrowth`, `Eclat`, `AutoMiner`, `HUPM`, `PrefixSpan`) expose a uniform OOP interface via `BaseModel`. This is convenient when you want to go from raw transactional data to association rules without handling intermediate DataFrames.
+
+### `Miner.from_transactions`
 
 ```python
-from rusket import from_transactions_csr
-
-csr, column_names = from_transactions_csr(
-    data,
-    transaction_col=None,
-    item_col=None,
-    chunk_size=10_000_000,
+model = FPGrowth.from_transactions(
+    data,                        # pd.DataFrame | pl.DataFrame | list[list]
+    transaction_col=None,        # defaults to first column
+    item_col=None,               # defaults to second column
+    verbose=0,
+    # + any algorithm kwargs: min_support, max_len, ...
 )
 ```
+
+Also available as `.from_pandas(df, ...)` and `.from_polars(df, ...)`.
+
+### `Miner.mine`
+
+```python
+freq = model.mine(
+    min_support=0.5,
+    use_colnames=False,
+    max_len=None,
+) -> pd.DataFrame
+```
+
+### `RuleMinerMixin.association_rules`
+
+Available on all mining classes (`FPGrowth`, `Eclat`, `AutoMiner`, `HUPM`):
+
+```python
+rules = model.association_rules(
+    metric="confidence",
+    min_threshold=0.8,
+    return_metrics=None,   # None = all metrics
+) -> pd.DataFrame
+```
+
+`num_itemsets` is inferred automatically from the data passed to `from_transactions`.
+
+### `RuleMinerMixin.recommend_items`
+
+```python
+suggestions = model.recommend_items(
+    items=["bread", "milk"],  # current cart contents
+    n=5,
+) -> list[Any]
+```
+
+Generates association rules on-the-fly (lift ≥ 1.0) and returns the top `n` consequents ordered by lift and confidence.
+
+### Example
+
+```python
+from rusket import FPGrowth, AutoMiner
+import pandas as pd
+
+df = pd.DataFrame({
+    "order_id": [1, 1, 2, 2, 3, 3, 3],
+    "item":     ["bread", "milk", "bread", "eggs", "milk", "eggs", "butter"],
+})
+
+# All three lines are equivalent:
+model = FPGrowth.from_transactions(df, min_support=0.4)
+# model = Eclat.from_transactions(df, min_support=0.4)
+# model = AutoMiner.from_transactions(df, min_support=0.4)
+
+freq  = model.mine(use_colnames=True)
+rules = model.association_rules(metric="lift", min_threshold=1.0)
+cart_suggestions = model.recommend_items(["bread"], n=3)
+```
+
+---
+
+## `ALS`
+
+**Alternating Least Squares** for implicit feedback collaborative filtering.
+
+```python
+from rusket import ALS
+
+als = ALS(
+    factors=64,
+    regularization=0.01,
+    alpha=40.0,
+    iterations=15,
+    seed=42,
+    verbose=False,
+    cg_iters=10,
+    use_cholesky=False,
+    anderson_m=0,
+)
+```
+
+### Constructor Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `factors` | `64` | Number of latent factors. |
+| `regularization` | `0.01` | L2 regularisation weight. |
+| `alpha` | `40.0` | Confidence scaling: `confidence = 1 + alpha × r`. |
+| `iterations` | `15` | Number of ALS outer iterations. |
+| `seed` | `42` | Random seed. |
+| `verbose` | `False` | Print per-iteration loss. |
+| `cg_iters` | `10` | Conjugate Gradient iterations per user/item solve. Use `3` for very large datasets. Ignored when `use_cholesky=True`. |
+| `use_cholesky` | `False` | Use a direct Cholesky solve instead of iterative CG. Exact; faster when users have many interactions relative to `factors`. |
+| `anderson_m` | `0` | Anderson Acceleration history window (0 = disabled). A value of `5` typically reduces ALS iterations by 30–50% at no quality cost. |
+
+### Methods
+
+#### `fit(interactions) → ALS`
+
+Fit the model to a user-item interaction matrix.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `interactions` | `scipy.sparse.csr_matrix \| np.ndarray` | User × Item matrix with implicit feedback values. |
+
+#### `from_transactions(data, user_col, item_col, rating_col, ...) → ALS`
+
+Fit directly from a long-format event log DataFrame.
+
+#### `recommend_items(user_id, n, exclude_seen) → tuple[np.ndarray, np.ndarray]`
+
+Top-N items for a user.
+
+| Parameter | Default | Description |
+|---|---|---|
+| `user_id` | — | Integer index of the user. |
+| `n` | `10` | Number of items to return. |
+| `exclude_seen` | `True` | Exclude items the user already interacted with. |
+
+#### `recommend_users(item_id, n) → tuple[np.ndarray, np.ndarray]`
+
+Top-N users for an item (reverse lookup).
+
+### Properties
+
+| Property | Description |
+|---|---|
+| `user_factors` | User factor matrix `(n_users, factors)`. |
+| `item_factors` | Item factor matrix `(n_items, factors)`. |
+
+---
+
+## `BPR`
+
+**Bayesian Personalized Ranking** for implicit feedback collaborative filtering. Optimises for ranking rather than reconstruction error.
+
+```python
+from rusket import BPR
+
+bpr = BPR(
+    factors=64,
+    learning_rate=0.05,
+    regularization=0.01,
+    iterations=150,
+    seed=42,
+    verbose=False,
+)
+```
+
+Same `fit()`, `from_transactions()`, `recommend_items()`, `user_factors`, and `item_factors` interface as `ALS`.
+
+---
+
+## Recommendation & Analytics
+
+### `rusket.recommend.Recommender`
+
+High-level Hybrid Recommender that combines ALS and Association Rules.
+
+```python
+from rusket import Recommender
+
+rec = Recommender(als_model=als, rules_df=rules_df, item_embeddings=None)
+
+# Personalized recommendations (ALS)
+items, scores = rec.recommend_for_user(
+    user_id=42,
+    n=5,
+    alpha=1.0,                      # 1.0 = pure CF, 0.0 = pure semantic
+    target_item_for_semantic=None,  # anchor item for semantic blending
+)
+
+# Cart cross-sell (Association Rules)
+rec.recommend_for_cart(cart_items=[14, 7], n=3)
+
+# Batch recommendations for a user history DataFrame
+batch_df = rec.predict_next_chunk(user_history_df, user_col="user_id", k=5)
+```
+
+### `rusket.score_potential`
+
+Calculates cross-selling potential scores to identify "missed opportunities".
+
+```python
+from rusket import score_potential
+
+scores = score_potential(user_history, als_model, target_categories=[101, 102])
+```
+
+### `rusket.similar_items`
+
+Find the most similar items to a given item ID based on ALS/BPR latent factors.
+
+```python
+from rusket import similar_items
+
+similar_ids, scores = similar_items(als_model, item_id=99, n=5)
+```
+
+### `rusket.export_item_factors`
+
+Export ALS/BPR item factors as a Pandas DataFrame for Vector DBs.
+
+```python
+from rusket import export_item_factors
+
+df_vectors = export_item_factors(als_model, include_labels=True)
+```
+
+### `rusket.find_substitutes`
+
+Identify cannibalized / substitutable products via negative association rules (lift < 1.0).
+
+```python
+from rusket import find_substitutes
+
+substitutes = find_substitutes(rules_df, max_lift=0.8)
+# Returns a DataFrame sorted ascending by lift (most severe cannibalization first)
+```
+
+### `rusket.customer_saturation`
+
+Segment users by their category/item purchase depth into deciles.
+
+```python
+from rusket import customer_saturation
+
+saturation = customer_saturation(
+    df,
+    user_col="user_id",
+    category_col="category_id",  # or item_col="item_id"
+)
+# Returns a DataFrame with unique_count, saturation_pct, and decile columns
+```
+
+### `rusket.viz.to_networkx`
+
+Convert association rules into a NetworkX Directed Graph for community detection.
+
+```python
+from rusket.viz import to_networkx
+
+G = to_networkx(rules_df, edge_attr="lift")
+```
+
+---
+
+## Distributed Spark API (`rusket.spark`)
+
+### `mine_grouped`
+
+Distribute Market Basket Analysis across PySpark partitions (grouped by a key column).
+
+```python
+import rusket.spark
+
+freq_df = rusket.spark.mine_grouped(
+    df=spark_df,
+    group_col="store_id",
+    min_support=0.05,
+    method="auto",   # "auto" | "fpgrowth" | "eclat"
+    use_colnames=True,
+    max_len=None,
+) -> pyspark.sql.DataFrame  # store_id, support, itemsets (array<string>)
+```
+
+### `rules_grouped`
+
+Distribute Association Rule Mining across PySpark partitions using the output of `mine_grouped`.
+
+```python
+rules_df = rusket.spark.rules_grouped(
+    df=freq_spark_df,
+    group_col="store_id",
+    num_itemsets={"A": 10_000, "B": 5_000},  # or a single int for all groups
+    metric="confidence",
+    min_threshold=0.8,
+) -> pyspark.sql.DataFrame  # store_id, antecedents, consequents, + 11 metrics
+```
+
+### `prefixspan_grouped`
+
+Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.
+
+```python
+seq_df = rusket.spark.prefixspan_grouped(
+    df=spark_df,
+    group_col="store_id",
+    user_col="user_id",
+    time_col="timestamp",
+    item_col="item_id",
+    min_support=10,
+    max_len=None,
+) -> pyspark.sql.DataFrame  # store_id, support (long), sequence (array<string>)
+```
+
+### `hupm_grouped`
+
+Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.
+
+```python
+hupm_df = rusket.spark.hupm_grouped(
+    df=spark_df,
+    group_col="store_id",
+    transaction_col="txn_id",
+    item_col="item_id",
+    utility_col="profit",
+    min_utility=50.0,
+    max_len=None,
+) -> pyspark.sql.DataFrame  # store_id, utility (double), itemset (array<long>)
+```
+
+### `recommend_batches`
+
+Distribute batch recommendations across PySpark partitions using a pre-fitted model.
+
+```python
+rec_df = rusket.spark.recommend_batches(
+    df=user_history_spark_df,
+    model=als_or_recommender,
+    user_col="user_id",
+    k=5,
+) -> pyspark.sql.DataFrame  # user_id, recommended_items (array<int>)
+```
+
+### `to_spark`
+
+Convert a Pandas or Polars DataFrame to a PySpark DataFrame.
+
+```python
+spark_df = rusket.spark.to_spark(spark_session, df)
+```
+
 
 Converts long-format transactional data to a raw `scipy.sparse.csr_matrix`
 and a list of column names, for direct input into `fpgrowth()` or `eclat()`.

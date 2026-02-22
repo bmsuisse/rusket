@@ -19,7 +19,9 @@
 `rusket` is a **modern library for Market Basket Analysis and Recommender Engines**. 
 **Arrow-backed, fully compatible with Spark, and written entirely in Rust** (via [PyO3](https://pyo3.rs/)), it delivers **2–15× speed-ups** and dramatically lower memory usage compared to traditional Python implementations.
 
-It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Ranking (BPR)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon), **Eclat** (vertical bitset mining), and **PrefixSpan** (sequential pattern mining). It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s APIs, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
+It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Ranking (BPR)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon), **Eclat** (vertical bitset mining), **HUPM** (High-Utility Pattern Mining via EFIM), and **PrefixSpan** (sequential pattern mining). It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s APIs, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
+
+All algorithms expose both a **functional API** (`mine(df, ...)`) and an **OOP class API** (`FPGrowth.from_transactions(df).mine()`) that flows naturally from raw transaction logs.
 
 ---
 
@@ -28,13 +30,15 @@ It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Rank
 | | `rusket` | `mlxtend` |
 |---|---|---|
 | **Core language** | Rust (PyO3) | Pure Python |
-| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat | FP-Growth only |
+| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | FP-Growth only |
 | **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ |
 | **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ |
+| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ❌ |
 | **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
 | **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
 | **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
 | **Polars input** | ✅ Arrow zero-copy | ❌ Not supported |
+| **Spark / distributed** | ✅ `mine_grouped`, `rules_grouped`, `prefixspan_grouped`, `hupm_grouped`, `recommend_batches` | ❌ |
 | **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded |
 | **Memory** | Low (native Rust buffers) | High (Python objects) |
 | **API compatibility** | ✅ Drop-in replacement | — |
@@ -100,7 +104,9 @@ print(rules[["antecedents", "consequents", "support", "confidence", "lift"]]
 
 ### 🛒 Transaction Data (Long Format)
 
-Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices. Use the built-in helpers to convert:
+Real-world data comes as `(transaction_id, item)` rows — not one-hot matrices.
+
+#### Functional API
 
 ```python
 import pandas as pd
@@ -112,15 +118,32 @@ df = pd.DataFrame({
     "item":     [3, 4, 5, 3, 5, 8],
 })
 
-# Convert to one-hot boolean matrix
+# Convert to one-hot boolean matrix, then mine
 ohe = from_transactions(df)
-
-# Mine!
 freq = mine(ohe, min_support=0.3, use_colnames=True)
 print(freq)
 ```
 
-Or use the explicit helpers for type clarity:
+#### OOP Class API
+
+All mining algorithms also expose a class-based API that goes straight from long-format data to results:
+
+```python
+from rusket import FPGrowth, Eclat, AutoMiner
+
+# Equivalent — all classes expose the same interface
+model = FPGrowth.from_transactions(df, min_support=0.3)
+# model = Eclat.from_transactions(df, min_support=0.3)
+# model = AutoMiner.from_transactions(df, min_support=0.3)  # auto-selects algorithm
+
+freq  = model.mine(use_colnames=True)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
+
+# Cart cross-sell recommendations directly from the model
+suggestions = model.recommend_items(["bread", "milk"], n=3)
+```
+
+Or use the explicit type variants:
 
 ```python
 from rusket import from_pandas, from_polars
@@ -482,6 +505,36 @@ rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
 
 `rusket` provides more than just basic market basket analysis. It includes an entire suite of modern algorithms and a high-level Business Recommender API.
 
+### 🎯 ALS & BPR Collaborative Filtering
+
+Both models share the same `ImplicitRecommender` interface and support fitting from a sparse matrix or directly from a raw event log.
+
+```python
+from rusket import ALS, BPR
+
+# ── From a user-item sparse matrix ───────────────────────────────────
+als = ALS(
+    factors=64,
+    iterations=15,
+    cg_iters=3,          # Conjugate Gradient iterations per solve
+    use_cholesky=False,  # True = exact Cholesky solve (faster for dense data)
+    anderson_m=5,        # Anderson Acceleration (30–50% fewer ALS iterations)
+).fit(user_item_csr)
+
+bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
+
+# ── Or directly from a long-format event log ─────────────────────────
+als = ALS(factors=64).from_transactions(
+    df,                        # pd.DataFrame / pl.DataFrame / Spark DataFrame
+    user_col="user_id",
+    item_col="item_id",
+)
+
+# Recommendations
+items, scores = als.recommend_items(user_id=42, n=10, exclude_seen=True)
+users, scores = als.recommend_users(item_id=99, n=5)  # Top users for an item
+```
+
 ### 🎯 Hybrid Recommender API
 Combine the serendipity of **Collaborative Filtering** (ALS/BPR) with the strict, deterministic logic of **Frequent Pattern Mining**.
 
@@ -492,7 +545,8 @@ from rusket import ALS, Recommender, mine, association_rules
 als = ALS(factors=64).fit(user_item_matrix)
 
 # 2. Mine your Association Rules
-rules = association_rules(mine(user_item_matrix))
+freq  = mine(basket_matrix, min_support=0.01)
+rules = association_rules(freq, num_itemsets=n_transactions)
 
 # 3. Create the Hybrid Engine
 rec = Recommender(als_model=als, rules_df=rules)
@@ -500,8 +554,29 @@ rec = Recommender(als_model=als, rules_df=rules)
 # Personalized recommendations for a user (ALS)
 items, scores = rec.recommend_for_user(user_id=42, n=5)
 
+# Hybrid: blend CF + external item embeddings (e.g. from a FAISS index)
+items, scores = rec.recommend_for_user(user_id=42, n=5, alpha=0.7,
+                                       target_item_for_semantic=99)
+
 # Next Best Action for an active shopping cart (Association Rules)
 cross_sell = rec.recommend_for_cart([14, 7], n=3)
+
+# Batch recommendations for all users in a DataFrame
+batch_df = rec.predict_next_chunk(user_history_df, user_col="user_id", k=5)
+```
+
+### 🔍 Analytics Helpers
+
+```python
+from rusket import find_substitutes, customer_saturation
+
+# Find products that cannibalize each other (lift < 1.0)
+substitutes = find_substitutes(rules_df, max_lift=0.8)
+
+# Segment users by their category/item purchase depth (deciles)
+saturation = customer_saturation(
+    df, user_col="user_id", category_col="category_id"
+)
 ```
 
 ### 📈 BPR & Sequential Patterns
@@ -610,14 +685,32 @@ To pass the "1 Billion Row" threshold without OOM crashes, `rusket` employs a ze
 │   ├── lib.rs                    # Module root & Python bindings
 │   ├── fpgrowth.rs               # FP-Tree construction + FP-Growth mining (Rayon parallel)
 │   ├── eclat.rs                  # Eclat vertical mining (bitset intersection + popcnt)
+│   ├── als.rs                    # ALS collaborative filtering (CG + Cholesky + Anderson)
+│   ├── bpr.rs                    # Bayesian Personalized Ranking (Hogwild! SGD)
+│   ├── hupm.rs                   # High-Utility Pattern Mining (EFIM algorithm)
+│   ├── prefixspan.rs             # Sequential pattern mining (PrefixSpan)
 │   └── association_rules.rs      # Rule generation + 12 metrics (Rayon parallel)
 │
 ├── rusket/                       # Python wrappers & validation
 │   ├── __init__.py               # Package root
-│   ├── fpgrowth.py               # FP-Growth input dispatch (dense / sparse / Polars)
-│   ├── eclat.py                  # Eclat input dispatch (dense / sparse / Polars)
-│   ├── association_rules.py      # Label mapping + Rust call + result assembly
-│   ├── transactions.py           # from_transactions / from_pandas / from_polars / from_spark
+│   ├── model.py                  # BaseModel / Miner / ImplicitRecommender / RuleMinerMixin
+│   ├── fpgrowth.py               # FPGrowth class + fpgrowth() functional API
+│   ├── eclat.py                  # Eclat class + eclat() functional API
+│   ├── mine.py                   # AutoMiner class + mine() functional API
+│   ├── als.py                    # ALS collaborative filtering model
+│   ├── bpr.py                    # BPR collaborative filtering model
+│   ├── hupm.py                   # HUPM class + hupm() / mine_hupm() functional API
+│   ├── prefixspan.py             # PrefixSpan class + prefixspan() functional API
+│   ├── recommend.py              # Recommender / NextBestAction / score_potential
+│   ├── analytics.py              # find_substitutes / customer_saturation
+│   ├── similarity.py             # similar_items()
+│   ├── export.py                 # export_item_factors()
+│   ├── streaming.py              # FPMiner / mine_duckdb / mine_spark
+│   ├── spark.py                  # mine_grouped / prefixspan_grouped / hupm_grouped /
+│   │                             #   rules_grouped / recommend_batches / to_spark
+│   ├── transactions.py           # from_transactions / from_pandas / from_polars /
+│   │                             #   from_spark / from_transactions_csr
+│   ├── viz.py                    # to_networkx()
 │   ├── _validation.py            # Input validation
 │   └── _rusket.pyi               # Type stubs for Rust extension
 │
@@ -678,6 +771,14 @@ uv run python examples/05_large_scale.py
 # mlxtend migration guide
 uv run python examples/06_mlxtend_migration.py
 ```
+
+---
+
+## 🤖 AI Disclosure
+
+A large part of this library — including the Rust core algorithms, the Python wrappers, the OOP class hierarchy, and the Spark integration layer — was written with substantial assistance from **AI pair-programming tools** (specifically [Google Gemini / Antigravity](https://deepmind.google/technologies/gemini/)). Human review, benchmarking, and architectural decisions were applied throughout.
+
+We believe in transparency about AI-assisted development. The algorithms are correct, the tests pass, and the performance numbers are real — but if you find a bug or a piece of "AI slop", please open an issue!
 
 ---
 
