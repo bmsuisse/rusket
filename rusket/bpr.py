@@ -6,8 +6,10 @@ from typing import Any
 
 from . import _rusket as _rust  # type: ignore
 
+from .model import ImplicitRecommender
 
-class BPR:
+
+class BPR(ImplicitRecommender):
     """Bayesian Personalized Ranking (BPR) model for implicit feedback.
 
     BPR optimizes for ranking rather than reconstruction error (like ALS).
@@ -36,7 +38,9 @@ class BPR:
         iterations: int = 150,
         seed: int = 42,
         verbose: bool = False,
+        **kwargs: Any,
     ) -> None:
+        super().__init__(data=None, **kwargs)
         self.factors = factors
         self.learning_rate = float(learning_rate)
         self.regularization = float(regularization)
@@ -104,51 +108,7 @@ class BPR:
         self.fitted = True
         return self
 
-    def fit_transactions(
-        self,
-        data: Any,
-        user_col: str | None = None,
-        item_col: str | None = None,
-        rating_col: str | None = None,
-    ) -> "BPR":
-        """Fit from a long-format Pandas/Polars/Spark DataFrame."""
-        import numpy as np
-        import pandas as _pd
-        from scipy import sparse as sp
-        from ._compat import to_dataframe
 
-        data = to_dataframe(data)
-
-        cols = list(data.columns)
-        u_col = user_col or str(cols[0])
-        i_col = item_col or str(cols[1])
-
-        try:
-            import polars as pl
-
-            is_polars = isinstance(data, pl.DataFrame)
-        except ImportError:
-            is_polars = False
-
-        if not (isinstance(data, _pd.DataFrame) or is_polars):
-            raise TypeError(f"Expected Pandas/Polars/Spark DataFrame, got {type(data)}")
-
-        u_data = data[u_col].to_numpy() if is_polars else data[u_col]
-        i_data = data[i_col].to_numpy() if is_polars else data[i_col]
-
-        user_codes, user_uniques = _pd.factorize(u_data, sort=False)
-        item_codes, item_uniques = _pd.factorize(i_data, sort=True)
-        n_users = len(user_uniques)
-        n_items = len(item_uniques)
-
-        values = np.ones(len(user_codes), dtype=np.float32)
-        csr = sp.csr_matrix(
-            (values, (user_codes.astype(np.int64), item_codes.astype(np.int64))),
-            shape=(n_users, n_items),
-        )
-        self._user_labels = list(user_uniques)
-        self._item_labels = [str(c) for c in item_uniques]
-        return self.fit(csr)
 
     def recommend_items(
         self,
@@ -160,6 +120,8 @@ class BPR:
         import numpy as np
 
         self._check_fitted()
+        if user_id < 0 or user_id >= self._n_users:
+            raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
         if (
             exclude_seen
             and self._fit_indptr is not None

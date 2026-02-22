@@ -100,6 +100,70 @@ class BaseModel(ABC):
     for any downstream Miner or Recommender.
     """
     
+    @classmethod
+    @abstractmethod
+    def from_transactions(
+        cls,
+        data: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> "BaseModel":
+        """Initialize the model from a long-format DataFrame or sequences.
+
+        Must be implemented by subclasses.
+        """
+        pass
+
+    @classmethod
+    def from_pandas(
+        cls,
+        df: "pd.DataFrame",
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> "BaseModel":
+        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
+        return cls.from_transactions(
+            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
+        )
+
+    @classmethod
+    def from_polars(
+        cls,
+        df: "pl.DataFrame",
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> "BaseModel":
+        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
+        return cls.from_transactions(
+            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
+        )
+
+    @classmethod
+    def from_spark(
+        cls,
+        df: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        **kwargs: Any,
+    ) -> "BaseModel":
+        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
+        return cls.from_transactions(
+            df, transaction_col=transaction_col, item_col=item_col, **kwargs
+        )
+
+
+class Miner(BaseModel):
+    """Base class for all pattern mining algorithms.
+    
+    Inherited by FPGrowth, Eclat, AutoMiner, PrefixSpan, and HUPM.
+    """
+    
     def __init__(self, data: "pd.DataFrame | Any", item_names: list[str] | None = None, **kwargs: Any):
         """Initialize the miner with pre-formatted data.
         
@@ -136,7 +200,7 @@ class BaseModel(ABC):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "BaseModel":
+    ) -> "Miner":
         """Load long-format transactional data into the algorithm.
 
         Parameters
@@ -188,53 +252,6 @@ class BaseModel(ABC):
         sparse_df = _from_dataframe(data, transaction_col, item_col, verbose=verbose)
         return cls(sparse_df, **kwargs)
 
-    @classmethod
-    def from_pandas(
-        cls,
-        df: pd.DataFrame,
-        transaction_col: str | None = None,
-        item_col: str | None = None,
-        verbose: int = 0,
-        **kwargs: Any,
-    ) -> "BaseModel":
-        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
-        )
-
-    @classmethod
-    def from_polars(
-        cls,
-        df: pl.DataFrame,
-        transaction_col: str | None = None,
-        item_col: str | None = None,
-        verbose: int = 0,
-        **kwargs: Any,
-    ) -> "BaseModel":
-        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
-        )
-
-    @classmethod
-    def from_spark(
-        cls,
-        df: Any,
-        transaction_col: str | None = None,
-        item_col: str | None = None,
-        **kwargs: Any,
-    ) -> "BaseModel":
-        """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, **kwargs
-        )
-
-class Miner(BaseModel):
-    """Base class for all pattern mining algorithms.
-    
-    Inherited by FPGrowth, Eclat, AutoMiner, PrefixSpan, and HUPM.
-    """
-    
     @abstractmethod
     def mine(self, **kwargs: Any) -> "pd.DataFrame":
         """Execute the mining algorithm and return frequent patterns.
@@ -250,6 +267,107 @@ class ImplicitRecommender(BaseModel):
     Inherited by ALS and BPR.
     """
     
+    def __init__(self, **kwargs: Any):
+        self._user_labels: list[Any] | None = None
+        self._item_labels: list[Any] | None = None
+        self.item_names: list[Any] | None = None
+
+    @classmethod
+    def from_transactions(
+        cls,
+        data: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> "ImplicitRecommender":
+        """Initialize and fit the model from a long-format DataFrame.
+        
+        Parameters
+        ----------
+        data : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
+            Event log containing users, items, and ratings.
+        transaction_col : str, optional
+            Column name identifying the user ID (aliases user_col).
+        item_col : str, optional
+            Column name identifying the item ID.
+        verbose : int, optional
+            Verbosity level.
+        **kwargs
+            Model hyperparameters (e.g., factors, learning_rate) passed to __init__.
+            Can also include `user_col` and `rating_col`.
+        """
+        user_col = kwargs.pop("user_col", transaction_col)
+        rating_col = kwargs.pop("rating_col", None)
+        model = cls(verbose=bool(verbose), **kwargs)
+        return model._fit_transactions(data, user_col, item_col, rating_col)
+
+    def fit_transactions(
+        self,
+        data: Any,
+        user_col: str | None = None,
+        item_col: str | None = None,
+        rating_col: str | None = None,
+    ) -> "ImplicitRecommender":
+        import warnings
+        warnings.warn(
+            "fit_transactions is deprecated. Use from_transactions() instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self._fit_transactions(data, user_col, item_col, rating_col)
+
+    def _fit_transactions(
+        self,
+        data: Any,
+        user_col: str | None = None,
+        item_col: str | None = None,
+        rating_col: str | None = None,
+    ) -> "ImplicitRecommender":
+        """Fit from a long-format Pandas/Polars/Spark DataFrame."""
+        import numpy as np
+        import pandas as _pd
+        from scipy import sparse as sp
+        from ._compat import to_dataframe
+
+        data = to_dataframe(data)
+
+        cols = list(data.columns)
+        u_col = user_col or str(cols[0])
+        i_col = item_col or str(cols[1])
+
+        try:
+            import polars as pl
+            is_polars = isinstance(data, pl.DataFrame)
+        except ImportError:
+            is_polars = False
+
+        if not (isinstance(data, _pd.DataFrame) or is_polars):
+            raise TypeError(f"Expected Pandas/Polars/Spark DataFrame, got {type(data)}")
+
+        u_data = data[u_col].to_numpy() if is_polars else data[u_col]
+        i_data = data[i_col].to_numpy() if is_polars else data[i_col]
+
+        user_codes, user_uniques = _pd.factorize(u_data, sort=False)
+        item_codes, item_uniques = _pd.factorize(i_data, sort=True)
+        n_users = len(user_uniques)
+        n_items = len(item_uniques)
+
+        values = (
+            np.asarray(data[rating_col], dtype=np.float32)
+            if rating_col is not None
+            else np.ones(len(user_codes), dtype=np.float32)
+        )
+
+        csr = sp.csr_matrix(
+            (values, (user_codes.astype(np.int64), item_codes.astype(np.int64))),
+            shape=(n_users, n_items),
+        )
+        self._user_labels = list(user_uniques)
+        self._item_labels = [str(c) for c in item_uniques]
+        self.item_names = self._item_labels
+        return self.fit(csr)
+
     @abstractmethod
     def fit(self, interactions: Any) -> "ImplicitRecommender":
         """Fit the model to a user-item interaction matrix.
