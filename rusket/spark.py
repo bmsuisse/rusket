@@ -762,8 +762,8 @@ def als_grouped(
             else:
                 res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
 
-        except Exception:
-            res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+        except Exception as e:
+            raise RuntimeError(f"als_grouped worker failed for group {group_id!r}: {e}") from e
 
         if len(res_df) == 0:
             return pa.Table.from_batches(
