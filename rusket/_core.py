@@ -251,12 +251,17 @@ def dispatch(
 
     from ._validation import valid_input_check
 
+    # Coerce integer 0/1 DataFrames to bool so valid_input_check doesn't warn
+    import pandas as pd
+    if not hasattr(df_pd, "sparse") and not bool(df_pd.dtypes.apply(pd.api.types.is_bool_dtype).all()):
+        df_pd = df_pd.astype(bool)
+
     valid_input_check(df_pd, null_values)
 
     if hasattr(df_pd, "sparse"):
         nnz = getattr(df_pd.sparse, "density", 0.0) * (n_rows * n_cols)
     else:
-        nnz = df_pd.astype(bool).sum().sum()
+        nnz = df_pd.sum().sum()
     density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
     method = _select_method(method, density, verbose, "pandas")
 
