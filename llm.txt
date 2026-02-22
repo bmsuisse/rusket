@@ -1338,6 +1338,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add fitted property to ItemKNN
 - suppress DeprecationWarning in als_grouped Spark worker
 - use internal model indices in als_grouped worker to correctly map user_labels
+- resolve all pyright errors and ruff format/lint failures for CI
 
 ### 📖 Documentation
 
