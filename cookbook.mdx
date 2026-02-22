@@ -17,8 +17,8 @@ pip install rusket
 import numpy as np
 import pandas as pd
 import polars as pl
-from rusket import mine, eclat, association_rules, ALS, BPR
-from rusket import prefixspan, sequences_from_event_log, hupm, similar_items, Recommender, score_potential
+from rusket import FPGrowth, Eclat, AutoMiner, association_rules
+from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender, similar_items, score_potential
 ```
 
 ---
@@ -40,7 +40,7 @@ In practice this comes from your POS system as a long-format order table. For de
 ```python
 import numpy as np
 import pandas as pd
-from rusket import from_transactions
+from rusket import FPGrowth
 
 np.random.seed(42)
 
@@ -62,17 +62,22 @@ df_long = pd.DataFrame(
 )
 print(f"Simulated {n_receipts:,} receipts, {len(df_long):,} line items")
 
-# Convert to one-hot basket matrix
-basket = from_transactions(df_long, transaction_col="receipt_id", item_col="product")
+miner = FPGrowth.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.05,
+    use_colnames=True,
+)
 ```
 
 ### Find frequent product combinations
 
 ```python
-from rusket import mine
+from rusket import association_rules
 
 # Keep combinations appearing in ≥5% of receipts
-freq = mine(basket, min_support=0.05, use_colnames=True)
+freq = miner.mine()
 print(f"Found {len(freq):,} frequent product combinations")
 
 top_combos = freq.sort_values("support", ascending=False)
@@ -98,7 +103,14 @@ print(actionable.sort_values("lift", ascending=False).head(10))
 
 ```python
 # For a full supermarket with 5000 SKUs: cap at pairs and triples to avoid explosion
-freq_pairs = mine(basket, min_support=0.02, max_len=2, use_colnames=True)
+freq_pairs = FPGrowth.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.02,
+    max_len=2,
+    use_colnames=True,
+).mine()
 ```
 
 ---
@@ -108,54 +120,78 @@ freq_pairs = mine(basket, min_support=0.02, max_len=2, use_colnames=True)
 ECLAT uses a vertical bitset representation. It is **faster than FPGrowth for sparse datasets** with many unique items and a low support threshold.
 
 ```python
-freq_ec = eclat(basket, min_support=0.05, use_colnames=True)
+from rusket import Eclat
+
+freq_ec = Eclat.from_transactions(
+    df_long,
+    transaction_col="receipt_id",
+    item_col="product",
+    min_support=0.05,
+    use_colnames=True,
+).mine()
 ```
 
 **Rule of thumb:**
 
-| Condition | Recommended algorithm |
+| Condition | Recommended class |
 |---|---|
-| Dense dataset, few items | `mine(method="auto")` |
-| Sparse dataset, many items, low support | `mine(method="auto")` |
+| Dense dataset, few items | `AutoMiner` |
+| Sparse dataset, many items, low support | `Eclat` |
 | Very large dataset (100M+ rows) | `FPMiner` with streaming |
 
 ---
 
-## 3. Transaction Helpers
+## 3. Transaction Input Formats
 
-Convert long-format order data (e.g., from a database) to the one-hot boolean matrix format required by `mine` (which automatically routes to `fpgrowth` or `eclat`).
+All miner classes accept long-format transaction data directly via `from_transactions`.
 
 ### From a Pandas DataFrame
 
 ```python
-from rusket import from_transactions
+import pandas as pd
+from rusket import FPGrowth
 
 orders = pd.DataFrame({
     "order_id": [1, 1, 1, 2, 2, 3],
     "item":     ["Milk", "Bread", "Eggs", "Milk", "Butter", "Eggs"],
 })
 
-# Converts long-format → wide boolean matrix
-basket = from_transactions(orders, user_col="order_id", item_col="item")
-fi = mine(basket, min_support=0.3, use_colnames=True)
+fi = FPGrowth.from_transactions(
+    orders,
+    transaction_col="order_id",
+    item_col="item",
+    min_support=0.3,
+    use_colnames=True,
+).mine()
 ```
 
 ### From a Polars DataFrame
 
 ```python
+import polars as pl
+from rusket import FPGrowth
+
 orders_pl = pl.DataFrame({
     "order_id": [1, 1, 1, 2, 2, 3],
     "item":     ["Milk", "Bread", "Eggs", "Milk", "Butter", "Eggs"],
 })
 
-basket = from_transactions(orders_pl, user_col="order_id", item_col="item")
+fi = FPGrowth.from_transactions(
+    orders_pl,
+    transaction_col="order_id",
+    item_col="item",
+    min_support=0.3,
+    use_colnames=True,
+).mine()
 ```
 
-### From a Spark DataFrame
+### From a list of lists
 
 ```python
-# Works with PySpark DataFrames via .toPandas() under the hood
-basket = from_transactions(spark_df, user_col="order_id", item_col="item")
+from rusket import FPGrowth
+
+baskets = [["Milk", "Bread"], ["Milk", "Eggs", "Butter"], ["Bread", "Eggs"]]
+fi = FPGrowth(baskets, min_support=0.5, use_colnames=True).mine()
 ```
 
 ---
@@ -181,12 +217,15 @@ purchases = pd.DataFrame({
 })
 
 # revenue used as confidence weight (alpha scaling)
-model = ALS(factors=64, iterations=15, alpha=40.0, cg_iters=3, verbose=True)
 model = ALS.from_transactions(
     purchases,
     transaction_col="customer_id",
     item_col="sku",
     rating_col="revenue",
+    factors=64,
+    iterations=15,
+    alpha=40.0,
+    cg_iters=3,
 )
 ```
 
@@ -200,14 +239,6 @@ print(f"Recommended SKUs for customer 1002: {skus}")
 # Target: which customers should receive a promo for SKU B22 (high-margin item)?
 top_customers, scores = model.recommend_users(item_id="B22", n=100)
 print(f"Top customers to target with B22 promo: {top_customers[:5]}")
-```
-
-### Fit from transaction data
-
-```python
-# If you have pre-built purchase integers from your warehouse:
-model2 = ALS(factors=32, iterations=10, verbose=True)
-model2 = ALS.from_transactions(purchases, transaction_col="customer_id", item_col="sku")
 ```
 
 ### Access latent factors directly
@@ -312,24 +343,25 @@ model.fit(mat)
 Unlike ALS which tries to reconstruct the full interaction matrix, BPR explicitly optimizes the model to rank positive observed items higher than unobserved items. This makes BPR excellent for top-N ranking tasks on implicit data (like clicks or views).
 
 ```python
-from rusket import BPR
-from scipy.sparse import csr_matrix
 import numpy as np
+import pandas as pd
+from rusket import BPR
 
-# Prepare sparse interaction matrix
-rows = np.random.randint(0, 1000, size=5000)
-cols = np.random.randint(0, 500, size=5000)
-mat = csr_matrix((np.ones(5000), (rows, cols)), shape=(1000, 500))
+purchases = pd.DataFrame({
+    "user_id": np.random.randint(0, 1000, size=5000),
+    "item_id": np.random.randint(0, 500, size=5000),
+})
 
-# Initialize and fit BPR with Hogwild! parallel SGD
-model = BPR(
+model = BPR.from_transactions(
+    purchases,
+    transaction_col="user_id",
+    item_col="item_id",
     factors=64,
     learning_rate=0.01,
     regularization=0.01,
     iterations=100,
     seed=42,
 )
-model.fit(mat)
 
 # Recommend items just like ALS
 items, scores = model.recommend_items(user_id=10, n=5)
@@ -345,9 +377,8 @@ PrefixSpan discovers frequent sequences of events over time. Unlike standard mar
 
 ```python
 import pandas as pd
-from rusket import prefixspan, sequences_from_event_log
+from rusket import PrefixSpan
 
-# 1. Website clickstream log — each row is one page visit
 clickstream = pd.DataFrame({
     "session_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 4],
     "timestamp":  [10, 20, 30, 15, 25, 5, 15, 35, 10, 18, 40],
@@ -359,19 +390,16 @@ clickstream = pd.DataFrame({
     ],
 })
 
-# 2. Convert to sequence format expected by the Rust miner
-seqs, mapping = sequences_from_event_log(
-    clickstream, user_col="session_id", time_col="timestamp", item_col="page"
+miner = PrefixSpan.from_transactions(
+    clickstream,
+    user_col="session_id",
+    time_col="timestamp",
+    item_col="page",
+    min_support=2,
+    max_len=4,
 )
-
-# 3. Mine navigation sequences seen in ≥2 sessions (absolute count)
-patterns_df = prefixspan(seqs, min_support=2, max_len=4)
-
-# 4. Map integer IDs back to readable page names
-patterns_df["path"] = patterns_df["sequence"].apply(
-    lambda seq: " → ".join(mapping[s] for s in seq)
-)
-print(patterns_df[["support", "path"]].sort_values("support", ascending=False).head(10))
+patterns_df = miner.mine()
+print(patterns_df[["support", "sequence"]].sort_values("support", ascending=False).head(10))
 ```
 
 ---
@@ -415,12 +443,18 @@ print(high_value.sort_values("utility", ascending=False))
 `rusket` returns itemsets as zero-copy **PyArrow `ListArray`** structures, making Polars interoperability very efficient.
 
 ```python
-df_pl = pl.from_pandas(df)
-fi_pl = mine(df_pl, min_support=0.05, use_colnames=True)
+import polars as pl
+from rusket import AutoMiner
 
-# LazyFrame works too:
-lazy = df_pl.lazy()
-fi_pl2 = mine(lazy.collect(), min_support=0.05, use_colnames=True)
+df_pl = pl.read_parquet("transactions.parquet")
+
+fi_pl = AutoMiner.from_transactions(
+    df_pl,
+    transaction_col="order_id",
+    item_col="product_id",
+    min_support=0.05,
+    use_colnames=True,
+).mine()
 ```
 
 ### Query itemsets with PyArrow compute
