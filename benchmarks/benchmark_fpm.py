@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from rusket import mine
+import rusket
 
 try:
     from mlxtend.frequent_patterns import fpgrowth as mlxtend_fpgrowth
@@ -46,7 +47,21 @@ def run_fpm_benchmark():
     rusket_eclat_time = t1 - t0
     print(f"🏆 Rusket ECLAT time:     {rusket_eclat_time:.4f}s")
 
-    # 3. MLxtend FP-Growth
+    # 3. Rusket FIN
+    t0 = time.time()
+    _res_rusket_fin = rusket.FIN.from_pandas(df).mine(min_support=min_support)
+    t1 = time.time()
+    rusket_fin_time = t1 - t0
+    print(f"🏆 Rusket FIN time:       {rusket_fin_time:.4f}s")
+
+    # 4. Rusket LCM
+    t0 = time.time()
+    _res_rusket_lcm = rusket.LCM.from_pandas(df).mine(min_support=min_support)
+    t1 = time.time()
+    rusket_lcm_time = t1 - t0
+    print(f"🏆 Rusket LCM time:       {rusket_lcm_time:.4f}s")
+
+    # 5. MLxtend FP-Growth
     if mlxtend_fpgrowth is not None:
         print("\nEvaluating mlxtend (Standard Python Baseline)... this may take a while.")
         t0 = time.time()
@@ -58,6 +73,8 @@ def run_fpm_benchmark():
         print("\n--- Benchmark Results ---")
         print(f"Speedup Rusket FP-Growth vs MLxtend: {mlxtend_time / rusket_fp_time:.2f}x faster")
         print(f"Speedup Rusket ECLAT vs MLxtend:     {mlxtend_time / rusket_eclat_time:.2f}x faster")
+        print(f"Speedup Rusket FIN vs MLxtend:       {mlxtend_time / rusket_fin_time:.2f}x faster")
+        print(f"Speedup Rusket LCM vs MLxtend:       {mlxtend_time / rusket_lcm_time:.2f}x faster")
     else:
         print("\nMLxtend not installed. Skipping MLxtend benchmark.")
 

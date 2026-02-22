@@ -1,6 +1,8 @@
 # rusket
 
 > A modern library for Market Basket Analysis and Recommender Engines. Arrow-backed, fully compatible with Spark, and written entirely in Rust.
+> 
+> *Made with ❤️ by the Data & AI Team.*
 
 [![PyPI](https://img.shields.io/pypi/v/rusket.svg)](https://pypi.org/project/rusket/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://pypi.org/project/rusket/)

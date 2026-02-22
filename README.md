@@ -3,7 +3,8 @@
 </p>
 
 <p align="center">
-  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, BPR, FP-Growth, PrefixSpan) for Python, powered by Rust.</strong>
+  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, BPR, FP-Growth, PrefixSpan) for Python, powered by Rust.</strong><br>
+  <em>Made with ❤️ by the Data & AI Team.</em>
 </p>
 
 <p align="center">

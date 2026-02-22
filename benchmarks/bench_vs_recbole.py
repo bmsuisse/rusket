@@ -18,6 +18,10 @@ sys.modules["numpy"].int_ = np.int64
 sys.modules["numpy"].bool = bool
 sys.modules["numpy"].bool_ = bool
 
+import scipy.sparse
+if not hasattr(scipy.sparse.dok_matrix, '_update'):
+    scipy.sparse.dok_matrix._update = scipy.sparse.dok_matrix.update
+
 # We must mock it inside recbole before it crashes
 import recbole.config.configurator  # noqa: E402
 
@@ -33,6 +37,7 @@ from recbole.data import create_dataset, data_preparation  # noqa: E402
 from recbole.model.general_recommender import BPR as RecBoleBPR  # noqa: E402
 from recbole.model.general_recommender import EASE as RecBoleEASE  # noqa: E402
 from recbole.model.general_recommender import ItemKNN as RecBoleItemKNN  # noqa: E402
+from recbole.model.general_recommender import LightGCN as RecBoleLightGCN  # noqa: E402
 from recbole.trainer import Trainer  # noqa: E402
 
 import rusket  # noqa: E402
@@ -72,6 +77,8 @@ def run_recbole_benchmark(model_name: str, config_dict: dict):
         model = RecBoleItemKNN(config, train_data.dataset).to(config["device"])
     elif model_name == "EASE":
         model = RecBoleEASE(config, train_data.dataset).to(config["device"])
+    elif model_name == "LightGCN":
+        model = RecBoleLightGCN(config, train_data.dataset).to(config["device"])
     else:
         raise ValueError()
 
@@ -114,6 +121,16 @@ def run_rusket_benchmark():
     rec_time = run_recbole_benchmark("EASE", {"epochs": 1, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
     rusket.EASE.from_transactions(df, "user_id", "item_id")
+    rus_time = time.perf_counter() - t0
+
+    print(f"RecBole Fit Time: {rec_time:.4f}s")
+    print(f"Rusket Fit Time:  {rus_time:.4f}s")
+    print(f"Speedup: {rec_time / rus_time:.1f}x faster")
+
+    print("\n[LightGCN (10 epochs)]")
+    rec_time = run_recbole_benchmark("LightGCN", {"epochs": 10, "state": "INFO", "data_path": "data/"})
+    t0 = time.perf_counter()
+    rusket.LightGCN.from_transactions(df, "user_id", "item_id", iterations=10)
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")

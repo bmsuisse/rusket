@@ -66,3 +66,8 @@ log_tensorboard/
 *.dSYM/
 recbole_data/
 saved/
+
+# Pyright and Test Slop
+pyright_errors.txt
+recbole_test_model_auto.py
+recbole_tests.json
