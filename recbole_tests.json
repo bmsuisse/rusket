@@ -1,0 +1,50 @@
+[
+  {
+    "name": "test_model.yaml",
+    "path": "tests/model/test_model.yaml",
+    "sha": "6860c88fe633a994e786cc10a37c86df0cf33393",
+    "size": 1071,
+    "url": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model.yaml?ref=master",
+    "html_url": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model.yaml",
+    "git_url": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/6860c88fe633a994e786cc10a37c86df0cf33393",
+    "download_url": "https://raw.githubusercontent.com/RUCAIBox/RecBole/master/tests/model/test_model.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model.yaml?ref=master",
+      "git": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/6860c88fe633a994e786cc10a37c86df0cf33393",
+      "html": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model.yaml"
+    }
+  },
+  {
+    "name": "test_model_auto.py",
+    "path": "tests/model/test_model_auto.py",
+    "sha": "1b31ca58d480229e9e3018a2a1ebadf57e74ee0f",
+    "size": 23874,
+    "url": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model_auto.py?ref=master",
+    "html_url": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model_auto.py",
+    "git_url": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/1b31ca58d480229e9e3018a2a1ebadf57e74ee0f",
+    "download_url": "https://raw.githubusercontent.com/RUCAIBox/RecBole/master/tests/model/test_model_auto.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model_auto.py?ref=master",
+      "git": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/1b31ca58d480229e9e3018a2a1ebadf57e74ee0f",
+      "html": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model_auto.py"
+    }
+  },
+  {
+    "name": "test_model_manual.py",
+    "path": "tests/model/test_model_manual.py",
+    "sha": "4ed8f9c4602e7a8fe0a0d47ef90c31a9f8298ce6",
+    "size": 1160,
+    "url": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model_manual.py?ref=master",
+    "html_url": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model_manual.py",
+    "git_url": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/4ed8f9c4602e7a8fe0a0d47ef90c31a9f8298ce6",
+    "download_url": "https://raw.githubusercontent.com/RUCAIBox/RecBole/master/tests/model/test_model_manual.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/RUCAIBox/RecBole/contents/tests/model/test_model_manual.py?ref=master",
+      "git": "https://api.github.com/repos/RUCAIBox/RecBole/git/blobs/4ed8f9c4602e7a8fe0a0d47ef90c31a9f8298ce6",
+      "html": "https://github.com/RUCAIBox/RecBole/blob/master/tests/model/test_model_manual.py"
+    }
+  }
+]

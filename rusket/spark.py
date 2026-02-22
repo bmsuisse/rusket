@@ -650,3 +650,185 @@ def recommend_batches(
     # Using RDD map avoids the PyArrow ListType serialization bugs entirely
     rdd = df.rdd.map(_recommend_row)
     return df.sparkSession.createDataFrame(rdd, schema=schema)
+
+
+def als_grouped(
+    df: Any,
+    group_col: str,
+    user_col: str,
+    item_col: str,
+    rating_col: str | None = None,
+    factors: int = 64,
+    regularization: float = 0.01,
+    alpha: float = 40.0,
+    iterations: int = 15,
+    k: int = 10,
+    **kwargs: Any,
+) -> Any:
+    """Distribute ALS collaborative filtering across PySpark partitions.
+
+    This function groups a PySpark DataFrame by `group_col` and applies
+    `ALS` to each group concurrently across the cluster. After fitting the model,
+    it returns the top `k` recommendations for each user in the group.
+
+    Parameters
+    ----------
+    df
+        The input `pyspark.sql.DataFrame`.
+    group_col
+        The column to group by (e.g. `store_id`).
+    user_col
+        The column identifying the user.
+    item_col
+        The column identifying the item.
+    rating_col
+        The column containing the rating or interaction weight. If None, assumes implicit feedback.
+    factors
+        Number of latent factors for ALS.
+    regularization
+        L2 regularization weight for ALS.
+    alpha
+        Confidence scaling for implicit ALS: ``confidence = 1 + alpha * r``.
+    iterations
+        Number of ALS outer iterations.
+    k
+        The number of top recommendations to return per user.
+    **kwargs
+        Additional arguments passed to `ALS` initialization (e.g., `cg_iters`, `use_cholesky`, `anderson_m`).
+
+    Returns
+    -------
+    pyspark.sql.DataFrame
+        A PySpark DataFrame containing:
+        - `group_col`
+        - `user_col`
+        - `recommended_items` (array of ints)
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyspark.sql.types as T
+
+    schema = T.StructType(
+        [
+            T.StructField(group_col, T.StringType(), True),
+            T.StructField(user_col, T.StringType(), True),
+            T.StructField("recommended_items", T.ArrayType(T.IntegerType()), True),
+        ]
+    )
+
+    def _als_group(table: pa.Table) -> pa.Table:
+        import polars as pl
+
+        from rusket.als import ALS
+        from rusket.recommend import Recommender
+
+        group_id = str(table.column(group_col)[0].as_py())
+
+        pl_df = pl.from_arrow(table)
+        if not isinstance(pl_df, pl.DataFrame):
+            pl_df = pl.DataFrame(pl_df)
+
+        try:
+            model = ALS(
+                factors=factors,
+                regularization=regularization,
+                alpha=alpha,
+                iterations=iterations,
+                **kwargs,
+            )
+            # Use fit_transactions to fit mapping dictionaries and model
+            model.fit_transactions(
+                data=pl_df,
+                user_col=user_col,
+                item_col=item_col,
+                rating_col=rating_col,
+            )
+
+            recommender = Recommender(als_model=model)
+
+            # Recommend for all unique users in this group partition
+            users = pl_df[user_col].unique().to_list()
+            users_df = pd.DataFrame({user_col: users})
+
+            res_df = recommender.predict_next_chunk(users_df, user_col=user_col, k=k)
+
+            if not res_df.empty:
+                res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
+                res_df = res_df[[user_col, "recommended_items"]].copy()
+                res_df[user_col] = res_df[user_col].astype(str)
+            else:
+                res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+
+        except Exception:
+            res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+
+        if len(res_df) == 0:
+            return pa.Table.from_batches(
+                [],
+                schema=pa.schema(
+                    [
+                        (group_col, pa.string()),
+                        (user_col, pa.string()),
+                        ("recommended_items", pa.list_(pa.int32())),
+                    ]
+                ),
+            )
+
+        res_df.insert(0, group_col, group_id)
+
+        out_table = pa.Table.from_pandas(res_df)
+        expected_schema = pa.schema(
+            [
+                (group_col, pa.string()),
+                (user_col, pa.string()),
+                ("recommended_items", pa.list_(pa.int32())),
+            ]
+        )
+        return out_table.cast(expected_schema)
+
+    if hasattr(df.groupby(group_col), "applyInArrow"):
+        return df.groupby(group_col).applyInArrow(_als_group, schema=schema)
+    else:
+
+        def _als_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
+            from rusket.als import ALS
+            from rusket.recommend import Recommender
+
+            group_id = str(pdf[group_col].iloc[0])
+
+            try:
+                model = ALS(
+                    factors=factors,
+                    regularization=regularization,
+                    alpha=alpha,
+                    iterations=iterations,
+                    **kwargs,
+                )
+                model.fit_transactions(
+                    data=pdf,
+                    user_col=user_col,
+                    item_col=item_col,
+                    rating_col=rating_col,
+                )
+
+                recommender = Recommender(als_model=model)
+
+                users = pdf[user_col].unique()
+                users_df = pd.DataFrame({user_col: users})
+
+                res_df = recommender.predict_next_chunk(users_df, user_col=user_col, k=k)
+
+                if not res_df.empty:
+                    res_df["recommended_items"] = res_df["recommended_items"].apply(lambda seq: [int(x) for x in seq])
+                    res_df = res_df[[user_col, "recommended_items"]].copy()
+                    res_df[user_col] = res_df[user_col].astype(str)
+                else:
+                    res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+
+            except Exception:
+                res_df = pd.DataFrame(columns=[user_col, "recommended_items"])
+
+            res_df.insert(0, group_col, group_id)
+            return res_df
+
+        return df.groupby(group_col).applyInPandas(_als_group_pd, schema=schema)
