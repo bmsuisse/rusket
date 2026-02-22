@@ -1,6 +1,6 @@
 [project]
 site_name = "rusket"
-site_description = "Blazing-fast FP-Growth, Eclat, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3."
+site_description = "Ultra-fast Recommender Engines & Market Basket Analysis for Python, written in Rust."
 site_url = "https://bmsuisse.github.io/rusket/"
 
 nav = [

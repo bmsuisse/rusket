@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Blazing-fast Market Basket Analysis and Recommender Engines (ALS, BPR, FP-Growth, PrefixSpan) for Python, powered by Rust.</strong><br>
+  <strong>Ultra-fast Recommender Engines & Market Basket Analysis for Python, written in Rust.</strong><br>
   <em>Made with ❤️ by the Data & AI Team.</em>
 </p>
 
@@ -17,12 +17,9 @@
 
 ---
 
-`rusket` is a **modern library for Market Basket Analysis and Recommender Engines**. 
-**Arrow-backed, fully compatible with Spark, and written entirely in Rust** (via [PyO3](https://pyo3.rs/)), it delivers **2–15× speed-ups** and dramatically lower memory usage compared to traditional Python implementations.
+**rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.
 
-It features **Alternating Least Squares (ALS)** and **Bayesian Personalized Ranking (BPR)** for collaborative filtering, as well as **FP-Growth** (parallel via Rayon), **Eclat** (vertical bitset mining), **HUPM** (High-Utility Pattern Mining via EFIM), and **PrefixSpan** (sequential pattern mining). It serves as a **drop-in replacement** for [`mlxtend`](https://rasbt.github.io/mlxtend/)'s APIs, natively supporting **Pandas** (including Arrow backend), **Polars**, and **sparse DataFrames** out of the box.
-
-All algorithms expose both a **functional API** (`mine(df, ...)`) and an **OOP class API** (`FPGrowth.from_transactions(df).mine()`) that flows naturally from raw transaction logs.
+It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) as a high-performance, drop-in replacement for `mlxtend`. Both functional and OOP APIs are available for seamless integration.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "rusket",
-  "description": "Blazing-fast FP-Growth, Eclat, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3.",
+  "description": "Ultra-fast Recommender Engines & Market Basket Analysis for Python, written in Rust.",
   "theme": "mint",
   "logo": {
     "light": "/assets/logo_wide.svg",
