@@ -52,3 +52,29 @@ def test_sequences_from_event_log():
 
     # mapping should map int -> item labels A, B, C
     assert list(mapping.values()) == ["A", "B", "C"] or len(mapping) == 3
+
+
+def test_sequences_from_event_log_polars():
+    try:
+        import polars as pl
+    except ImportError:
+        import pytest
+        pytest.skip("Polars not installed")
+
+    data = {
+        "user": ["u1", "u1", "u1", "u2", "u2", "u3", "u3"],
+        "time": [10, 20, 30, 15, 25, 5, 35],
+        "item": ["A", "B", "C", "A", "C", "B", "C"],
+    }
+    df = pl.DataFrame(data)
+
+    seqs, mapping = sequences_from_event_log(df, "user", "time", "item")
+
+    # Three unique users
+    assert len(seqs) == 3
+    # Mapped integer indices must match lengths 3, 2, 2
+    assert len(seqs[0]) == 3
+    assert len(seqs[1]) == 2
+    assert len(seqs[2]) == 2
+
+    assert len(mapping) == 3

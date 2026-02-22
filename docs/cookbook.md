@@ -525,11 +525,15 @@ model.fit_transactions(
 
 When the **order** of events matters (e.g., website navigation paths, sequential purchases over time), use PrefixSpan instead of FP-Growth.
 
-### Prepare the Event Log
+`rusket` has native, out-of-the-box integration for routing sequence generation across **Pandas**, **Polars**, and **PySpark** `DataFrame`s. It utilizes lightning-fast internal grouped maps to feed the integers into the Rust parser.
+
+### Prepare the Event Log (Pandas, Polars, or Spark)
 
 ```python
 from rusket import prefixspan, sequences_from_event_log
+import pandas as pd
 
+# Let's say this is your PySpark, Polars, or Pandas DataFrame
 events = pd.DataFrame({
     "user_id": [1, 1, 1, 2, 2, 3, 3, 3],
     "timestamp": [
@@ -544,6 +548,7 @@ events = pd.DataFrame({
 events["timestamp"] = pd.to_datetime(events["timestamp"])
 
 # Convert to sequence format required by prefixspan
+# Passes natively to Arrow if events is a PySpark or Polars dataframe!
 sequences, idx_to_item = sequences_from_event_log(
     events, 
     user_col="user_id", 
@@ -560,7 +565,7 @@ patterns = prefixspan(sequences, min_support=2, max_len=3)
 
 # Map integer IDs back to original page names
 patterns["sequence_names"] = patterns["sequence"].apply(
-    lambda seq: [idx_to_item[idx] for idx in seq]
+    lambda seq: [idx_to_item[idx] for seq]
 )
 
 print(patterns[["support", "sequence_names"]])
