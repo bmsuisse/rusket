@@ -17,6 +17,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - expose llm.txt in docs root and fix test_real_world.py sampling
 - migrate to Mintlify
+- auto-update API reference, changelog, and llm.txt
+- fix MDX parsing errors for Mintlify
 
 ### 📦 Miscellaneous
 
