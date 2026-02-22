@@ -885,10 +885,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mine_grouped-distributed-market-basket-analysis" class="md-nav__link">
+  <a href="#mine_grouped-distributed-market-basket-analysis-per-store-region" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mine_grouped — Distributed Market Basket Analysis
+        mine_grouped — Distributed Market Basket Analysis per Store / Region
       
     </span>
   </a>
@@ -896,10 +896,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rules_grouped-distributed-association-rules" class="md-nav__link">
+  <a href="#rules_grouped-distributed-association-rules-per-segment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        rules_grouped — Distributed Association Rules
+        rules_grouped — Distributed Association Rules per Segment
       
     </span>
   </a>
@@ -907,10 +907,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prefixspan_grouped-distributed-sequential-pattern-mining" class="md-nav__link">
+  <a href="#prefixspan_grouped-distributed-customer-journey-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        prefixspan_grouped — Distributed Sequential Pattern Mining
+        prefixspan_grouped — Distributed Customer Journey Analysis
       
     </span>
   </a>
@@ -918,10 +918,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hupm_grouped-distributed-high-utility-pattern-mining" class="md-nav__link">
+  <a href="#hupm_grouped-distributed-high-profit-bundle-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
-        hupm_grouped — Distributed High-Utility Pattern Mining
+        hupm_grouped — Distributed High-Profit Bundle Discovery
       
     </span>
   </a>
@@ -929,10 +929,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#recommend_batches-distributed-batch-recommendations" class="md-nav__link">
+  <a href="#recommend_batches-overnight-batch-personalisation-at-scale" class="md-nav__link">
     <span class="md-ellipsis">
       
-        recommend_batches — Distributed Batch Recommendations
+        recommend_batches — Overnight Batch Personalisation at Scale
       
     </span>
   </a>
@@ -940,10 +940,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mine_spark-streaming-global-mining-via-fpminer" class="md-nav__link">
+  <a href="#mine_spark-global-mining-via-fpminer-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mine_spark — Streaming Global Mining via FPMiner
+        mine_spark — Global Mining via FPMiner Streaming
       
     </span>
   </a>
@@ -1216,10 +1216,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mine_grouped-distributed-market-basket-analysis" class="md-nav__link">
+  <a href="#mine_grouped-distributed-market-basket-analysis-per-store-region" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mine_grouped — Distributed Market Basket Analysis
+        mine_grouped — Distributed Market Basket Analysis per Store / Region
       
     </span>
   </a>
@@ -1227,10 +1227,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rules_grouped-distributed-association-rules" class="md-nav__link">
+  <a href="#rules_grouped-distributed-association-rules-per-segment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        rules_grouped — Distributed Association Rules
+        rules_grouped — Distributed Association Rules per Segment
       
     </span>
   </a>
@@ -1238,10 +1238,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prefixspan_grouped-distributed-sequential-pattern-mining" class="md-nav__link">
+  <a href="#prefixspan_grouped-distributed-customer-journey-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        prefixspan_grouped — Distributed Sequential Pattern Mining
+        prefixspan_grouped — Distributed Customer Journey Analysis
       
     </span>
   </a>
@@ -1249,10 +1249,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hupm_grouped-distributed-high-utility-pattern-mining" class="md-nav__link">
+  <a href="#hupm_grouped-distributed-high-profit-bundle-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
-        hupm_grouped — Distributed High-Utility Pattern Mining
+        hupm_grouped — Distributed High-Profit Bundle Discovery
       
     </span>
   </a>
@@ -1260,10 +1260,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#recommend_batches-distributed-batch-recommendations" class="md-nav__link">
+  <a href="#recommend_batches-overnight-batch-personalisation-at-scale" class="md-nav__link">
     <span class="md-ellipsis">
       
-        recommend_batches — Distributed Batch Recommendations
+        recommend_batches — Overnight Batch Personalisation at Scale
       
     </span>
   </a>
@@ -1271,10 +1271,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#mine_spark-streaming-global-mining-via-fpminer" class="md-nav__link">
+  <a href="#mine_spark-global-mining-via-fpminer-streaming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mine_spark — Streaming Global Mining via FPMiner
+        mine_spark — Global Mining via FPMiner Streaming
       
     </span>
   </a>
@@ -1313,104 +1313,128 @@
 
 
 <h1 id="pyspark-integration">PySpark Integration<a class="headerlink" href="#pyspark-integration" title="Permanent link">&para;</a></h1>
-<p><code>rusket</code> provides seamless integration with massive datasets hosted on PySpark clusters, leveraging zero-copy Apache Arrow transfers between Spark workers and the Rust core.</p>
+<p><code>rusket</code> integrates with PySpark clusters via zero-copy Apache Arrow transfers, enabling distributed execution of all its core algorithms across a Databricks or on-prem Hadoop cluster without manual serialisation.</p>
 <p>All distributed functions live in <code>rusket.spark</code> and use <code>applyInArrow</code> (Spark 3.4+) with <code>applyInPandas</code> as a fallback for older versions.</p>
 <hr />
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">spark</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;spark.sql.execution.arrow.pyspark.enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="mine_grouped-distributed-market-basket-analysis"><code>mine_grouped</code> — Distributed Market Basket Analysis<a class="headerlink" href="#mine_grouped-distributed-market-basket-analysis" title="Permanent link">&para;</a></h2>
-<p>Group a PySpark DataFrame by a key column and run <code>rusket.mine</code> concurrently on each partition across the cluster. Input must be a One-Hot Encoded (wide) boolean matrix per partition.</p>
+<h2 id="mine_grouped-distributed-market-basket-analysis-per-store-region"><code>mine_grouped</code> — Distributed Market Basket Analysis per Store / Region<a class="headerlink" href="#mine_grouped-distributed-market-basket-analysis-per-store-region" title="Permanent link">&para;</a></h2>
+<p>A retail chain with 50 stores wants per-store "Frequently Bought Together" rules — different stores, different assortments, different shopping habits. <code>mine_grouped</code> distributes <code>rusket.mine</code> across a Spark cluster, running each store's rules in parallel on separate executor nodes.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket.spark</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">freq_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>       <span class="c1"># pyspark.sql.DataFrame (wide OHE format)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>     <span class="c1"># &quot;auto&quot; | &quot;fpgrowth&quot; | &quot;eclat&quot;</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="c1"># must be True for schema safety</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">max_len</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Output columns: store_id (string) | support (double) | itemsets (array&lt;string&gt;)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Delta table: receipt_id | store_id | &lt;one column per SKU (boolean)&gt;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">spark_df</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;gold.baskets_ohe&quot;</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Each store gets its own frequent itemsets — runs fully in parallel on the cluster</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">freq_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>      <span class="c1"># &quot;auto&quot; | &quot;fpgrowth&quot; | &quot;eclat&quot;</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># must be True for schema safety</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>          <span class="c1"># pairs and triples only — avoids combinatorial explosion</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1"># Output: store_id (string) | support (double) | itemsets (array&lt;string&gt;)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="rules_grouped-distributed-association-rules"><code>rules_grouped</code> — Distributed Association Rules<a class="headerlink" href="#rules_grouped-distributed-association-rules" title="Permanent link">&para;</a></h2>
-<p>Takes the frequent itemsets output of <code>mine_grouped</code> and applies <code>association_rules</code> per group.</p>
+<h2 id="rules_grouped-distributed-association-rules-per-segment"><code>rules_grouped</code> — Distributed Association Rules per Segment<a class="headerlink" href="#rules_grouped-distributed-association-rules-per-segment" title="Permanent link">&para;</a></h2>
+<p>Takes the output of <code>mine_grouped</code> and generates association rules per group. Ideal for feeding per-store rules into a recommendation API or a merchandising dashboard.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">rules_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span><span class="p">(</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">freq_spark_df</span><span class="p">,</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">freq_df</span><span class="p">,</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">num_itemsets</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;store_A&quot;</span><span class="p">:</span> <span class="mi">10_000</span><span class="p">,</span> <span class="s2">&quot;store_B&quot;</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">},</span>  <span class="c1"># or a single int</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">num_itemsets</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;store_A&quot;</span><span class="p">:</span> <span class="mi">45_000</span><span class="p">,</span> <span class="s2">&quot;store_B&quot;</span><span class="p">:</span> <span class="mi">12_300</span><span class="p">},</span>  <span class="c1"># receipts per store</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">min_threshold</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">min_threshold</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Output columns: store_id | antecedents | consequents | confidence | lift | ...</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Output: store_id | antecedents | consequents | confidence | lift | ...</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># (all 11 metrics are always included)</span>
 </span></code></pre></div>
-<p><strong>Full end-to-end grouped pipeline:</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket.spark</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">freq_df</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span><span class="n">spark_df</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">rules_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span><span class="p">(</span><span class="n">freq_df</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+<p><strong>Full end-to-end regional pipeline:</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Step 1 — mine per store</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">freq_df</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span><span class="n">spark_df</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Step 2 — generate &quot;Frequently Bought Together&quot; rules per store</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">rules_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span><span class="p">(</span><span class="n">freq_df</span><span class="p">,</span> <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="mi">20_000</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Step 3 — write to Delta for downstream serving</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">rules_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;gold.per_store_rules&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="prefixspan_grouped-distributed-sequential-pattern-mining"><code>prefixspan_grouped</code> — Distributed Sequential Pattern Mining<a class="headerlink" href="#prefixspan_grouped-distributed-sequential-pattern-mining" title="Permanent link">&para;</a></h2>
-<p>Applies PrefixSpan to a user event log grouped by a partition key (e.g. per store or per tenant).</p>
+<h2 id="prefixspan_grouped-distributed-customer-journey-analysis"><code>prefixspan_grouped</code> — Distributed Customer Journey Analysis<a class="headerlink" href="#prefixspan_grouped-distributed-customer-journey-analysis" title="Permanent link">&para;</a></h2>
+<p>A telco or media company wants to discover how customers navigate their product portfolio over time — which services do customers typically subscribe to before churning to a competitor?</p>
+<p>PrefixSpan mines sequential patterns (ordered events) across users, grouped by region or segment.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">seq_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">prefixspan_grouped</span><span class="p">(</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>      <span class="c1"># sequence identifier within each group</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span>    <span class="c1"># ordering column</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>          <span class="c1"># absolute minimum (number of sequences)</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">max_len</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>               <span class="c1"># event_log: customer_id | region | timestamp | product_id</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;region&quot;</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span>    <span class="c1"># sequence identifier</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;event_ts&quot;</span><span class="p">,</span>       <span class="c1"># ordering column (timestamp)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product_id&quot;</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>           <span class="c1"># at least 100 customers must follow this path</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">max_len</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>                 <span class="c1"># journeys up to 4 steps long</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">)</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Output columns: store_id | support (long) | sequence (array&lt;string&gt;)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Output: region | support (long) | sequence (array&lt;string&gt;)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Example:</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># EMEA | 432 | [broadband, mobile, tv_bundle, cancel]</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># APAC | 218 | [mobile, broadband, upgrade_premium]</span>
 </span></code></pre></div>
 <hr />
-<h2 id="hupm_grouped-distributed-high-utility-pattern-mining"><code>hupm_grouped</code> — Distributed High-Utility Pattern Mining<a class="headerlink" href="#hupm_grouped-distributed-high-utility-pattern-mining" title="Permanent link">&para;</a></h2>
-<p>Applies the EFIM High-Utility Pattern Mining algorithm per partition.</p>
+<h2 id="hupm_grouped-distributed-high-profit-bundle-discovery"><code>hupm_grouped</code> — Distributed High-Profit Bundle Discovery<a class="headerlink" href="#hupm_grouped-distributed-high-profit-bundle-discovery" title="Permanent link">&para;</a></h2>
+<p>A specialty foods retailer wants to discover which product combinations generate the most revenue per region, even if they aren't bought very frequently — a classic use case for High-Utility Pattern Mining.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">hupm_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">hupm_grouped</span><span class="p">(</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;store_id&quot;</span><span class="p">,</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;txn_id&quot;</span><span class="p">,</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">utility_col</span><span class="o">=</span><span class="s2">&quot;profit&quot;</span><span class="p">,</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">min_utility</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">max_len</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark_df</span><span class="p">,</span>               <span class="c1"># receipt_id | region | product_id | margin</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">group_col</span><span class="o">=</span><span class="s2">&quot;region&quot;</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;receipt_id&quot;</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product_id&quot;</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">utility_col</span><span class="o">=</span><span class="s2">&quot;margin&quot;</span><span class="p">,</span>      <span class="c1"># gross margin per line item</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">min_utility</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span>         <span class="c1"># only bundles generating ≥ €500 total margin</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">)</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Output columns: store_id | utility (double) | itemset (array&lt;long&gt;)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Output: region | utility (double) | itemset (array&lt;long&gt;)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Example:</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># NORTH | 1840.0 | [aged_cheese, wine_flight, charcuterie]</span>
 </span></code></pre></div>
 <hr />
-<h2 id="recommend_batches-distributed-batch-recommendations"><code>recommend_batches</code> — Distributed Batch Recommendations<a class="headerlink" href="#recommend_batches-distributed-batch-recommendations" title="Permanent link">&para;</a></h2>
-<p>Distribute batch user recommendations across PySpark workers using a pre-trained <code>ALS</code> or <code>Recommender</code> model. The model is broadcast to each worker via <code>mapInArrow</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">rec_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span><span class="p">(</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">df</span><span class="o">=</span><span class="n">user_history_spark_df</span><span class="p">,</span>   <span class="c1"># must contain user_col</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>                  <span class="c1"># ALS, BPR, or Recommender instance</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">)</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Output columns: user_id (string) | recommended_items (array&lt;int&gt;)</span>
+<h2 id="recommend_batches-overnight-batch-personalisation-at-scale"><code>recommend_batches</code> — Overnight Batch Personalisation at Scale<a class="headerlink" href="#recommend_batches-overnight-batch-personalisation-at-scale" title="Permanent link">&para;</a></h2>
+<p>Score millions of users overnight with a pre-trained ALS model, then write personalised recommendations to your CRM or marketing automation platform.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 1. Train ALS on driver once (or load from a checkpoint)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_csr</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># 2. Broadcast to every Spark worker and score all users in parallel</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">rec_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span><span class="p">(</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">df</span><span class="o">=</span><span class="n">spark</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;silver.user_sessions&quot;</span><span class="p">),</span>  <span class="c1"># must contain user_col</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>   <span class="c1"># top-10 personalised SKU recommendations per customer</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Output: customer_id (string) | recommended_items (array&lt;int&gt;)</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># 3. Write to CRM / email platform</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">rec_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;gold.daily_recommendations&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="mine_spark-streaming-global-mining-via-fpminer"><code>mine_spark</code> — Streaming Global Mining via FPMiner<a class="headerlink" href="#mine_spark-streaming-global-mining-via-fpminer" title="Permanent link">&para;</a></h2>
-<p>When you need <strong>global</strong> patterns but the raw event log is too large to <code>.toPandas()</code> in one shot, stream integer <code>(txn_id, item_id)</code> chunks from Spark workers into the <code>FPMiner</code> streaming accumulator on the driver via zero-copy Arrow transfers.</p>
+<h2 id="mine_spark-global-mining-via-fpminer-streaming"><code>mine_spark</code> — Global Mining via FPMiner Streaming<a class="headerlink" href="#mine_spark-global-mining-via-fpminer-streaming" title="Permanent link">&para;</a></h2>
+<p>When you need <strong>global</strong> patterns (not per-group) but the raw event log is too large for <code>.toPandas()</code>, stream integer <code>(txn_id, item_id)</code> chunks from Spark workers into the <code>FPMiner</code> accumulator on the driver via zero-copy Arrow transfers.</p>
+<p>Use case: a marketplace with 200M+ order lines needs one global set of "Customers also buy" rules.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.streaming</span><span class="w"> </span><span class="kn">import</span> <span class="n">mine_spark</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">freq_df</span> <span class="o">=</span> <span class="n">mine_spark</span><span class="p">(</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">spark_df</span><span class="o">=</span><span class="n">events_df</span><span class="p">,</span>     <span class="c1"># pyspark.sql.DataFrame with txn_col + item_col</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">n_items</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span>         <span class="c1"># total number of unique items</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">txn_col</span><span class="o">=</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span>   <span class="c1"># transaction grouping ID (integer-typed)</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>     <span class="c1"># item index column (integer-typed)</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">spark_df</span><span class="o">=</span><span class="n">spark</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;silver.order_lines&quot;</span><span class="p">),</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">n_items</span><span class="o">=</span><span class="mi">200_000</span><span class="p">,</span>          <span class="c1"># distinct SKU count</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">txn_col</span><span class="o">=</span><span class="s2">&quot;order_id&quot;</span><span class="p">,</span>       <span class="c1"># integer-typed order identifier</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;sku_index&quot;</span><span class="p">,</span>     <span class="c1"># 0-based integer SKU index</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>        <span class="c1"># 0.1% of all orders</span>
 </span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 </span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">)</span>
 </span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># Returns a standard Pandas DataFrame on the driver</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">freq_df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="c1"># ready for association_rules() or to be written to Delta</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">freq_df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
 <hr />
 <h2 id="to_spark"><code>to_spark</code><a class="headerlink" href="#to_spark" title="Permanent link">&para;</a></h2>
-<p>Convert a Pandas or Polars DataFrame to a PySpark DataFrame.</p>
+<p>Convert a Pandas or Polars DataFrame to a PySpark DataFrame:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">spark_df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">to_spark</span><span class="p">(</span><span class="n">spark_session</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
 

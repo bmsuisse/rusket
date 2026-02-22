@@ -507,6 +507,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#business-scenario-supermarket-cross-selling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Business Scenario — Supermarket Cross-Selling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#step-1-prepare-your-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -518,10 +529,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-mine-frequent-itemsets" class="md-nav__link">
+  <a href="#step-2-mine-frequent-product-combinations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2 — Mine frequent itemsets
+        Step 2 — Mine frequent product combinations
       
     </span>
   </a>
@@ -529,10 +540,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2b-or-use-eclat" class="md-nav__link">
+  <a href="#step-2b-or-use-eclat-for-sparse-large-catalogues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2b — Or use Eclat
+        Step 2b — Or use Eclat for sparse, large catalogues
       
     </span>
   </a>
@@ -540,10 +551,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-generate-association-rules" class="md-nav__link">
+  <a href="#step-3-generate-frequently-bought-together-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3 — Generate association rules
+        Step 3 — Generate "Frequently Bought Together" rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oop-api-fluent-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OOP API — Fluent Pipeline
       
     </span>
   </a>
@@ -1219,6 +1241,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#business-scenario-supermarket-cross-selling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Business Scenario — Supermarket Cross-Selling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#step-1-prepare-your-data" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1230,10 +1263,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2-mine-frequent-itemsets" class="md-nav__link">
+  <a href="#step-2-mine-frequent-product-combinations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2 — Mine frequent itemsets
+        Step 2 — Mine frequent product combinations
       
     </span>
   </a>
@@ -1241,10 +1274,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-2b-or-use-eclat" class="md-nav__link">
+  <a href="#step-2b-or-use-eclat-for-sparse-large-catalogues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2b — Or use Eclat
+        Step 2b — Or use Eclat for sparse, large catalogues
       
     </span>
   </a>
@@ -1252,10 +1285,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-generate-association-rules" class="md-nav__link">
+  <a href="#step-3-generate-frequently-bought-together-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3 — Generate association rules
+        Step 3 — Generate "Frequently Bought Together" rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oop-api-fluent-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OOP API — Fluent Pipeline
       
     </span>
   </a>
@@ -1363,94 +1407,114 @@
 See the full <a href="../migration/">Migration Guide</a> for details.</p>
 </div>
 <hr />
+<h2 id="business-scenario-supermarket-cross-selling">Business Scenario — Supermarket Cross-Selling<a class="headerlink" href="#business-scenario-supermarket-cross-selling" title="Permanent link">&para;</a></h2>
+<p>Suppose a supermarket chain wants to identify which products to promote together.
+The raw data arrives as a checkout log where each row is one receipt.</p>
 <h2 id="step-1-prepare-your-data">Step 1 — Prepare your data<a class="headerlink" href="#step-1-prepare-your-data" title="Permanent link">&para;</a></h2>
-<p><code>mine</code> expects a <strong>one-hot encoded</strong> DataFrame of boolean or 0/1 integer values where rows are transactions and columns are items.</p>
+<p><code>mine</code> expects a <strong>one-hot encoded</strong> DataFrame where rows are transactions and columns are products.</p>
+<p>Most real-world data comes as long-format order lines (one row per product per order). <code>from_transactions</code> converts that in one call:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">],</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">],</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="p">[</span><span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">],</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">],</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">]</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Build a one-hot DataFrame</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">]</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="p">[[</span><span class="n">item</span> <span class="ow">in</span> <span class="n">tx</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">]</span> <span class="k">for</span> <span class="n">tx</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">],</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">columns</span><span class="o">=</span><span class="n">items</span><span class="p">,</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="p">)</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="c1">#    milk  bread   eggs</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="c1"># 0  True   True  False</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="c1"># 1  True  False   True</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="c1"># 2 False   True   True</span>
-</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="c1"># 3  True   True   True</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_transactions</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Raw checkout log from a POS system</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">orders</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="s2">&quot;receipt_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1001</span><span class="p">,</span> <span class="mi">1001</span><span class="p">,</span> <span class="mi">1001</span><span class="p">,</span> <span class="mi">1002</span><span class="p">,</span> <span class="mi">1002</span><span class="p">,</span> <span class="mi">1003</span><span class="p">,</span> <span class="mi">1003</span><span class="p">,</span> <span class="mi">1004</span><span class="p">],</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="s2">&quot;product&quot;</span><span class="p">:</span>    <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;butter&quot;</span><span class="p">,</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>                   <span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">,</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>                   <span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;butter&quot;</span><span class="p">,</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>                   <span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;eggs&quot;</span><span class="p">,</span> <span class="s2">&quot;coffee&quot;</span><span class="p">],</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="p">})</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># One-hot encode: rows = receipts, columns = products</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">basket</span> <span class="o">=</span> <span class="n">from_transactions</span><span class="p">(</span><span class="n">orders</span><span class="p">,</span> <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;receipt_id&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product&quot;</span><span class="p">)</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">basket</span><span class="p">)</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1">#        milk  bread  butter  eggs  coffee</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="c1"># 1001   True   True    True False   False</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="c1"># 1002   True  False   False  True   False</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="c1"># 1003  False   True    True False   False</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="c1"># 1004   True   True   False  True    True</span>
 </span></code></pre></div>
 <hr />
-<h2 id="step-2-mine-frequent-itemsets">Step 2 — Mine frequent itemsets<a class="headerlink" href="#step-2-mine-frequent-itemsets" title="Permanent link">&para;</a></h2>
+<h2 id="step-2-mine-frequent-product-combinations">Step 2 — Mine frequent product combinations<a class="headerlink" href="#step-2-mine-frequent-product-combinations" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">mine</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># method=&quot;auto&quot; automatically selects FP-Growth or Eclat based on dataset density</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># method=&quot;auto&quot; automatically selects FP-Growth or Eclat based on catalogue density</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">basket</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">freq</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1">#    support          itemsets</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># 0     0.75          (milk,)</span>
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># 1     0.75         (bread,)</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># 2     0.75          (eggs,)</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># 3     0.50   (milk, bread,)</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># 4     0.50    (milk, eggs,)</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="c1"># 5     0.50   (bread, eggs,)</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="c1"># 6     0.25  (milk, bread, eggs,)</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># 2     0.50         (butter,)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># 3     0.50    (milk, bread,)</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="c1"># 4     0.50  (bread, butter,)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="step-2b-or-use-eclat">Step 2b — Or use Eclat<a class="headerlink" href="#step-2b-or-use-eclat" title="Permanent link">&para;</a></h2>
-<p><code>eclat</code> uses vertical bitset mining — same API, same results. It can be faster on certain data shapes.</p>
+<h2 id="step-2b-or-use-eclat-for-sparse-large-catalogues">Step 2b — Or use Eclat for sparse, large catalogues<a class="headerlink" href="#step-2b-or-use-eclat-for-sparse-large-catalogues" title="Permanent link">&para;</a></h2>
+<p>ECLAT is faster for retailers with thousands of SKUs and typical basket sizes of 3–5 items.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">eclat</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">eclat</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">eclat</span><span class="p">(</span><span class="n">basket</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>  <span class="c1"># identical output to fpgrowth</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">When to use which?</p>
-<p>The <code>mine(method="auto")</code> parameter handles this automatically for you. 
-It evaluates the density of the dataset <code>nnz / (rows * cols)</code> and picks <code>eclat</code> for sparse datasets <code>&lt; 0.15</code> and <code>fpgrowth</code> for dense datasets.</p>
+<p><code>mine(method="auto")</code> handles this automatically: it picks <code>eclat</code> for sparse data (density &lt; 0.15, typical for large SKU catalogs) and <code>fpgrowth</code> for dense data.</p>
 </div>
 <hr />
-<h2 id="step-3-generate-association-rules">Step 3 — Generate association rules<a class="headerlink" href="#step-3-generate-association-rules" title="Permanent link">&para;</a></h2>
+<h2 id="step-3-generate-frequently-bought-together-rules">Step 3 — Generate "Frequently Bought Together" rules<a class="headerlink" href="#step-3-generate-frequently-bought-together-rules" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">association_rules</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span>
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">freq</span><span class="p">,</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">num_itemsets</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">),</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">num_itemsets</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">basket</span><span class="p">),</span>
 </span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span>
 </span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">min_threshold</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
 </span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">)</span>
 </span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">rules</span><span class="p">[[</span><span class="s2">&quot;antecedents&quot;</span><span class="p">,</span> <span class="s2">&quot;consequents&quot;</span><span class="p">,</span> <span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="s2">&quot;lift&quot;</span><span class="p">]])</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="c1"># antecedents consequents  support  confidence  lift</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># (bread,)    (butter,)      0.50        0.67   1.33</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1"># (butter,)   (bread,)       0.50        1.00   1.33</span>
 </span></code></pre></div>
+<p><strong>Interpreting the output:</strong></p>
+<ul>
+<li><strong>Confidence 0.67</strong> → 67% of customers who buy bread also buy butter.</li>
+<li><strong>Lift 1.33</strong> → customers who buy bread are 1.33× more likely to buy butter compared to random.</li>
+</ul>
+<p>Use these rules to power your "Customers also buy" widgets, shelf placement decisions, or promotional bundles.</p>
 <div class="admonition note">
 <p class="admonition-title">num_itemsets</p>
-<p>Pass the <strong>total transaction count</strong> (<code>len(df)</code>) so that support-based metrics are computed correctly.</p>
+<p>Pass the <strong>total transaction count</strong> (<code>len(basket)</code>) so that support-based metrics are computed correctly.</p>
 </div>
 <hr />
-<h2 id="billion-scale-streaming">Billion-Scale Streaming<a class="headerlink" href="#billion-scale-streaming" title="Permanent link">&para;</a></h2>
-<p>For datasets with hundreds of millions or billions of rows, use <code>FPMiner</code> to
-stream data into Rust <strong>one chunk at a time</strong> — without ever holding the full
-dataset in memory.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPMiner</span>
+<h2 id="oop-api-fluent-pipeline">OOP API — Fluent Pipeline<a class="headerlink" href="#oop-api-fluent-pipeline" title="Permanent link">&para;</a></h2>
+<p>If you prefer a single chained API from raw data down to recommendations:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoMiner</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">miner</span> <span class="o">=</span> <span class="n">FPMiner</span><span class="p">(</span><span class="n">n_items</span><span class="o">=</span><span class="mi">500_000</span><span class="p">)</span>  <span class="c1"># total distinct items</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Feed chunks — e.g. from a Parquet file, Spark, or a database cursor</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;orders.parquet&quot;</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">10_000_000</span><span class="p">):</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">txn</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;txn_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int64&quot;</span><span class="p">)</span>   <span class="c1"># arbitrary int IDs</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">item</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;item_idx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span> <span class="c1"># 0-based item index</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">miner</span><span class="o">.</span><span class="n">add_chunk</span><span class="p">(</span><span class="n">txn</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># Mine — all data in Rust, output is a normal pandas DataFrame</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="n">miner</span><span class="o">.</span><span class="n">n_transactions</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">model</span> <span class="o">=</span> <span class="n">AutoMiner</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">orders</span><span class="p">,</span> <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;receipt_id&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product&quot;</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">freq</span>  <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">association_rules</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># &quot;What else should go in the basket?&quot; — cart recommendations</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">basket_contents</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;milk&quot;</span><span class="p">,</span> <span class="s2">&quot;bread&quot;</span><span class="p">]</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">suggestions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">basket_contents</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">suggestions</span><span class="p">)</span>  <span class="c1"># e.g. [&quot;butter&quot;, &quot;eggs&quot;, &quot;coffee&quot;]</span>
+</span></code></pre></div>
+<hr />
+<h2 id="billion-scale-streaming">Billion-Scale Streaming<a class="headerlink" href="#billion-scale-streaming" title="Permanent link">&para;</a></h2>
+<p>For retailers with hundreds of millions of transactions that don't fit in memory, use <code>FPMiner</code> to stream data chunk-by-chunk:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPMiner</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">miner</span> <span class="o">=</span> <span class="n">FPMiner</span><span class="p">(</span><span class="n">n_items</span><span class="o">=</span><span class="mi">500_000</span><span class="p">)</span>  <span class="c1"># total distinct SKUs</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="c1"># Read your fact table in chunks — e.g. from S3 Parquet or an API cursor</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;sales_fact.parquet&quot;</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">10_000_000</span><span class="p">):</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">txn</span>  <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;receipt_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int64&quot;</span><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">item</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;product_idx&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;int32&quot;</span><span class="p">)</span>  <span class="c1"># 0-based SKU index</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">miner</span><span class="o">.</span><span class="n">add_chunk</span><span class="p">(</span><span class="n">txn</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="c1"># Mine — all data in Rust, output is a normal pandas DataFrame</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="n">freq</span>  <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="n">miner</span><span class="o">.</span><span class="n">n_transactions</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Peak memory</p>
@@ -1459,16 +1523,15 @@ Rust holds the per-transaction item lists (~5 GB for 200M transactions).
 The final mining step passes CSR arrays directly — zero copies.</p>
 </div>
 <h3 id="direct-csr-path">Direct CSR path<a class="headerlink" href="#direct-csr-path" title="Permanent link">&para;</a></h3>
-<p>If you already have integer arrays (e.g. from a database query), skip
-<code>from_transactions</code> entirely:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span> <span class="k">as</span> <span class="n">sp</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">mine</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">csr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">txn_ids</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="n">txn_ids</span><span class="p">,</span> <span class="n">item_ids</span><span class="p">)),</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_transactions</span><span class="p">,</span> <span class="n">n_items</span><span class="p">),</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">)</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">csr</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">item_names</span><span class="p">)</span>
+<p>If you already have integer arrays from a data warehouse query, skip <code>from_transactions</code> entirely:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span> <span class="k">as</span> <span class="n">sp</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">mine</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">csr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">receipt_ids</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="n">receipt_ids</span><span class="p">,</span> <span class="n">sku_indices</span><span class="p">)),</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_receipts</span><span class="p">,</span> <span class="n">n_skus</span><span class="p">),</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">)</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">csr</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">sku_names</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
@@ -1476,6 +1539,7 @@ The final mining step passes CSR arrays directly — zero copies.</p>
 <li><a href="../migration/">Migration from mlxtend</a> — side-by-side comparison</li>
 <li><a href="../api-reference/">API Reference</a> — all parameters and metrics explained</li>
 <li><a href="../polars/">Polars Support</a> — zero-copy Arrow path</li>
+<li><a href="../recommender/">Recommender Workflows</a> — personalised recommendations for users</li>
 <li><a href="../benchmarks/">Benchmarks</a> — performance vs mlxtend</li>
 </ul>
 
