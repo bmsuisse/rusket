@@ -32,14 +32,14 @@ mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' 
 
 ### `fpgrowth`
 
-Find frequent itemsets using the FP-growth algorithm.
+Find frequent itemsets using the optimal algorithm (Eclat or FP-growth).
 
 This module-level function relies on the Object-Oriented APIs.
 
 ```python
 from rusket.fpgrowth import fpgrowth
 
-fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -223,10 +223,17 @@ mine_spark(spark_df: 'Any', n_items: 'int', txn_col: 'str', item_col: 'str', min
 
 Convert long-format transactional data to a one-hot boolean matrix.
 
+The return type mirrors the input type:
+
+- **Polars** ``DataFrame`` → **Polars** ``DataFrame``
+- **Pandas** ``DataFrame`` → **Pandas** ``DataFrame``
+- **Spark** ``DataFrame``  → **Spark**  ``DataFrame``
+- ``list[list[...]]``      → **Pandas** ``DataFrame``
+
 ```python
 from rusket.transactions import from_transactions
 
-from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'Any'
 ```
 
 **Parameters**
@@ -241,7 +248,7 @@ from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', trans
 
 | Name | Type | Description |
 | --- | --- | --- |
-| pd.DataFrame |  | A boolean DataFrame ready for :func:`rusket.fpgrowth` or :func:`rusket.eclat`.  Column names correspond to the unique items. |
+| DataFrame |  | A boolean DataFrame (same type as input) ready for :func:`rusket.fpgrowth` or :func:`rusket.eclat`. Column names correspond to the unique items. |
 
 **Examples**
 
@@ -320,7 +327,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_polars
 
-from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pl.DataFrame'
 ```
 
 ---
@@ -332,7 +339,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_spark
 
-from_spark(df: 'Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'pd.DataFrame'
+from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'SparkDataFrame'
 ```
 
 ---
@@ -1314,9 +1321,103 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- bump version to 0.1.26
+
+### 🚀 Features
+
+- `from_transactions` now preserves input DataFrame type for Pandas, Polars, and Spark with updated type hints and tests.
+
+### Benchmark
+
+- add script comparing eALS vs iALS
+
+### Debug
+
+- re-raise exception in als_grouped worker to reveal root cause
+
+### Merge
+
+- feature/fin-lcm-miner into main (FIN/LCM algorithms, FM/FPMC)
+
+### ⚡ Performance
+
+- SIMD unrolling for dot and axpy hot-loops in ALS solver
+
+### 🐛 Bug Fixes
+
+- auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning
+- add criterion dev-dependency for bench targets
+- validate DataFrame before coercing to bool so invalid values (e.g. 2) raise ValueError
+- add fitted property to ItemKNN
+- suppress DeprecationWarning in als_grouped Spark worker
+- use internal model indices in als_grouped worker to correctly map user_labels
+- resolve all pyright errors and ruff format/lint failures for CI
+- resolve all ruff format/lint and pyright CI failures
+
+### 📖 Documentation
+
+- fix MDX parsing errors for Mintlify
+- add business-oriented LightGCN and SASRec example notebooks
+- migrate to Zensical for GitHub Pages deployment
+
+### 📦 Miscellaneous
+
+- Remove Python profiling, benchmarking, and RecBole testing scripts, and update Cargo.toml and .gitignore.
+- untrack generated artifacts (tensorboard logs, dSYM, recbole_data, saved)
+- untrack ai slop benches/ directory
+- bump version to 0.1.25
+
+### 🚀 Features
+
+- implement FIN and LCM algorithms with fast bitset operations
+- wip RecBole benchmarking and FM/FPMC algorithms
+- add LightGCN and SASRec recommendation models
+
+### Bench
+
+- fix unfair benchmark timing and optimize EASE with Cholesky
+
+### Benchmark
+
+- add script comparing dEclat vs ECLAT
+- add script comparing eALS vs iALS
+
+### Style
+
+- run ruff format
+
+### ⚡ Performance
+
+- SIMD unrolling for dot and axpy hot-loops in ALS solver
+
+### 📖 Documentation
+
+- expose llm.txt in docs root and fix test_real_world.py sampling
+- migrate to Mintlify
+- auto-update API reference, changelog, and llm.txt
+- fix MDX parsing errors for Mintlify
+- auto-update API reference, changelog, and llm.txt
+- add als 25m benchmark sweep chart
+- update changelog for YOLO release
+
+### 📦 Miscellaneous
+
+- include Mintlify config and generated MDX docs
+
+### 🚀 Features
+
+- Add ultra-fast Sparse ItemKNN algorithm using BM25 and Rust Rayon
+- implement FIN and LCM algorithms with fast bitset operations
+- wip RecBole benchmarking and FM/FPMC algorithms
+- Add grouped PySpark support for ALS
+
 ### Style
 
 - apply ruff formatting and fixes
+- Update logo colors from purple to orange.
+- refine logos with orange theme, update mkdocs palette and extra.css
 
 ### 🐛 Bug Fixes
 
@@ -1327,16 +1428,19 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - add Polars/PySpark PrefixSpan tests and cookbook examples
 - improve API documentation, update marketing copy, and setup PySpark skips
+- enhance PrefixSpan and HUPM cookbook sections with clearer descriptions, business scenarios, and updated Python code examples.
 
 ### 📦 Miscellaneous
 
 - commit remaining unstaged files from previous sessions
 - bump version to 0.1.21
 - bump version to 0.1.22
+- bump version to 0.1.23
 
 ### 🔧 Refactoring
 
 - simplify BaseModel and remove implicit recommender duplication
+- update logo SVG basket elements to use curved paths and refined wire details.
 
 ### 🚀 Features
 
@@ -1344,6 +1448,9 @@ This project follows [Semantic Versioning](https://semver.org/).
 - complete PySpark and Polars integration for PrefixSpan via native PyArrow sequences
 - implement recommend_items for association rule models
 - Introduce new documentation notebooks, update PySpark integration documentation, and add a notebook conversion workflow.
+- automated doc sync scripts (changelog, API ref, llm.txt)
+- enhance recommender system documentation and examples, update core logic, and refresh logos.
+- merge feature/fpgrowth-mlxtend-api
 
 ### ⚡ Performance
 
@@ -1593,6 +1700,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 # Architecture
 
+How rusket relies on Rust, PyO3, and Rayon for zero-copy, zero-allocation Python bindings.
+
 rusket is structured as a thin Python layer over a Rust core, compiled as a native extension module via [PyO3](https://pyo3.rs) and [maturin](https://github.com/PyO3/maturin).
 
 ## Repository layout
@@ -1631,21 +1740,21 @@ graph TD
     classDef data fill:#FFD43B,stroke:#306998,stroke-width:2px,color:black;
 
     A["Python Caller<br/>rusket.mine(df)"]:::python --> B{"Input Data Type"}:::python
-    
+
     B -->|Dense Pandas| C["C-Contiguous Array<br/>(uint8)"]:::data
     B -->|Sparse Pandas| D["CSR Matrix<br/>(indptr, indices)"]:::data
     B -->|Polars| E["Numpy View<br/>(Zero-copy)"]:::data
-    
+
     C --> F["Rust FFI<br/>fpgrowth_from_dense"]:::rust
     D --> G["Rust FFI<br/>fpgrowth_from_csr"]:::rust
     E --> F
-    
+
     F --> H["Tree Construction<br/>(Single Pass)"]:::rust
     G --> H
-    
+
     H --> I["Recursive Mining<br/>(Rayon Parallel)"]:::rust
     I --> J["Raw Vectors<br/>Vec<(count, Vec<usize>)>"]:::data
-    
+
     J --> K["Python Transformation<br/>Build pd.DataFrame"]:::python
 ```
 
@@ -1695,7 +1804,7 @@ uv run maturin develop
 uv run maturin develop --release
 
 # Type checking
-uv run pyright python/
+uv run basedpyright
 
 # Tests
 uv run pytest tests/ -x -q
@@ -1712,22 +1821,21 @@ cargo clippy
 
 # Quick Start
 
+Install rusket and run your first Market Basket Analysis in minutes.
+
 ## Installation
 
 === "pip"
-
     ```bash
     pip install rusket
     ```
 
 === "uv"
-
     ```bash
     uv add rusket
     ```
 
 === "conda"
-
     ```bash
     pip install rusket  # rusket is not on conda-forge yet
     ```
@@ -1735,13 +1843,11 @@ cargo clippy
 To also enable **Polars** support:
 
 === "pip"
-
     ```bash
     pip install "rusket[polars]"
     ```
 
 === "uv"
-
     ```bash
     uv add "rusket[polars]"
     ```
@@ -1760,20 +1866,14 @@ To also enable **Polars** support:
 
 ## Business Scenario — Supermarket Cross-Selling
 
-Suppose a supermarket chain wants to identify which products to promote together.
-The raw data arrives as a checkout log where each row is one receipt.
-
 ## Step 1 — Prepare your data
 
 `mine` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
-
-Most real-world data comes as long-format order lines (one row per product per order). `from_transactions` converts that in one call:
 
 ```python
 import pandas as pd
 from rusket import from_transactions
 
-# Raw checkout log from a POS system
 orders = pd.DataFrame({
     "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
     "product":    ["milk", "bread", "butter",
@@ -1782,14 +1882,7 @@ orders = pd.DataFrame({
                    "milk", "bread", "eggs", "coffee"],
 })
 
-# One-hot encode: rows = receipts, columns = products
 basket = from_transactions(orders, transaction_col="receipt_id", item_col="product")
-print(basket)
-#        milk  bread  butter  eggs  coffee
-# 1001   True   True    True False   False
-# 1002   True  False   False  True   False
-# 1003  False   True    True False   False
-# 1004   True   True   False  True    True
 ```
 
 ---
@@ -1799,32 +1892,12 @@ print(basket)
 ```python
 from rusket import mine
 
-# method="auto" automatically selects FP-Growth or Eclat based on catalogue density
 freq = mine(basket, min_support=0.4, use_colnames=True)
 print(freq.sort_values("support", ascending=False))
-#    support          itemsets
-# 0     0.75          (milk,)
-# 1     0.75         (bread,)
-# 2     0.50         (butter,)
-# 3     0.50    (milk, bread,)
-# 4     0.50  (bread, butter,)
 ```
 
----
-
-## Step 2b — Or use Eclat for sparse, large catalogues
-
-ECLAT is faster for retailers with thousands of SKUs and typical basket sizes of 3–5 items.
-
-```python
-from rusket import eclat
-
-freq = eclat(basket, min_support=0.4, use_colnames=True)
-print(freq)  # identical output to fpgrowth
-```
-
-!!! tip "When to use which?"
-    `mine(method="auto")` handles this automatically: it picks `eclat` for sparse data (density < 0.15, typical for large SKU catalogs) and `fpgrowth` for dense data.
+!!! tip
+    `mine(method="auto")` picks `eclat` for sparse data (density < 0.15) and `fpgrowth` for dense data.
 
 ---
 
@@ -1840,26 +1913,14 @@ rules = association_rules(
     min_threshold=0.6,
 )
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]])
-# antecedents consequents  support  confidence  lift
-# (bread,)    (butter,)      0.50        0.67   1.33
-# (butter,)   (bread,)       0.50        1.00   1.33
 ```
 
-**Interpreting the output:**
-
-- **Confidence 0.67** → 67% of customers who buy bread also buy butter.
-- **Lift 1.33** → customers who buy bread are 1.33× more likely to buy butter compared to random.
-
-Use these rules to power your "Customers also buy" widgets, shelf placement decisions, or promotional bundles.
-
-!!! note "num_itemsets"
-    Pass the **total transaction count** (`len(basket)`) so that support-based metrics are computed correctly.
+!!! note
+    Pass the **total transaction count** (`len(basket)`) as `num_itemsets` so that support-based metrics are computed correctly.
 
 ---
 
 ## OOP API — Fluent Pipeline
-
-If you prefer a single chained API from raw data down to recommendations:
 
 ```python
 from rusket import AutoMiner
@@ -1868,42 +1929,32 @@ model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_c
 freq  = model.mine(use_colnames=True)
 rules = model.association_rules(metric="lift", min_threshold=1.0)
 
-# "What else should go in the basket?" — cart recommendations
 basket_contents = ["milk", "bread"]
 suggestions = model.recommend_items(basket_contents, n=3)
-print(suggestions)  # e.g. ["butter", "eggs", "coffee"]
 ```
 
 ---
 
 ## Billion-Scale Streaming
 
-For retailers with hundreds of millions of transactions that don't fit in memory, use `FPMiner` to stream data chunk-by-chunk:
-
 ```python
 from rusket import FPMiner
 
-miner = FPMiner(n_items=500_000)  # total distinct SKUs
+miner = FPMiner(n_items=500_000)
 
-# Read your fact table in chunks — e.g. from S3 Parquet or an API cursor
 for chunk in pd.read_parquet("sales_fact.parquet", chunksize=10_000_000):
     txn  = chunk["receipt_id"].to_numpy(dtype="int64")
-    item = chunk["product_idx"].to_numpy(dtype="int32")  # 0-based SKU index
+    item = chunk["product_idx"].to_numpy(dtype="int32")
     miner.add_chunk(txn, item)
 
-# Mine — all data in Rust, output is a normal pandas DataFrame
 freq  = miner.mine(min_support=0.001, max_len=3)
 rules = association_rules(freq, num_itemsets=miner.n_transactions)
 ```
 
-!!! tip "Peak memory"
-    Peak Python memory = one chunk (typically 1–2 GB).
-    Rust holds the per-transaction item lists (~5 GB for 200M transactions).
-    The final mining step passes CSR arrays directly — zero copies.
+!!! tip
+    Peak Python memory = one chunk. Rust holds the per-transaction item lists. The final mining step passes CSR arrays directly — zero copies.
 
 ### Direct CSR path
-
-If you already have integer arrays from a data warehouse query, skip `from_transactions` entirely:
 
 ```python
 from scipy import sparse as sp
@@ -1920,8 +1971,7 @@ freq = mine(csr, min_support=0.001, column_names=sku_names)
 
 ## What's Next?
 
-- [Migration from mlxtend](migration.md) — side-by-side comparison
-- [API Reference](api-reference.md) — all parameters and metrics explained
-- [Polars Support](polars.md) — zero-copy Arrow path
-- [Recommender Workflows](recommender.md) — personalised recommendations for users
-- [Benchmarks](benchmarks.md) — performance vs mlxtend
+- [Migration from mlxtend](migration.md)
+- [API Reference](api-reference.md)
+- [Polars Support](polars.md)
+- [Recommender Workflows](recommender.md)

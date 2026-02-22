@@ -22,14 +22,14 @@ mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' 
 
 ### `fpgrowth`
 
-Find frequent itemsets using the FP-growth algorithm.
+Find frequent itemsets using the optimal algorithm (Eclat or FP-growth).
 
 This module-level function relies on the Object-Oriented APIs.
 
 ```python
 from rusket.fpgrowth import fpgrowth
 
-fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -213,10 +213,17 @@ mine_spark(spark_df: 'Any', n_items: 'int', txn_col: 'str', item_col: 'str', min
 
 Convert long-format transactional data to a one-hot boolean matrix.
 
+The return type mirrors the input type:
+
+- **Polars** ``DataFrame`` → **Polars** ``DataFrame``
+- **Pandas** ``DataFrame`` → **Pandas** ``DataFrame``
+- **Spark** ``DataFrame``  → **Spark**  ``DataFrame``
+- ``list[list[...]]``      → **Pandas** ``DataFrame``
+
 ```python
 from rusket.transactions import from_transactions
 
-from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'Any'
 ```
 
 **Parameters**
@@ -231,7 +238,7 @@ from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', trans
 
 | Name | Type | Description |
 | --- | --- | --- |
-| pd.DataFrame |  | A boolean DataFrame ready for :func:`rusket.fpgrowth` or :func:`rusket.eclat`.  Column names correspond to the unique items. |
+| DataFrame |  | A boolean DataFrame (same type as input) ready for :func:`rusket.fpgrowth` or :func:`rusket.eclat`. Column names correspond to the unique items. |
 
 **Examples**
 
@@ -310,7 +317,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_polars
 
-from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pl.DataFrame'
 ```
 
 ---
@@ -322,7 +329,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_spark
 
-from_spark(df: 'Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'pd.DataFrame'
+from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'SparkDataFrame'
 ```
 
 ---

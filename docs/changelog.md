@@ -1,4 +1,63 @@
+# Changelog
 
+All notable changes are documented here.
+This project follows [Semantic Versioning](https://semver.org/).
+
+---
+
+### 📦 Miscellaneous
+
+- bump version to 0.1.26
+
+### 🚀 Features
+
+- `from_transactions` now preserves input DataFrame type for Pandas, Polars, and Spark with updated type hints and tests.
+
+### Benchmark
+
+- add script comparing eALS vs iALS
+
+### Debug
+
+- re-raise exception in als_grouped worker to reveal root cause
+
+### Merge
+
+- feature/fin-lcm-miner into main (FIN/LCM algorithms, FM/FPMC)
+
+### ⚡ Performance
+
+- SIMD unrolling for dot and axpy hot-loops in ALS solver
+
+### 🐛 Bug Fixes
+
+- auto-coerce 0/1 pandas DataFrames to bool in dispatch, silence non-bool DeprecationWarning
+- add criterion dev-dependency for bench targets
+- validate DataFrame before coercing to bool so invalid values (e.g. 2) raise ValueError
+- add fitted property to ItemKNN
+- suppress DeprecationWarning in als_grouped Spark worker
+- use internal model indices in als_grouped worker to correctly map user_labels
+- resolve all pyright errors and ruff format/lint failures for CI
+- resolve all ruff format/lint and pyright CI failures
+
+### 📖 Documentation
+
+- fix MDX parsing errors for Mintlify
+- add business-oriented LightGCN and SASRec example notebooks
+- migrate to Zensical for GitHub Pages deployment
+
+### 📦 Miscellaneous
+
+- Remove Python profiling, benchmarking, and RecBole testing scripts, and update Cargo.toml and .gitignore.
+- untrack generated artifacts (tensorboard logs, dSYM, recbole_data, saved)
+- untrack ai slop benches/ directory
+- bump version to 0.1.25
+
+### 🚀 Features
+
+- implement FIN and LCM algorithms with fast bitset operations
+- wip RecBole benchmarking and FM/FPMC algorithms
+- add LightGCN and SASRec recommendation models
 
 ### Bench
 
@@ -25,6 +84,7 @@
 - fix MDX parsing errors for Mintlify
 - auto-update API reference, changelog, and llm.txt
 - add als 25m benchmark sweep chart
+- update changelog for YOLO release
 
 ### 📦 Miscellaneous
 
