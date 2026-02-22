@@ -78,9 +78,18 @@ class EASE(ImplicitRecommender):
         G_dense[diag_indices] += self.regularization
 
         if self.verbose:
-            print("EASE inverting Gram matrix...")
+            print("EASE inverting Gram matrix (Cholesky)...")
 
-        P = np.linalg.inv(G_dense)
+        import scipy.linalg
+        # Solve P = G^-1 using Cholesky decomposition inplace
+        # np.eye is used as the RHS (b) to compute the inverse
+        L = scipy.linalg.cholesky(G_dense, lower=True, overwrite_a=True, check_finite=False)
+        P = scipy.linalg.cho_solve(
+            (L, True), 
+            np.eye(n_items, dtype=np.float32), 
+            overwrite_b=True, 
+            check_finite=False
+        )
         B = P / (-np.diag(P))
         B[diag_indices] = 0.0
 

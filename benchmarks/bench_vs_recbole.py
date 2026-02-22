@@ -84,6 +84,12 @@ def run_recbole_benchmark(model_name: str, config_dict: dict):
 def run_rusket_benchmark():
     df = pd.read_csv("data/ml-100k/u.data", sep="\t", names=["user_id", "item_id", "rating", "timestamp"])
 
+    from scipy.sparse import csr_matrix
+    users = df["user_id"].astype("category").cat.codes.values
+    items = df["item_id"].astype("category").cat.codes.values
+    vals = np.ones(len(df), dtype=np.float32)
+    interactions = csr_matrix((vals, (users, items)))
+
     print("\n" + "=" * 50)
     print("SPEED BENCHMARK: Rusket vs RecBole (ml-100k)")
     print("=" * 50)
@@ -91,7 +97,7 @@ def run_rusket_benchmark():
     print("\n[ItemKNN]")
     rec_time = run_recbole_benchmark("ItemKNN", {"epochs": 1, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.ItemKNN.from_transactions(df, "user_id", "item_id", k=100)
+    rusket.ItemKNN(k=100).fit(interactions)
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
@@ -101,7 +107,7 @@ def run_rusket_benchmark():
     print("\n[BPR (10 epochs)]")
     rec_time = run_recbole_benchmark("BPR", {"epochs": 10, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.BPR(iterations=10).fit(interactions)
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
@@ -111,7 +117,7 @@ def run_rusket_benchmark():
     print("\n[EASE]")
     rec_time = run_recbole_benchmark("EASE", {"epochs": 1, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.EASE.from_transactions(df, "user_id", "item_id")
+    rusket.EASE().fit(interactions)
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
