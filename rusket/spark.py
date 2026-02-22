@@ -729,6 +729,9 @@ def als_grouped(
             pl_df = pl.DataFrame(pl_df)
 
         try:
+            import warnings
+
+            warnings.simplefilter("ignore", DeprecationWarning)
             model = ALS(
                 factors=factors,
                 regularization=regularization,
@@ -797,6 +800,9 @@ def als_grouped(
             group_id = str(pdf[group_col].iloc[0])
 
             try:
+                import warnings
+
+                warnings.simplefilter("ignore", DeprecationWarning)
                 model = ALS(
                     factors=factors,
                     regularization=regularization,
