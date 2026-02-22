@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://bmsuisse.github.io/rusket/recommender/">
       
       
-        <link rel="prev" href="../notebooks/3_ecommerce_lifecycle_mining.ipynb">
+        <link rel="prev" href="../notebooks/3_ecommerce_lifecycle_mining/">
       
       
         <link rel="next" href="../streaming/">
@@ -666,7 +666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/1_online_retail_basket_analysis.ipynb" class="md-nav__link">
+      <a href="../notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
         
   
   
@@ -694,7 +694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/2_movielens_recommendations.ipynb" class="md-nav__link">
+      <a href="../notebooks/2_movielens_recommendations/" class="md-nav__link">
         
   
   
@@ -722,7 +722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/3_ecommerce_lifecycle_mining.ipynb" class="md-nav__link">
+      <a href="../notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
         
   
   
@@ -818,6 +818,56 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-cart-recommendations-mining-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Cart Recommendations (Mining + Rules)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#als-bpr-collaborative-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALS / BPR Collaborative Filtering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ALS / BPR Collaborative Filtering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fitting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#item-and-user-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Item and User Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-hybrid-recommender" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -830,10 +880,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-personalized-recommendations" class="md-nav__link">
+  <a href="#1-personalized-recommendations-cf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Personalized Recommendations
+        1. Personalized Recommendations (CF)
       
     </span>
   </a>
@@ -841,10 +891,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-cart-based-cross-selling" class="md-nav__link">
+  <a href="#2-hybrid-cf-semantic-blending" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cart-based Cross-Selling
+        2. Hybrid CF + Semantic Blending
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cart-based-cross-selling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cart-Based Cross-Selling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-batch-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Batch Recommendations
       
     </span>
   </a>
@@ -872,6 +944,67 @@
     <span class="md-ellipsis">
       
         Cross-Selling Potential Scoring
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analytics-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analytics Helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analytics Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-substitutes-cannibalizing-products" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find Substitutes / Cannibalizing Products
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-saturation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer Saturation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vector-db-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector DB Export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Graph Analytics
       
     </span>
   </a>
@@ -1178,6 +1311,56 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-cart-recommendations-mining-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Cart Recommendations (Mining + Rules)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#als-bpr-collaborative-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALS / BPR Collaborative Filtering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ALS / BPR Collaborative Filtering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fitting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#item-and-user-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Item and User Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-hybrid-recommender" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1190,10 +1373,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-personalized-recommendations" class="md-nav__link">
+  <a href="#1-personalized-recommendations-cf" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Personalized Recommendations
+        1. Personalized Recommendations (CF)
       
     </span>
   </a>
@@ -1201,10 +1384,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-cart-based-cross-selling" class="md-nav__link">
+  <a href="#2-hybrid-cf-semantic-blending" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cart-based Cross-Selling
+        2. Hybrid CF + Semantic Blending
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-cart-based-cross-selling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Cart-Based Cross-Selling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-batch-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Batch Recommendations
       
     </span>
   </a>
@@ -1238,6 +1443,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#analytics-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analytics Helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Analytics Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-substitutes-cannibalizing-products" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find Substitutes / Cannibalizing Products
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-saturation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer Saturation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vector-db-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vector DB Export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Graph Analytics
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1259,81 +1525,167 @@
 
 
 <h1 id="recommender-workflows">Recommender Workflows<a class="headerlink" href="#recommender-workflows" title="Permanent link">&para;</a></h1>
-<p>While <code>rusket</code> provides blazing-fast core algorithms like Alternating Least Squares (ALS) and FP-Growth, raw algorithms often require heavy lifting to translate into business outcomes. </p>
+<p>While <code>rusket</code> provides blazing-fast core algorithms like Alternating Least Squares (ALS) and FP-Growth, raw algorithms often require heavy lifting to translate into business outcomes.</p>
 <p>To bridge this gap, <code>rusket</code> includes a high-level <strong>Business Recommender API</strong> designed for e-commerce, content platforms, and marketing analytics.</p>
 <hr />
-<h2 id="the-hybrid-recommender">The Hybrid Recommender<a class="headerlink" href="#the-hybrid-recommender" title="Permanent link">&para;</a></h2>
-<p>The <code>Recommender</code> class blends the serendipity of <strong>Collaborative Filtering</strong> (ALS) with the strict deterministic logic of <strong>Frequent Pattern Mining</strong> (Association Rules) to provide the "Next Best Action" for any context.</p>
+<h2 id="quick-cart-recommendations-mining-rules">Quick Cart Recommendations (Mining + Rules)<a class="headerlink" href="#quick-cart-recommendations-mining-rules" title="Permanent link">&para;</a></h2>
+<p>The simplest path to cart recommendations uses the OOP mining API. All mining classes inherit <code>recommend_items</code> from <code>RuleMinerMixin</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">Recommender</span><span class="p">,</span> <span class="n">mine</span><span class="p">,</span> <span class="n">association_rules</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPGrowth</span>  <span class="c1"># or Eclat, AutoMiner</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># 1. Train your Collaborative Filtering model</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_sparse_matrix</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># 2. Mine your Association Rules</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">user_item_sparse_matrix</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="n">user_item_sparse_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># 3. Create the Hybrid Engine</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Build from raw transactional data</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">model</span> <span class="o">=</span> <span class="n">FPGrowth</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">df</span><span class="p">,</span>                   <span class="c1"># pd.DataFrame with (order_id, item) columns</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">min_support</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Get top-3 suggestions for an active basket</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">suggestions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">([</span><span class="s2">&quot;bread&quot;</span><span class="p">,</span> <span class="s2">&quot;milk&quot;</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># e.g. [&quot;butter&quot;, &quot;eggs&quot;, &quot;cheese&quot;]</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Or inspect rules directly</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">association_rules</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="1-personalized-recommendations">1. Personalized Recommendations<a class="headerlink" href="#1-personalized-recommendations" title="Permanent link">&para;</a></h3>
-<p>Use <code>recommend_for_user</code> to generate a customized list of products for a returning customer based on their latent profile (ALS).</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Get top 5 product recommendations for user 42</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recommended Items: </span><span class="si">{</span><span class="n">items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Recommended Items: [34, 12, 89, 7, 102]</span>
+<p><code>num_itemsets</code> is inferred automatically — no extra wiring needed.</p>
+<hr />
+<h2 id="als-bpr-collaborative-filtering">ALS / BPR Collaborative Filtering<a class="headerlink" href="#als-bpr-collaborative-filtering" title="Permanent link">&para;</a></h2>
+<h3 id="fitting">Fitting<a class="headerlink" href="#fitting" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">BPR</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Option A: from a scipy CSR user-item matrix</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">cg_iters</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>          <span class="c1"># Conjugate Gradient iterations per solve</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">use_cholesky</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = exact Cholesky (better for dense data)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">anderson_m</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>        <span class="c1"># Anderson Acceleration — ~30-50% fewer iterations</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_csr</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># Option B: straight from a long-format event log</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">df</span><span class="p">,</span>                       <span class="c1"># pd.DataFrame | pl.DataFrame | Spark DataFrame</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">rating_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>          <span class="c1"># optional explicit rating column</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="c1"># BPR is a drop-in alternative (optimises ranking, not reconstruction)</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">bpr</span> <span class="o">=</span> <span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_csr</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="2-cart-based-cross-selling">2. Cart-based Cross-Selling<a class="headerlink" href="#2-cart-based-cross-selling" title="Permanent link">&para;</a></h3>
-<p>When a user adds items to their shopping cart, you want to show a "Frequently bought together" carousel. The <code>recommend_for_cart</code> method uses deterministic association rules to find the highest lift recommendations for the contents of the cart.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># User has items 14 and 7 in their cart</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">suggested</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">([</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<h3 id="item-and-user-recommendations">Item and User Recommendations<a class="headerlink" href="#item-and-user-recommendations" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Top-N items for a user</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Others also bought: </span><span class="si">{</span><span class="n">suggested</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Others also bought: [8, 45, 99] </span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Top-N users for an item (reverse lookup / targeting)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">users</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">recommend_users</span><span class="p">(</span><span class="n">item_id</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="the-hybrid-recommender">The Hybrid Recommender<a class="headerlink" href="#the-hybrid-recommender" title="Permanent link">&para;</a></h2>
+<p>The <code>Recommender</code> class blends <strong>Collaborative Filtering</strong> (ALS/BPR) with <strong>Frequent Pattern Mining</strong> (Association Rules) to provide the "Next Best Action" for any context.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">Recommender</span><span class="p">,</span> <span class="n">mine</span><span class="p">,</span> <span class="n">association_rules</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># 1. Train your CF model</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">user_item_csr</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># 2. Mine association rules from basket data</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">freq</span>  <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">basket_matrix</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="n">n_transactions</span><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># 3. Create the Hybrid Engine</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="1-personalized-recommendations-cf">1. Personalized Recommendations (CF)<a class="headerlink" href="#1-personalized-recommendations-cf" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Pure ALS collaborative filtering</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recommended: </span><span class="si">{</span><span class="n">items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="2-hybrid-cf-semantic-blending">2. Hybrid CF + Semantic Blending<a class="headerlink" href="#2-hybrid-cf-semantic-blending" title="Permanent link">&para;</a></h3>
+<p>When you have external item embeddings (e.g. from a product description vector index), you can blend CF scores with semantic similarity:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">,</span> <span class="n">item_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># alpha=1.0 → pure CF, alpha=0.0 → pure semantic, values in between = hybrid</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>                     <span class="c1"># 70% CF + 30% semantic</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">target_item_for_semantic</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span>   <span class="c1"># anchor item for similarity lookup</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="3-cart-based-cross-selling">3. Cart-Based Cross-Selling<a class="headerlink" href="#3-cart-based-cross-selling" title="Permanent link">&para;</a></h3>
+<p>When a user adds items to their shopping cart, use deterministic association rules for "Frequently bought together" suggestions:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># User has items 14 and 7 in their cart</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">suggested</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">([</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Others also bought: </span><span class="si">{</span><span class="n">suggested</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="4-batch-recommendations">4. Batch Recommendations<a class="headerlink" href="#4-batch-recommendations" title="Permanent link">&para;</a></h3>
+<p>Score all users in a DataFrame at once:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">batch_df</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># Returns a DataFrame with columns [user_id, recommended_items]</span>
 </span></code></pre></div>
 <hr />
 <h2 id="item-to-item-similarity-i2i">Item-to-Item Similarity (i2i)<a class="headerlink" href="#item-to-item-similarity-i2i" title="Permanent link">&para;</a></h2>
-<p>Often you don't have a user context (e.g., an anonymous visitor on a product description page). In these cases, you can use the latent item factors learned by the ALS model to find conceptually similar products.</p>
-<p>The <code>similar_items</code> function performs ultra-fast Cosine Similarity over the ALS item embeddings.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Fit ALS on your interaction data</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Find 4 products most similar to product 99</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">similar</span><span class="p">,</span> <span class="n">similarities</span> <span class="o">=</span> <span class="n">similar_items</span><span class="p">(</span><span class="n">als</span><span class="p">,</span> <span class="n">item_id</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">similar</span><span class="p">)</span> 
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># [100, 95, 102, 88]</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">similarities</span><span class="p">)</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># [0.98, 0.94, 0.89, 0.85]</span>
+<p>For anonymous visitors (no user context), use the latent item factors from ALS/BPR to find conceptually similar products via Cosine Similarity:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span><span class="p">,</span> <span class="n">ALS</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># 4 products most similar to product 99</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">similar</span><span class="p">,</span> <span class="n">similarities</span> <span class="o">=</span> <span class="n">similar_items</span><span class="p">(</span><span class="n">als</span><span class="p">,</span> <span class="n">item_id</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">similar</span><span class="p">)</span>        <span class="c1"># [100, 95, 102, 88]</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">similarities</span><span class="p">)</span>   <span class="c1"># [0.98, 0.94, 0.89, 0.85]</span>
 </span></code></pre></div>
 <blockquote>
-<p><strong>Note:</strong> Because this operates on latent factors, it discovers implicit relationships. For example, it might identify that a high-end coffee grinder is similar to an expensive espresso machine, even if they aren't directly bought in the exact same cart.</p>
+<p><strong>Note:</strong> Because this operates on latent factors, it discovers implicit relationships — e.g. a high-end coffee grinder may be similar to an espresso machine even if they aren't often directly bought together.</p>
 </blockquote>
 <hr />
 <h2 id="cross-selling-potential-scoring">Cross-Selling Potential Scoring<a class="headerlink" href="#cross-selling-potential-scoring" title="Permanent link">&para;</a></h2>
-<p>For marketing teams, sending generic email blasts is inefficient. The <code>score_potential</code> function quantifies the "missed opportunity" by calculating the probability a user <em>should</em> have bought an item by now, but hasn't.</p>
-<p>This is perfect for building highly targeted audiences for email campaigns or retargeting pixels.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># user_history: list of item IDs each user has already interacted with</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># target_categories: optional list of specific item/category IDs to score</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">potential_matrix</span> <span class="o">=</span> <span class="n">score_potential</span><span class="p">(</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">user_history</span><span class="o">=</span><span class="p">[[</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="p">[</span><span class="mi">99</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]],</span> 
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">target_categories</span><span class="o">=</span><span class="p">[</span><span class="mi">101</span><span class="p">,</span> <span class="mi">102</span><span class="p">,</span> <span class="mi">103</span><span class="p">]</span> <span class="c1"># e.g., the &quot;Electronics&quot; category</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1"># The result is a dense numpy array of shape (n_users, len(target_categories))</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Values are raw ALS interaction scores. Items the user has already bought </span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># are masked with -infinity.</span>
+<p>Quantify the "missed opportunity" — the probability a user <em>should</em> have bought an item by now but hasn't. Perfect for building highly targeted email and retargeting audiences.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># user_history: list of item IDs each user has already interacted with</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">potential_matrix</span> <span class="o">=</span> <span class="n">score_potential</span><span class="p">(</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">user_history</span><span class="o">=</span><span class="p">[[</span><span class="mi">14</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="p">[</span><span class="mi">99</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]],</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">als_model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">target_categories</span><span class="o">=</span><span class="p">[</span><span class="mi">101</span><span class="p">,</span> <span class="mi">102</span><span class="p">,</span> <span class="mi">103</span><span class="p">],</span>  <span class="c1"># e.g. the &quot;Electronics&quot; category</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">)</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Shape: (n_users, len(target_categories))</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="c1"># Items already bought are masked with -infinity.</span>
 </span></code></pre></div>
-<p>By sorting users by their maximum score in <code>potential_matrix</code>, you can instantly generate a ranked list of the absolute best customers to target for an upcoming product launch in the <code>Electronics</code> category.</p>
+<hr />
+<h2 id="analytics-helpers">Analytics Helpers<a class="headerlink" href="#analytics-helpers" title="Permanent link">&para;</a></h2>
+<h3 id="find-substitutes-cannibalizing-products">Find Substitutes / Cannibalizing Products<a class="headerlink" href="#find-substitutes-cannibalizing-products" title="Permanent link">&para;</a></h3>
+<p>Items with high individual support but low co-occurrence (lift &lt; 1.0) likely compete with each other:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_substitutes</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">substitutes</span> <span class="o">=</span> <span class="n">find_substitutes</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">max_lift</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Returns a DataFrame sorted ascending by lift (worst cannibalization first)</span>
+</span></code></pre></div>
+<h3 id="customer-saturation">Customer Saturation<a class="headerlink" href="#customer-saturation" title="Permanent link">&para;</a></h3>
+<p>Segment users by their purchase depth within a category or item catalogue and split into deciles:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_saturation</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">saturation</span> <span class="o">=</span> <span class="n">customer_saturation</span><span class="p">(</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">df</span><span class="p">,</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">category_col</span><span class="o">=</span><span class="s2">&quot;category_id&quot;</span><span class="p">,</span>  <span class="c1"># or item_col=&quot;item_id&quot;</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># Returns: unique_count, saturation_pct, decile</span>
+</span></code></pre></div>
+<hr />
+<h2 id="vector-db-export">Vector DB Export<a class="headerlink" href="#vector-db-export" title="Permanent link">&para;</a></h2>
+<p>Export ALS/BPR item factors as a Pandas DataFrame ready for FAISS / Qdrant / Pinecone:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_item_factors</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">df_vectors</span> <span class="o">=</span> <span class="n">export_item_factors</span><span class="p">(</span><span class="n">als_model</span><span class="p">,</span> <span class="n">include_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Each row: one item, columns are latent dimensions</span>
+</span></code></pre></div>
+<hr />
+<h2 id="graph-analytics">Graph Analytics<a class="headerlink" href="#graph-analytics" title="Permanent link">&para;</a></h2>
+<p>Convert association rules into a NetworkX directed graph for community detection and product clustering:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_networkx</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">G</span> <span class="o">=</span> <span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
+</span></code></pre></div>
 
 
 
@@ -1371,7 +1723,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../notebooks/3_ecommerce_lifecycle_mining.ipynb" class="md-footer__link md-footer__link--prev" aria-label="Previous: ⏱️ E-Commerce Lifecycle Discovery">
+          <a href="../notebooks/3_ecommerce_lifecycle_mining/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ⏱️ E-Commerce Lifecycle Discovery">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>

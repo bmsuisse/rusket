@@ -52,4 +52,16 @@
          <loc>https://bmsuisse.github.io/rusket/streaming/</loc>
          <lastmod>2026-02-22</lastmod>
     </url>
+    <url>
+         <loc>https://bmsuisse.github.io/rusket/notebooks/1_online_retail_basket_analysis/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://bmsuisse.github.io/rusket/notebooks/2_movielens_recommendations/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://bmsuisse.github.io/rusket/notebooks/3_ecommerce_lifecycle_mining/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
 </urlset>

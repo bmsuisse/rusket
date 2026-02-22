@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://bmsuisse.github.io/rusket/architecture/">
+        <link rel="canonical" href="https://bmsuisse.github.io/rusket/notebooks/2_movielens_recommendations/">
       
       
-        <link rel="prev" href="../1b-challenge/">
+        <link rel="prev" href="../1_online_retail_basket_analysis/">
       
       
-        <link rel="next" href="../changelog/">
+        <link rel="next" href="../3_ecommerce_lifecycle_mining/">
       
       
         
       
       
-      <link rel="icon" href="../assets/favicon.svg">
+      <link rel="icon" href="../../assets/favicon.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
     
     
       
-        <title>Architecture - rusket</title>
+        <title>🎬 MovieLens Hybrid Recommender - rusket</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/extra.css">
+      <link rel="stylesheet" href="../../assets/extra.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture" class="md-skip">
+        <a href="#hybrid-recommendations-user-potential-with-movielens" class="md-skip">
           Skip to content
         </a>
       
@@ -94,9 +94,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="../.." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo.svg" alt="logo">
+  <img src="../../assets/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture
+              🎬 MovieLens Hybrid Recommender
             
           </span>
         </div>
@@ -226,7 +226,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -247,7 +247,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../quickstart/" class="md-tabs__link">
+        <a href="../../quickstart/" class="md-tabs__link">
           
   
   
@@ -269,7 +269,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../api-reference/" class="md-tabs__link">
+        <a href="../../api-reference/" class="md-tabs__link">
           
   
   
@@ -289,7 +289,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../changelog/" class="md-tabs__link">
+        <a href="../../changelog/" class="md-tabs__link">
           
   
   
@@ -323,9 +323,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="../.." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo.svg" alt="logo">
+  <img src="../../assets/logo.svg" alt="logo">
 
     </a>
     rusket
@@ -352,7 +352,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -433,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -461,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../../migration/" class="md-nav__link">
         
   
   
@@ -553,7 +553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api-reference/" class="md-nav__link">
+      <a href="../../api-reference/" class="md-nav__link">
         
   
   
@@ -581,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cookbook/" class="md-nav__link">
+      <a href="../../cookbook/" class="md-nav__link">
         
   
   
@@ -606,8 +606,10 @@
                 
   
   
+    
   
   
+  
     
     
     
@@ -621,13 +623,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
@@ -648,7 +648,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -666,7 +666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
+      <a href="../1_online_retail_basket_analysis/" class="md-nav__link">
         
   
   
@@ -674,238 +674,6 @@
     
   
     🛒 Retail Assortment Optimization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/2_movielens_recommendations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    🎬 MovieLens Hybrid Recommender
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ⏱️ E-Commerce Lifecycle Discovery
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../recommender/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Recommender Workflows
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Streaming & Big Data
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../spark/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PySpark Integration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../polars/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Polars Support
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../benchmarks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Benchmarks
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../1b-challenge/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    The 1B Challenge
   
 
     
@@ -942,7 +710,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    🎬 MovieLens Hybrid Recommender
   
 
     
@@ -960,7 +728,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    🎬 MovieLens Hybrid Recommender
   
 
     
@@ -986,10 +754,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#repository-layout" class="md-nav__link">
+  <a href="#1-load-movielens-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Repository layout
+        1. Load MovieLens Data
       
     </span>
   </a>
@@ -997,10 +765,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
+  <a href="#2-fitting-alternating-least-squares-als" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data flow
+        2. Fitting Alternating Least Squares (ALS)
       
     </span>
   </a>
@@ -1008,38 +776,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fp-growth-algorithm" class="md-nav__link">
+  <a href="#3-bayesian-personalized-ranking-bpr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FP-Growth algorithm
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="FP-Growth algorithm">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dispatch-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dispatch paths
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#association-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Association rules
+        3. Bayesian Personalized Ranking (BPR)
       
     </span>
   </a>
@@ -1047,10 +787,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-from-source" class="md-nav__link">
+  <a href="#4-next-best-action-hybrid-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building from source
+        4. Next Best Action (Hybrid API)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-marketing-potential-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Marketing Potential Score
       
     </span>
   </a>
@@ -1061,6 +812,238 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3_ecommerce_lifecycle_mining/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ⏱️ E-Commerce Lifecycle Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../recommender/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recommender Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming & Big Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../spark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../polars/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polars Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../1b-challenge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The 1B Challenge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1134,7 +1117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -1189,10 +1172,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#repository-layout" class="md-nav__link">
+  <a href="#1-load-movielens-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Repository layout
+        1. Load MovieLens Data
       
     </span>
   </a>
@@ -1200,10 +1183,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
+  <a href="#2-fitting-alternating-least-squares-als" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data flow
+        2. Fitting Alternating Least Squares (ALS)
       
     </span>
   </a>
@@ -1211,38 +1194,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fp-growth-algorithm" class="md-nav__link">
+  <a href="#3-bayesian-personalized-ranking-bpr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FP-Growth algorithm
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="FP-Growth algorithm">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#dispatch-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dispatch paths
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#association-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Association rules
+        3. Bayesian Personalized Ranking (BPR)
       
     </span>
   </a>
@@ -1250,10 +1205,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-from-source" class="md-nav__link">
+  <a href="#4-next-best-action-hybrid-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Building from source
+        4. Next Best Action (Hybrid API)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-marketing-potential-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Marketing Potential Score
       
     </span>
   </a>
@@ -1280,124 +1246,78 @@
   
 
 
-<h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<p>rusket is structured as a thin Python layer over a Rust core, compiled as a native extension module via <a href="https://pyo3.rs">PyO3</a> and <a href="https://github.com/PyO3/maturin">maturin</a>.</p>
-<h2 id="repository-layout">Repository layout<a class="headerlink" href="#repository-layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>rusket/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── src/                          # Rust (PyO3)
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── lib.rs                    # Module root — exports to Python
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   ├── fpgrowth.rs               # FP-Tree + FP-Growth algorithm
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── association_rules.rs      # Rule generation + 12 metrics
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── common.rs                 # Shared helpers
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── python/
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   ├── rusket/                  # Primary Python package (pyproject.toml name)
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│   │   ├── __init__.py
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│   │   ├── fpgrowth.py           # Dispatch + numpy conversion
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   │   ├── association_rules.py  # Label mapping + Rust call
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│   │   └── _validation.py        # Input validation helpers
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│   └── fpgrowth_pyo3/            # Legacy compat package
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│       └── ...
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>└── tests/
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    ├── conftest.py
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    ├── test_fpbase.py            # Shared base test classes
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    ├── test_fpgrowth.py          # FP-Growth tests
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    ├── test_association_rules.py # Association rules tests
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    └── test_benchmark.py         # Performance benchmarks
+<h1 id="hybrid-recommendations-user-potential-with-movielens">Hybrid Recommendations &amp; User Potential with MovieLens<a class="headerlink" href="#hybrid-recommendations-user-potential-with-movielens" title="Permanent link">&para;</a></h1>
+<p>In this cookbook, we will use the classic <strong>MovieLens 100k dataset</strong> to showcase <code>rusket</code>'s collaborative filtering models (<code>ALS</code> and <code>BPR</code>) and demonstrate how to deploy the ultimate hybrid engine using <code>NextBestAction</code>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>import time
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>import numpy as np
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>import pandas as pd
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>from rusket import ALS, BPR, NextBestAction
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>from rusket.recommend import score_potential
 </span></code></pre></div>
-<hr />
-<h2 id="data-flow">Data flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>graph TD
-    classDef python fill:#4B8BBE,stroke:#306998,stroke-width:2px,color:white;
-    classDef rust fill:#DEA584,stroke:#000,stroke-width:2px,color:black;
-    classDef data fill:#FFD43B,stroke:#306998,stroke-width:2px,color:black;
-
-    A["Python Caller&lt;br/&gt;rusket.mine(df)"]:::python --&gt; B{"Input Data Type"}:::python
-
-    B --&gt;|Dense Pandas| C["C-Contiguous Array&lt;br/&gt;(uint8)"]:::data
-    B --&gt;|Sparse Pandas| D["CSR Matrix&lt;br/&gt;(indptr, indices)"]:::data
-    B --&gt;|Polars| E["Numpy View&lt;br/&gt;(Zero-copy)"]:::data
-
-    C --&gt; F["Rust FFI&lt;br/&gt;fpgrowth_from_dense"]:::rust
-    D --&gt; G["Rust FFI&lt;br/&gt;fpgrowth_from_csr"]:::rust
-    E --&gt; F
-
-    F --&gt; H["Tree Construction&lt;br/&gt;(Single Pass)"]:::rust
-    G --&gt; H
-
-    H --&gt; I["Recursive Mining&lt;br/&gt;(Rayon Parallel)"]:::rust
-    I --&gt; J["Raw Vectors&lt;br/&gt;Vec&lt;(count, Vec&lt;usize&gt;)&gt;"]:::data
-
-    J --&gt; K["Python Transformation&lt;br/&gt;Build pd.DataFrame"]:::python</code></pre>
-<hr />
-<h2 id="fp-growth-algorithm">FP-Growth algorithm<a class="headerlink" href="#fp-growth-algorithm" title="Permanent link">&para;</a></h2>
-<p>The Rust implementation follows the classic Han et al. (2000) FP-Growth algorithm:</p>
-<ol>
-<li><strong>Header table scan</strong> — count item frequencies; prune items below <code>min_count</code>.</li>
-<li><strong>FP-Tree construction</strong> — single-pass over transactions; compress into a prefix-tree structure.</li>
-<li><strong>Recursive mining</strong> — for each frequent item, extract the conditional pattern base, build a conditional FP-Tree, and mine it recursively.</li>
-<li><strong>Output</strong> — each leaf path materialises as one frequent itemset <code>(count, items)</code>.</li>
-</ol>
-<h3 id="dispatch-paths">Dispatch paths<a class="headerlink" href="#dispatch-paths" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>Rust function</th>
-<th>Input shape</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Dense pandas</td>
-<td><code>fpgrowth_from_dense</code></td>
-<td><code>[n_rows × n_cols]</code> uint8</td>
-<td>Contiguous C array</td>
-</tr>
-<tr>
-<td>Sparse pandas</td>
-<td><code>fpgrowth_from_csr</code></td>
-<td>CSR <code>indptr + indices</code></td>
-<td>Zero-copy scipy CSR</td>
-</tr>
-<tr>
-<td>Polars</td>
-<td><code>fpgrowth_from_dense</code></td>
-<td>same as dense</td>
-<td>Arrow → NumPy view</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="association-rules">Association rules<a class="headerlink" href="#association-rules" title="Permanent link">&para;</a></h2>
-<p>Rule generation is vectorised in Rust:</p>
-<ol>
-<li>For each frequent itemset of length ≥ 2, enumerate all non-empty antecedent / consequent splits.</li>
-<li>Look up antecedent and consequent supports from a pre-built hash map.</li>
-<li>Compute all 12 metrics in a single pass; filter by <code>(metric, min_threshold)</code>.</li>
-<li>Return raw integer index lists to Python; Python maps back to column names / frozensets.</li>
-</ol>
-<hr />
-<h2 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Prerequisites: Rust 1.83+, Python 3.10+, uv</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>rustup<span class="w"> </span>update
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>uv<span class="w"> </span>sync
+<h2 id="1-load-movielens-data">1. Load MovieLens Data<a class="headerlink" href="#1-load-movielens-data" title="Permanent link">&para;</a></h2>
+<p>We will download and parse the MovieLens 100k dataset into a Pandas DataFrame representing user ID, movie ID, and rating (1-5).</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>import os
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>import urllib.request
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>import zipfile
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Debug build (fast compile, slower runtime)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Release build (optimised)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>if not os.path.exists(&quot;ml-100k&quot;):
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    url = &quot;https://files.grouplens.org/datasets/movielens/ml-100k.zip&quot;
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    urllib.request.urlretrieve(url, &quot;ml-100k.zip&quot;)
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    with zipfile.ZipFile(&quot;ml-100k.zip&quot;, &quot;r&quot;) as zip_ref:
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        zip_ref.extractall(&quot;.&quot;)
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Type checking</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>uv<span class="w"> </span>run<span class="w"> </span>pyright<span class="w"> </span>python/
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>columns = [&quot;user_id&quot;, &quot;item_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;]
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>df = pd.read_csv(&quot;ml-100k/u.data&quot;, sep=&quot;\t&quot;, names=columns)
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Tests</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-x<span class="w"> </span>-q
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Cargo lint</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>cargo<span class="w"> </span>check
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>cargo<span class="w"> </span>clippy
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>print(f&quot;Loaded {len(df):,} ratings!&quot;)
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>df.head()
+</span></code></pre></div>
+<h2 id="2-fitting-alternating-least-squares-als">2. Fitting Alternating Least Squares (ALS)<a class="headerlink" href="#2-fitting-alternating-least-squares-als" title="Permanent link">&para;</a></h2>
+<p><code>rusket</code> provides <code>ALS</code>, a highly optimized collaborative filtering engine that learns latent representations of users based on their interaction histories.</p>
+<p>We can fit our model directly off the raw Pandas transaction dataframe using <code>fit_transactions</code>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>als_model = ALS(factors=64, iterations=15, alpha=15.0, regularization=0.01, seed=42)
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>t0 = time.time()
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>als_model.fit_transactions(df, user_col=&quot;user_id&quot;, item_col=&quot;item_id&quot;, rating_col=&quot;rating&quot;)
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>print(f&quot;⚡ ALS training complete in {time.time() - t0:.4f}s!&quot;)
+</span></code></pre></div>
+<h2 id="3-bayesian-personalized-ranking-bpr">3. Bayesian Personalized Ranking (BPR)<a class="headerlink" href="#3-bayesian-personalized-ranking-bpr" title="Permanent link">&para;</a></h2>
+<p>While ALS is great for general score predictions, BPR natively optimizes for <strong>Rank</strong>. This makes it the superior choice when your goal is purely to rank Top-N recommendations based entirely on implicit (binary) views or clicks, ignoring explicit star ratings.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bpr_model = BPR(factors=64, iterations=150, learning_rate=0.05, regularization=0.01)
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># Notice BPR trains on implicit behavior (user_col and item_col), completely ignoring ratings
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>t0 = time.time()
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>bpr_model.fit_transactions(df, user_col=&quot;user_id&quot;, item_col=&quot;item_id&quot;)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>print(f&quot;⚡ BPR training complete in {time.time() - t0:.4f}s!&quot;)
+</span></code></pre></div>
+<h2 id="4-next-best-action-hybrid-api">4. Next Best Action (Hybrid API)<a class="headerlink" href="#4-next-best-action-hybrid-api" title="Permanent link">&para;</a></h2>
+<p>The <code>NextBestAction</code> engine wraps these complicated matrices and index boundaries into a dead-simple business API for analysts. </p>
+<p>If we pass it our <code>als_model</code>, we can instantly ask for the top 5 next best products for a handful of target users.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>nba = NextBestAction(als_model=als_model)
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a># Target users from our CRM
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>target_users = pd.DataFrame({&quot;customer_id&quot;: [1, 5, 25, 42]})
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a># Predict the best 3 movies for these users to watch next!
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>recommendations = nba.predict_next_chunk(target_users, user_col=&quot;customer_id&quot;, k=3)
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>recommendations
+</span></code></pre></div>
+<h2 id="5-marketing-potential-score">5. Marketing Potential Score<a class="headerlink" href="#5-marketing-potential-score" title="Permanent link">&para;</a></h2>
+<p>Want to launch an email marketing campaign for specific movies (say movies <code>10</code>, <code>50</code>, and <code>100</code>), but only want to email users who are <em>highly primed</em> to buy them? </p>
+<p>We can use the <code>score_potential</code> API to predict their exact likelihood of interaction across the entire customer base.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>user_histories = df.groupby(&quot;user_id&quot;)[&quot;item_id&quot;].apply(list).tolist()
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>potential_scores = score_potential(user_history=user_histories, als_model=als_model, target_categories=[10, 50, 100])
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>print(&quot;Top 5 user scores for Movie ID 10:&quot;)
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a># Get users with the highest probability to interact with Movie 10
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>movie_10_scores = potential_scores[:, 0]  # First column corresponds to Item 10
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>best_users_for_campaign = np.argsort(movie_10_scores)[::-1][:5]
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>for u in best_users_for_campaign:
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    print(f&quot;User {u}: {movie_10_scores[u]:.2f}&quot;)
 </span></code></pre></div>
 
 
@@ -1436,7 +1356,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../1b-challenge/" class="md-footer__link md-footer__link--prev" aria-label="Previous: The 1B Challenge">
+          <a href="../1_online_retail_basket_analysis/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 🛒 Retail Assortment Optimization">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1446,20 +1366,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                The 1B Challenge
+                🛒 Retail Assortment Optimization
               </div>
             </div>
           </a>
         
         
           
-          <a href="../changelog/" class="md-footer__link md-footer__link--next" aria-label="Next: Changelog">
+          <a href="../3_ecommerce_lifecycle_mining/" class="md-footer__link md-footer__link--next" aria-label="Next: ⏱️ E-Commerce Lifecycle Discovery">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Changelog
+                ⏱️ E-Commerce Lifecycle Discovery
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1523,10 +1443,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
