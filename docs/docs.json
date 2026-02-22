@@ -1,0 +1,76 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "rusket",
+  "description": "Blazing-fast FP-Growth, Eclat, PrefixSpan, and Recommender Engines for Python — pure Rust via PyO3.",
+  "theme": "mint",
+  "logo": {
+    "light": "/assets/logo_wide.svg",
+    "dark": "/assets/logo_wide.svg"
+  },
+  "favicon": "/assets/logo_single.svg",
+  "colors": {
+    "primary": "#FF6B35",
+    "dark": "#FF6B35",
+    "light": "#FF9A6B"
+  },
+  "fonts": {
+    "heading": { "family": "Inter" },
+    "body": { "family": "Inter" }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/bmsuisse/rusket",
+        "icon": "github"
+      },
+      {
+        "label": "PyPI",
+        "href": "https://pypi.org/project/rusket/",
+        "icon": "python"
+      }
+    ]
+  },
+  "navigation": [
+    {
+      "tab": "Docs",
+      "groups": [
+        {
+          "group": "Getting Started",
+          "pages": ["index", "quickstart", "migration"]
+        },
+        {
+          "group": "User Guide",
+          "pages": [
+            "api-reference",
+            "cookbook",
+            {
+              "group": "Interactive Notebooks",
+              "pages": [
+                "notebooks/1_online_retail_basket_analysis",
+                "notebooks/2_movielens_recommendations",
+                "notebooks/3_ecommerce_lifecycle_mining"
+              ]
+            },
+            "recommender",
+            "streaming",
+            "spark",
+            "polars",
+            "benchmarks",
+            "1b-challenge",
+            "architecture"
+          ]
+        },
+        {
+          "group": "Reference",
+          "pages": ["changelog"]
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "socials": {
+      "github": "https://github.com/bmsuisse/rusket"
+    }
+  }
+}

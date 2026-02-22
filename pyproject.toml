@@ -50,6 +50,7 @@ dev = [
     "ruff>=0.15.2",
     "basedpyright>=1.38.1",
     "zensical>=0.0.23",
+    "openpyxl>=3.1.5",
 ]
 
 [tool.pytest.ini_options]
