@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
     from ._compat import DataFrame
 
-Method = Literal["fpgrowth", "eclat", "auto"]
+Method = Literal["fpgrowth", "eclat", "fin", "lcm", "auto"]
 
-_RUST_DENSE = {"fpgrowth": _rust.fpgrowth_from_dense, "eclat": _rust.eclat_from_dense}
-_RUST_CSR = {"fpgrowth": _rust.fpgrowth_from_csr, "eclat": _rust.eclat_from_csr}
+_RUST_DENSE = {"fpgrowth": _rust.fpgrowth_from_dense, "eclat": _rust.eclat_from_dense, "fin": _rust.fin_from_dense, "lcm": _rust.lcm_from_dense}
+_RUST_CSR = {"fpgrowth": _rust.fpgrowth_from_csr, "eclat": _rust.eclat_from_csr, "fin": _rust.fin_from_csr, "lcm": _rust.lcm_from_csr}
 
 
 def _build_result(

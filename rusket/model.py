@@ -401,3 +401,25 @@ class ImplicitRecommender(BaseModel):
         Must be implemented by subclasses.
         """
         pass
+
+
+class SequentialRecommender(BaseModel):
+    """Base class for sequential recommendation models.
+
+    Inherited by FPMC.
+    """
+    def __init__(self, **kwargs: Any):
+        self._user_labels: list[Any] | None = None
+        self._item_labels: list[Any] | None = None
+        self.item_names: list[Any] | None = None
+
+    @classmethod
+    def from_transactions(
+        cls,
+        data: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> SequentialRecommender:
+        raise NotImplementedError("from_transactions not yet implemented for SequentialRecommender")
