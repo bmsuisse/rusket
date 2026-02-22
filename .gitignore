@@ -59,3 +59,9 @@ docs/notebooks/*.zip
 
 # AI slop
 test_faer*
+
+# Profiling / benchmarking artifacts
+log_tensorboard/
+*.dSYM/
+recbole_data/
+saved/
