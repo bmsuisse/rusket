@@ -66,5 +66,8 @@ jobs:
         # Note: 25M/1B are excluded from CI due to runner time/memory limits.
         # Run them locally and commit the resulting JSON/HTML as needed.
 
-      - name: Deploy to GitHub Pages
-        run: uv run mkdocs gh-deploy --force
+      - name: Commit generated docs back to main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-update API reference, changelog, and llm.txt"
+          file_pattern: "docs/api-reference.md docs/changelog.md docs/llm.txt"
