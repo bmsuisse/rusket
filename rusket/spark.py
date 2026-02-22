@@ -73,9 +73,7 @@ def mine_grouped(
         - `itemsets` (array of strings)
     """
     if not use_colnames:
-        raise ValueError(
-            "mine_grouped requires use_colnames=True to safely manage PySpark schemas across partitions."
-        )
+        raise ValueError("mine_grouped requires use_colnames=True to safely manage PySpark schemas across partitions.")
 
     # We defer the pyspark imports so we don't crash if pyspark is not installed
     import pyarrow as pa
@@ -242,9 +240,7 @@ def prefixspan_grouped(
 
             # Ensure items in the sequences are cast to string for the array<string> schema
             if not result_pd.empty:
-                result_pd["sequence"] = result_pd["sequence"].apply(
-                    lambda seq: [str(x) for x in seq]
-                )
+                result_pd["sequence"] = result_pd["sequence"].apply(lambda seq: [str(x) for x in seq])
         except Exception:
             result_pd = pd.DataFrame(columns=["support", "sequence"])
 
@@ -275,8 +271,10 @@ def prefixspan_grouped(
     if hasattr(df.groupby(group_col), "applyInArrow"):
         return df.groupby(group_col).applyInArrow(_prefixspan_group, schema=schema)
     else:
+
         def _prefixspan_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
             from rusket.prefixspan import PrefixSpan
+
             group_id = str(pdf[group_col].iloc[0])
 
             try:
@@ -290,9 +288,7 @@ def prefixspan_grouped(
                 )
                 res = model.mine()
                 if not res.empty:
-                    res["sequence"] = res["sequence"].apply(
-                        lambda seq: [str(x) for x in seq]
-                    )
+                    res["sequence"] = res["sequence"].apply(lambda seq: [str(x) for x in seq])
             except Exception:
                 res = pd.DataFrame(columns=["support", "sequence"])
 
@@ -377,9 +373,7 @@ def hupm_grouped(
 
             # Ensure items in the sequences are cast to int64 for the array<long> schema
             if not result_pd.empty:
-                result_pd["itemset"] = result_pd["itemset"].apply(
-                    lambda seq: [int(x) for x in seq]
-                )
+                result_pd["itemset"] = result_pd["itemset"].apply(lambda seq: [int(x) for x in seq])
         except Exception:
             result_pd = pd.DataFrame(columns=["utility", "itemset"])
 
@@ -410,8 +404,10 @@ def hupm_grouped(
     if hasattr(df.groupby(group_col), "applyInArrow"):
         return df.groupby(group_col).applyInArrow(_hupm_group, schema=schema)
     else:
+
         def _hupm_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
             from rusket.hupm import HUPM
+
             group_id = str(pdf[group_col].iloc[0])
 
             try:
@@ -425,9 +421,7 @@ def hupm_grouped(
                 )
                 res = model.mine()
                 if not res.empty:
-                    res["itemset"] = res["itemset"].apply(
-                        lambda seq: [int(x) for x in seq]
-                    )
+                    res["itemset"] = res["itemset"].apply(lambda seq: [int(x) for x in seq])
             except Exception:
                 res = pd.DataFrame(columns=["utility", "itemset"])
 
@@ -550,8 +544,10 @@ def rules_grouped(
     if hasattr(df.groupby(group_col), "applyInArrow"):
         return df.groupby(group_col).applyInArrow(_rules_group, schema=schema)
     else:
+
         def _rules_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
             from rusket.association_rules import association_rules
+
             group_id = str(pdf[group_col].iloc[0])
 
             if isinstance(num_itemsets, dict):
@@ -621,6 +617,7 @@ def recommend_batches(
     # If it's a raw ALS model, wrap it
     try:
         from rusket.recommend import Recommender
+
         recommender = model if isinstance(model, Recommender) else Recommender(als_model=model)
     except Exception:
         recommender = model  # Trust the duck-typing

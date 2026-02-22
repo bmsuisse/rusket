@@ -115,19 +115,14 @@ def make_chart(results: list[tuple]) -> go.Figure:
     )
 
     rows_label = [f"{int(r)}M" for r in rows_m]
-    fig.update_xaxes(
-        tickvals=rows_m, ticktext=rows_label, title_text="Rows processed", row=1, col=1
-    )
-    fig.update_xaxes(
-        tickvals=rows_m, ticktext=rows_label, title_text="Rows processed", row=2, col=1
-    )
+    fig.update_xaxes(tickvals=rows_m, ticktext=rows_label, title_text="Rows processed", row=1, col=1)
+    fig.update_xaxes(tickvals=rows_m, ticktext=rows_label, title_text="Rows processed", row=2, col=1)
     fig.update_yaxes(title_text="Time (s)", row=1, col=1)
     fig.update_yaxes(title_text="Frequent itemsets", row=2, col=1)
 
     fig.update_layout(
         title={
-            "text": f"<b>rusket FPMiner — Billion-Row Streaming Benchmark</b><br>"
-            f"<sup>{LABEL}</sup>",
+            "text": f"<b>rusket FPMiner — Billion-Row Streaming Benchmark</b><br><sup>{LABEL}</sup>",
             "x": 0.5,
             "xanchor": "center",
         },

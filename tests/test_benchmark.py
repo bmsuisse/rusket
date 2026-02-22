@@ -38,14 +38,10 @@ def _make_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> pd.DataFrame
     n_very_low = int(n_cols * 0.9)
     support_values[:n_very_low] = rng.uniform(0.0001, 0.009, n_very_low)
     n_medium = int(n_cols * 0.06)
-    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(
-        0.01, 0.1, n_medium
-    )
+    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(0.01, 0.1, n_medium)
     n_high = n_cols - n_very_low - n_medium
     support_values[n_very_low + n_medium :] = rng.uniform(0.1, 0.65, n_high)
-    return pd.DataFrame(
-        {f"c{i}": (rng.random(n_rows) < support_values[i]) for i in range(n_cols)}
-    )
+    return pd.DataFrame({f"c{i}": (rng.random(n_rows) < support_values[i]) for i in range(n_cols)})
 
 
 RNG = np.random.default_rng(0)
@@ -256,7 +252,5 @@ def test_vs_mlxtend_assoc_rules_medium() -> None:
 
     _, ours_t, _ = _timed(ours)
     _, mlx_t, _ = _timed(mlx)
-    print(
-        f"\n[assoc/medium] ours={ours_t:.3f}s  mlxtend={mlx_t:.3f}s  speedup={mlx_t / ours_t:.1f}×"
-    )
+    print(f"\n[assoc/medium] ours={ours_t:.3f}s  mlxtend={mlx_t:.3f}s  speedup={mlx_t / ours_t:.1f}×")
     assert ours_t < mlx_t * 3, f"Assoc rules too slow: {ours_t:.3f}s vs {mlx_t:.3f}s"

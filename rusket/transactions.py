@@ -64,10 +64,7 @@ def from_transactions(
     import polars as _pl
 
     if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
-        raise TypeError(
-            f"Expected a Pandas/Polars/Spark DataFrame or list of lists, "
-            f"got {type(data)}"
-        )
+        raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
 
     if isinstance(data, _pl.DataFrame):
         data = data.to_pandas()
@@ -82,9 +79,7 @@ def from_pandas(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(
-        df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
-    )
+    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
 
 
 def from_polars(
@@ -94,9 +89,7 @@ def from_polars(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(
-        df, transaction_col=transaction_col, item_col=item_col, verbose=verbose
-    )
+    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
 
 
 def from_spark(
@@ -131,9 +124,7 @@ def _from_list(
     n_items = len(all_items)
 
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Found {n_items:,} unique items. Building COO coordinates..."
-        )
+        print(f"[{time.strftime('%X')}] Found {n_items:,} unique items. Building COO coordinates...")
 
     row_idx: list[int] = []
     col_idx: list[int] = []
@@ -163,9 +154,7 @@ def _from_list(
     ).astype(pd.SparseDtype("bool", fill_value=False))
 
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] CSR generation completed in {time.perf_counter() - t0:.2f}s."
-        )
+        print(f"[{time.strftime('%X')}] CSR generation completed in {time.perf_counter() - t0:.2f}s.")
 
     return sparse_df
 
@@ -182,30 +171,21 @@ def _from_dataframe(
 
     t0 = 0.0
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})..."
-        )
+        print(f"[{time.strftime('%X')}] Parameterizing from DataFrame (shape={df.shape})...")
         t0 = time.perf_counter()
 
     cols = list(df.columns)
 
     if len(cols) < 2:
-        raise ValueError(
-            f"DataFrame must have at least 2 columns (transaction id + item), "
-            f"got {len(cols)}: {cols}"
-        )
+        raise ValueError(f"DataFrame must have at least 2 columns (transaction id + item), got {len(cols)}: {cols}")
 
     txn_col = transaction_col or str(cols[0])
     itm_col = item_col or str(cols[1])
 
     if txn_col not in df.columns:
-        raise ValueError(
-            f"Transaction column '{txn_col}' not found. Available columns: {cols}"
-        )
+        raise ValueError(f"Transaction column '{txn_col}' not found. Available columns: {cols}")
     if itm_col not in df.columns:
-        raise ValueError(
-            f"Item column '{itm_col}' not found. Available columns: {cols}"
-        )
+        raise ValueError(f"Item column '{itm_col}' not found. Available columns: {cols}")
 
     txn_codes, _txn_uniques = pd.factorize(df[txn_col], sort=False)
     item_codes, item_uniques = pd.factorize(df[itm_col], sort=True)
@@ -227,9 +207,7 @@ def _from_dataframe(
     ).astype(pd.SparseDtype("bool", fill_value=False))
 
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] DataFrame parameterization completed in {time.perf_counter() - t0:.2f}s."
-        )
+        print(f"[{time.strftime('%X')}] DataFrame parameterization completed in {time.perf_counter() - t0:.2f}s.")
 
     return res
 
@@ -295,9 +273,7 @@ def from_transactions_csr(
     if isinstance(data, (str, Path)):
         return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
 
-    if type(data).__name__ == "DataFrame" and getattr(
-        data, "__module__", ""
-    ).startswith("polars"):
+    if type(data).__name__ == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
         data = data.to_pandas()
 
     df = typing.cast("pd.DataFrame", data)

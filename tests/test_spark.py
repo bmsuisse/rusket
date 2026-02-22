@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 pyspark = pytest.importorskip("pyspark")
-from rusket.spark import mine_grouped, to_spark
+from rusket.spark import mine_grouped, to_spark  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -27,6 +27,7 @@ def spark_session():
         else:
             raise e
 
+
 def test_to_spark(spark_session) -> None:
     df = pd.DataFrame({"store_id": [1, 1], "bread": [1, 0]})
     # Test valid conversion from pandas to Spark
@@ -34,6 +35,7 @@ def test_to_spark(spark_session) -> None:
 
     # Let's count row instances
     assert spark_df.count() == 2
+
 
 def test_mine_grouped(spark_session) -> None:
     df = pd.DataFrame(
@@ -67,6 +69,7 @@ def test_mine_grouped(spark_session) -> None:
     assert "A" in groups
     assert "B" in groups
 
+
 def test_spark_als(spark_session) -> None:
     from rusket.als import ALS
 
@@ -81,9 +84,7 @@ def test_spark_als(spark_session) -> None:
 
     model = ALS(factors=4, iterations=3, seed=42)
     # The spark_df will be natively ingested via arrow buffers
-    model.fit_transactions(
-        spark_df, user_col="user_id", item_col="item_id", rating_col="rating"
-    )
+    model.fit_transactions(spark_df, user_col="user_id", item_col="item_id", rating_col="rating")
 
     assert model.fitted
     assert model.user_factors.shape[0] == 3
@@ -91,6 +92,7 @@ def test_spark_als(spark_session) -> None:
 
     recs, scores = model.recommend_items(user_id=0, n=2)
     assert len(recs) > 0
+
 
 def test_spark_bpr(spark_session) -> None:
     from rusket.bpr import BPR
@@ -114,21 +116,22 @@ def test_spark_bpr(spark_session) -> None:
     recs, scores = model.recommend_items(user_id=1, n=2)
     assert len(recs) > 0
 
+
 def test_spark_prefixspan(spark_session) -> None:
     from rusket.prefixspan import prefixspan, sequences_from_event_log
 
-    df = pd.DataFrame({
-        "user_id": [1, 1, 1, 2, 2, 3, 3],
-        "time": [10, 20, 30, 10, 20, 10, 20],
-        "item": ["A", "B", "A", "B", "A", "A", "C"],
-    })
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 1, 1, 2, 2, 3, 3],
+            "time": [10, 20, 30, 10, 20, 10, 20],
+            "item": ["A", "B", "A", "B", "A", "A", "C"],
+        }
+    )
 
     spark_df = to_spark(spark_session, df)
 
     # Use our Spark Arrow converter natively
-    seqs, mapping_dict = sequences_from_event_log(
-        df=spark_df, user_col="user_id", time_col="time", item_col="item"
-    )
+    seqs, mapping_dict = sequences_from_event_log(df=spark_df, user_col="user_id", time_col="time", item_col="item")
 
     # Seq 1: A, B, A (0, 1, 0)
     # Seq 2: B, A (1, 0)
@@ -149,15 +152,18 @@ def test_spark_prefixspan(spark_session) -> None:
     ba = freq[freq["sequence_str"].apply(lambda x: x == ["B", "A"])].iloc[0]
     assert ba["support"] == 2
 
+
 def test_prefixspan_grouped(spark_session) -> None:
     from rusket.spark import prefixspan_grouped
 
-    df = pd.DataFrame({
-        "store_id": ["A", "A", "A", "B", "B", "B"],
-        "user_id": [1, 1, 1, 2, 2, 2],
-        "time": [10, 20, 30, 10, 20, 30],
-        "item": ["X", "Y", "X", "Y", "Z", "Y"],
-    })
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "B", "B", "B"],
+            "user_id": [1, 1, 1, 2, 2, 2],
+            "time": [10, 20, 30, 10, 20, 30],
+            "item": ["X", "Y", "X", "Y", "Z", "Y"],
+        }
+    )
 
     spark_df = to_spark(spark_session, df)
 
@@ -171,6 +177,7 @@ def test_prefixspan_grouped(spark_session) -> None:
     )
 
     import pyspark
+
     assert isinstance(result, pyspark.sql.DataFrame)
 
     pd_result = result.toPandas()
@@ -187,15 +194,18 @@ def test_prefixspan_grouped(spark_session) -> None:
     b_res = pd_result[pd_result["store_id"] == "B"]
     assert len(b_res) > 0
 
+
 def test_hupm_grouped(spark_session) -> None:
     from rusket.spark import hupm_grouped
 
-    df = pd.DataFrame({
-        "store_id": ["A", "A", "A", "A", "B", "B", "B"],
-        "transaction_id": [1, 1, 2, 2, 3, 3, 4],
-        "item_id": [10, 20, 10, 30, 10, 20, 30],
-        "utility": [5.0, 10.0, 5.0, 15.0, 50.0, 2.0, 15.0],
-    })
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "A", "B", "B", "B"],
+            "transaction_id": [1, 1, 2, 2, 3, 3, 4],
+            "item_id": [10, 20, 10, 30, 10, 20, 30],
+            "utility": [5.0, 10.0, 5.0, 15.0, 50.0, 2.0, 15.0],
+        }
+    )
 
     spark_df = to_spark(spark_session, df)
 
@@ -209,6 +219,7 @@ def test_hupm_grouped(spark_session) -> None:
     )
 
     import pyspark
+
     assert isinstance(result, pyspark.sql.DataFrame)
 
     pd_result = result.toPandas()
@@ -222,6 +233,7 @@ def test_hupm_grouped(spark_session) -> None:
 
     assert len(a_res) > 0
     assert len(b_res) > 0
+
 
 def test_rules_grouped(spark_session) -> None:
     from rusket.spark import mine_grouped, rules_grouped
@@ -252,6 +264,7 @@ def test_rules_grouped(spark_session) -> None:
     )
 
     import pyspark
+
     assert isinstance(rules_df, pyspark.sql.DataFrame)
 
     pd_rules = rules_df.toPandas()
@@ -271,30 +284,36 @@ def test_rules_grouped(spark_session) -> None:
     assert len(a_rules) > 0
     assert len(b_rules) > 0
 
+
 def test_recommend_batches(spark_session) -> None:
     from rusket.als import ALS
     from rusket.recommend import Recommender
     from rusket.spark import recommend_batches
 
     # Train a quick ALS model locally
-    train_df = pd.DataFrame({
-        "user_id": [1, 1, 2, 2, 3],
-        "item_id": [10, 20, 10, 30, 20],
-        "rating": [5.0, 3.0, 4.0, 5.0, 1.0],
-    })
+    train_df = pd.DataFrame(
+        {
+            "user_id": [1, 1, 2, 2, 3],
+            "item_id": [10, 20, 10, 30, 20],
+            "rating": [5.0, 3.0, 4.0, 5.0, 1.0],
+        }
+    )
 
     model = ALS(factors=4, iterations=3, seed=42)
     # Turn off the ALS warning simply for hygiene
     import warnings
-    warnings.simplefilter('ignore', DeprecationWarning)
+
+    warnings.simplefilter("ignore", DeprecationWarning)
 
     model.fit_transactions(train_df, user_col="user_id", item_col="item_id", rating_col="rating")
     recommender = Recommender(als_model=model)
 
     # Now pretend we have a Spark DF of user histories to batch score
-    batch_df = pd.DataFrame({
-        "user_id": ["0", "1", "2"],
-    })
+    batch_df = pd.DataFrame(
+        {
+            "user_id": ["0", "1", "2"],
+        }
+    )
     spark_batch = to_spark(spark_session, batch_df)
 
     # We can pass the `recommender` directly
@@ -306,6 +325,7 @@ def test_recommend_batches(spark_session) -> None:
     )
 
     import pyspark
+
     assert isinstance(result, pyspark.sql.DataFrame)
 
     pd_result = result.toPandas()

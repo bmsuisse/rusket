@@ -42,9 +42,7 @@ def association_rules(
     if "itemsets" not in df.columns:
         raise ValueError("The input DataFrame must contain an 'itemsets' column")
     if df.empty:
-        raise ValueError(
-            "The input DataFrame `df` containing the frequent itemsets is empty."
-        )
+        raise ValueError("The input DataFrame `df` containing the frequent itemsets is empty.")
 
     first_iset = next(iter(df["itemsets"]))
     has_string_labels = any(isinstance(x, str) for x in first_iset)
@@ -83,9 +81,7 @@ def association_rules(
     )
 
     if not antecedents_raw:
-        return pd.DataFrame(
-            columns=["antecedents", "consequents"] + list(return_metrics)
-        )
+        return pd.DataFrame(columns=["antecedents", "consequents"] + list(return_metrics))
 
     if has_string_labels:
         ant_fs = [frozenset(idx_to_label[i] for i in a) for a in antecedents_raw]

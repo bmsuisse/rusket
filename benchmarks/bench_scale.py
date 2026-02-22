@@ -43,9 +43,7 @@ def _alarm(signum: int, frame: object) -> None:
     raise _Timeout()
 
 
-def timed_run(
-    fn: object, *args: object, timeout_sec: int = 600, **kwargs: object
-) -> tuple[int | None, float | None]:
+def timed_run(fn: object, *args: object, timeout_sec: int = 600, **kwargs: object) -> tuple[int | None, float | None]:
     old = signal.signal(signal.SIGALRM, _alarm)
     signal.alarm(timeout_sec)
     try:

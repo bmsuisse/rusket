@@ -164,14 +164,8 @@ for label, n_rows, n_cols, min_sup in SIZES:
 
         # ── Output correctness check ─────────────────────────────────────
         our_result = fpgrowth(df, min_support=min_sup, use_colnames=True)
-        our_sets = {
-            (round(irow.support, 6), frozenset(irow.itemsets))
-            for irow in our_result.itertuples()
-        }
-        mlx_sets = {
-            (round(irow.support, 6), frozenset(irow.itemsets))
-            for irow in mlx_result.itertuples()
-        }
+        our_sets = {(round(irow.support, 6), frozenset(irow.itemsets)) for irow in our_result.itertuples()}
+        mlx_sets = {(round(irow.support, 6), frozenset(irow.itemsets)) for irow in mlx_result.itertuples()}
         match = our_sets == mlx_sets
         sym_diff = our_sets.symmetric_difference(mlx_sets)
         if match:
@@ -215,9 +209,7 @@ x_labels = [
 ]
 
 # Decide layout
-has_compare = (
-    HAS_MLXTEND and "speedup" in df_res.columns and df_res["speedup"].notna().any()
-)
+has_compare = HAS_MLXTEND and "speedup" in df_res.columns and df_res["speedup"].notna().any()
 n_plot_rows = 2 if has_compare else 1
 subplot_titles_all = [
     "⏱ Execution Time (s, log scale)",
@@ -269,9 +261,7 @@ if HAS_POLARS and "polars_time_s" in df_res:
     add_bars(1, "polars_time_s", "🐻‍❄️ fpgrowth (polars)", POLARS_COLOR, "{:.3f}s")
 
 # Memory (col 2)
-add_bars(
-    2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False
-)
+add_bars(2, "fpgrowth_mem_mb", "🦀 fpgrowth mem", RUSTKET_COLOR, "{:.1f}MB", showlegend=False)
 add_bars(2, "eclat_mem_mb", "🟠 eclat mem", ECLAT_COLOR, "{:.1f}MB", showlegend=False)
 if HAS_MLXTEND and "mlxtend_mem_mb" in df_res:
     add_bars(
@@ -283,9 +273,7 @@ if HAS_MLXTEND and "mlxtend_mem_mb" in df_res:
         showlegend=False,
     )
 if HAS_POLARS and "polars_mem_mb" in df_res:
-    add_bars(
-        2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False
-    )
+    add_bars(2, "polars_mem_mb", "🐻‍❄️ polars mem", POLARS_COLOR, "{:.1f}MB", showlegend=False)
 
 # Speedup + memory ratio (row 2, only where mlxtend ran)
 if has_compare:
@@ -385,8 +373,6 @@ for row in range(1, n_plot_rows + 1):
             type="log" if row == 1 else "linear",
         )
 
-out_path = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "benchmark_report.html"
-)
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "benchmark_report.html")
 fig.write_html(out_path, include_plotlyjs="cdn")
 print(f"\n✅ Report → file://{out_path}")

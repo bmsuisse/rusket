@@ -64,9 +64,7 @@ def bench_mlxtend(
 
     t0 = time.perf_counter()
     try:
-        freq = mlxtend_fpgrowth(
-            ohe, min_support=min_support, use_colnames=True, max_len=max_len
-        )
+        freq = mlxtend_fpgrowth(ohe, min_support=min_support, use_colnames=True, max_len=max_len)
         mine_s = time.perf_counter() - t0
         res_len = len(freq)
     except Exception as e:
@@ -116,9 +114,7 @@ def print_table(results: list[Result]) -> None:
     print("-" * len(hdr))
     for r in results:
         if r.prep_s < 0:
-            print(
-                f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {'OOM':>8} {'-':>8} {'-':>8} {'-':>10}"
-            )
+            print(f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {'OOM':>8} {'-':>8} {'-':>8} {'-':>10}")
         elif r.mine_s < 0:
             print(
                 f"{r.label:<10} {r.rows:>12,} {r.n_txns:>10,} {r.n_items:>8,} {r.prep_s:>7.1f}s {'FAIL':>8} {'-':>8} {'-':>10}"
@@ -154,9 +150,7 @@ if __name__ == "__main__":
             print("FAILED", flush=True)
 
         # Test rusket
-        rng = np.random.default_rng(
-            42
-        )  # Reset RNG so the generated data is EXACTLY the same
+        rng = np.random.default_rng(42)  # Reset RNG so the generated data is EXACTLY the same
         print(f"[{n_rows:,} rows] rusket  ...", end=" ", flush=True)
         r = bench_fpminer(rng, n_rows, n_txns, n_items, min_support, max_len)
         results.append(r)

@@ -108,9 +108,7 @@ def test_eclat_matches_fpgrowth() -> None:
     res_fpg = fpgrowth(df, min_support=0.05, use_colnames=True)
 
     # Same number of itemsets
-    assert len(res_eclat) == len(res_fpg), (
-        f"eclat found {len(res_eclat)} itemsets, fpgrowth found {len(res_fpg)}"
-    )
+    assert len(res_eclat) == len(res_fpg), f"eclat found {len(res_eclat)} itemsets, fpgrowth found {len(res_fpg)}"
 
 
 def test_eclat_polars_input() -> None:
@@ -120,9 +118,7 @@ def test_eclat_polars_input() -> None:
     except ImportError:
         return  # skip if polars not installed
 
-    df = pd.DataFrame(
-        {"a": [True, True, False], "b": [True, False, True], "c": [False, True, True]}
-    )
+    df = pd.DataFrame({"a": [True, True, False], "b": [True, False, True], "c": [False, True, True]})
     df_pl = pl.from_pandas(df)
 
     res_pd = eclat(df, min_support=0.5, use_colnames=True)

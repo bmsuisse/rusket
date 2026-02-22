@@ -62,16 +62,12 @@ def main():
     # 1. Load the data
     data_dir = Path(__file__).parent.parent / "benchdata"
     purchases = download_online_retail(data_dir)
-    print(
-        f"Loaded {len(purchases):,} purchases across {purchases['StockCode'].nunique():,} items."
-    )
+    print(f"Loaded {len(purchases):,} purchases across {purchases['StockCode'].nunique():,} items.")
 
     # 2. Fit the ALS model
     # We use anderson_m=5 to speed up convergence
     print("Fitting ALS model...")
-    model = ALS(
-        factors=64, iterations=15, alpha=40.0, seed=42, anderson_m=5, verbose=True
-    )
+    model = ALS(factors=64, iterations=15, alpha=40.0, seed=42, anderson_m=5, verbose=True)
 
     # `fit_transactions` will map original `StockCode` to internal matrix indices
     model.fit_transactions(purchases, user_col="CustomerID", item_col="StockCode")

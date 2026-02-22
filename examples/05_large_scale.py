@@ -34,9 +34,7 @@ def timed(label: str, fn, *args, **kwargs):
 N_ROWS, N_COLS = 100_000, 1_000
 MIN_SUPPORT = 0.05
 
-print(
-    f"Dataset: {N_ROWS:,} rows × {N_COLS:,} items  ({N_ROWS * N_COLS / 1e6:.0f} MB raw)\n"
-)
+print(f"Dataset: {N_ROWS:,} rows × {N_COLS:,} items  ({N_ROWS * N_COLS / 1e6:.0f} MB raw)\n")
 
 rng = np.random.default_rng(42)
 rank = np.arange(1, N_COLS + 1, dtype=float)

@@ -14,9 +14,7 @@ except ImportError:
     HAS_MLXTEND = False
 
 
-def _make_transaction_df(
-    n_rows: int, n_cols: int, rng: np.random.Generator
-) -> pd.DataFrame:
+def _make_transaction_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> pd.DataFrame:
     rank = np.arange(1, n_cols + 1, dtype=np.float64)
     support = 0.5 / rank**0.6
     support = np.clip(support, 0.0001, 0.5)
@@ -37,9 +35,7 @@ def _timed(fn, *args, **kwargs):
 
 def run_benchmark(n_rows, n_cols, min_sup):
     RNG = np.random.default_rng(42)
-    print(
-        f"\n[Scenario] {n_rows:,} rows × {n_cols:,} cols  min_sup={min_sup}", flush=True
-    )
+    print(f"\n[Scenario] {n_rows:,} rows × {n_cols:,} cols  min_sup={min_sup}", flush=True)
 
     t0 = time.perf_counter()
     print("  Generating dataset…", end=" ", flush=True)
@@ -59,9 +55,7 @@ def run_benchmark(n_rows, n_cols, min_sup):
             try:
                 mlx_res, mlx_t, mlx_mem = _timed(mlx_fpgrowth, df, min_support=min_sup)
                 speedup = mlx_t / ours_t
-                print(
-                    f"{mlx_t:.3f}s  peak={mlx_mem / 1e6:.1f}MB  speedup={speedup:.1f}x"
-                )
+                print(f"{mlx_t:.3f}s  peak={mlx_mem / 1e6:.1f}MB  speedup={speedup:.1f}x")
             except Exception as e:
                 print(f"FAILED: {e}")
 

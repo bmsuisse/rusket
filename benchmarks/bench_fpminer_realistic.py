@@ -62,9 +62,7 @@ def load_transactions(path: Path) -> tuple[np.ndarray, np.ndarray, int]:
     return txn_ids, item_ids, n_items
 
 
-def compute_item_probs(
-    txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int, n_txns: int
-) -> np.ndarray:
+def compute_item_probs(txn_ids: np.ndarray, item_ids: np.ndarray, n_items: int, n_txns: int) -> np.ndarray:
     counts = np.bincount(item_ids, minlength=n_items).astype(np.float64)
     return counts / counts.sum()
 
@@ -79,12 +77,8 @@ def generate_chunk(
 ) -> tuple[np.ndarray, np.ndarray]:
     sizes = rng.poisson(avg_items, size=n_txns).clip(1, None)
     total = int(sizes.sum())
-    item_ids = rng.choice(n_items, size=total, replace=True, p=item_probs).astype(
-        np.int32
-    )
-    txn_ids = np.repeat(
-        np.arange(txn_offset, txn_offset + n_txns, dtype=np.int64), sizes
-    )
+    item_ids = rng.choice(n_items, size=total, replace=True, p=item_probs).astype(np.int32)
+    txn_ids = np.repeat(np.arange(txn_offset, txn_offset + n_txns, dtype=np.int64), sizes)
     return txn_ids, item_ids
 
 
@@ -107,9 +101,7 @@ def run_one(
     txn_offset = 0
     while txn_offset < target_txns:
         cs = min(chunk_txns, target_txns - txn_offset)
-        txn_ids, item_ids = generate_chunk(
-            rng, item_probs, avg_items, n_items, cs, txn_offset
-        )
+        txn_ids, item_ids = generate_chunk(rng, item_probs, avg_items, n_items, cs, txn_offset)
         miner.add_chunk(txn_ids, item_ids)
         txn_offset += cs
         del txn_ids, item_ids
@@ -118,9 +110,7 @@ def run_one(
 
     t1 = time.perf_counter()
     try:
-        freq = miner.mine(
-            min_support=info["min_support"], max_len=info["max_len"], method=method
-        )  # type: ignore[call-arg]
+        freq = miner.mine(min_support=info["min_support"], max_len=info["max_len"], method=method)  # type: ignore[call-arg]
         mine_t = time.perf_counter() - t1
         n_itemsets = len(freq)
     except Exception as e:
@@ -165,9 +155,7 @@ def run_dataset(name: str) -> None:
     del txn_ids_real, item_ids_real
 
     print(f"\n{'═' * 88}")
-    print(
-        f"  Dataset: {name}  │  {n_txns_real:,} real txns × {n_items} items, avg {avg_items:.1f} items/txn"
-    )
+    print(f"  Dataset: {name}  │  {n_txns_real:,} real txns × {n_items} items, avg {avg_items:.1f} items/txn")
     print(f"  min_support={info['min_support']}, max_len={info['max_len']}")
 
     # ── Fast iteration on 100M ─────────────────────────────────────────────
@@ -194,12 +182,8 @@ def run_dataset(name: str) -> None:
             print(ROW.format(**r), flush=True)
 
     # ── Find best config (fastest total) ───────────────────────────────────
-    best = min(
-        results_100m, key=lambda r: r["total"] if r["n_itemsets"] > 0 else float("inf")
-    )
-    print(
-        f"\n  🏆 Best @ 100M: method={best['method']}, chunk={best['chunk']} → {best['total']:.1f}s"
-    )
+    best = min(results_100m, key=lambda r: r["total"] if r["n_itemsets"] > 0 else float("inf"))
+    print(f"\n  🏆 Best @ 100M: method={best['method']}, chunk={best['chunk']} → {best['total']:.1f}s")
 
     # ── Validate best + all methods at 200M ────────────────────────────────
     print("\n  ▶ Validation phase — 200M rows")

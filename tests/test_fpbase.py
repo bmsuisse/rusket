@@ -32,9 +32,7 @@ def captured_output():
         sys.stdout, sys.stderr = old_out, old_err
 
 
-def assert_raises(
-    error_type: type, substr: str, func: Callable, *args, **kwargs
-) -> None:
+def assert_raises(error_type: type, substr: str, func: Callable, *args, **kwargs) -> None:
     """Assert that *func* raises *error_type* with *substr* in its message."""
     try:
         func(*args, **kwargs)
@@ -50,13 +48,9 @@ def compare_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
     rows2 = sorted(zip(itemsets2, df2["support"], strict=False))
     for row1, row2 in zip(rows1, rows2, strict=False):
         if row1[0] != row2[0]:
-            raise AssertionError(
-                f"Expected different frequent itemsets\nx:{row1[0]}\ny:{row2[0]}"
-            )
+            raise AssertionError(f"Expected different frequent itemsets\nx:{row1[0]}\ny:{row2[0]}")
         elif row1[1] != row2[1]:
-            raise AssertionError(
-                f"Expected different support\nx:{row1[1]}\ny:{row2[1]}"
-            )
+            raise AssertionError(f"Expected different support\nx:{row1[1]}\ny:{row2[1]}")
 
 
 # ---------------------------------------------------------------------------
@@ -117,8 +111,7 @@ class FPTestErrors:
                 warnings.simplefilter("ignore", DeprecationWarning)
                 assert_raises(
                     ValueError,
-                    "The allowed values for a DataFrame are True, "
-                    "False, 0, 1. Found value 2",
+                    "The allowed values for a DataFrame are True, False, 0, 1. Found value 2",
                     self.fpalgo,
                     df,
                 )
@@ -196,12 +189,8 @@ class FPTestEx1:
         def has_items(row_items, expected):
             return set(row_items) == set(expected)
 
-        assert res_df[
-            res_df["itemsets"].apply(lambda x: has_items(x, ["nothing"]))
-        ].values.shape == (0, 2)
-        assert res_df[
-            res_df["itemsets"].apply(lambda x: has_items(x, ["Milk", "Kidney Beans"]))
-        ].values.shape == (1, 2)
+        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["nothing"]))].values.shape == (0, 2)
+        assert res_df[res_df["itemsets"].apply(lambda x: has_items(x, ["Milk", "Kidney Beans"]))].values.shape == (1, 2)
 
     def test_sparse(self) -> None:
         def test_with_fill_values(fill_value: object) -> None:
@@ -211,9 +200,7 @@ class FPTestEx1:
                 warnings.simplefilter("ignore", DeprecationWarning)
                 res_df = self.fpalgo(sdf, use_colnames=True)
                 assert res_df.values.shape == self.fpalgo(self.df).values.shape
-            assert res_df[
-                res_df["itemsets"].apply(lambda x: set(x) == {"Milk", "Kidney Beans"})
-            ].values.shape == (1, 2)
+            assert res_df[res_df["itemsets"].apply(lambda x: set(x) == {"Milk", "Kidney Beans"})].values.shape == (1, 2)
 
         test_with_fill_values(0)
         test_with_fill_values(False)
@@ -333,8 +320,7 @@ class FPTestEx3All(FPTestEx3):
     def test_output3(self) -> None:
         assert_raises(
             ValueError,
-            "`min_support` must be a positive "
-            "number within the interval `(0, 1]`. Got 0.0.",
+            "`min_support` must be a positive number within the interval `(0, 1]`. Got 0.0.",
             self.fpalgo,
             self.df,
             min_support=0.0,

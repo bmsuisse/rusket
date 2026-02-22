@@ -37,9 +37,7 @@ def run_fpm_benchmark():
     res_rusket_fp = mine(df, min_support=min_support, method="fpgrowth")
     t1 = time.time()
     rusket_fp_time = t1 - t0
-    print(
-        f"🏆 Rusket FP-Growth time: {rusket_fp_time:.4f}s (Found {len(res_rusket_fp)} itemsets)"
-    )
+    print(f"🏆 Rusket FP-Growth time: {rusket_fp_time:.4f}s (Found {len(res_rusket_fp)} itemsets)")
 
     # 2. Rusket ECLAT
     t0 = time.time()
@@ -50,24 +48,16 @@ def run_fpm_benchmark():
 
     # 3. MLxtend FP-Growth
     if mlxtend_fpgrowth is not None:
-        print(
-            "\nEvaluating mlxtend (Standard Python Baseline)... this may take a while."
-        )
+        print("\nEvaluating mlxtend (Standard Python Baseline)... this may take a while.")
         t0 = time.time()
         res_mlxtend = mlxtend_fpgrowth(df, min_support=min_support)
         t1 = time.time()
         mlxtend_time = t1 - t0
-        print(
-            f"🐢 MLxtend FP-Growth:     {mlxtend_time:.4f}s (Found {len(res_mlxtend)} itemsets)"
-        )
+        print(f"🐢 MLxtend FP-Growth:     {mlxtend_time:.4f}s (Found {len(res_mlxtend)} itemsets)")
 
         print("\n--- Benchmark Results ---")
-        print(
-            f"Speedup Rusket FP-Growth vs MLxtend: {mlxtend_time / rusket_fp_time:.2f}x faster"
-        )
-        print(
-            f"Speedup Rusket ECLAT vs MLxtend:     {mlxtend_time / rusket_eclat_time:.2f}x faster"
-        )
+        print(f"Speedup Rusket FP-Growth vs MLxtend: {mlxtend_time / rusket_fp_time:.2f}x faster")
+        print(f"Speedup Rusket ECLAT vs MLxtend:     {mlxtend_time / rusket_eclat_time:.2f}x faster")
     else:
         print("\nMLxtend not installed. Skipping MLxtend benchmark.")
 

@@ -157,11 +157,7 @@ def run_benchmark(name: str) -> None:
         timeout_sec=timeout,
     )
     t_str = t if isinstance(t, str) else f"{t:.3f}s"
-    print(
-        f"  rusket fpgrowth  : {t_str:>14}  ({n:>12,} itemsets)"
-        if n
-        else f"  rusket fpgrowth  : {t_str}"
-    )
+    print(f"  rusket fpgrowth  : {t_str:>14}  ({n:>12,} itemsets)" if n else f"  rusket fpgrowth  : {t_str}")
 
     # rusket eclat
     n2, t2 = timed_run(
@@ -173,11 +169,7 @@ def run_benchmark(name: str) -> None:
         timeout_sec=timeout,
     )
     t2_str = t2 if isinstance(t2, str) else f"{t2:.3f}s"
-    print(
-        f"  rusket eclat     : {t2_str:>14}  ({n2:>12,} itemsets)"
-        if n2
-        else f"  rusket eclat     : {t2_str}"
-    )
+    print(f"  rusket eclat     : {t2_str:>14}  ({n2:>12,} itemsets)" if n2 else f"  rusket eclat     : {t2_str}")
 
     # mlxtend
     if HAS_MLX:

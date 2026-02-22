@@ -201,9 +201,7 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--iters", type=int, default=15, help="Number of ALS iterations (default 15)"
-    )
+    parser.add_argument("--iters", type=int, default=15, help="Number of ALS iterations (default 15)")
     parser.add_argument(
         "--quick",
         action="store_true",
@@ -219,9 +217,7 @@ def main() -> None:
     mat = get_ml25m()
     results: list[dict] = []
 
-    print(
-        "\n── CG iterations sweep (factors=64) ──────────────────────────", flush=True
-    )
+    print("\n── CG iterations sweep (factors=64) ──────────────────────────", flush=True)
     for cg in [1, 3, 5, 10]:
         r = bench(mat, f"CG cg_iters={cg}  k=64", 64, args.iters, cg, False)
         results.append(r)
@@ -231,9 +227,7 @@ def main() -> None:
     results.append(r)
 
     if not args.quick:
-        print(
-            "\n── Factor dimension sweep (CG cg_iters=3) ──────────────────", flush=True
-        )
+        print("\n── Factor dimension sweep (CG cg_iters=3) ──────────────────", flush=True)
         for k in [32, 128]:
             r = bench(mat, f"CG cg_iters=3  k={k}", k, args.iters, 3, False)
             results.append(r)
@@ -244,9 +238,7 @@ def main() -> None:
     best = min(results, key=lambda r: r["fit_s"])
     for r in results:
         marker = " ◀ fastest" if r is best else ""
-        print(
-            f"  {r['label']:<32}  {r['fit_s']:>7.1f}  {r['throughput']:>8.2f}  {r['rec_ms']:>9.2f}{marker}"
-        )
+        print(f"  {r['label']:<32}  {r['fit_s']:>7.1f}  {r['throughput']:>8.2f}  {r['rec_ms']:>9.2f}{marker}")
 
     output_dir = Path(__file__).resolve().parent.parent / "docs" / "assets"
     make_chart(results, output_dir)

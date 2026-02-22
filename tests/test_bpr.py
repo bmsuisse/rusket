@@ -60,9 +60,7 @@ def test_bpr_ranking():
     csr = sp.csr_matrix((values, (rows, cols)), shape=(3, 4))
 
     # Overfit a tiny model to make sure it learns the pattern
-    bpr = BPR(
-        factors=5, learning_rate=0.05, regularization=0.001, iterations=500, seed=42
-    )
+    bpr = BPR(factors=5, learning_rate=0.05, regularization=0.001, iterations=500, seed=42)
     bpr.fit(csr)
 
     u_factors = bpr.user_factors

@@ -34,9 +34,7 @@ def test_factorize_reconstruction(factors: int) -> None:
         ],
         dtype=np.float32,
     )
-    model = rusket.ALS(
-        factors=factors, regularization=0.0, alpha=2.0, iterations=50, seed=42
-    )
+    model = rusket.ALS(factors=factors, regularization=0.0, alpha=2.0, iterations=50, seed=42)
     model.fit(counts)
     reconstructed = model.user_factors @ model.item_factors.T
     for i in range(counts.shape[0]):
@@ -69,9 +67,7 @@ def test_no_nan_in_factors() -> None:
 
 
 def test_no_nan_sparse() -> None:
-    Ciu = sparse.random(
-        100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42
-    )
+    Ciu = sparse.random(100, 100, density=0.0005, format="csr", dtype=np.float32, random_state=42)
     model = rusket.ALS(factors=32, regularization=10.0, iterations=10, seed=23)
     model.fit(Ciu)
     assert np.isfinite(model.user_factors).all()
@@ -79,9 +75,7 @@ def test_no_nan_sparse() -> None:
 
 
 def test_small_identity_no_nan() -> None:
-    user_item = coo_matrix(
-        (np.ones(10, dtype=np.float32), (np.arange(10), np.arange(10)))
-    ).tocsr()
+    user_item = coo_matrix((np.ones(10, dtype=np.float32), (np.arange(10), np.arange(10)))).tocsr()
     model = rusket.ALS(factors=15, iterations=10, seed=42)
     model.fit(user_item)
     ids, scores = model.recommend_items(0, n=10, exclude_seen=False)
@@ -146,9 +140,7 @@ def test_fit_transactions_pandas() -> None:
 def test_fit_transactions_polars() -> None:
     import polars as pl
 
-    df = pl.DataFrame(
-        {"user_id": [0, 0, 1, 1, 2, 2], "product": ["x", "y", "y", "z", "x", "z"]}
-    )
+    df = pl.DataFrame({"user_id": [0, 0, 1, 1, 2, 2], "product": ["x", "y", "y", "z", "x", "z"]})
     model = rusket.ALS(factors=4, iterations=5, seed=42)
     model.fit_transactions(df)
     assert model.user_factors.shape == (3, 4)
@@ -277,9 +269,7 @@ def test_exclude_seen_excludes_all_known_items() -> None:
         seen = set(mat[user_id].indices.tolist())
         ids, _ = model.recommend_items(user_id, n=20, exclude_seen=True)
         for item in ids:
-            assert item not in seen, (
-                f"User {user_id}: item {item} was seen but returned with exclude_seen=True"
-            )
+            assert item not in seen, f"User {user_id}: item {item} was seen but returned with exclude_seen=True"
 
 
 def test_exclude_seen_false_returns_seen_items() -> None:
@@ -292,9 +282,7 @@ def test_exclude_seen_false_returns_seen_items() -> None:
         seen = set(mat[user_id].indices.tolist())
         ids_incl, _ = model.recommend_items(user_id, n=20, exclude_seen=False)
         has_seen = any(item in seen for item in ids_incl)
-        assert has_seen, (
-            f"User {user_id}: expected at least one seen item with exclude_seen=False"
-        )
+        assert has_seen, f"User {user_id}: expected at least one seen item with exclude_seen=False"
 
 
 def test_exclude_seen_count_reduced() -> None:

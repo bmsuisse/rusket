@@ -99,9 +99,7 @@ class Ex1BoolInputBase(unittest.TestCase, FPTestEx1All):
                 ],
             ]
         )
-        FPTestEx1All.setUp(
-            self, getattr(self, "method_func", fpgrowth_algo), one_ary=one_ary
-        )
+        FPTestEx1All.setUp(self, getattr(self, "method_func", fpgrowth_algo), one_ary=one_ary)
 
 
 class TestEx2_FPGrowth(unittest.TestCase, FPTestEx2All):
@@ -135,17 +133,10 @@ def _create_dataframe(n_rows: int = 10_000, n_cols: int = 400) -> pd.DataFrame:
     n_very_low = int(n_cols * 0.9)
     support_values[:n_very_low] = rng.uniform(0.0001, 0.009, n_very_low)
     n_medium = int(n_cols * 0.06)
-    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(
-        0.01, 0.1, n_medium
-    )
+    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(0.01, 0.1, n_medium)
     n_high = n_cols - n_very_low - n_medium
     support_values[n_very_low + n_medium :] = rng.uniform(0.1, 0.65, n_high)
-    return pd.DataFrame(
-        {
-            f"feature_{i:04d}": rng.random(n_rows) < support_values[i]
-            for i in range(n_cols)
-        }
-    )
+    return pd.DataFrame({f"feature_{i:04d}": rng.random(n_rows) < support_values[i] for i in range(n_cols)})
 
 
 def test_fpgrowth_completes_within_5_seconds() -> None:
@@ -192,10 +183,7 @@ def test_spark_mllib_fpgrowth_string() -> None:
     res = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res) == 18
 
-    freq_dict = {
-        frozenset(row["itemsets"]): row["support"] * len(df)
-        for _, row in res.iterrows()
-    }
+    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
     assert freq_dict[frozenset(["z"])] == 5
     assert freq_dict[frozenset(["x"])] == 4
     assert freq_dict[frozenset(["t", "x", "y", "z"])] == 3
@@ -229,10 +217,7 @@ def test_spark_mllib_fpgrowth_int() -> None:
     # min_support = 0.5 -> 9 itemsets
     res3 = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res3) == 9
-    freq_dict = {
-        frozenset(row["itemsets"]): row["support"] * len(df)
-        for _, row in res3.iterrows()
-    }
+    freq_dict = {frozenset(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
     # Column names stay as their original type (int here), so keys are int
     expected = {
         frozenset([1]): 6,

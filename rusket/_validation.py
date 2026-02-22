@@ -45,9 +45,7 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
 
     # Fast path: all bool columns
     if null_values:
-        mask = df.apply(
-            lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool))
-        )
+        mask = df.apply(lambda col: col.apply(lambda x: pd.isna(x) or isinstance(x, bool)))
         if isinstance(mask, pd.Series):
             all_bools = bool(mask.all())
         else:
@@ -72,9 +70,7 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
                 stacklevel=3,
             )
         if not null_values and has_nans:
-            raise ValueError(
-                "NaN values are not permitted in the DataFrame when null_values=False."
-            )
+            raise ValueError("NaN values are not permitted in the DataFrame when null_values=False.")
 
         if hasattr(df, "sparse"):
             if df.size == 0:
@@ -92,13 +88,7 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
         if len(idxs[0]) > 0:
             val = values[tuple(loc[0] for loc in idxs)]
             if null_values:
-                s = (
-                    "The allowed values for a DataFrame "
-                    f"are True, False, 0, 1, NaN. Found value {val}"
-                )
+                s = f"The allowed values for a DataFrame are True, False, 0, 1, NaN. Found value {val}"
             else:
-                s = (
-                    "The allowed values for a DataFrame "
-                    f"are True, False, 0, 1. Found value {val}"
-                )
+                s = f"The allowed values for a DataFrame are True, False, 0, 1. Found value {val}"
             raise ValueError(s)

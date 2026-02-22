@@ -83,11 +83,7 @@ def bench(mat, label, *, factors=64, iterations=10, cg_iters=3, anderson_m=0):
         scores.append(pred.mean())
     mean_score = float(np.mean(scores)) if scores else 0.0
 
-    print(
-        f"  {label:<40}  fit={elapsed:6.1f}s  "
-        f"mean_pred={mean_score:6.3f}  "
-        f"iters={iterations}"
-    )
+    print(f"  {label:<40}  fit={elapsed:6.1f}s  mean_pred={mean_score:6.3f}  iters={iterations}")
     return elapsed, mean_score
 
 
@@ -100,9 +96,7 @@ def main():
 
     print()
     print("── Baseline: plain CG ALS ──────────────────────────────────────────")
-    t_baseline, q_baseline = bench(
-        mat, "Plain  CG-3  iters=15", iterations=15, cg_iters=3
-    )
+    t_baseline, q_baseline = bench(mat, "Plain  CG-3  iters=15", iterations=15, cg_iters=3)
     bench(mat, "Plain  CG-3  iters=10", iterations=10, cg_iters=3)
     bench(mat, "Plain  CG-3  iters=8", iterations=8, cg_iters=3)
     bench(mat, "Plain  CG-3  iters=5", iterations=5, cg_iters=3)
@@ -121,9 +115,7 @@ def main():
     bench(mat, "AA(m=3) CG-3  iters=5", iterations=5, cg_iters=3, anderson_m=3)
 
     print()
-    print(
-        f"  Baseline (iters=15, no AA): {t_baseline:.1f}s  mean_pred={q_baseline:.3f}"
-    )
+    print(f"  Baseline (iters=15, no AA): {t_baseline:.1f}s  mean_pred={q_baseline:.3f}")
     print("  Look for configs that match quality with fewer iterations → faster.")
 
 

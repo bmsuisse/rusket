@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+
 class Eclat(Miner, RuleMinerMixin):
     """Eclat frequent itemset miner.
 
@@ -82,6 +83,7 @@ class Eclat(Miner, RuleMinerMixin):
             self.item_names,
             self.verbose,
         )  # type: ignore[arg-type]
+
 
 def eclat(
     df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,

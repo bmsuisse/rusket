@@ -54,9 +54,7 @@ print("Frequent itemsets:")
 print(freq.to_string(index=False))
 print()
 print("Rules:")
-print(
-    rules[["antecedents", "consequents", "confidence", "lift"]].to_string(index=False)
-)
+print(rules[["antecedents", "consequents", "confidence", "lift"]].to_string(index=False))
 
 # ── Gotchas ───────────────────────────────────────────────────────────────────
 #

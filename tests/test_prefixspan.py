@@ -60,6 +60,7 @@ def test_sequences_from_event_log_polars():
         import polars as pl
     except ImportError:
         import pytest
+
         pytest.skip("Polars not installed")
 
     data = {

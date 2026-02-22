@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
+
 class FPGrowth(Miner, RuleMinerMixin):
     """FP-Growth frequent itemset miner.
 
@@ -83,6 +84,7 @@ class FPGrowth(Miner, RuleMinerMixin):
             self.verbose,
         )  # type: ignore[arg-type]
 
+
 def fpgrowth(
     df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
     min_support: float = 0.5,
@@ -98,12 +100,11 @@ def fpgrowth(
     This module-level function relies on the Object-Oriented APIs.
     """
     if method not in ("fpgrowth", "eclat", "auto"):
-        raise ValueError(
-            f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}"
-        )
+        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}")
 
     if method == "eclat":
         from .eclat import Eclat
+
         return Eclat(
             data=df,
             item_names=column_names,
@@ -111,10 +112,11 @@ def fpgrowth(
             null_values=null_values,
             use_colnames=use_colnames,
             max_len=max_len,
-            verbose=verbose
+            verbose=verbose,
         ).mine()
     elif method == "auto":
         from .mine import AutoMiner
+
         return AutoMiner(
             data=df,
             item_names=column_names,
@@ -122,7 +124,7 @@ def fpgrowth(
             null_values=null_values,
             use_colnames=use_colnames,
             max_len=max_len,
-            verbose=verbose
+            verbose=verbose,
         ).mine()
 
     return FPGrowth(

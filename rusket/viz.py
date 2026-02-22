@@ -35,24 +35,20 @@ def to_networkx(
     """
     try:
         import networkx as nx
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "The 'networkx' library is required to use `to_networkx()`. "
             "Install it via `pip install networkx` or `uv add networkx`."
-        )
+        ) from err
 
     if rules_df.empty:
         return nx.DiGraph()
 
     if source_col not in rules_df.columns or target_col not in rules_df.columns:
-        raise ValueError(
-            f"Columns {source_col} and {target_col} must exist in the DataFrame."
-        )
+        raise ValueError(f"Columns {source_col} and {target_col} must exist in the DataFrame.")
 
     if edge_attr is not None and edge_attr not in rules_df.columns:
-        raise ValueError(
-            f"Edge attribute column '{edge_attr}' not found in the DataFrame."
-        )
+        raise ValueError(f"Edge attribute column '{edge_attr}' not found in the DataFrame.")
 
     G = nx.DiGraph()
 

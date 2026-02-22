@@ -45,6 +45,7 @@ def test_hupm_basic():
     abc_row = df[df["itemset_set"] == {1, 2, 3}].iloc[0]
     assert abc_row["utility"] == 8.0
 
+
 def test_mine_hupm_pandas():
     """Test the DataFrame wrapper for High-Utility Pattern Mining using Pandas."""
     import pandas as pd
@@ -52,19 +53,11 @@ def test_mine_hupm_pandas():
     from rusket.hupm import mine_hupm
 
     # Same toy dataset as above
-    data = pd.DataFrame({
-        "txn": [1, 1, 1, 2, 2, 3, 3],
-        "item": [1, 2, 3, 1, 3, 2, 3],
-        "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]
-    })
-
-    df = mine_hupm(
-        data,
-        transaction_col="txn",
-        item_col="item",
-        utility_col="util",
-        min_utility=7.0
+    data = pd.DataFrame(
+        {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
+
+    df = mine_hupm(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0)
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4
@@ -72,9 +65,11 @@ def test_mine_hupm_pandas():
     ac_row = df[df["itemset_set"] == {1, 3}].iloc[0]
     assert ac_row["utility"] == 12.0
 
+
 def test_mine_hupm_polars():
     """Test the Polars DataFrame wrapper if polars is installed."""
     import pytest
+
     try:
         import polars as pl
     except ImportError:
@@ -82,19 +77,11 @@ def test_mine_hupm_polars():
 
     from rusket.hupm import mine_hupm
 
-    data = pl.DataFrame({
-        "txn": [1, 1, 1, 2, 2, 3, 3],
-        "item": [1, 2, 3, 1, 3, 2, 3],
-        "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]
-    })
-
-    df = mine_hupm(
-        data,
-        transaction_col="txn",
-        item_col="item",
-        utility_col="util",
-        min_utility=7.0
+    data = pl.DataFrame(
+        {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
+
+    df = mine_hupm(data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0)
 
     df["itemset_set"] = df["itemset"].apply(set)
     assert len(df) == 4

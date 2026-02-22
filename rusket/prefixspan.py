@@ -96,6 +96,7 @@ class PrefixSpan(Miner):
             Sequences are mapped back to original item names if `from_transactions` was used.
         """
         from typing import cast
+
         data_list = cast(list[list[int]], self.data)
         supports, patterns = _rust.prefixspan_mine_py(data_list, self.min_support, self.max_len)
 
@@ -144,10 +145,11 @@ def prefixspan(
         A DataFrame containing 'support' and 'sequence' columns.
     """
     import warnings
+
     warnings.warn(
         "rusket.prefixspan() is deprecated. Use PrefixSpan.from_transactions() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     supports, patterns = _rust.prefixspan_mine_py(sequences, min_support, max_len)
 
@@ -204,6 +206,7 @@ def sequences_from_event_log(
 
     if is_polars:
         import polars as pl
+
         sorted_df = data.sort([user_col, time_col])
         unique_items = sorted_df[item_col].unique(maintain_order=True).to_list()
 
@@ -211,9 +214,7 @@ def sequences_from_event_log(
         idx_to_item = dict(enumerate(unique_items))
 
         # Map to integer IDs and group
-        mapped = sorted_df.with_columns(
-            pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items")
-        )
+        mapped = sorted_df.with_columns(pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items"))
         grouped = mapped.group_by(user_col, maintain_order=True).agg(pl.col("_mapped_items"))
 
         # Rust pyo3 requires explicit list[list[int]], so we map elements natively

@@ -33,11 +33,7 @@ def _cmp(a: pd.DataFrame, b: pd.DataFrame) -> None:
     """Assert that two result DataFrames contain the same itemsets and supports."""
     sa = _to_sorted_frozensets(a)
     sb = _to_sorted_frozensets(b)
-    assert sa == sb, (
-        f"FPMiner and fpgrowth results differ.\n"
-        f"Only in FPMiner:  {sa - sb}\n"
-        f"Only in fpgrowth: {sb - sa}"
-    )
+    assert sa == sb, f"FPMiner and fpgrowth results differ.\nOnly in FPMiner:  {sa - sb}\nOnly in fpgrowth: {sb - sa}"
 
 
 def _build_reference(
@@ -135,9 +131,7 @@ class TestFPMinerCorrectness:
         miner3 = FPMiner(n_items=n_items)
         chunk = len(txn_ids) // 3
         for start in range(0, len(txn_ids), chunk):
-            miner3.add_chunk(
-                txn_ids[start : start + chunk], item_ids[start : start + chunk]
-            )
+            miner3.add_chunk(txn_ids[start : start + chunk], item_ids[start : start + chunk])
         result3 = miner3.mine(min_support=0.1, max_len=3)
 
         _cmp(result1, result3)
@@ -272,9 +266,7 @@ class TestFPMinerResultValidation:
         result = miner.mine(min_support=min_support, max_len=3)
 
         assert len(result) > 0, "Expected some itemsets with retail distribution"
-        assert (result["support"] >= min_support - 1e-9).all(), (
-            "Support below threshold found"
-        )
+        assert (result["support"] >= min_support - 1e-9).all(), "Support below threshold found"
         assert (result["support"] <= 1.0 + 1e-9).all(), "Support above 1.0 found"
 
     def test_support_monotone_with_subset(self) -> None:
@@ -305,8 +297,7 @@ class TestFPMinerResultValidation:
                 subset = items - {item}
                 if subset in support_map:
                     assert support_map[subset] >= sup - 1e-9, (
-                        f"Monotonicity violated: {subset} support={support_map[subset]} "
-                        f"< {items} support={sup}"
+                        f"Monotonicity violated: {subset} support={support_map[subset]} < {items} support={sup}"
                     )
 
     def test_fpminer_matches_fpgrowth_realistic(self) -> None:
@@ -316,17 +307,13 @@ class TestFPMinerResultValidation:
         n_txns = 2_000
         avg_basket = 5.0
         probs = self._retail_probs(n_items)
-        txn_ids, item_ids = _make_realistic_data(
-            rng, n_txns, n_items, avg_basket, probs
-        )
+        txn_ids, item_ids = _make_realistic_data(rng, n_txns, n_items, avg_basket, probs)
 
         # Run FPMiner in 3 chunks
         miner = FPMiner(n_items=n_items)
         chunk = len(txn_ids) // 3
         for start in range(0, len(txn_ids), chunk):
-            miner.add_chunk(
-                txn_ids[start : start + chunk], item_ids[start : start + chunk]
-            )
+            miner.add_chunk(txn_ids[start : start + chunk], item_ids[start : start + chunk])
         result = miner.mine(min_support=0.05, max_len=3)
 
         # Reference

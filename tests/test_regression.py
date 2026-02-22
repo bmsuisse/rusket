@@ -33,14 +33,10 @@ def _make_df(n_rows: int, n_cols: int, rng: np.random.Generator) -> pd.DataFrame
     n_very_low = int(n_cols * 0.9)
     support_values[:n_very_low] = rng.uniform(0.0001, 0.009, n_very_low)
     n_medium = int(n_cols * 0.06)
-    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(
-        0.01, 0.1, n_medium
-    )
+    support_values[n_very_low : n_very_low + n_medium] = rng.uniform(0.01, 0.1, n_medium)
     n_high = n_cols - n_very_low - n_medium
     support_values[n_very_low + n_medium :] = rng.uniform(0.1, 0.65, n_high)
-    return pd.DataFrame(
-        {f"c{i}": (rng.random(n_rows) < support_values[i]) for i in range(n_cols)}
-    )
+    return pd.DataFrame({f"c{i}": (rng.random(n_rows) < support_values[i]) for i in range(n_cols)})
 
 
 # Pre-generate datasets at module import (once per session)
@@ -105,12 +101,8 @@ def test_fpgrowth_regression(
         f"itemsets={result.shape[0]}"
     )
 
-    assert elapsed <= max_seconds, (
-        f"[{name}] Wall-time regression: {elapsed:.3f}s > {max_seconds}s limit"
-    )
-    assert peak_mb <= max_peak_mb, (
-        f"[{name}] Memory regression: {peak_mb:.1f}MB > {max_peak_mb}MB limit"
-    )
+    assert elapsed <= max_seconds, f"[{name}] Wall-time regression: {elapsed:.3f}s > {max_seconds}s limit"
+    assert peak_mb <= max_peak_mb, f"[{name}] Memory regression: {peak_mb:.1f}MB > {max_peak_mb}MB limit"
     assert result is not None
     assert result.shape[0] >= 0
 
@@ -132,9 +124,7 @@ def test_association_rules_regression() -> None:
 
     print(f"\n[assoc/medium] elapsed={elapsed:.3f}s (limit={max_seconds}s)")
 
-    assert elapsed <= max_seconds, (
-        f"Association rules pipeline regression: {elapsed:.3f}s > {max_seconds}s"
-    )
+    assert elapsed <= max_seconds, f"Association rules pipeline regression: {elapsed:.3f}s > {max_seconds}s"
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +154,4 @@ def test_polars_medium_regression() -> None:
         f"peak={peak_mb:.1f}MB  itemsets={result.shape[0]}"
     )
 
-    assert elapsed <= max_seconds, (
-        f"Polars input regression: {elapsed:.3f}s > {max_seconds}s"
-    )
+    assert elapsed <= max_seconds, f"Polars input regression: {elapsed:.3f}s > {max_seconds}s"

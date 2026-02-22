@@ -89,9 +89,7 @@ def evaluate_ndcg(algo, testset, trainset, n=10):
             # Get user true items in trainset
             try:
                 inner_u = trainset.to_inner_uid(uid)
-                train_items = {
-                    trainset.to_raw_iid(j) for j, r in trainset.ur[inner_u]
-                }
+                train_items = {trainset.to_raw_iid(j) for j, r in trainset.ur[inner_u]}
             except Exception:
                 train_items = set()
 
@@ -137,9 +135,7 @@ def evaluate_ndcg_implicit(algo, testset, trainset, mat, n=10):
         inner_u = trainset.to_inner_uid(uid)
 
         # implicit recommend takes user_id, user_items matrix
-        ids, scores = algo.recommend(
-            inner_u, mat.tocsr()[inner_u], N=n, filter_already_liked_items=True
-        )
+        ids, scores = algo.recommend(inner_u, mat.tocsr()[inner_u], N=n, filter_already_liked_items=True)
 
         raw_recs = []
         for inner_i in ids:
@@ -179,9 +175,7 @@ def main():
     print(f"Sparse Matrix shape: {mat.shape}, nnz: {mat.nnz}")
 
     start_time = time.time()
-    algo_bpr = BPR(
-        factors=64, iterations=50, learning_rate=0.01, regularization=0.01, seed=42
-    )
+    algo_bpr = BPR(factors=64, iterations=50, learning_rate=0.01, regularization=0.01, seed=42)
     algo_bpr.fit(mat)
     rusket_time = time.time() - start_time
     print(f"Rusket BPR Training Time: {rusket_time:.2f}s")

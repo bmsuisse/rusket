@@ -79,23 +79,21 @@ class HUPM(Miner):
 
         try:
             import polars as pl
+
             is_polars = isinstance(data, pl.DataFrame)
         except ImportError:
             is_polars = False
 
         if is_polars:
             import polars as pl
-            grouped = data.group_by(transaction_col).agg([
-                pl.col(item_col).alias("items"),
-                pl.col(utility_col).alias("utils")
-            ])
+
+            grouped = data.group_by(transaction_col).agg(
+                [pl.col(item_col).alias("items"), pl.col(utility_col).alias("utils")]
+            )
             transactions = grouped["items"].to_list()
             utilities = grouped["utils"].to_list()
         elif isinstance(data, pd.DataFrame):
-            grouped = data.groupby(transaction_col).agg(
-                items=(item_col, list),
-                utils=(utility_col, list)
-            )
+            grouped = data.groupby(transaction_col).agg(items=(item_col, list), utils=(utility_col, list))
             transactions = grouped["items"].tolist()
             utilities = grouped["utils"].tolist()
         else:
@@ -112,10 +110,9 @@ class HUPM(Miner):
             A DataFrame containing 'utility' and 'itemset' columns.
         """
         from typing import cast
+
         data_list = cast(list[list[int]], self.data)
-        total_utils, patterns = _rust.hupm_mine_py(
-            data_list, self.utilities, self.min_utility, self.max_len
-        )
+        total_utils, patterns = _rust.hupm_mine_py(data_list, self.utilities, self.min_utility, self.max_len)
 
         return (
             pd.DataFrame(
@@ -158,14 +155,11 @@ def hupm(
         A DataFrame containing 'utility' and 'itemset' columns.
     """
     import warnings
+
     warnings.warn(
-        "rusket.hupm() is deprecated. Use HUPM.from_transactions() instead.",
-        DeprecationWarning,
-        stacklevel=2
+        "rusket.hupm() is deprecated. Use HUPM.from_transactions() instead.", DeprecationWarning, stacklevel=2
     )
-    total_utils, patterns = _rust.hupm_mine_py(
-        transactions, utilities, min_utility, max_len
-    )
+    total_utils, patterns = _rust.hupm_mine_py(transactions, utilities, min_utility, max_len)
 
     return (
         pd.DataFrame(
@@ -213,10 +207,9 @@ def mine_hupm(
         A DataFrame containing 'utility' and 'itemset' columns.
     """
     import warnings
+
     warnings.warn(
-        "rusket.mine_hupm() is deprecated. Use HUPM.from_transactions() instead.",
-        DeprecationWarning,
-        stacklevel=2
+        "rusket.mine_hupm() is deprecated. Use HUPM.from_transactions() instead.", DeprecationWarning, stacklevel=2
     )
     import pandas as pd
 
@@ -226,25 +219,23 @@ def mine_hupm(
 
     try:
         import polars as pl
+
         is_polars = isinstance(data, pl.DataFrame)
     except ImportError:
         is_polars = False
 
     if is_polars:
         import polars as pl
+
         # Polars native grouping
-        grouped = data.group_by(transaction_col).agg([
-            pl.col(item_col).alias("items"),
-            pl.col(utility_col).alias("utils")
-        ])
+        grouped = data.group_by(transaction_col).agg(
+            [pl.col(item_col).alias("items"), pl.col(utility_col).alias("utils")]
+        )
         transactions = grouped["items"].to_list()
         utilities = grouped["utils"].to_list()
     elif isinstance(data, pd.DataFrame):
         # Pandas native grouping
-        grouped = data.groupby(transaction_col).agg(
-            items=(item_col, list),
-            utils=(utility_col, list)
-        )
+        grouped = data.groupby(transaction_col).agg(items=(item_col, list), utils=(utility_col, list))
         transactions = grouped["items"].tolist()
         utilities = grouped["utils"].tolist()
     else:

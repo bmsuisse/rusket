@@ -90,12 +90,12 @@ def main():
     probs = counts / counts.sum()
     del txn_ids, item_ids
 
-    print(
-        f"\nandi_data2: {n_txns_real:,} real txns × {n_items} items, avg {avg:.1f} items/txn"
-    )
+    print(f"\nandi_data2: {n_txns_real:,} real txns × {n_items} items, avg {avg:.1f} items/txn")
     print(f"min_support={MIN_SUPPORT}, max_len={MAX_LEN}")
     print()
-    hdr = f"  {'rows':>14}  {'method':>10}  {'add_t':>8}  {'mine_t':>8}  {'total':>8}  {'M rows/s':>9}  {'itemsets':>10}"
+    hdr = (
+        f"  {'rows':>14}  {'method':>10}  {'add_t':>8}  {'mine_t':>8}  {'total':>8}  {'M rows/s':>9}  {'itemsets':>10}"
+    )
     sep = "─" * 80
     print(hdr)
     print(sep)
@@ -106,8 +106,7 @@ def main():
             total = add_t + mine_t
             tput = rows / total / 1e6 if total > 0 else 0
             print(
-                f"  {rows:>14,}  {method:>10}  {add_t:>7.1f}s  {mine_t:>7.1f}s  "
-                f"{total:>7.1f}s  {tput:>9.2f}  {n:>10,}",
+                f"  {rows:>14,}  {method:>10}  {add_t:>7.1f}s  {mine_t:>7.1f}s  {total:>7.1f}s  {tput:>9.2f}  {n:>10,}",
                 flush=True,
             )
 

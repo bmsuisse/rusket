@@ -50,7 +50,7 @@ jobs:
         run: uv run pytest tests/ -q --timeout=120 -x --timeout_method=thread --ignore=tests/test_benchmark.py
 
       - name: Run pyright
-        run: uv run pyright || true
+        run: uv run basedpyright || true
 
       - name: Run ruff format check
         run: uv run ruff format --check

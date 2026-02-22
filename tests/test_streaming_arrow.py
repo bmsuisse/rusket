@@ -9,9 +9,7 @@ def test_add_arrow_batch():
     # Make an arrow record batch
     txn_array = pa.array([1, 1, 2, 2, 3], type=pa.int64())
     item_array = pa.array([10, 20, 10, 30, 20], type=pa.int32())
-    batch = pa.RecordBatch.from_arrays(
-        [txn_array, item_array], names=["txn_id", "item_id"]
-    )
+    batch = pa.RecordBatch.from_arrays([txn_array, item_array], names=["txn_id", "item_id"])
 
     miner = FPMiner(n_items=50)
     miner.add_arrow_batch(batch, txn_col="txn_id", item_col="item_id")

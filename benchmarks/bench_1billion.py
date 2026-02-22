@@ -41,9 +41,7 @@ def run_1b_challenge():
 
         # 2. Inject a highly correlated frequent itemset (Items 42, 43, 44, 45)
         # Force 100,000 transactions in this chunk to contain these 4 items
-        correlated_txns = rng.choice(n_txns, size=100_000, replace=False) + (
-            rows_processed // 50
-        )
+        correlated_txns = rng.choice(n_txns, size=100_000, replace=False) + (rows_processed // 50)
 
         # Flattened injection arrays
         inj_txns = np.repeat(correlated_txns, 4)
@@ -62,9 +60,7 @@ def run_1b_challenge():
         )
 
     t_build = time.perf_counter() - t_start
-    print(
-        f"\n✅ Successfully ingested {rows_processed:,} rows into FPMiner in {t_build:.1f}s"
-    )
+    print(f"\n✅ Successfully ingested {rows_processed:,} rows into FPMiner in {t_build:.1f}s")
 
     print("\nStarting K-Way Merge & Mining phase...")
     t0 = time.perf_counter()

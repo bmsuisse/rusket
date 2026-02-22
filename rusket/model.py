@@ -45,6 +45,7 @@ class RuleMinerMixin:
 
         if df_freq is None or df_freq.empty:
             import pandas as pd
+
             return pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)
 
         # self._num_itemsets must be set by Model.__init__
@@ -78,9 +79,7 @@ class RuleMinerMixin:
 
         cart_set = frozenset(items)
         valid_rules = rules_df[
-            rules_df["antecedents"].apply(
-                lambda ant: frozenset(ant).issubset(cart_set)
-            )
+            rules_df["antecedents"].apply(lambda ant: frozenset(ant).issubset(cart_set))
         ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
 
         if valid_rules.empty:
@@ -94,6 +93,7 @@ class RuleMinerMixin:
                     if len(suggestions) >= n:
                         return suggestions
         return suggestions
+
 
 class BaseModel(ABC):
     """Abstract base class for all rusket algorithms.
@@ -128,9 +128,7 @@ class BaseModel(ABC):
         **kwargs: Any,
     ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
-        )
+        return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs)
 
     @classmethod
     def from_polars(
@@ -142,9 +140,7 @@ class BaseModel(ABC):
         **kwargs: Any,
     ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
-        )
+        return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs)
 
     @classmethod
     def from_spark(
@@ -155,9 +151,7 @@ class BaseModel(ABC):
         **kwargs: Any,
     ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-        return cls.from_transactions(
-            df, transaction_col=transaction_col, item_col=item_col, **kwargs
-        )
+        return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, **kwargs)
 
 
 class Miner(BaseModel):
@@ -180,8 +174,8 @@ class Miner(BaseModel):
             Algorithm-specific mining parameters (min_support, max_len, etc.).
         """
         self.data = data
-        self.item_names = item_names if item_names is not None else (
-            list(data.columns) if hasattr(data, "columns") else None
+        self.item_names = (
+            item_names if item_names is not None else (list(data.columns) if hasattr(data, "columns") else None)
         )
         self.kwargs = kwargs
 
@@ -243,10 +237,7 @@ class Miner(BaseModel):
         import polars as _pl
 
         if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
-            raise TypeError(
-                f"Expected a Pandas/Polars/Spark DataFrame or list of lists, "
-                f"got {type(data)}"
-            )
+            raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
 
         if isinstance(data, _pl.DataFrame):
             data = data.to_pandas()
@@ -312,10 +303,9 @@ class ImplicitRecommender(BaseModel):
         rating_col: str | None = None,
     ) -> ImplicitRecommender:
         import warnings
+
         warnings.warn(
-            "fit_transactions is deprecated. Use from_transactions() instead.",
-            DeprecationWarning,
-            stacklevel=2
+            "fit_transactions is deprecated. Use from_transactions() instead.", DeprecationWarning, stacklevel=2
         )
         return self._fit_transactions(data, user_col, item_col, rating_col)
 
@@ -341,6 +331,7 @@ class ImplicitRecommender(BaseModel):
 
         try:
             import polars as pl
+
             is_polars = isinstance(data, pl.DataFrame)
         except ImportError:
             is_polars = False

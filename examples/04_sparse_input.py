@@ -41,9 +41,7 @@ print()
 
 # ── 3. Rules ─────────────────────────────────────────────────────────────────
 
-rules = association_rules(
-    freq, num_itemsets=n_rows, metric="confidence", min_threshold=0.5
-)
+rules = association_rules(freq, num_itemsets=n_rows, metric="confidence", min_threshold=0.5)
 print(f"Rules (confidence ≥ 0.5): {len(rules):,}")
 if not rules.empty:
     print(

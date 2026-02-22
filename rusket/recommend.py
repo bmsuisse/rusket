@@ -56,9 +56,7 @@ class Recommender:
             raise ValueError("ALS model is not provided to the Recommender.")
 
         # 1. Get raw CF scores
-        cf_rec_tuple = self.als_model.recommend_items(
-            user_id=user_id, n=n, exclude_seen=True
-        )
+        cf_rec_tuple = self.als_model.recommend_items(user_id=user_id, n=n, exclude_seen=True)
 
         if self.item_embeddings is None or alpha == 1.0:
             return cf_rec_tuple
@@ -72,10 +70,7 @@ class Recommender:
         if target_item is None:
             try:
                 # Naive fallback: try to find an item the user bought
-                if (
-                    self.als_model._fit_indptr is not None
-                    and self.als_model._fit_indices is not None
-                ):
+                if self.als_model._fit_indptr is not None and self.als_model._fit_indices is not None:
                     start_idx = self.als_model._fit_indptr[user_id]
                     end_idx = self.als_model._fit_indptr[user_id + 1]
                     if end_idx > start_idx:
@@ -89,9 +84,7 @@ class Recommender:
 
         # Compute cosine similarity
         target_emb = self.item_embeddings[target_item]
-        norms = np.linalg.norm(self.item_embeddings, axis=1) * np.linalg.norm(
-            target_emb
-        )
+        norms = np.linalg.norm(self.item_embeddings, axis=1) * np.linalg.norm(target_emb)
         norms[norms == 0] = 1e-9  # prevent div zero
         semantic_raw_scores = np.dot(self.item_embeddings, target_emb) / norms
 
@@ -107,10 +100,7 @@ class Recommender:
 
         # Mask seen items
         try:
-            if (
-                self.als_model._fit_indptr is not None
-                and self.als_model._fit_indices is not None
-            ):
+            if self.als_model._fit_indptr is not None and self.als_model._fit_indices is not None:
                 start_idx = self.als_model._fit_indptr[user_id]
                 end_idx = self.als_model._fit_indptr[user_id + 1]
                 seen = self.als_model._fit_indices[start_idx:end_idx]
@@ -125,9 +115,7 @@ class Recommender:
 
         return top_idx, top_scores
 
-    def predict_next_chunk(
-        self, user_history_df: pd.DataFrame, user_col: str = "user_id", k: int = 5
-    ) -> pd.DataFrame:
+    def predict_next_chunk(self, user_history_df: pd.DataFrame, user_col: str = "user_id", k: int = 5) -> pd.DataFrame:
         """Batch-rank the next best products for every user in *user_history_df*."""
         recs = [
             {
@@ -147,9 +135,7 @@ class Recommender:
 
         cart_set = frozenset(cart_items)
         valid_rules = self.rules_df[
-            self.rules_df["antecedents"].apply(
-                lambda ant: frozenset(ant).issubset(cart_set)
-            )
+            self.rules_df["antecedents"].apply(lambda ant: frozenset(ant).issubset(cart_set))
         ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
 
         if valid_rules.empty:

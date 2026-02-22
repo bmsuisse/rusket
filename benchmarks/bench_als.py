@@ -185,9 +185,7 @@ def load_ratings_stream(folder: Path) -> sparse.csr_matrix:
     counts = np.zeros(1_000_000, dtype=np.int64)
     chunk_size = 5_000_000
 
-    estimated_total = (
-        1_000_000_000 if ("1b" in str(path) or "ml-20m" in str(path)) else None
-    )
+    estimated_total = 1_000_000_000 if ("1b" in str(path) or "ml-20m" in str(path)) else None
 
     # Generator to yield chunks from either CSV or NPZ files
     def get_chunks():
@@ -215,9 +213,7 @@ def load_ratings_stream(folder: Path) -> sparse.csr_matrix:
                     ch["rating"].to_numpy(dtype=np.float32),
                 )
 
-    estimated_chunks = (
-        iter(range(estimated_total // chunk_size + 1)) if estimated_total else None
-    )
+    estimated_chunks = iter(range(estimated_total // chunk_size + 1)) if estimated_total else None
 
     for uids, iids, _ in tqdm(
         get_chunks(),
@@ -264,9 +260,7 @@ def load_ratings_stream(folder: Path) -> sparse.csr_matrix:
     # Track current writing position per user
     pos = indptr[:-1].copy()
 
-    estimated_chunks = (
-        iter(range(estimated_total // chunk_size + 1)) if estimated_total else None
-    )
+    estimated_chunks = iter(range(estimated_total // chunk_size + 1)) if estimated_total else None
     for u, i, r in tqdm(
         get_chunks(),
         desc="    Writing mmap  ",
@@ -316,9 +310,7 @@ def load_ratings_stream(folder: Path) -> sparse.csr_matrix:
     return mat
 
 
-def load_ratings(
-    folder: Path, sample: float = 1.0, stream: bool = False
-) -> sparse.csr_matrix:
+def load_ratings(folder: Path, sample: float = 1.0, stream: bool = False) -> sparse.csr_matrix:
     """Load ratings into a sparse CSR matrix, optionally sampling users."""
     import pandas as pd  # type: ignore[import-untyped]
 
@@ -353,13 +345,9 @@ def load_ratings(
 
     if sample < 1.0:
         users = df["userId"].unique()
-        keep = np.random.default_rng(42).choice(
-            users, size=int(len(users) * sample), replace=False
-        )
+        keep = np.random.default_rng(42).choice(users, size=int(len(users) * sample), replace=False)
         df = df[df["userId"].isin(keep)]
-        print(
-            f"  Sampled {sample * 100:.0f}% of users: {len(keep):,} users", flush=True
-        )
+        print(f"  Sampled {sample * 100:.0f}% of users: {len(keep):,} users", flush=True)
 
     # Contiguous 0-based IDs
     df["user"] = df["userId"].astype("category").cat.codes.astype(np.int32)
@@ -461,9 +449,7 @@ def run_method_implicit(mat: sparse.csr_matrix) -> dict | None:
     n_rec = min(TOP_N, n_users)
     t0 = time.perf_counter()
     for uid in range(n_rec):
-        model.recommend(
-            uid, mat_T.T.tocsr()[uid], N=10, filter_already_liked_items=True
-        )
+        model.recommend(uid, mat_T.T.tocsr()[uid], N=10, filter_already_liked_items=True)
     rec_ms = (time.perf_counter() - t0) / n_rec * 1000
 
     print(f"    fit: {fit_s:.1f}s  |  rec/user: {rec_ms:.2f}ms", flush=True)
@@ -482,8 +468,7 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
 
     print(f"\n  ─── {label} ───")
     print(
-        f"  {n_users:,}u × {n_items:,}i  |  {nnz:,} nnz  |  "
-        f"CSR={csr_mb:.0f} MB  factors={fact_mb:.0f} MB",
+        f"  {n_users:,}u × {n_items:,}i  |  {nnz:,} nnz  |  CSR={csr_mb:.0f} MB  factors={fact_mb:.0f} MB",
         flush=True,
     )
 
@@ -507,9 +492,7 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
     method_results.append(r)
 
     print("\n  Method: rusket ALS  Cholesky (exact)", flush=True)
-    r = run_method_rusket(
-        mat, "rusket cholesky", cg_iters=3, use_cholesky=True, verbose=False
-    )
+    r = run_method_rusket(mat, "rusket cholesky", cg_iters=3, use_cholesky=True, verbose=False)
     method_results.append(r)
 
     print("\n  Method: rusket ALS  cg_iters=10 (default)", flush=True)
@@ -618,9 +601,7 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
         height=480,
         width=1100,
         barmode="group",
-        legend={
-            "orientation": "h", "yanchor": "bottom", "y": -0.25, "xanchor": "center", "x": 0.5
-        },
+        legend={"orientation": "h", "yanchor": "bottom", "y": -0.25, "xanchor": "center", "x": 0.5},
         margin={"t": 60, "b": 100},
     )
     fig.update_yaxes(title_text="seconds", row=1, col=1)

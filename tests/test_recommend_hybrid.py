@@ -49,6 +49,4 @@ def test_hybrid_recommender():
 
     assert len(cf_recs) == 2
     assert len(sem_recs) == 2
-    assert 5 in sem_recs, (
-        "Semantic similarity should prioritize item 5 since it perfectly matches item 0"
-    )
+    assert 5 in sem_recs, "Semantic similarity should prioritize item 5 since it perfectly matches item 0"

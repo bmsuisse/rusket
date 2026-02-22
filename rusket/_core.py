@@ -38,9 +38,7 @@ def _build_result(
 
     if use_colnames:
         col_array = pa.array(col_names)
-        items_pa = pa.DictionaryArray.from_arrays(
-            pa.array(items_arr, type=pa.int32()), col_array
-        )
+        items_pa = pa.DictionaryArray.from_arrays(pa.array(items_arr, type=pa.int32()), col_array)
         item_type = col_array.type
     else:
         items_pa = pa.array(items_arr, type=pa.int32())
@@ -65,9 +63,7 @@ def _select_method(method: Method, density: float, verbose: int, label: str) -> 
         return method
     chosen: Method = "eclat" if density < 0.15 else "fpgrowth"
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Auto-selected method: '{chosen}' ({label} density={density:.4f})"
-        )
+        print(f"[{time.strftime('%X')}] Auto-selected method: '{chosen}' ({label} density={density:.4f})")
     return chosen
 
 
@@ -82,22 +78,16 @@ def _run_dense(
 
     t0 = 0.0
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array..."
-        )
+        print(f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array...")
         t0 = time.perf_counter()
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
     if verbose:
         t1 = time.perf_counter()
-        print(
-            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
-        )
+        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_DENSE[method](data, min_count, max_len)
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s."
-        )
+        print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
 
@@ -113,9 +103,7 @@ def _run_sparse(
 
     t0 = 0.0
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array..."
-        )
+        print(f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array...")
         t0 = time.perf_counter()
     csr = df.sparse.to_coo().tocsr()
     csr.eliminate_zeros()
@@ -123,15 +111,11 @@ def _run_sparse(
     indices = np.asarray(csr.indices, dtype=np.int32)
     if verbose:
         t1 = time.perf_counter()
-        print(
-            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
-        )
+        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s."
-        )
+        print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
 
@@ -148,18 +132,14 @@ def _run_polars(
 
     t0 = 0.0
     if verbose:
-        print(
-            f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array..."
-        )
+        print(f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array...")
         t0 = time.perf_counter()
     n_rows, n_cols = df.shape
     min_count = math.ceil(min_support * n_rows)
     arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
     if verbose:
         t1 = time.perf_counter()
-        print(
-            f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
-        )
+        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
 
     if method == "auto":
@@ -219,9 +199,7 @@ def dispatch(
         indices = np.asarray(csr.indices, dtype=np.int32)  # type: ignore[misc]
         if verbose:
             t1 = time.perf_counter()
-            print(
-                f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
-            )
+            print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
         density = csr.nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
         method = _select_method(method, density, verbose, "csr")
@@ -239,20 +217,14 @@ def dispatch(
         min_count = math.ceil(min_support * n_rows)
         col_names = [str(i) for i in range(n_cols)]
         if verbose:
-            print(
-                f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8..."
-            )
+            print(f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8...")
             t0 = time.perf_counter()
         data = np.ascontiguousarray(df_nd, dtype=np.uint8)
         if verbose:
             t1 = time.perf_counter()
-            print(
-                f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})..."
-            )
+            print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
-        density = (
-            np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
-        )
+        density = np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
         method = _select_method(method, density, verbose, "ndarray")
         raw = _RUST_DENSE[method](data, min_count, max_len)
         if verbose:

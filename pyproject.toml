@@ -38,7 +38,6 @@ dev = [
     "faker>=40.4.0",
     "plotly>=6.5.2",
     "maturin>=1.12.3",
-    "pyright>=1.1.408",
     "pandas>=2.0",
     "numpy>=1.24",
     "jupytext>=1.19.1",
@@ -49,6 +48,7 @@ dev = [
     "tqdm>=4",
     "pyspark>=4.1.1",
     "ruff>=0.15.2",
+    "basedpyright>=1.38.1",
 ]
 
 [tool.pytest.ini_options]
@@ -60,8 +60,9 @@ disable_gc = true
 min_rounds = 3
 warmup = false
 
-[tool.pyright]
+[tool.basedpyright]
 pythonVersion = "3.14"
+typeCheckingMode = "basic"
 include = ["rusket"]
 venvPath = "."
 venv = ".venv"
@@ -84,4 +85,5 @@ ignore = [
     "E501", # line too long, handled by black
     "B008", # do not perform function calls in argument defaults
     "W191", # indentation contains tabs
+    "C901", # function is too complex
 ]

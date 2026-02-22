@@ -8,9 +8,7 @@ import rusket
 
 def test_auto_dense_pandas():
     # Dense dataset: 4 transactions, 3 items -> density is 6/12 = 0.5 > 0.15 (FPGrowth)
-    df = pd.DataFrame(
-        {"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}
-    )
+    df = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]})
     res_auto = rusket.mine(df, min_support=0.5, method="auto")
     res_fpgrowth = rusket.fpgrowth(df, min_support=0.5)
 
@@ -19,9 +17,7 @@ def test_auto_dense_pandas():
 
 def test_auto_dense_polars():
     # Dense dataset: density = 0.5 > 0.15 (FPGrowth)
-    df = pl.DataFrame(
-        {"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}
-    )
+    df = pl.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]})
     res_auto = rusket.mine(df, min_support=0.5, method="auto")
     res_fpgrowth = rusket.fpgrowth(df, min_support=0.5)
 
@@ -60,6 +56,7 @@ def test_auto_numpy_dense():
     res_auto = rusket.mine(data, min_support=0.5, method="auto")
     assert len(res_auto) > 0
 
+
 def test_rule_miner_mixin_api():
     # Test association_rules and recommend_items from RuleMinerMixin
     df = pd.DataFrame(
@@ -72,6 +69,7 @@ def test_rule_miner_mixin_api():
     )
     # Using the OO API AutoMiner
     from rusket.mine import AutoMiner
+
     miner = AutoMiner(df, min_support=0.4, use_colnames=True)
 
     # Check that rules can be generated

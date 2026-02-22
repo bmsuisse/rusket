@@ -118,7 +118,6 @@ class FPMiner:
 
         return self.add_chunk(txn_array, item_array)
 
-
     def mine(
         self,
         min_support: float = 0.5,
@@ -176,9 +175,7 @@ class FPMiner:
 
         if verbose:
             t1 = time.perf_counter()
-            print(
-                f"[{time.strftime('%X')}] FPMiner: Mining ({chosen_method}) completed in {t1 - t0:.2f}s."
-            )
+            print(f"[{time.strftime('%X')}] FPMiner: Mining ({chosen_method}) completed in {t1 - t0:.2f}s.")
 
         n_txn = result_tuple[0]
         raw = (
@@ -198,6 +195,7 @@ class FPMiner:
         """Free all accumulated data."""
         self._inner.reset()
         self._n_rows = 0
+
 
 def mine_duckdb(
     con: Any,
@@ -257,4 +255,3 @@ def mine_spark(
                 miner.add_chunk(txn, item)
 
     return miner.mine(min_support=min_support, max_len=max_len)
-

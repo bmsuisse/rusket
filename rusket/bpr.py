@@ -76,9 +76,7 @@ class BPR(ImplicitRecommender):
         elif isinstance(interactions, np.ndarray):
             csr = sp.csr_matrix(interactions.astype(np.float32))
         else:
-            raise TypeError(
-                f"Expected scipy sparse matrix or numpy array, got {type(interactions)}"
-            )
+            raise TypeError(f"Expected scipy sparse matrix or numpy array, got {type(interactions)}")
 
         if not isinstance(csr, sp.csr_matrix):
             csr = csr.tocsr()
@@ -108,8 +106,6 @@ class BPR(ImplicitRecommender):
         self.fitted = True
         return self
 
-
-
     def recommend_items(
         self,
         user_id: int,
@@ -122,11 +118,7 @@ class BPR(ImplicitRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
-        if (
-            exclude_seen
-            and self._fit_indptr is not None
-            and self._fit_indices is not None
-        ):
+        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices
         else:
