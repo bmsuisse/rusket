@@ -2843,9 +2843,9 @@ ordered by <code>time_col</code>, and <code>item_col</code> values are collected
 </thead>
 <tbody>
 <tr>
-<td>tuple of (sequences, item_mapping)</td>
+<td>tuple of (indptr, indices, item_mapping)</td>
 <td></td>
-<td>- sequences: The nested list of integers to pass to <code>prefixspan()</code>. - item_mapping: A dictionary mapping the integer IDs back to the original item labels.</td>
+<td>- indptr: CSR-style index pointer list. - indices: Flattened item index list. - item_mapping: A dictionary mapping the integer IDs back to the original item labels.</td>
 </tr>
 </tbody>
 </table>

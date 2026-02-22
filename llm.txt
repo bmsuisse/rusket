@@ -156,7 +156,7 @@ sequences_from_event_log(df: 'Any', user_col: 'str', time_col: 'str', item_col: 
 
 | Name | Type | Description |
 | --- | --- | --- |
-| tuple of (sequences, item_mapping) |  | - sequences: The nested list of integers to pass to `prefixspan()`. - item_mapping: A dictionary mapping the integer IDs back to the original item labels. |
+| tuple of (indptr, indices, item_mapping) |  | - indptr: CSR-style index pointer list. - indices: Flattened item index list. - item_mapping: A dictionary mapping the integer IDs back to the original item labels. |
 
 ---
 
@@ -1339,6 +1339,25 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Benchmarks
+
+- add comprehensive benchmark scripts and final report against Python libraries
+- fix missing imports and numpy compatibility, fix ruff lints
+
+### Mining
+
+- optimize prefixspan removing hashmaps and pyo3 object lists for 1.15x speedup
+- optimize prefixspan with zero-copy numpy ffi over pyo3 for 2.05x speedup
+
+### 📦 Miscellaneous
+
+- untrack benchmarking, profile, and recbole test artifacts
+- fix pytest warnings/pyright errors and bump version to v0.1.29
+
+### 📦 Miscellaneous
+
+- bump to v0.1.28, fix typing issues in tests
+
 ### Style
 
 - run ruff format and fix lints
@@ -1355,6 +1374,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - update uv.lock for 0.1.26
+- exclude non-essential files from sdist
+- exclude dev/docs from sdist and wheels
 
 ### 🚀 Features
 
