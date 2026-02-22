@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 if typing.TYPE_CHECKING:
-    import networkx
+    import networkx  # type: ignore
 
 
 def to_networkx(
@@ -60,7 +60,7 @@ def to_networkx(
     >>> communities = nx_comm.greedy_modularity_communities(G.to_undirected())
     """
     try:
-        import networkx as nx
+        import networkx as nx  # type: ignore
     except ImportError as err:
         raise ImportError(
             "The 'networkx' library is required to use `to_networkx()`. "

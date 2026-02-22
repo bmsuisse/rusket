@@ -248,7 +248,7 @@ def test_vs_mlxtend_assoc_rules_medium() -> None:
 
     def mlx():
         fi = mlx_fpgrowth(DF_MEDIUM, min_support=0.01)
-        return mlx_assoc_rules(fi, len(DF_MEDIUM), min_threshold=0.5)
+        return mlx_assoc_rules(fi, len(DF_MEDIUM), min_threshold=0.5)  # type: ignore
 
     _, ours_t, _ = _timed(ours)
     _, mlx_t, _ = _timed(mlx)

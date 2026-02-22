@@ -334,7 +334,7 @@ huge_rows = df_res[df_res["label"] == "HUGE"]
 if not huge_rows.empty:
     h = huge_rows.iloc[0]
     fig.add_annotation(
-        x=x_labels[huge_rows.index[0]],
+        x=x_labels[int(huge_rows.index[0])],
         y=h["fpgrowth_time_s"],
         text=f"🚀 HUGE: {h['n_rows']:,} rows<br>{h['raw_mb']:.0f} MB input",
         showarrow=True,
