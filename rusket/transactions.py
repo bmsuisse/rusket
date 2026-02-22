@@ -111,7 +111,13 @@ def from_transactions(
     _is_spark = _type.__name__ == "DataFrame" and getattr(_type, "__module__", "").startswith("pyspark")
 
     if _is_spark:
-        pandas_df = data.toPandas()  # type: ignore[union-attr]
+        if hasattr(data, "toArrow"):
+            import pandas as pd
+
+            pandas_df = data.toArrow().to_pandas(types_mapper=pd.ArrowDtype)  # type: ignore[union-attr]
+        else:
+            pandas_df = data.toPandas()  # type: ignore[union-attr]
+
         result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
         # Convert back via Arrow for efficiency
         import pyarrow as _pa

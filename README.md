@@ -28,22 +28,22 @@ All algorithms expose both a **functional API** (`mine(df, ...)`) and an **OOP c
 
 ## ✨ Highlights
 
-| | `rusket` | `mlxtend` |
-|---|---|---|
-| **Core language** | Rust (PyO3) | Pure Python |
-| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | FP-Growth only |
-| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ |
-| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ |
-| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ❌ |
-| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ |
-| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported |
-| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first |
-| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported |
-| **Spark / distributed** | ✅ `mine_grouped`, `rules_grouped`, `prefixspan_grouped`, `hupm_grouped`, `recommend_batches` | ❌ |
-| **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded |
-| **Memory** | Low (native Rust buffers) | High (Python objects) |
-| **API compatibility** | ✅ Drop-in replacement | — |
-| **Metrics** | 12 built-in metrics | 9 |
+| | `rusket` | `mlxtend` | `implicit` | `pyspark.ml` |
+|---|---|---|---|---|
+| **Core language** | Rust (PyO3) | Pure Python | Cython / C++ | Scala / Java (JVM) |
+| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | FP-Growth, Apriori | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ | ✅ | ✅ (ALS only) |
+| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
+| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ❌ | ✅ | ✅ |
+| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
+| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ❌ Not supported | ✅ (via PyArrow) |
+| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
+| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ Not supported | ❌ (conversion needed) |
+| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ❌ | ✅ Native distributed |
+| **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded | ✅ OpenMP / Threads | ✅ Spark Cluster |
+| **Memory** | Low (native Rust buffers) | High (Python objects) | Low (C++ arrays) | High (JVM overhead) |
+| **API compatibility** | ✅ Drop-in replacement for `mlxtend` | — | — | — |
+| **Metrics** | 12 built-in metrics | 9 | N/A | Limited |
 
 ---
 
