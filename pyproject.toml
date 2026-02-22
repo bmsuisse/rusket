@@ -39,6 +39,12 @@ exclude = [
     "benches/**/*",
     "scripts/**/*",
     "examples/**/*",
+    "uv.lock",
+    "recbole_test_model_auto.py",
+    "recbole_tests.json",
+    "profile_als.dSYM/**/*",
+    "llm.txt",
+    "zensical.toml",
 ]
 
 [dependency-groups]
