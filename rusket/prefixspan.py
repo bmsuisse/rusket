@@ -114,7 +114,7 @@ class PrefixSpan(Miner):
             indptr = np.array(indptr_list, dtype=np.uintp)
             indices = np.array(indices_list, dtype=np.uint32)
 
-        supports, patterns = _rust.prefixspan_mine_py(indptr, indices, self.min_support, self.max_len)
+        supports, patterns = _rust.prefixspan_mine_py(indptr, indices, self.min_support, self.max_len)  # type: ignore
 
         if self.item_mapping is not None:
             mapped_patterns = []
@@ -178,7 +178,7 @@ def prefixspan(
     indptr = np.array(indptr_list, dtype=np.uintp)
     indices = np.array(indices_list, dtype=np.uint32)
 
-    supports, patterns = _rust.prefixspan_mine_py(indptr, indices, min_support, max_len)
+    supports, patterns = _rust.prefixspan_mine_py(indptr, indices, min_support, max_len)  # type: ignore
 
     return (
         pd.DataFrame(
@@ -253,7 +253,7 @@ def sequences_from_event_log(
         indptr = np.zeros(len(sizes) + 1, dtype=np.uintp)
         np.cumsum(sizes, out=indptr[1:])
 
-        return (indptr, indices), idx_to_item
+        return (indptr, indices), idx_to_item  # type: ignore
 
     elif isinstance(data, pd.DataFrame):
         df_sorted = data.sort_values(by=[user_col, time_col])
@@ -271,7 +271,7 @@ def sequences_from_event_log(
         indptr = np.zeros(len(sizes) + 1, dtype=np.uintp)
         np.cumsum(sizes, out=indptr[1:])
 
-        return (indptr, indices), idx_to_item
+        return (indptr, indices), idx_to_item  # type: ignore
 
     else:
         raise TypeError(f"Expected Pandas, Polars, or PySpark DataFrame, got {type(data)}")
