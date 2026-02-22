@@ -3,15 +3,56 @@ from __future__ import annotations
 import time
 import typing
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from ._compat import to_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+    from pyspark.sql import DataFrame as SparkDataFrame
 
     from ._compat import DataFrame
+
+# ---------------------------------------------------------------------------
+# Overloaded signatures — tell pyright/mypy the exact return type per input
+# ---------------------------------------------------------------------------
+
+
+@overload
+def from_transactions(
+    data: pd.DataFrame,
+    transaction_col: str | None = ...,
+    item_col: str | None = ...,
+    verbose: int = ...,
+) -> pd.DataFrame: ...
+
+
+@overload
+def from_transactions(
+    data: pl.DataFrame,
+    transaction_col: str | None = ...,
+    item_col: str | None = ...,
+    verbose: int = ...,
+) -> pl.DataFrame: ...
+
+
+@overload
+def from_transactions(
+    data: SparkDataFrame,
+    transaction_col: str | None = ...,
+    item_col: str | None = ...,
+    verbose: int = ...,
+) -> SparkDataFrame: ...
+
+
+@overload
+def from_transactions(
+    data: Sequence[Sequence[str | int]],
+    transaction_col: str | None = ...,
+    item_col: str | None = ...,
+    verbose: int = ...,
+) -> pd.DataFrame: ...
 
 
 def from_transactions(
@@ -19,8 +60,15 @@ def from_transactions(
     transaction_col: str | None = None,
     item_col: str | None = None,
     verbose: int = 0,
-) -> pd.DataFrame:
+) -> Any:
     """Convert long-format transactional data to a one-hot boolean matrix.
+
+    The return type mirrors the input type:
+
+    - **Polars** ``DataFrame`` → **Polars** ``DataFrame``
+    - **Pandas** ``DataFrame`` → **Pandas** ``DataFrame``
+    - **Spark** ``DataFrame``  → **Spark**  ``DataFrame``
+    - ``list[list[...]]``      → **Pandas** ``DataFrame``
 
     Parameters
     ----------
@@ -42,9 +90,10 @@ def from_transactions(
 
     Returns
     -------
-    pd.DataFrame
-        A boolean DataFrame ready for :func:`rusket.fpgrowth` or
-        :func:`rusket.eclat`.  Column names correspond to the unique items.
+    DataFrame
+        A boolean DataFrame (same type as input) ready for
+        :func:`rusket.fpgrowth` or :func:`rusket.eclat`.
+        Column names correspond to the unique items.
 
     Examples
     --------
@@ -65,13 +114,33 @@ def from_transactions(
     import pandas as _pd
     import polars as _pl
 
-    if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
-        raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
+    # --- Spark ---
+    _spark_type = type(data)
+    _is_spark = _spark_type.__name__ == "DataFrame" and getattr(
+        _spark_type, "__module__", ""
+    ).startswith("pyspark")
+    if _is_spark:
+        pandas_df = data.toPandas()  # type: ignore[union-attr]
+        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
+        # Convert back via Arrow for efficiency
+        import pyarrow as _pa
+        spark = data.sparkSession  # type: ignore[union-attr]
+        arrow_table = _pa.Table.from_pandas(result_pd.astype(bool))
+        return spark.createDataFrame(arrow_table)
 
+    # --- Polars ---
     if isinstance(data, _pl.DataFrame):
-        data = data.to_pandas()
+        pandas_df = data.to_pandas()
+        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
+        return _pl.from_pandas(result_pd.astype(bool))
 
-    return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
+    # --- Pandas ---
+    if isinstance(data, _pd.DataFrame):
+        return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
+
+    raise TypeError(
+        f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}"
+    )
 
 
 def from_pandas(
@@ -89,16 +158,16 @@ def from_polars(
     transaction_col: str | None = None,
     item_col: str | None = None,
     verbose: int = 0,
-) -> pd.DataFrame:
+) -> pl.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
 
 
 def from_spark(
-    df: Any,
+    df: SparkDataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
-) -> pd.DataFrame:
+) -> SparkDataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
 
