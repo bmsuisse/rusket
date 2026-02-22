@@ -403,10 +403,9 @@ class ImplicitRecommender(BaseModel):
         pass
 
     @property
-    @abstractmethod
     def item_factors(self) -> Any:
         """Item factor matrix (n_items, factors)."""
-        pass
+        raise NotImplementedError(f"{self.__class__.__name__} does not implement item_factors.")
 
     @property
     def item_embeddings(self) -> Any:

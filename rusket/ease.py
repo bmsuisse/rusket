@@ -139,6 +139,12 @@ class EASE(ImplicitRecommender):
         """Top-N users for an item. Not implemented for EASE currently."""
         raise NotImplementedError("EASE does not efficiently support recommending users for an item.")
 
+    @property
+    def item_factors(self) -> Any:
+        """Item factor matrix (n_items, n_items)."""
+        self._check_fitted()
+        return self.item_weights
+
     def _check_fitted(self) -> None:
         if self.item_weights is None:
             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")
