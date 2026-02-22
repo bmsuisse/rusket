@@ -90,7 +90,7 @@ class ALS(ImplicitRecommender):
 
     def fit(self, interactions: Any) -> ALS:
         """Fit the model to the user-item interaction matrix.
-        
+
         Raises
         ------
         RuntimeError

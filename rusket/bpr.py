@@ -65,7 +65,7 @@ class BPR(ImplicitRecommender):
 
     def fit(self, interactions: Any) -> BPR:
         """Fit the BPR model to the user-item interaction matrix.
-        
+
         Raises
         ------
         RuntimeError

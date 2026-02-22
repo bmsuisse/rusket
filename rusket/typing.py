@@ -7,8 +7,10 @@ import numpy as np
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+
     try:
         import pyspark.sql
+
         _SparkDataFrame = pyspark.sql.DataFrame
     except ImportError:
         _SparkDataFrame = Any
@@ -16,6 +18,7 @@ if TYPE_CHECKING:
     DataFrameType = pd.DataFrame | pl.DataFrame | _SparkDataFrame
 else:
     DataFrameType = Any
+
 
 class SupportsItemFactors(Protocol):
     """Protocol for models that expose latent item factors.
@@ -25,9 +28,7 @@ class SupportsItemFactors(Protocol):
     """
 
     @property
-    def item_factors(self) -> np.ndarray:
-        ...
+    def item_factors(self) -> np.ndarray: ...
 
     @property
-    def _item_labels(self) -> list[Any] | None:
-        ...
+    def _item_labels(self) -> list[Any] | None: ...
