@@ -1,17 +1,21 @@
-# Changelog
 
-All notable changes are documented here.
-This project follows [Semantic Versioning](https://semver.org/).
 
----
+### Bench
+
+- fix unfair benchmark timing and optimize EASE with Cholesky
 
 ### Benchmark
 
 - add script comparing dEclat vs ECLAT
+- add script comparing eALS vs iALS
 
 ### Style
 
 - run ruff format
+
+### ⚡ Performance
+
+- SIMD unrolling for dot and axpy hot-loops in ALS solver
 
 ### 📖 Documentation
 
@@ -19,6 +23,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 - migrate to Mintlify
 - auto-update API reference, changelog, and llm.txt
 - fix MDX parsing errors for Mintlify
+- auto-update API reference, changelog, and llm.txt
+- add als 25m benchmark sweep chart
 
 ### 📦 Miscellaneous
 
@@ -27,6 +33,9 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 🚀 Features
 
 - Add ultra-fast Sparse ItemKNN algorithm using BM25 and Rust Rayon
+- implement FIN and LCM algorithms with fast bitset operations
+- wip RecBole benchmarking and FM/FPMC algorithms
+- Add grouped PySpark support for ALS
 
 ### Style
 
