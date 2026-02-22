@@ -56,3 +56,6 @@ data/
 fix_*
 docs/notebooks/ml-100k
 docs/notebooks/*.zip
+
+# AI slop
+test_faer*

@@ -4,14 +4,11 @@ use rayon::prelude::*;
 
 const PAR_ITEMS_CUTOFF: usize = 4;
 
-/// Compact FP-tree node – children are stored in a separate flat arena
-/// so that nodes are small (32 bytes) and cache-friendly.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct FPNode {
     pub item: u32,
     pub count: u64,
     pub parent: u32,
-    /// Range [children_start..children_end) into FPTree::children_arena
     pub children_start: u32,
     pub children_end: u32,
 }
@@ -31,12 +28,10 @@ impl FPNode {
 
 pub(crate) struct FPTree {
     pub nodes: Vec<FPNode>,
-    /// Flat arena of (item, child_node_idx) pairs.
     children_arena: Vec<(u32, u32)>,
     pub item_nodes: Vec<Vec<u32>>,
     pub original_items: Vec<u32>,
     pub cond_items: Vec<u32>,
-    /// Tracked incrementally: false once any node gets >1 child.
     single_path: bool,
 }
 
@@ -80,21 +75,18 @@ impl FPTree {
         let n_children = parent.children_end - parent.children_start;
 
         if n_children == 0 {
-            // First child: point to end of arena
             let pos = self.children_arena.len() as u32;
             self.children_arena.push((item, child_idx));
             let parent = &mut self.nodes[parent_idx as usize];
             parent.children_start = pos;
             parent.children_end = pos + 1;
         } else if parent.children_end as usize == self.children_arena.len() {
-            // Children are at the tail of the arena, just append
             self.children_arena.push((item, child_idx));
             self.nodes[parent_idx as usize].children_end += 1;
             if n_children >= 1 {
                 self.single_path = false;
             }
         } else {
-            // Children are in the middle — relocate to end
             let old_start = parent.children_start as usize;
             let old_end = parent.children_end as usize;
             let new_start = self.children_arena.len() as u32;
@@ -134,7 +126,6 @@ impl FPTree {
         let node_indices = &self.item_nodes[item as usize];
         let mut counts = vec![0u64; item as usize];
 
-        // Collect branches with a reusable buffer
         let mut branches: Vec<(Vec<u32>, u64)> = Vec::with_capacity(node_indices.len());
         let mut branch_buf = Vec::with_capacity(32);
         for &ni in node_indices {
@@ -253,9 +244,6 @@ pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>) -> Ve
     } else if max_len.is_none_or(|ml| ml > cond_len) {
         let prefix = &tree.cond_items;
 
-        // Build conditional trees AND mine them in a single parallel step.
-        // Previously the item_trees Vec was collected sequentially first,
-        // making conditional_tree() a serial bottleneck before mining could start.
         let use_par = num_items >= PAR_ITEMS_CUTOFF;
         let sub_results: Vec<Vec<(u64, Vec<u32>)>> = if use_par {
             (0..num_items as u32)
@@ -343,8 +331,6 @@ fn mine_itemsets(
     min_count: u64,
     max_len: Option<usize>,
 ) -> PyResult<Vec<(u64, Vec<u32>)>> {
-    // Count duplicate baskets with a hash map — O(n) vs O(n log n) sort.
-    // ahash is already in our dependency tree.
     use ahash::AHashMap;
     let mut basket_counts: AHashMap<Vec<u32>, u64> = AHashMap::with_capacity(itemsets.len());
     for basket in itemsets {
@@ -363,7 +349,6 @@ pub(crate) fn flatten_results(results: Vec<(u64, Vec<u32>)>) -> (Vec<u64>, Vec<u
     let mut supports = Vec::with_capacity(results.len());
     let mut offsets = Vec::with_capacity(results.len() + 1);
 
-    // Calculate total items to pre-allocate
     let total_items: usize = results.iter().map(|(_, items)| items.len()).sum();
     let mut all_items = Vec::with_capacity(total_items);
 
@@ -417,18 +402,12 @@ fn _mine_dense(
     let itemsets: Vec<Vec<u32>> = flat
         .par_chunks(n_cols)
         .filter_map(|row| {
-            // frequent_cols is in frequency-descending order by global col,
-            // but local IDs are assigned 0..n in that same order.
-            // We want local IDs in ascending order for consistent tree paths.
-            // Since local_id = position in frequent_cols (0 = most frequent),
-            // we iterate in *reverse* to get ascending local IDs without sorting.
             let items: Vec<u32> = frequent_cols
                 .iter()
                 .enumerate()
                 .filter(|&(_, &col)| unsafe { *row.get_unchecked(col) != 0 })
                 .map(|(local_id, _)| local_id as u32)
                 .collect();
-            // items is produced in ascending local_id order already — no sort needed.
             if items.is_empty() {
                 return None;
             }
@@ -506,7 +485,6 @@ pub(crate) fn _mine_csr(
             if items.is_empty() {
                 return None;
             }
-            // CSR indices are not guaranteed sorted by local_id, must sort
             items.sort_unstable();
             Some(items)
         })

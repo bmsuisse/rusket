@@ -7,7 +7,8 @@ one-hot encoded pandas DataFrame, then generate association rules.
 """
 
 import pandas as pd
-from rusket import fpgrowth, association_rules
+
+from rusket import association_rules, fpgrowth
 
 # A small market-basket dataset (5 transactions, 5 items)
 data = {

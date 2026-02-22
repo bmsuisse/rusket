@@ -8,7 +8,8 @@ just change the import line.
 """
 
 import pandas as pd
-from rusket import fpgrowth, association_rules
+
+from rusket import association_rules, fpgrowth
 
 # ── mlxtend code (before) ────────────────────────────────────────────────────
 #

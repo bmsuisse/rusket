@@ -1,16 +1,12 @@
-use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyArrayMethods};
+use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// Helper: Basic dot product and vector arithmetic
 #[inline(always)]
 fn dot(a: &[f32], b: &[f32]) -> f32 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 
-
-
-// Random Number Generator state
 struct XorShift64 {
     state: u64,
 }
@@ -42,7 +38,6 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     let scale = 1.0 / (k as f32).sqrt();
     let mut out = vec![0.0f32; n * k];
     for v in out.iter_mut() {
-        // Uniform [-scale, scale] for good initialisation
         *v = (rng.next_float() * 2.0 - 1.0) * scale;
     }
     out
@@ -50,14 +45,9 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
 
 #[inline(always)]
 fn sigmoid(x: f32) -> f32 {
-    // Fast rational approximation: avoids exp(), accurate to ~2% for |x| < 5.
-    // Sufficient for BPR SGD where the gradient only needs sign + rough magnitude.
-    // σ(x) ≈ 0.5 + 0.5*x/(1+|x|)  — saturates to 0/1 correctly at ±∞.
     0.5 + 0.5 * x / (1.0 + x.abs())
 }
 
-// Build quick lookup table from CSR to allow O(1) membership check and sampling
-// For speed, we just use a flat list and binary search for membership.
 struct CSRLookup<'a> {
     indptr: &'a [i64],
     indices: &'a [i32],
@@ -98,14 +88,11 @@ fn bpr_train(
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
     let num_threads = rayon::current_num_threads();
 
-    // We do Hogwild! style lock-free SGD. Raw pointers are cast to usize to bypass Send/Sync
     let uf_ptr_raw = user_factors.as_mut_ptr() as usize;
     let if_ptr_raw = item_factors.as_mut_ptr() as usize;
 
-    // We do Hogwild! style lock-free SGD.
     let lookup = CSRLookup { indptr, indices };
 
-    // Calculate total positive interactions (number of samples per epoch)
     let n_samples = *indptr.last().unwrap() as usize;
 
     if verbose {
@@ -129,31 +116,24 @@ fn bpr_train(
 
         let chunk_size = n_samples / num_threads;
 
-        // Rayon chunks run parallel lock-free updates to user_factors/item_factors
         (0..num_threads).into_par_iter().for_each(|thread_idx| {
             let mut rng = XorShift64::new(
                 seed.wrapping_add(iter as u64)
                     .wrapping_add(thread_idx as u64 * 100),
             );
 
-            // Raw pointers for lock-free unsynchronized updates (Hogwild!)
-            // Data races are expected but SGD is highly robust to them
             let uf_ptr = uf_ptr_raw as *mut f32;
             let if_ptr = if_ptr_raw as *mut f32;
 
             for _ in 0..chunk_size {
-                // 1. Draw random user u
                 let u = (rng.next() as usize) % n_users;
 
-                // 2. Draw positive item i
                 let i = match lookup.get_positive_item(u, &mut rng) {
                     Some(val) => val,
                     None => continue,
                 };
 
-                // 3. Draw negative item j (ensure user hasn't interacted with it)
                 let mut j = (rng.next() as usize) % n_items;
-                // Fast rejection sampling (try a few times)
                 for _ in 0..10 {
                     if !lookup.has_interaction(u, j) {
                         break;
@@ -161,7 +141,6 @@ fn bpr_train(
                     j = (rng.next() as usize) % n_items;
                 }
 
-                // 4. Calculate error and gradients
                 unsafe {
                     let u_ptr = uf_ptr.add(u * k);
                     let i_ptr = if_ptr.add(i * k);
@@ -175,11 +154,9 @@ fn bpr_train(
                     let p_j = dot(xu, xj);
                     let diff = p_i - p_j;
 
-                    // Sigmoid gradient
                     let sig = sigmoid(diff);
                     let deriv = 1.0 - sig;
 
-                    // Update latent factors
                     for f in 0..k {
                         let w_u = xu[f];
                         let w_i = xi[f];

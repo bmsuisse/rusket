@@ -5,11 +5,14 @@ catalogue dataset (2,603 items, avg 4.4 items/txn).
 """
 
 from __future__ import annotations
+
 import gc
 import time
 import urllib.request
 from pathlib import Path
+
 import numpy as np
+
 from rusket import FPMiner
 
 DATA_DIR = Path(__file__).resolve().parent / "data"

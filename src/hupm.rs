@@ -1,12 +1,7 @@
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
-/// High-Utility Pattern Mining (HUPM) using depth-first projection.
-/// Similar to EFIM, but simplified.
-/// Transactions contain sorted items (by TWU or frequency globally) and their utilities.
-
 type Transaction = (Vec<u32>, Vec<f32>);
-// Projection: (transaction_idx, starting_position, prefix_utility)
 type ProjectedDB = Vec<(usize, usize, f32)>;
 
 fn hupm_mine_recursive(
@@ -26,11 +21,9 @@ fn hupm_mine_recursive(
     let mut item_twu: HashMap<u32, f32> = HashMap::new();
     let mut item_exact_utility: HashMap<u32, f32> = HashMap::new();
 
-    // 1. Scan projected DB to find TWU and Exact Utility for each item
     for &(tx_idx, start_pos, prefix_util) in pdb {
         let (items, utils) = &transactions[tx_idx];
 
-        // Calculate remaining utility (RU) in this transaction from start_pos
         let mut remaining_util = 0.0;
         for j in start_pos..items.len() {
             remaining_util += utils[j];
@@ -47,17 +40,14 @@ fn hupm_mine_recursive(
         }
     }
 
-    // 2. Identify promising items (TWU >= min_util)
     let mut promising_items: Vec<u32> = item_twu
         .into_iter()
         .filter(|&(_, twu)| twu >= min_utility)
         .map(|(item, _)| item)
         .collect();
 
-    // Optimization: Mine extensions in order
     promising_items.sort_unstable();
 
-    // 3. Project and recurse
     for item in promising_items {
         current_pattern.push(item);
 
@@ -70,10 +60,8 @@ fn hupm_mine_recursive(
         for &(tx_idx, start_pos, prefix_util) in pdb.iter() {
             let (items, utils) = &transactions[tx_idx];
 
-            // Find position of `item`
             if let Some(offset) = items[start_pos..].iter().position(|&x| x == item) {
                 let actual_pos = start_pos + offset;
-                // If there are more items after this one, we can project
                 if actual_pos + 1 < items.len() {
                     let new_prefix_util = prefix_util + utils[actual_pos];
                     new_pdb.push((tx_idx, actual_pos + 1, new_prefix_util));
@@ -101,7 +89,6 @@ pub fn hupm_simple(
     min_utility: f32,
     max_len: Option<usize>,
 ) -> Vec<(f32, Vec<u32>)> {
-    // Initial projecting
     let mut pdb = Vec::with_capacity(transactions.len());
     for i in 0..transactions.len() {
         if !transactions[i].0.is_empty() {
@@ -132,7 +119,6 @@ pub fn hupm_mine_py(
     min_utility: f32,
     max_len: Option<usize>,
 ) -> PyResult<(Vec<f32>, Vec<Vec<u32>>)> {
-    // Combine lists into standard transaction rep
     if items_list.len() != utils_list.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(
             "items_list and utils_list must have the same length",
@@ -146,9 +132,6 @@ pub fn hupm_mine_py(
                 "Each inner list of items and utils must have the same length",
             ));
         }
-        // Internally, items within a transaction MUST be sorted by some global order.
-        // For simplicity, we just sort by item ID here natively to ensure combinations
-        // are deterministic. EFIM sorts by TWU.
 
         let mut pairs: Vec<(u32, f32)> = items.into_iter().zip(utils.into_iter()).collect();
         pairs.sort_unstable_by(|a, b| a.0.cmp(&b.0));

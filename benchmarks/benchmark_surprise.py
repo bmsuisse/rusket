@@ -1,15 +1,15 @@
 import time
-import numpy as np
-from scipy import sparse
-from sklearn.metrics import ndcg_score
-
-# rusket
-from rusket import BPR
 
 # surprise
 import implicit
-from surprise import Dataset, SVD
+import numpy as np
+from scipy import sparse
+from sklearn.metrics import ndcg_score
+from surprise import SVD, Dataset
 from surprise.model_selection import split
+
+# rusket
+from rusket import BPR
 
 
 def load_ml100k():
@@ -89,9 +89,9 @@ def evaluate_ndcg(algo, testset, trainset, n=10):
             # Get user true items in trainset
             try:
                 inner_u = trainset.to_inner_uid(uid)
-                train_items = set(
-                    [trainset.to_raw_iid(j) for j, r in trainset.ur[inner_u]]
-                )
+                train_items = {
+                    trainset.to_raw_iid(j) for j, r in trainset.ur[inner_u]
+                }
             except Exception:
                 train_items = set()
 

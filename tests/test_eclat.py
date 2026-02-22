@@ -6,7 +6,6 @@ import unittest
 
 import numpy as np
 import pandas as pd
-
 from test_fpbase import (
     FPTestEdgeCases,
     FPTestErrors,

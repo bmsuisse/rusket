@@ -1,11 +1,11 @@
 """Bayesian Personalized Ranking (BPR) implicit recommender."""
 
 from __future__ import annotations
+
 import typing
 from typing import Any
 
 from . import _rusket as _rust  # type: ignore
-
 from .model import ImplicitRecommender
 
 
@@ -63,7 +63,7 @@ class BPR(ImplicitRecommender):
             f"regularization={self.regularization}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any) -> "BPR":
+    def fit(self, interactions: Any) -> BPR:
         """Fit the BPR model to the user-item interaction matrix."""
         import numpy as np
         from scipy import sparse as sp

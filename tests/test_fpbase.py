@@ -5,8 +5,8 @@ from __future__ import annotations
 import io
 import sys
 import warnings
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -44,11 +44,11 @@ def assert_raises(
 
 
 def compare_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
-    itemsets1 = [sorted(list(i)) for i in df1["itemsets"]]
-    itemsets2 = [sorted(list(i)) for i in df2["itemsets"]]
-    rows1 = sorted(zip(itemsets1, df1["support"]))
-    rows2 = sorted(zip(itemsets2, df2["support"]))
-    for row1, row2 in zip(rows1, rows2):
+    itemsets1 = [sorted(i) for i in df1["itemsets"]]
+    itemsets2 = [sorted(i) for i in df2["itemsets"]]
+    rows1 = sorted(zip(itemsets1, df1["support"], strict=False))
+    rows2 = sorted(zip(itemsets2, df2["support"], strict=False))
+    for row1, row2 in zip(rows1, rows2, strict=False):
         if row1[0] != row2[0]:
             raise AssertionError(
                 f"Expected different frequent itemsets\nx:{row1[0]}\ny:{row2[0]}"

@@ -1,6 +1,7 @@
 """ALS (Alternating Least Squares) collaborative filtering recommender."""
 
 from __future__ import annotations
+
 import typing
 from typing import Any
 
@@ -87,7 +88,7 @@ class ALS(ImplicitRecommender):
             f"alpha={self.alpha}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any) -> "ALS":
+    def fit(self, interactions: Any) -> ALS:
         """Fit the model to the user-item interaction matrix."""
         import numpy as np
         from scipy import sparse as sp

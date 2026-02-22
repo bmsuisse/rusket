@@ -1,10 +1,12 @@
 """Tests for rusket.ALS — mirrors key tests from implicit library's test suite."""
 
 from __future__ import annotations
+
 import numpy as np
 import pytest
 from scipy import sparse
 from scipy.sparse import coo_matrix, csr_matrix
+
 import rusket
 
 

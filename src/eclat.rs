@@ -4,7 +4,6 @@ use rayon::prelude::*;
 
 use crate::fpgrowth::{flatten_results, process_item_counts};
 
-/// Simple BitSet backed by `Vec<u64>`
 #[derive(Clone)]
 pub(crate) struct BitSet {
     blocks: Vec<u64>,
@@ -28,9 +27,6 @@ impl BitSet {
         self.blocks.iter().map(|b| b.count_ones() as u64).sum()
     }
 
-    /// Intersect self & other, writing into `out` (must have same block count).
-    /// Returns the popcount. If at any point the remaining blocks can't bring
-    /// the total up to `min_count`, aborts and returns 0 (early-exit).
     #[inline]
     fn intersect_count_into(&self, other: &BitSet, out: &mut BitSet, min_count: u64) -> u64 {
         let n = self.blocks.len();
@@ -41,10 +37,8 @@ impl BitSet {
             let v = self.blocks[i] & other.blocks[i];
             out.blocks[i] = v;
             count += v.count_ones() as u64;
-            // Early-exit: even if all remaining blocks are all-ones we can't reach min_count
             let remaining_max = ((n - i - 1) * 64) as u64;
             if count + remaining_max < min_count {
-                // zero out remaining blocks so `out` is consistent if caller checks
                 for j in (i + 1)..n {
                     out.blocks[j] = 0;
                 }
@@ -63,7 +57,6 @@ pub(crate) fn eclat_mine(
 ) -> Vec<(u64, Vec<u32>)> {
     let mut results = Vec::new();
     let new_len = prefix.len() + 1;
-    // Scratch buffer reused across pairs at this level — one allocation per call.
     let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
     let mut scratch = BitSet {
         blocks: vec![0u64; n_blocks],
@@ -87,7 +80,6 @@ pub(crate) fn eclat_mine(
                 for (item_b, bs_b) in &active_items[i + 1..] {
                     let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                     if c >= min_count {
-                        // Clone scratch into a new owned BitSet for storage
                         next_active.push((*item_b, scratch.clone()));
                     }
                 }
@@ -157,10 +149,7 @@ pub fn eclat_from_dense(
         }
     }
 
-    let active_items: Vec<(u32, BitSet)> = original_items
-        .into_iter()
-        .zip(bitsets)
-        .collect();
+    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
     let results: Vec<(u64, Vec<u32>)> = active_items
         .par_iter()
@@ -256,13 +245,8 @@ pub fn eclat_from_csr(
         }
     }
 
-    // 3. Prepare initial active set
-    let active_items: Vec<(u32, BitSet)> = original_items
-        .into_iter()
-        .zip(bitsets)
-        .collect();
+    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    // 4. Mine (Parallel top level)
     let results: Vec<(u64, Vec<u32>)> = active_items
         .par_iter()
         .enumerate()
@@ -303,8 +287,6 @@ pub fn eclat_from_csr(
     ))
 }
 
-/// Internal (non-pyfunction) Eclat implementation on raw CSR slices.
-/// Used by FPMiner to avoid re-entering Python.
 pub(crate) fn _eclat_mine_csr(
     indptr: &[i32],
     indices: &[i32],
@@ -346,10 +328,7 @@ pub(crate) fn _eclat_mine_csr(
         }
     }
 
-    let active_items: Vec<(u32, BitSet)> = original_items
-        .into_iter()
-        .zip(bitsets)
-        .collect();
+    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
     use rayon::prelude::*;
     let results: Vec<(u64, Vec<u32>)> = active_items

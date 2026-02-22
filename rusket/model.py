@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -16,7 +17,7 @@ class RuleMinerMixin:
         metric: str = "confidence",
         min_threshold: float = 0.8,
         return_metrics: list[str] | None = None,
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Generate association rules from the mined frequent itemsets.
 
         Parameters
@@ -33,7 +34,8 @@ class RuleMinerMixin:
         pd.DataFrame
             DataFrame of strong association rules.
         """
-        from .association_rules import association_rules as _assoc_rules, _ALL_METRICS
+        from .association_rules import _ALL_METRICS
+        from .association_rules import association_rules as _assoc_rules
 
         if return_metrics is None:
             return_metrics = _ALL_METRICS
@@ -70,7 +72,7 @@ class RuleMinerMixin:
             List of recommended items, ordered by lift and then confidence.
         """
         rules_df = self.association_rules(metric="lift", min_threshold=1.0)
-        
+
         if rules_df.empty:
             return []
 
@@ -95,11 +97,11 @@ class RuleMinerMixin:
 
 class BaseModel(ABC):
     """Abstract base class for all rusket algorithms.
-    
+
     Provides unified data ingestion methods (from_transactions, from_pandas, etc.)
     for any downstream Miner or Recommender.
     """
-    
+
     @classmethod
     @abstractmethod
     def from_transactions(
@@ -109,7 +111,7 @@ class BaseModel(ABC):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "BaseModel":
+    ) -> BaseModel:
         """Initialize the model from a long-format DataFrame or sequences.
 
         Must be implemented by subclasses.
@@ -119,12 +121,12 @@ class BaseModel(ABC):
     @classmethod
     def from_pandas(
         cls,
-        df: "pd.DataFrame",
+        df: pd.DataFrame,
         transaction_col: str | None = None,
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "BaseModel":
+    ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(
             df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
@@ -133,12 +135,12 @@ class BaseModel(ABC):
     @classmethod
     def from_polars(
         cls,
-        df: "pl.DataFrame",
+        df: pl.DataFrame,
         transaction_col: str | None = None,
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "BaseModel":
+    ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(
             df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs
@@ -151,7 +153,7 @@ class BaseModel(ABC):
         transaction_col: str | None = None,
         item_col: str | None = None,
         **kwargs: Any,
-    ) -> "BaseModel":
+    ) -> BaseModel:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(
             df, transaction_col=transaction_col, item_col=item_col, **kwargs
@@ -160,19 +162,19 @@ class BaseModel(ABC):
 
 class Miner(BaseModel):
     """Base class for all pattern mining algorithms.
-    
+
     Inherited by FPGrowth, Eclat, AutoMiner, PrefixSpan, and HUPM.
     """
-    
-    def __init__(self, data: "pd.DataFrame | Any", item_names: list[str] | None = None, **kwargs: Any):
+
+    def __init__(self, data: pd.DataFrame | Any, item_names: list[str] | None = None, **kwargs: Any):
         """Initialize the miner with pre-formatted data.
-        
+
         Parameters
         ----------
         data : pd.DataFrame | Any
             A one-hot encoded dataset (e.g. Pandas DataFrame, SciPy sparse matrix).
         item_names : list[str], optional
-            Column names if data is a raw numpy/scipy array. 
+            Column names if data is a raw numpy/scipy array.
             If not provided, and data is a DataFrame, columns are inferred.
         **kwargs
             Algorithm-specific mining parameters (min_support, max_len, etc.).
@@ -182,7 +184,7 @@ class Miner(BaseModel):
             list(data.columns) if hasattr(data, "columns") else None
         )
         self.kwargs = kwargs
-        
+
         # Keep track of the number of transactions for metric calculations later
         if hasattr(self.data, "shape") and len(self.data.shape) > 0:
             self._num_itemsets = self.data.shape[0]
@@ -195,12 +197,12 @@ class Miner(BaseModel):
     @classmethod
     def from_transactions(
         cls,
-        data: "pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any",
+        data: pd.DataFrame | pl.DataFrame | Sequence[Sequence[str | int]] | Any,
         transaction_col: str | None = None,
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "Miner":
+    ) -> Miner:
         """Load long-format transactional data into the algorithm.
 
         Parameters
@@ -230,7 +232,7 @@ class Miner(BaseModel):
         """
         from ._compat import to_dataframe
         from .transactions import _from_dataframe, _from_list
-        
+
         data = to_dataframe(data)
 
         if isinstance(data, (list, tuple)):
@@ -253,9 +255,9 @@ class Miner(BaseModel):
         return cls(sparse_df, **kwargs)
 
     @abstractmethod
-    def mine(self, **kwargs: Any) -> "pd.DataFrame":
+    def mine(self, **kwargs: Any) -> pd.DataFrame:
         """Execute the mining algorithm and return frequent patterns.
-        
+
         Must be implemented by subclasses.
         """
         pass
@@ -263,10 +265,10 @@ class Miner(BaseModel):
 
 class ImplicitRecommender(BaseModel):
     """Base class for implicit feedback recommender models.
-    
+
     Inherited by ALS and BPR.
     """
-    
+
     def __init__(self, **kwargs: Any):
         self._user_labels: list[Any] | None = None
         self._item_labels: list[Any] | None = None
@@ -280,9 +282,9 @@ class ImplicitRecommender(BaseModel):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> "ImplicitRecommender":
+    ) -> ImplicitRecommender:
         """Initialize and fit the model from a long-format DataFrame.
-        
+
         Parameters
         ----------
         data : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
@@ -308,7 +310,7 @@ class ImplicitRecommender(BaseModel):
         user_col: str | None = None,
         item_col: str | None = None,
         rating_col: str | None = None,
-    ) -> "ImplicitRecommender":
+    ) -> ImplicitRecommender:
         import warnings
         warnings.warn(
             "fit_transactions is deprecated. Use from_transactions() instead.",
@@ -323,11 +325,12 @@ class ImplicitRecommender(BaseModel):
         user_col: str | None = None,
         item_col: str | None = None,
         rating_col: str | None = None,
-    ) -> "ImplicitRecommender":
+    ) -> ImplicitRecommender:
         """Fit from a long-format Pandas/Polars/Spark DataFrame."""
         import numpy as np
         import pandas as _pd
         from scipy import sparse as sp
+
         from ._compat import to_dataframe
 
         data = to_dataframe(data)
@@ -369,9 +372,9 @@ class ImplicitRecommender(BaseModel):
         return self.fit(csr)
 
     @abstractmethod
-    def fit(self, interactions: Any) -> "ImplicitRecommender":
+    def fit(self, interactions: Any) -> ImplicitRecommender:
         """Fit the model to a user-item interaction matrix.
-        
+
         Must be implemented by subclasses.
         """
         pass
@@ -384,7 +387,7 @@ class ImplicitRecommender(BaseModel):
         exclude_seen: bool = True,
     ) -> tuple[Any, Any]:
         """Top-N items for a user.
-        
+
         Must be implemented by subclasses.
         """
         pass

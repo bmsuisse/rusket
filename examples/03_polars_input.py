@@ -8,10 +8,10 @@ No conversion overhead — the numpy bridge re-uses the same memory.
 Requires: `uv add polars` or `pip install "rusket[polars]"`
 """
 
-import polars as pl
 import numpy as np
-from rusket import fpgrowth, association_rules
+import polars as pl
 
+from rusket import association_rules, fpgrowth
 
 # ── 1. Create a Polars DataFrame ────────────────────────────────────────────
 #    (In practice you'd load this from parquet/csv)

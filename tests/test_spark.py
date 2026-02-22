@@ -5,6 +5,7 @@ import pytest
 pyspark = pytest.importorskip("pyspark")
 from rusket.spark import mine_grouped, to_spark
 
+
 @pytest.fixture(scope="module")
 def spark_session():
     from pyspark.sql import SparkSession
@@ -121,7 +122,7 @@ def test_spark_prefixspan(spark_session) -> None:
         "time": [10, 20, 30, 10, 20, 10, 20],
         "item": ["A", "B", "A", "B", "A", "A", "C"],
     })
-    
+
     spark_df = to_spark(spark_session, df)
 
     # Use our Spark Arrow converter natively
@@ -133,7 +134,7 @@ def test_spark_prefixspan(spark_session) -> None:
     # Seq 2: B, A (1, 0)
     # Seq 3: A, C (0, 2)
     assert len(seqs) == 3
-    
+
     # Run mining
     freq = prefixspan(seqs, min_support=2, max_len=2)
 
@@ -143,23 +144,23 @@ def test_spark_prefixspan(spark_session) -> None:
         return [mapping_dict[i] for i in s]
 
     freq["sequence_str"] = freq["sequence"].apply(decode_seq)
-    
+
     # Check [B, A] support
     ba = freq[freq["sequence_str"].apply(lambda x: x == ["B", "A"])].iloc[0]
     assert ba["support"] == 2
 
 def test_prefixspan_grouped(spark_session) -> None:
     from rusket.spark import prefixspan_grouped
-    
+
     df = pd.DataFrame({
         "store_id": ["A", "A", "A", "B", "B", "B"],
         "user_id": [1, 1, 1, 2, 2, 2],
         "time": [10, 20, 30, 10, 20, 30],
         "item": ["X", "Y", "X", "Y", "Z", "Y"],
     })
-    
+
     spark_df = to_spark(spark_session, df)
-    
+
     result = prefixspan_grouped(
         spark_df,
         group_col="store_id",
@@ -168,36 +169,36 @@ def test_prefixspan_grouped(spark_session) -> None:
         item_col="item",
         min_support=1,
     )
-    
+
     import pyspark
     assert isinstance(result, pyspark.sql.DataFrame)
-    
+
     pd_result = result.toPandas()
-    
+
     assert "store_id" in pd_result.columns
     assert "support" in pd_result.columns
     assert "sequence" in pd_result.columns
-    
+
     # Store A should have X -> Y -> X
     a_res = pd_result[pd_result["store_id"] == "A"]
     assert len(a_res) > 0
-    
+
     # Store B should have Y -> Z -> Y
     b_res = pd_result[pd_result["store_id"] == "B"]
     assert len(b_res) > 0
 
 def test_hupm_grouped(spark_session) -> None:
     from rusket.spark import hupm_grouped
-    
+
     df = pd.DataFrame({
         "store_id": ["A", "A", "A", "A", "B", "B", "B"],
         "transaction_id": [1, 1, 2, 2, 3, 3, 4],
         "item_id": [10, 20, 10, 30, 10, 20, 30],
         "utility": [5.0, 10.0, 5.0, 15.0, 50.0, 2.0, 15.0],
     })
-    
+
     spark_df = to_spark(spark_session, df)
-    
+
     result = hupm_grouped(
         spark_df,
         group_col="store_id",
@@ -206,25 +207,25 @@ def test_hupm_grouped(spark_session) -> None:
         utility_col="utility",
         min_utility=15.0,
     )
-    
+
     import pyspark
     assert isinstance(result, pyspark.sql.DataFrame)
-    
+
     pd_result = result.toPandas()
-    
+
     assert "store_id" in pd_result.columns
     assert "utility" in pd_result.columns
     assert "itemset" in pd_result.columns
-    
+
     a_res = pd_result[pd_result["store_id"] == "A"]
     b_res = pd_result[pd_result["store_id"] == "B"]
-    
+
     assert len(a_res) > 0
     assert len(b_res) > 0
 
 def test_rules_grouped(spark_session) -> None:
     from rusket.spark import mine_grouped, rules_grouped
-    
+
     df = pd.DataFrame(
         {
             "store_id": ["A", "A", "A", "A", "B", "B", "B", "B"],
@@ -241,7 +242,7 @@ def test_rules_grouped(spark_session) -> None:
         group_col="store_id",
         min_support=0.5,
     )
-    
+
     rules_df = rules_grouped(
         freq_df,
         group_col="store_id",
@@ -249,31 +250,31 @@ def test_rules_grouped(spark_session) -> None:
         metric="confidence",
         min_threshold=0.5,
     )
-    
+
     import pyspark
     assert isinstance(rules_df, pyspark.sql.DataFrame)
-    
+
     pd_rules = rules_df.toPandas()
-    
+
     assert "store_id" in pd_rules.columns
     assert "antecedents" in pd_rules.columns
     assert "consequents" in pd_rules.columns
     assert "confidence" in pd_rules.columns
-    
+
     # Check that there are some rules
     assert len(pd_rules) > 0
-    
+
     # Store A and B should both have rules mapping Bread -> Milk or similar
     a_rules = pd_rules[pd_rules["store_id"] == "A"]
     b_rules = pd_rules[pd_rules["store_id"] == "B"]
-    
+
     assert len(a_rules) > 0
     assert len(b_rules) > 0
 
 def test_recommend_batches(spark_session) -> None:
-    from rusket.spark import recommend_batches
     from rusket.als import ALS
     from rusket.recommend import Recommender
+    from rusket.spark import recommend_batches
 
     # Train a quick ALS model locally
     train_df = pd.DataFrame({
@@ -281,21 +282,21 @@ def test_recommend_batches(spark_session) -> None:
         "item_id": [10, 20, 10, 30, 20],
         "rating": [5.0, 3.0, 4.0, 5.0, 1.0],
     })
-    
+
     model = ALS(factors=4, iterations=3, seed=42)
     # Turn off the ALS warning simply for hygiene
     import warnings
     warnings.simplefilter('ignore', DeprecationWarning)
-    
+
     model.fit_transactions(train_df, user_col="user_id", item_col="item_id", rating_col="rating")
     recommender = Recommender(als_model=model)
-    
+
     # Now pretend we have a Spark DF of user histories to batch score
     batch_df = pd.DataFrame({
         "user_id": ["0", "1", "2"],
     })
     spark_batch = to_spark(spark_session, batch_df)
-    
+
     # We can pass the `recommender` directly
     result = recommend_batches(
         spark_batch,
@@ -303,18 +304,18 @@ def test_recommend_batches(spark_session) -> None:
         user_col="user_id",
         k=2,
     )
-    
+
     import pyspark
     assert isinstance(result, pyspark.sql.DataFrame)
-    
+
     pd_result = result.toPandas()
-    
+
     assert "user_id" in pd_result.columns
     assert "recommended_items" in pd_result.columns
-    
+
     # Total 3 users processed
     assert len(pd_result) == 3
-    
+
     # Ensure it parsed the lists correctly
     user_1_recs = pd_result[pd_result["user_id"] == "1"].iloc[0]["recommended_items"]
     assert isinstance(user_1_recs, np.ndarray) or isinstance(user_1_recs, list)

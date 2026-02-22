@@ -1,29 +1,33 @@
-from .fpgrowth import fpgrowth
-from .eclat import eclat
-from .mine import mine
+from . import viz
+from .als import ALS
+from .analytics import customer_saturation, find_substitutes
 from .association_rules import association_rules
+from .bpr import BPR
+from .eclat import Eclat, eclat
+from .export import export_item_factors
+from .fpgrowth import FPGrowth, fpgrowth
+from .hupm import HUPM, hupm, mine_hupm
+from .mine import AutoMiner, mine
+from .model import BaseModel
+from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
+from .recommend import NextBestAction, Recommender, score_potential
+from .similarity import similar_items
+from .streaming import FPMiner, mine_duckdb, mine_spark
 from .transactions import (
-    from_transactions,
-    from_transactions_csr,
     from_pandas,
     from_polars,
     from_spark,
+    from_transactions,
+    from_transactions_csr,
 )
-from .streaming import FPMiner, mine_duckdb, mine_spark
-from .als import ALS
-from .bpr import BPR
-from .prefixspan import prefixspan, sequences_from_event_log
-from .hupm import hupm, mine_hupm
-from .similarity import similar_items
-from .recommend import Recommender, NextBestAction, score_potential
-from .analytics import find_substitutes, customer_saturation
-from .export import export_item_factors
-from . import viz
 
 __all__ = [
     "fpgrowth",
+    "FPGrowth",
     "eclat",
+    "Eclat",
     "mine",
+    "AutoMiner",
     "mine_duckdb",
     "mine_spark",
     "association_rules",
@@ -33,11 +37,14 @@ __all__ = [
     "from_polars",
     "from_spark",
     "FPMiner",
+    "BaseModel",
     "ALS",
     "BPR",
     "prefixspan",
+    "PrefixSpan",
     "sequences_from_event_log",
     "hupm",
+    "HUPM",
     "mine_hupm",
     "similar_items",
     "Recommender",

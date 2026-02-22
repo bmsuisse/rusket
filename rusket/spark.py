@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from .mine import mine
 
 if TYPE_CHECKING:
@@ -99,7 +101,7 @@ def mine_grouped(
 
         # Convert the Arrow Table to Polars for zero-copy
         pl_df = pl.from_arrow(table)
-        
+
         if not isinstance(pl_df, pl.DataFrame):
             pl_df = pl.DataFrame(pl_df)
 
@@ -163,3 +165,491 @@ def mine_grouped(
             return res
 
         return df.groupby(group_col).applyInPandas(_mine_group_pd, schema=schema)
+
+
+def prefixspan_grouped(
+    df: Any,
+    group_col: str,
+    user_col: str,
+    time_col: str,
+    item_col: str,
+    min_support: int = 1,
+    max_len: int | None = None,
+) -> Any:
+    """Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.
+
+    This function groups a PySpark DataFrame by `group_col` and applies
+    `PrefixSpan.from_transactions` to each group concurrently across the cluster.
+
+    Parameters
+    ----------
+    df
+        The input `pyspark.sql.DataFrame`.
+    group_col
+        The column to group by (e.g. `store_id`).
+    user_col
+        The column identifying the sequence within each group (e.g., `user_id` or `session_id`).
+    time_col
+        The column used for ordering events within a sequence.
+    item_col
+        The column containing the items.
+    min_support
+        The minimum absolute support (number of sequences a pattern must appear in).
+    max_len
+        Maximum length of the sequential patterns to mine.
+
+    Returns
+    -------
+    pyspark.sql.DataFrame
+        A PySpark DataFrame containing:
+        - `group_col`
+        - `support` (long/int64)
+        - `sequence` (array of strings)
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyspark.sql.types as T
+
+    schema = T.StructType(
+        [
+            T.StructField(group_col, T.StringType(), True),
+            T.StructField("support", T.LongType(), True),
+            T.StructField("sequence", T.ArrayType(T.StringType()), True),
+        ]
+    )
+
+    def _prefixspan_group(table: pa.Table) -> pa.Table:
+        import polars as pl
+
+        from rusket.prefixspan import PrefixSpan
+
+        group_id = str(table.column(group_col)[0].as_py())
+
+        pl_df = pl.from_arrow(table)
+        if not isinstance(pl_df, pl.DataFrame):
+            pl_df = pl.DataFrame(pl_df)
+
+        try:
+            model = PrefixSpan.from_transactions(
+                data=pl_df,
+                user_col=user_col,
+                time_col=time_col,
+                item_col=item_col,
+                min_support=min_support,
+                max_len=max_len,
+            )
+            result_pd = model.mine()
+
+            # Ensure items in the sequences are cast to string for the array<string> schema
+            if not result_pd.empty:
+                result_pd["sequence"] = result_pd["sequence"].apply(
+                    lambda seq: [str(x) for x in seq]
+                )
+        except Exception:
+            result_pd = pd.DataFrame(columns=["support", "sequence"])
+
+        if len(result_pd) == 0:
+            return pa.Table.from_batches(
+                [],
+                schema=pa.schema(
+                    [
+                        (group_col, pa.string()),
+                        ("support", pa.int64()),
+                        ("sequence", pa.list_(pa.string())),
+                    ]
+                ),
+            )
+
+        result_pd.insert(0, group_col, group_id)
+
+        out_table = pa.Table.from_pandas(result_pd)
+        expected_schema = pa.schema(
+            [
+                (group_col, pa.string()),
+                ("support", pa.int64()),
+                ("sequence", pa.list_(pa.string())),
+            ]
+        )
+        return out_table.cast(expected_schema)
+
+    if hasattr(df.groupby(group_col), "applyInArrow"):
+        return df.groupby(group_col).applyInArrow(_prefixspan_group, schema=schema)
+    else:
+        def _prefixspan_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
+            from rusket.prefixspan import PrefixSpan
+            group_id = str(pdf[group_col].iloc[0])
+
+            try:
+                model = PrefixSpan.from_transactions(
+                    data=pdf,
+                    user_col=user_col,
+                    time_col=time_col,
+                    item_col=item_col,
+                    min_support=min_support,
+                    max_len=max_len,
+                )
+                res = model.mine()
+                if not res.empty:
+                    res["sequence"] = res["sequence"].apply(
+                        lambda seq: [str(x) for x in seq]
+                    )
+            except Exception:
+                res = pd.DataFrame(columns=["support", "sequence"])
+
+            res.insert(0, group_col, group_id)
+            return res
+
+        return df.groupby(group_col).applyInPandas(_prefixspan_group_pd, schema=schema)
+
+
+def hupm_grouped(
+    df: Any,
+    group_col: str,
+    transaction_col: str,
+    item_col: str,
+    utility_col: str,
+    min_utility: float,
+    max_len: int | None = None,
+) -> Any:
+    """Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.
+
+    This function groups a PySpark DataFrame by `group_col` and applies
+    `HUPM.from_transactions` to each group concurrently across the cluster.
+
+    Parameters
+    ----------
+    df
+        The input `pyspark.sql.DataFrame`.
+    group_col
+        The column to group by (e.g. `store_id`).
+    transaction_col
+        The column identifying the transaction within each group.
+    item_col
+        The column containing the numeric item IDs.
+    utility_col
+        The column containing the numeric utility (e.g., profit) of the item in the transaction.
+    min_utility
+        The minimum total utility required to consider a pattern "high-utility".
+    max_len
+        Maximum length of the itemsets to mine.
+
+    Returns
+    -------
+    pyspark.sql.DataFrame
+        A PySpark DataFrame containing:
+        - `group_col`
+        - `utility` (double/float64)
+        - `itemset` (array of longs/int64)
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyspark.sql.types as T
+
+    schema = T.StructType(
+        [
+            T.StructField(group_col, T.StringType(), True),
+            T.StructField("utility", T.DoubleType(), True),
+            T.StructField("itemset", T.ArrayType(T.LongType()), True),
+        ]
+    )
+
+    def _hupm_group(table: pa.Table) -> pa.Table:
+        import polars as pl
+
+        from rusket.hupm import HUPM
+
+        group_id = str(table.column(group_col)[0].as_py())
+
+        pl_df = pl.from_arrow(table)
+        if not isinstance(pl_df, pl.DataFrame):
+            pl_df = pl.DataFrame(pl_df)
+
+        try:
+            model = HUPM.from_transactions(
+                data=pl_df,
+                transaction_col=transaction_col,
+                item_col=item_col,
+                utility_col=utility_col,
+                min_utility=min_utility,
+                max_len=max_len,
+            )
+            result_pd = model.mine()
+
+            # Ensure items in the sequences are cast to int64 for the array<long> schema
+            if not result_pd.empty:
+                result_pd["itemset"] = result_pd["itemset"].apply(
+                    lambda seq: [int(x) for x in seq]
+                )
+        except Exception:
+            result_pd = pd.DataFrame(columns=["utility", "itemset"])
+
+        if len(result_pd) == 0:
+            return pa.Table.from_batches(
+                [],
+                schema=pa.schema(
+                    [
+                        (group_col, pa.string()),
+                        ("utility", pa.float64()),
+                        ("itemset", pa.list_(pa.int64())),
+                    ]
+                ),
+            )
+
+        result_pd.insert(0, group_col, group_id)
+
+        out_table = pa.Table.from_pandas(result_pd)
+        expected_schema = pa.schema(
+            [
+                (group_col, pa.string()),
+                ("utility", pa.float64()),
+                ("itemset", pa.list_(pa.int64())),
+            ]
+        )
+        return out_table.cast(expected_schema)
+
+    if hasattr(df.groupby(group_col), "applyInArrow"):
+        return df.groupby(group_col).applyInArrow(_hupm_group, schema=schema)
+    else:
+        def _hupm_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
+            from rusket.hupm import HUPM
+            group_id = str(pdf[group_col].iloc[0])
+
+            try:
+                model = HUPM.from_transactions(
+                    data=pdf,
+                    transaction_col=transaction_col,
+                    item_col=item_col,
+                    utility_col=utility_col,
+                    min_utility=min_utility,
+                    max_len=max_len,
+                )
+                res = model.mine()
+                if not res.empty:
+                    res["itemset"] = res["itemset"].apply(
+                        lambda seq: [int(x) for x in seq]
+                    )
+            except Exception:
+                res = pd.DataFrame(columns=["utility", "itemset"])
+
+            res.insert(0, group_col, group_id)
+            return res
+
+        return df.groupby(group_col).applyInPandas(_hupm_group_pd, schema=schema)
+
+
+def rules_grouped(
+    df: Any,
+    group_col: str,
+    num_itemsets: dict[Any, int] | int,
+    metric: str = "confidence",
+    min_threshold: float = 0.8,
+) -> Any:
+    """Distribute Association Rule Mining across PySpark partitions.
+
+    This takes the frequent itemsets DataFrame (output of `mine_grouped`)
+    and applies `association_rules` uniformly across the groups.
+
+    Parameters
+    ----------
+    df
+        The PySpark `DataFrame` containing frequent itemsets.
+    group_col
+        The column to group by.
+    num_itemsets
+        A dictionary mapping group IDs to their total transaction count,
+        or a single integer if all groups have the same number of transactions.
+    metric
+        The metric to filter by (e.g. "confidence", "lift").
+    min_threshold
+        The minimal threshold for the evaluation metric.
+
+    Returns
+    -------
+    pyspark.sql.DataFrame
+        A DataFrame containing antecedents, consequents, and all rule metrics,
+        prepended with the `group_col`.
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyspark.sql.types as T
+
+    all_metrics = [
+        "antecedent support",
+        "consequent support",
+        "support",
+        "confidence",
+        "lift",
+        "leverage",
+        "conviction",
+        "zhangs_metric",
+        "jaccard",
+        "certainty",
+        "kulczynski",
+    ]
+
+    schema_fields = [
+        T.StructField(group_col, T.StringType(), True),
+        T.StructField("antecedents", T.ArrayType(T.StringType()), True),
+        T.StructField("consequents", T.ArrayType(T.StringType()), True),
+    ]
+    for m in all_metrics:
+        schema_fields.append(T.StructField(m, T.DoubleType(), True))
+
+    schema = T.StructType(schema_fields)
+
+    def _rules_group(table: pa.Table) -> pa.Table:
+        import polars as pl
+
+        from rusket.association_rules import association_rules
+
+        group_id = str(table.column(group_col)[0].as_py())
+
+        if isinstance(num_itemsets, dict):
+            key_int = int(group_id) if group_id.isdigit() else group_id
+            num_tx = int(num_itemsets.get(group_id, num_itemsets.get(key_int, 0)))  # type: ignore
+        else:
+            num_tx = int(num_itemsets)
+
+        if num_tx is None:
+            num_tx = 0
+
+        pl_df = pl.from_arrow(table)
+        pdf = pl_df.to_pandas() if isinstance(pl_df, pl.DataFrame) else pd.DataFrame(pl_df)
+
+        try:
+            res_df = association_rules(
+                df=pdf,
+                num_itemsets=num_tx,
+                metric=metric,
+                min_threshold=min_threshold,
+                return_metrics=all_metrics,
+            )
+
+            if not res_df.empty:
+                res_df["antecedents"] = res_df["antecedents"].apply(list)
+                res_df["consequents"] = res_df["consequents"].apply(list)
+            else:
+                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+
+        except Exception:
+            res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+
+        res_df.insert(0, group_col, group_id)
+
+        # Ensure correct PyArrow schema types
+        schema_pa = [
+            (group_col, pa.string()),
+            ("antecedents", pa.list_(pa.string())),
+            ("consequents", pa.list_(pa.string())),
+        ]
+        for m in all_metrics:
+            schema_pa.append((m, pa.float64()))
+
+        return pa.Table.from_pandas(res_df).cast(pa.schema(schema_pa))
+
+    if hasattr(df.groupby(group_col), "applyInArrow"):
+        return df.groupby(group_col).applyInArrow(_rules_group, schema=schema)
+    else:
+        def _rules_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
+            from rusket.association_rules import association_rules
+            group_id = str(pdf[group_col].iloc[0])
+
+            if isinstance(num_itemsets, dict):
+                # Try string key, then fallback to int key
+                key_int = int(group_id) if group_id.isdigit() else group_id
+                num_tx = int(num_itemsets.get(group_id, num_itemsets.get(key_int, 0)))  # type: ignore
+            else:
+                num_tx = int(num_itemsets)
+
+            if num_tx is None:
+                num_tx = 0
+
+            try:
+                res_df = association_rules(
+                    df=pdf,
+                    num_itemsets=num_tx,
+                    metric=metric,
+                    min_threshold=min_threshold,
+                    return_metrics=all_metrics,
+                )
+                if not res_df.empty:
+                    res_df["antecedents"] = res_df["antecedents"].apply(list)
+                    res_df["consequents"] = res_df["consequents"].apply(list)
+                else:
+                    res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+            except Exception:
+                res_df = pd.DataFrame(columns=["antecedents", "consequents"] + all_metrics)
+
+            res_df.insert(0, group_col, group_id)
+            return res_df
+
+        return df.groupby(group_col).applyInPandas(_rules_group_pd, schema=schema)
+
+
+def recommend_batches(
+    df: Any,
+    model: Any,
+    user_col: str = "user_id",
+    k: int = 5,
+) -> Any:
+    """Distribute Batch Recommendations across PySpark partitions.
+
+    This function uses `mapInArrow` to process partitions of users concurrently,
+    applying a pre-fitted `Recommender` (or `ALS`) to each chunk.
+
+    Parameters
+    ----------
+    df
+        The PySpark `DataFrame` containing user histories (must contain `user_col`).
+    model
+        The pre-trained `Recommender` or `ALS` model instance to use for scoring.
+    user_col
+        The column identifying the user.
+    k
+        The number of top recommendations to return per user.
+
+    Returns
+    -------
+    pyspark.sql.DataFrame
+        A DataFrame with two columns:
+        - `user_col`
+        - `recommended_items` (array of longs/int64)
+    """
+    import pandas as pd
+    import pyspark.sql.types as T
+
+    # If it's a raw ALS model, wrap it
+    try:
+        from rusket.recommend import Recommender
+        recommender = model if isinstance(model, Recommender) else Recommender(als_model=model)
+    except Exception:
+        recommender = model  # Trust the duck-typing
+
+    schema = T.StructType(
+        [
+            T.StructField(user_col, T.StringType(), True),
+            T.StructField("recommended_items", T.ArrayType(T.IntegerType()), True),
+        ]
+    )
+
+    def _recommend_row(row):
+        # row is a pyspark.sql.Row
+        df_single = pd.DataFrame([row.asDict()])
+        try:
+            res = recommender.predict_next_chunk(df_single, user_col=user_col, k=k)
+            u_id = str(res.iloc[0][user_col])
+
+            # Ensure native Python integers for Spark ArrayType
+            seq = res.iloc[0]["recommended_items"]
+            if isinstance(seq, np.ndarray):
+                items = [int(x) for x in seq]
+            else:
+                items = [int(x) for x in list(seq)]
+
+            return (u_id, items)
+        except Exception as e:
+            raise e
+
+    # Using RDD map avoids the PyArrow ListType serialization bugs entirely
+    rdd = df.rdd.map(_recommend_row)
+    return df.sparkSession.createDataFrame(rdd, schema=schema)

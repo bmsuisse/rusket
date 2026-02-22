@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from rusket import ALS, Recommender, score_potential
 
 

@@ -94,11 +94,11 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
             if null_values:
                 s = (
                     "The allowed values for a DataFrame "
-                    "are True, False, 0, 1, NaN. Found value %s" % (val,)
+                    f"are True, False, 0, 1, NaN. Found value {val}"
                 )
             else:
                 s = (
                     "The allowed values for a DataFrame "
-                    "are True, False, 0, 1. Found value %s" % (val,)
+                    f"are True, False, 0, 1. Found value {val}"
                 )
             raise ValueError(s)

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from mlxtend.frequent_patterns import fpgrowth as mlxtend_fpgrowth
+
 from rusket import FPMiner
 
 

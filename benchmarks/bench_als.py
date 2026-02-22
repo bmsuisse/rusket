@@ -22,16 +22,16 @@ import json
 import os
 import tarfile
 import time
-import psutil
 import urllib.request
 import zipfile
 from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
 import plotly.graph_objects as go  # type: ignore[import-untyped]
+import psutil
 from plotly.subplots import make_subplots  # type: ignore[import-untyped]
 from scipy import sparse
+from tqdm import tqdm
 
 import rusket
 
@@ -613,15 +613,15 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
     )
 
     fig.update_layout(
-        title=dict(text="rusket ALS — Multi-Method Benchmark", font=dict(size=20)),
+        title={"text": "rusket ALS — Multi-Method Benchmark", "font": {"size": 20}},
         template="plotly_dark",
         height=480,
         width=1100,
         barmode="group",
-        legend=dict(
-            orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
-        ),
-        margin=dict(t=60, b=100),
+        legend={
+            "orientation": "h", "yanchor": "bottom", "y": -0.25, "xanchor": "center", "x": 0.5
+        },
+        margin={"t": 60, "b": 100},
     )
     fig.update_yaxes(title_text="seconds", row=1, col=1)
     fig.update_yaxes(title_text="ms / user", row=1, col=2)

@@ -8,7 +8,6 @@ import pytest
 
 from rusket import FPMiner, fpgrowth, from_transactions
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -352,12 +351,12 @@ class TestFPMinerResultValidation:
 
         # Count actual support from raw data
         txn_item_sets: dict[int, set] = {}
-        for t, i in zip(txn_ids.tolist(), item_ids.tolist()):
+        for t, i in zip(txn_ids.tolist(), item_ids.tolist(), strict=False):
             txn_item_sets.setdefault(t, set()).add(i)
 
         total_txns = len(txn_item_sets)
         for _, row in result.iterrows():
-            items = set(int(x) for x in row["itemsets"])
+            items = {int(x) for x in row["itemsets"]}
             actual_count = sum(1 for s in txn_item_sets.values() if items.issubset(s))
             actual_support = actual_count / total_txns
             assert actual_support >= min_support - 1e-6, (

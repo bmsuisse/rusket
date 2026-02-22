@@ -1,6 +1,8 @@
-import numpy as np
-import rusket
 import time
+
+import numpy as np
+
+import rusket
 
 
 def run_1b_challenge():

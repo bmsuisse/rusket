@@ -7,10 +7,10 @@ use pandas SparseDtype to minimise memory.  rusket passes the raw
 CSR arrays straight to Rust — no densification ever happens.
 """
 
-import pandas as pd
 import numpy as np
-from rusket import fpgrowth, association_rules
+import pandas as pd
 
+from rusket import association_rules, fpgrowth
 
 # ── 1. Build a sparse DataFrame ─────────────────────────────────────────────
 

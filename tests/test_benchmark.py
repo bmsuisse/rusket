@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import tracemalloc
 import time
+import tracemalloc
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from rusket import fpgrowth, association_rules
+from rusket import association_rules, fpgrowth
 
 try:
     import polars as pl
@@ -19,8 +19,8 @@ except ImportError:
     HAS_POLARS = False
 
 try:
-    from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
     from mlxtend.frequent_patterns import association_rules as mlx_assoc_rules
+    from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
 
     HAS_MLXTEND = True
 except ImportError:

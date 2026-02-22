@@ -15,8 +15,8 @@ from __future__ import annotations
 import argparse
 import gc
 import time
-import zipfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -159,7 +159,7 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
         ),
         horizontal_spacing=0.1,
     )
-    kw = dict(marker_color=colors, textposition="outside")
+    kw = {"marker_color": colors, "textposition": "outside"}
 
     fig.add_trace(
         go.Bar(x=labels, y=fit_times, text=[f"{v:.1f}" for v in fit_times], **kw),
@@ -178,12 +178,12 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
     )
 
     fig.update_layout(
-        title=dict(text="rusket ALS — 25M Optimization Sweep", font=dict(size=20)),
+        title={"text": "rusket ALS — 25M Optimization Sweep", "font": {"size": 20}},
         template="plotly_dark",
         height=500,
         width=1400,
         showlegend=False,
-        margin=dict(t=70, b=120),
+        margin={"t": 70, "b": 120},
     )
     for col in range(1, 4):
         fig.update_xaxes(tickangle=-40, row=1, col=col)

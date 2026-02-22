@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from scipy import sparse as sp
+
 from rusket import BPR
 
 

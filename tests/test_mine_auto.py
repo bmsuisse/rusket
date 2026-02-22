@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 from scipy import sparse
+
 import rusket
 
 
@@ -72,18 +73,18 @@ def test_rule_miner_mixin_api():
     # Using the OO API AutoMiner
     from rusket.mine import AutoMiner
     miner = AutoMiner(df, min_support=0.4, use_colnames=True)
-    
+
     # Check that rules can be generated
     rules = miner.association_rules(metric="confidence", min_threshold=0.5)
     assert not rules.empty
     assert "antecedents" in rules.columns
     assert "consequents" in rules.columns
     assert "confidence" in rules.columns
-    
+
     # Check recommend_items
     recs = miner.recommend_items(items=["Milk", "Butter"], n=2)
     assert isinstance(recs, list)
-    
+
     # "Bread" should be recommended since Milk & Butter -> Bread is a strong rule
     # Bread support is 3/5, Milk support is 4/5, Butter is 3/5.
     # We just ensure it runs and returns something valid.

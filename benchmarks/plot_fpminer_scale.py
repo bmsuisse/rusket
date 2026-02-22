@@ -89,8 +89,8 @@ def make_chart(results: list[tuple]) -> go.Figure:
             x=rows_m,
             y=total_t,
             mode="lines+markers+text",
-            line=dict(color=colors["total"], width=2.5, dash="dot"),
-            marker=dict(size=8),
+            line={"color": colors["total"], "width": 2.5, "dash": "dot"},
+            marker={"size": 8},
             text=[f"{v:.1f}s" for v in total_t],
             textposition="top center",
         ),
@@ -105,8 +105,8 @@ def make_chart(results: list[tuple]) -> go.Figure:
             x=rows_m,
             y=itemsets,
             mode="lines+markers",
-            line=dict(color=colors["items"], width=2.5),
-            marker=dict(size=8),
+            line={"color": colors["items"], "width": 2.5},
+            marker={"size": 8},
             fill="tozeroy",
             fillcolor="rgba(58,12,163,0.12)",
         ),
@@ -125,16 +125,16 @@ def make_chart(results: list[tuple]) -> go.Figure:
     fig.update_yaxes(title_text="Frequent itemsets", row=2, col=1)
 
     fig.update_layout(
-        title=dict(
-            text=f"<b>rusket FPMiner — Billion-Row Streaming Benchmark</b><br>"
+        title={
+            "text": f"<b>rusket FPMiner — Billion-Row Streaming Benchmark</b><br>"
             f"<sup>{LABEL}</sup>",
-            x=0.5,
-            xanchor="center",
-        ),
+            "x": 0.5,
+            "xanchor": "center",
+        },
         template="plotly_dark",
         barmode="stack",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        font=dict(family="Inter, system-ui, sans-serif", size=13),
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+        font={"family": "Inter, system-ui, sans-serif", "size": 13},
         height=700,
         plot_bgcolor="#1a1a2e",
         paper_bgcolor="#16213e",

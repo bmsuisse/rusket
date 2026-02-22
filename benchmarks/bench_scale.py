@@ -210,8 +210,8 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
             y=[r["conv_time"] for r in results],
             mode="lines+markers",
             name="from_transactions",
-            line=dict(color="#6366f1", width=3),
-            marker=dict(size=10),
+            line={"color": "#6366f1", "width": 3},
+            marker={"size": 10},
             hovertemplate="%{text}<br>%{y:.1f}s<extra></extra>",
             text=labels,
         ),
@@ -224,8 +224,8 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
             y=[r["fpg_time"] for r in results],
             mode="lines+markers",
             name="rusket fpgrowth",
-            line=dict(color="#22c55e", width=3),
-            marker=dict(size=10, symbol="diamond"),
+            line={"color": "#22c55e", "width": 3},
+            marker={"size": 10, "symbol": "diamond"},
             hovertemplate="%{text}<br>%{y:.1f}s<extra></extra>",
             text=labels,
         ),
@@ -237,17 +237,17 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
     mlx_times = [r["mlx_time"] for r in results]
     if any(t is not None for t in mlx_times):
         # Only plot up to the last non-None
-        valid_x = [x for x, t in zip(n_rows, mlx_times) if t is not None]
+        valid_x = [x for x, t in zip(n_rows, mlx_times, strict=False) if t is not None]
         valid_y = [t for t in mlx_times if t is not None]
-        valid_labels = [lbl for lbl, t in zip(labels, mlx_times) if t is not None]
+        valid_labels = [lbl for lbl, t in zip(labels, mlx_times, strict=False) if t is not None]
         fig.add_trace(
             go.Scatter(
                 x=valid_x,
                 y=valid_y,
                 mode="lines+markers",
                 name="mlxtend (TIMEOUT →)",
-                line=dict(color="#ef4444", width=3, dash="dash"),
-                marker=dict(size=10, symbol="x"),
+                line={"color": "#ef4444", "width": 3, "dash": "dash"},
+                marker={"size": 10, "symbol": "x"},
                 hovertemplate="%{text}<br>%{y:.1f}s<extra></extra>",
                 text=valid_labels,
             ),
@@ -262,8 +262,8 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
             y=[r["mem_mb"] for r in results],
             mode="lines+markers",
             name="Sparse DataFrame",
-            line=dict(color="#f59e0b", width=3),
-            marker=dict(size=10, symbol="square"),
+            line={"color": "#f59e0b", "width": 3},
+            marker={"size": 10, "symbol": "square"},
             hovertemplate="%{text}<br>%{y:.0f} MB<extra></extra>",
             text=labels,
             showlegend=True,
@@ -303,21 +303,21 @@ def make_chart(results: list[dict], output_dir: Path) -> None:
     )
 
     fig.update_layout(
-        title=dict(
-            text="rusket — Scale Benchmark (from_transactions → fpgrowth)",
-            font=dict(size=20),
-        ),
+        title={
+            "text": "rusket — Scale Benchmark (from_transactions → fpgrowth)",
+            "font": {"size": 20},
+        },
         template="plotly_dark",
         height=500,
         width=1100,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.25,
-            xanchor="center",
-            x=0.5,
-        ),
-        margin=dict(t=60, b=100),
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": -0.25,
+            "xanchor": "center",
+            "x": 0.5,
+        },
+        margin={"t": 60, "b": 100},
     )
 
     # Save HTML

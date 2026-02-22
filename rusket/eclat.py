@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
 from .model import Miner, RuleMinerMixin
 
 if TYPE_CHECKING:
-    import pandas as pd
     import numpy as np
+    import pandas as pd
     import polars as pl
 
 class Eclat(Miner, RuleMinerMixin):
     """Eclat frequent itemset miner.
-    
+
     Eclat is typically faster than FP-growth on dense datasets due to
     efficient vertical bitset intersection logic.
     """
-    
+
     def __init__(
         self,
-        data: "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+        data: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
         item_names: list[str] | None = None,
         min_support: float = 0.5,
         null_values: bool = False,
@@ -27,7 +28,7 @@ class Eclat(Miner, RuleMinerMixin):
         **kwargs: Any,
     ):
         """Initialize the Eclat miner.
-        
+
         Parameters
         ----------
         data : pandas.DataFrame, polars.DataFrame, or numpy.ndarray
@@ -54,9 +55,9 @@ class Eclat(Miner, RuleMinerMixin):
         self.max_len = max_len
         self.verbose = verbose
 
-    def mine(self, **kwargs: Any) -> "pd.DataFrame":
+    def mine(self, **kwargs: Any) -> pd.DataFrame:
         """Execute the Eclat algorithm on the stored data.
-        
+
         Returns
         -------
         pandas.DataFrame
@@ -70,7 +71,7 @@ class Eclat(Miner, RuleMinerMixin):
             )
 
         from ._core import dispatch
-        
+
         return dispatch(
             self.data,
             self.min_support,
@@ -83,14 +84,14 @@ class Eclat(Miner, RuleMinerMixin):
         )  # type: ignore[arg-type]
 
 def eclat(
-    df: "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+    df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
     min_support: float = 0.5,
     null_values: bool = False,
     use_colnames: bool = False,
     max_len: int | None = None,
     verbose: int = 0,
     column_names: list[str] | None = None,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Find frequent itemsets using the Eclat algorithm.
 
     This module-level function relies on the Object-Oriented APIs.

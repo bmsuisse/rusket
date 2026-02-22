@@ -1,4 +1,5 @@
 import pandas as pd
+
 from rusket.prefixspan import prefixspan, sequences_from_event_log
 
 

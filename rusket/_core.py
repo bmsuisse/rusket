@@ -186,6 +186,7 @@ def dispatch(
     verbose: int = 0,
 ) -> pd.DataFrame:
     import math
+
     import numpy as np
 
     t0 = 0.0

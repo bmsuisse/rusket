@@ -1,10 +1,120 @@
 """Sequential Pattern Mining (PrefixSpan)."""
 
 from __future__ import annotations
-import pandas as pd
+
 from typing import Any
 
+import pandas as pd
+
 from . import _rusket as _rust  # type: ignore
+from ._compat import to_dataframe
+from .model import Miner
+
+
+class PrefixSpan(Miner):
+    """Sequential Pattern Mining (PrefixSpan) model.
+
+    This class discovers frequent sequences of items across multiple users/sessions.
+    """
+
+    def __init__(
+        self,
+        data: list[list[int]],
+        min_support: int,
+        max_len: int | None = None,
+        item_mapping: dict[int, Any] | None = None,
+    ):
+        """Initialize PrefixSpan with an already-formatted sequence list.
+
+        Parameters
+        ----------
+        data : list of list of int
+            A list of sequences, where each sequence is a list of integers representing items.
+        min_support : int
+            The minimum absolute support (number of sequences a pattern must appear in).
+        max_len : int, optional
+            The maximum length of the sequential patterns to mine.
+        item_mapping : dict, optional
+            A mapping from integer IDs back to original item names.
+        """
+        super().__init__(data, item_names=None)
+        self.min_support = min_support
+        self.max_len = max_len
+        self.item_mapping = item_mapping
+
+    @classmethod
+    def from_transactions(
+        cls,
+        data: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> PrefixSpan:
+        """Initialize the PrefixSpan model from an event log DataFrame.
+
+        Parameters
+        ----------
+        data : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
+            Event log containing users, timestamps, and items.
+        user_col : str
+            Column name identifying the sequence (e.g., user_id or session_id).
+        time_col : str
+            Column name for ordering events.
+        item_col : str
+            Column name for the items.
+        min_support : int
+            The minimum absolute support required.
+        max_len : int | None, default=None
+            The maximum length of the sequential patterns to mine.
+        """
+        user_col = kwargs.get("user_col", transaction_col)
+        if user_col is None:
+            raise ValueError("user_col (or transaction_col) is required for PrefixSpan")
+
+        time_col = kwargs.get("time_col")
+        if time_col is None:
+            raise ValueError("time_col is required for PrefixSpan")
+
+        if item_col is None:
+            raise ValueError("item_col is required for PrefixSpan")
+
+        sequences, mapping = sequences_from_event_log(data, user_col, time_col, item_col)
+
+        min_support = kwargs.get("min_support", 1)
+        max_len = kwargs.get("max_len", None)
+
+        return cls(sequences, min_support, max_len, mapping)
+
+    def mine(self, **kwargs: Any) -> pd.DataFrame:
+        """Mine sequential patterns using PrefixSpan.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing 'support' and 'sequence' columns.
+            Sequences are mapped back to original item names if `from_transactions` was used.
+        """
+        from typing import cast
+        data_list = cast(list[list[int]], self.data)
+        supports, patterns = _rust.prefixspan_mine_py(data_list, self.min_support, self.max_len)
+
+        if self.item_mapping is not None:
+            mapped_patterns = []
+            for seq in patterns:
+                mapped_patterns.append([self.item_mapping.get(idx, idx) for idx in seq])
+            patterns = mapped_patterns
+
+        return (
+            pd.DataFrame(
+                {
+                    "support": supports,
+                    "sequence": patterns,
+                }
+            )
+            .sort_values(by="support", ascending=False)
+            .reset_index(drop=True)
+        )
 
 
 def prefixspan(
@@ -33,6 +143,12 @@ def prefixspan(
     pd.DataFrame
         A DataFrame containing 'support' and 'sequence' columns.
     """
+    import warnings
+    warnings.warn(
+        "rusket.prefixspan() is deprecated. Use PrefixSpan.from_transactions() instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     supports, patterns = _rust.prefixspan_mine_py(sequences, min_support, max_len)
 
     return (
@@ -75,7 +191,6 @@ def sequences_from_event_log(
         - sequences: The nested list of integers to pass to `prefixspan()`.
         - item_mapping: A dictionary mapping the integer IDs back to the original item labels.
     """
-    from ._compat import to_dataframe
     import pandas as pd
 
     data = to_dataframe(df)
@@ -91,16 +206,16 @@ def sequences_from_event_log(
         import polars as pl
         sorted_df = data.sort([user_col, time_col])
         unique_items = sorted_df[item_col].unique(maintain_order=True).to_list()
-        
+
         item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
-        idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
+        idx_to_item = dict(enumerate(unique_items))
 
         # Map to integer IDs and group
         mapped = sorted_df.with_columns(
             pl.col(item_col).replace(item_to_idx).cast(pl.Int64).alias("_mapped_items")
         )
         grouped = mapped.group_by(user_col, maintain_order=True).agg(pl.col("_mapped_items"))
-        
+
         # Rust pyo3 requires explicit list[list[int]], so we map elements natively
         sequences = [[int(x) for x in seq] for seq in grouped["_mapped_items"].to_list()]
         return sequences, idx_to_item
@@ -110,11 +225,11 @@ def sequences_from_event_log(
 
         unique_items = df_sorted[item_col].unique()
         item_to_idx = {item: idx for idx, item in enumerate(unique_items)}
-        idx_to_item = {idx: item for idx, item in enumerate(unique_items)}
+        idx_to_item = dict(enumerate(unique_items))
 
         mapped_items = df_sorted[item_col].map(lambda x: item_to_idx[x])
         grouped = mapped_items.groupby(df_sorted[user_col]).apply(list)
-        
+
         sequences = grouped.tolist()
         return sequences, idx_to_item
 

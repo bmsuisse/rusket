@@ -181,7 +181,7 @@ purchases = pd.DataFrame({
 })
 
 model = ALS(factors=32, iterations=10, verbose=True)
-model.fit_transactions(purchases, user_col="user_id", item_col="item_id")
+model = ALS.from_transactions(purchases, transaction_col="user_id", item_col="item_id")
 ```
 
 ### Access latent factors directly
@@ -461,11 +461,14 @@ ratings_spark = spark.table("implicit_ratings")
 model = ALS(factors=64, iterations=10, verbose=True)
 
 # Coerces to Pandas internally for fit (only for tables that fit in driver RAM)
-model.fit_transactions(
+model = ALS.from_transactions(
     ratings_spark, 
-    user_col="user_id", 
+    transaction_col="user_id", 
     item_col="item_id", 
-    rating_col="clicks"
+    rating_col="clicks",
+    factors=64,
+    iterations=10,
+    verbose=True
 )
 ```
 
@@ -794,8 +797,7 @@ df_purchases = pd.read_csv(url)
 df_purchases = df_purchases.dropna(subset=["CustomerID", "Description"])
 
 # 2. Fit an ALS model
-model = ALS(factors=64, iterations=15, alpha=40.0, seed=42)
-model.fit_transactions(df_purchases, user_col="CustomerID", item_col="StockCode")
+model = ALS.from_transactions(df_purchases, transaction_col="CustomerID", item_col="StockCode", factors=64, iterations=15, alpha=40.0, seed=42)
 
 # 3. L2 Normalization (Unit Sphere Projection) using pure NumPy
 # Divide each latent factor row by its L2 norm (magnitude)
@@ -896,8 +898,7 @@ test = shuffled.iloc[split_idx:]
 
 # 3. Initialize and Fit the ALS Model
 # Note: rusket uses `factors` instead of `rank`, and `iterations` instead of `maxIter`.
-model = ALS(factors=10, iterations=5, regularization=0.01, seed=42)
-model.fit_transactions(training, user_col="userId", item_col="movieId", rating_col="rating")
+model = ALS.from_transactions(training, transaction_col="userId", item_col="movieId", rating_col="rating", factors=10, iterations=5, regularization=0.01, seed=42)
 
 # 4. Generate Predictions for the test set
 # rusket has a built-in vectorized score_potential helper for evaluating target vectors

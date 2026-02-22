@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rusket import fpgrowth, association_rules
+from rusket import association_rules, fpgrowth
 
 # ---------------------------------------------------------------------------
 # Shared dataset generation (same seed as test_benchmark.py)

@@ -8,41 +8,28 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 
-// ─── Dot / axpy helpers ──────────────────────────────────────────────────────
-
-#[inline(always)]
-fn dot(a: &[f32], b: &[f32]) -> f32 {
-    debug_assert_eq!(a.len(), b.len());
-    a.iter().zip(b).map(|(x, y)| x * y).sum()
+macro_rules! dot {
+    ($a:expr, $b:expr) => {{
+        let a: &[f32] = &$a;
+        let b: &[f32] = &$b;
+        debug_assert_eq!(a.len(), b.len());
+        a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>()
+    }};
 }
 
-#[inline(always)]
-fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
-    // 8-wide manual unroll — compiler can auto-vectorize with -C opt-level=3
-    let n = x.len();
-    let chunks = n / 8 * 8;
-    let mut i = 0;
-    while i < chunks {
-        y[i] += alpha * x[i];
-        y[i + 1] += alpha * x[i + 1];
-        y[i + 2] += alpha * x[i + 2];
-        y[i + 3] += alpha * x[i + 3];
-        y[i + 4] += alpha * x[i + 4];
-        y[i + 5] += alpha * x[i + 5];
-        y[i + 6] += alpha * x[i + 6];
-        y[i + 7] += alpha * x[i + 7];
-        i += 8;
-    }
-    while i < n {
-        y[i] += alpha * x[i];
-        i += 1;
-    }
+macro_rules! axpy {
+    ($alpha:expr, $x:expr, $y:expr) => {{
+        let alpha: f32 = $alpha;
+        let x: &[f32] = &$x;
+        let y: &mut [f32] = &mut *$y;
+        debug_assert_eq!(x.len(), y.len());
+        y.iter_mut().zip(x.iter()).for_each(|(yi, &xi)| {
+            *yi += alpha * xi;
+        });
+    }};
 }
-
-// ─── Gramian YᵀY (parallel, upper-triangle then symmetrise) ──────────────────
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
-    // faer's matmul computes YᵀY with SIMD + rayon parallelism.
     let y = MatRef::from_row_major_slice(factors, n, k);
     let yt = y.transpose();
 
@@ -58,17 +45,6 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
     r
 }
 
-// ─── CG solver for implicit ALS ──────────────────────────────────────────────
-//
-// Solves: (YᵀY + λI + Σᵢ(cᵢ-1)yᵢyᵢᵀ) x = Σᵢ cᵢyᵢ
-//
-// Instead of forming the full A matrix (k×k) and doing Cholesky O(k³),
-// we do CG with implicit matrix-vector products:
-//   A·p = (YᵀY)·p + λ·p + Σᵢ(cᵢ-1)(yᵢᵀp)yᵢ
-//
-// This is O(k × nnz_per_row) per CG iteration, and we need only ~3 iterations.
-
-// Thread-local scratch buffers — allocated once per thread, reused across users.
 thread_local! {
     static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
         const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
@@ -93,7 +69,6 @@ fn solve_one_side_cg(
         let start = indptr[u] as usize;
         let end = indptr[u + 1] as usize;
 
-        // Use thread-local scratch to avoid heap alloc per user
         SCRATCH.with(|cell| {
             let mut borrow = cell.borrow_mut();
             let (ref mut b, ref mut r, ref mut p, ref mut ap) = *borrow;
@@ -106,15 +81,13 @@ fn solve_one_side_cg(
             ap.clear();
             ap.resize(k, 0.0);
 
-            // Compute RHS: b = Σᵢ cᵢ yᵢ
             for idx in start..end {
                 let i = indices[idx] as usize;
                 let c = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
-                axpy(c, yi, b);
+                axpy!(c, yi, b);
             }
 
-            // A·v helper: A·v = (YᵀY + λI)·v + Σᵢ(cᵢ-1)(yᵢᵀv)yᵢ
             let apply_a = |v: &[f32], out: &mut [f32]| {
                 for a in 0..k {
                     let mut s = 0.0f32;
@@ -127,15 +100,15 @@ fn solve_one_side_cg(
                     let i = indices[idx] as usize;
                     let c = 1.0 + alpha * data[idx];
                     let yi = &other[i * k..(i + 1) * k];
-                    let w = (c - 1.0) * dot(yi, v);
-                    axpy(w, yi, out);
+                    let w = (c - 1.0) * dot!(yi, v);
+                    axpy!(w, yi, out);
                 }
             };
 
             xu.fill(0.0);
             r.copy_from_slice(b);
             p.copy_from_slice(b);
-            let mut rsold = dot(r, r);
+            let mut rsold = dot!(r, r);
 
             if rsold < 1e-20 {
                 return;
@@ -143,16 +116,16 @@ fn solve_one_side_cg(
 
             for _ in 0..cg_iters {
                 apply_a(p, ap);
-                let pap = dot(p, ap);
+                let pap = dot!(p, ap);
                 if pap <= 0.0 {
                     break;
                 }
                 let ak = rsold / pap;
 
-                axpy(ak, p, xu);
-                axpy(-ak, ap, r);
+                axpy!(ak, p, xu);
+                axpy!(-ak, ap, r);
 
-                let rsnew = dot(r, r);
+                let rsnew = dot!(r, r);
                 if rsnew < 1e-20 {
                     break;
                 }
@@ -162,20 +135,11 @@ fn solve_one_side_cg(
                 }
                 rsold = rsnew;
             }
-        }); // end SCRATCH.with
+        });
     });
 
     out
 }
-
-// ─── Cholesky solver for implicit ALS ────────────────────────────────────────
-//
-// Direct approach: form A = (YᵀY + λI) + Σᵢ(cᵢ-1)yᵢyᵢᵀ  (k×k)
-//                  b = Σᵢ cᵢ yᵢ                             (k)
-// Then solve Ax = b via Cholesky. O(k³ + nnz_u·k) per user.
-// Exact solution — no iterations. Wins when avg nnz_u >> k.
-//
-// Cholesky: we do the LL' factorisation in-place (lower-triangular).
 
 fn cholesky_solve_inplace(a: &mut [f32], b: &mut [f32], k: usize) {
     let a_mat = faer::MatMut::from_row_major_slice_mut(a, k, k);
@@ -213,30 +177,25 @@ fn solve_one_side_cholesky(
         SCRATCH_CHOL.with(|cell| {
             let mut borrow = cell.borrow_mut();
             let (ref mut a_buf, ref mut b_buf) = *borrow;
-            // a_buf = k×k matrix A (row-major), b_buf = rhs of length k
             a_buf.clear();
-            a_buf.extend_from_slice(gram); // start with YᵀY
+            a_buf.extend_from_slice(gram);
             b_buf.clear();
             b_buf.resize(k, 0.0);
 
-            // Add λI to diagonal
             for j in 0..k {
                 a_buf[j * k + j] += eff_lambda;
             }
 
-            // Add sparse part: Σᵢ (cᵢ-1) yᵢ yᵢᵀ  and accumulate rhs
             for idx in start..end {
                 let i = indices[idx] as usize;
                 let ci = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
 
-                // rhs: b += ci * yi
-                axpy(ci, yi, b_buf);
+                axpy!(ci, yi, b_buf);
 
-                // matrix: A += (ci-1) * yi * yi'
                 let w = ci - 1.0;
                 for r in 0..k {
-                    axpy(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
+                    axpy!(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
                 }
             }
 
@@ -251,8 +210,6 @@ fn solve_one_side_cholesky(
 
     out
 }
-
-// ─── CSR transpose ───────────────────────────────────────────────────────────
 
 fn csr_transpose(
     indptr: &[i64],
@@ -287,8 +244,6 @@ fn csr_transpose(
     (ti, tv, td)
 }
 
-// ─── ALS train ───────────────────────────────────────────────────────────────
-
 fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     let mut out = vec![0.0f32; n * k];
     let mut s = seed;
@@ -302,22 +257,9 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     out
 }
 
-// ─── Anderson Acceleration for the outer ALS fixed-point loop ───────────────
-//
-// After each ALS iteration x_{k+1} = F(x_k) we treat the full
-// (user_factors ∥ item_factors) vector as the iterate and apply Anderson
-// mixing over a window of m previous residuals f_k = x_{k+1} - x_k.
-//
-// The mixing solves:  min ||F_m θ||₂  s.t. Σθ_i = 1
-// then sets:  x_aa = X_m θ
-// which is equivalent to a small (m×m) least-squares system on the
-// *difference* form typically used in the Anderson/Pulay literature.
-
 struct AndersonAccel {
     m: usize,
-    // Each column is one iterate x_k (length = n_users*k + n_items*k)
     x_hist: Vec<Vec<f32>>,
-    // Each column is one residual f_k = x_{k+1} - x_k
     f_hist: Vec<Vec<f32>>,
 }
 
@@ -335,7 +277,6 @@ impl AndersonAccel {
     fn push_and_mix(&mut self, x_old: Vec<f32>, f: Vec<f32>) -> Vec<f32> {
         let dim = x_old.len();
 
-        // Slide window
         if self.x_hist.len() == self.m {
             self.x_hist.remove(0);
             self.f_hist.remove(0);
@@ -343,10 +284,9 @@ impl AndersonAccel {
         self.x_hist.push(x_old);
         self.f_hist.push(f.clone());
 
-        let h = self.f_hist.len(); // current window size, 1..=m
+        let h = self.f_hist.len();
 
         if h == 1 {
-            // No history yet — just return x_old + f = x_new
             let mut out = self.x_hist[0].clone();
             for (o, &fi) in out.iter_mut().zip(&f) {
                 *o += fi;
@@ -354,7 +294,6 @@ impl AndersonAccel {
             return out;
         }
 
-        // Build Gram matrix G[i,j] = dot(f_hist[i], f_hist[j])  (h×h)
         let mut g = vec![0.0f32; h * h];
         for i in 0..h {
             for j in i..h {
@@ -368,12 +307,6 @@ impl AndersonAccel {
             }
         }
 
-        // Solve the constrained LS problem via the unconstrained form:
-        // Minimise ||F θ||² subject to Σθ = 1
-        // Append a row/col of ones (Lagrange multiplier for the constraint):
-        //   [G  1] [θ]   [0]
-        //   [1ᵀ 0] [λ] = [1]
-        // Size is (h+1)×(h+1)
         let n = h + 1;
         let mut mat = vec![0.0f32; n * n];
         for i in 0..h {
@@ -383,14 +316,11 @@ impl AndersonAccel {
             mat[i * n + h] = 1.0;
             mat[h * n + i] = 1.0;
         }
-        // mat[h*n+h] = 0  (already zero)
 
         let mut rhs = vec![0.0f32; n];
         rhs[h] = 1.0;
 
-        // Gaussian elimination with partial pivoting (small h, no faer needed)
         if !gauss_solve_inplace(&mut mat, &mut rhs, n) {
-            // Fallback: plain step (no mixing)
             let mut out = self.x_hist[h - 1].clone();
             for (o, &fi) in out.iter_mut().zip(&self.f_hist[h - 1]) {
                 *o += fi;
@@ -398,11 +328,9 @@ impl AndersonAccel {
             return out;
         }
 
-        // θ = rhs[0..h]
         let mut out = vec![0.0f32; dim];
         for i in 0..h {
             let theta = rhs[i];
-            // x_aa = Σ θ_i (x_hist[i] + f_hist[i])
             for d in 0..dim {
                 out[d] += theta * (self.x_hist[i][d] + self.f_hist[i][d]);
             }
@@ -411,11 +339,8 @@ impl AndersonAccel {
     }
 }
 
-/// In-place Gaussian elimination with partial pivoting.
-/// Solves mat * x = rhs.  mat is n×n row-major.  Returns false if singular.
 fn gauss_solve_inplace(mat: &mut Vec<f32>, rhs: &mut Vec<f32>, n: usize) -> bool {
     for col in 0..n {
-        // Find pivot
         let mut max_row = col;
         let mut max_val = mat[col * n + col].abs();
         for row in (col + 1)..n {
@@ -444,7 +369,6 @@ fn gauss_solve_inplace(mat: &mut Vec<f32>, rhs: &mut Vec<f32>, n: usize) -> bool
             rhs[row] -= factor * rhs[col];
         }
     }
-    // Back substitution
     for col in (0..n).rev() {
         rhs[col] /= mat[col * n + col];
         for row in 0..col {
@@ -503,7 +427,6 @@ fn als_train(
             }
         };
 
-        // ── Save pre-step state for Anderson ──────────────────────────────────
         let x_old: Vec<f32> = if use_aa {
             let mut v = user_factors.clone();
             v.extend_from_slice(&item_factors);
@@ -522,13 +445,11 @@ fn als_train(
         item_factors = solve(indptr_t, indices_t, data_t, &user_factors, &g_user, n_items);
         let i_time = start_i.elapsed();
 
-        // ── Anderson mixing ───────────────────────────────────────────────────
         if use_aa {
             let mut x_new: Vec<f32> = user_factors.clone();
             x_new.extend_from_slice(&item_factors);
             let f: Vec<f32> = x_new.iter().zip(&x_old).map(|(a, b)| a - b).collect();
             let x_mixed = accel.push_and_mix(x_old, f);
-            // Write mixed factors back
             let uf_len = n_users * k;
             user_factors.copy_from_slice(&x_mixed[..uf_len]);
             item_factors.copy_from_slice(&x_mixed[uf_len..]);
@@ -558,8 +479,6 @@ fn als_train(
     (user_factors, item_factors)
 }
 
-// ─── Top-N helpers ───────────────────────────────────────────────────────────
-
 fn top_n_items(
     uf: &[f32],
     itf: &[f32],
@@ -578,7 +497,7 @@ fn top_n_items(
         .filter(|i| !excluded.contains(i))
         .map(|i| {
             let y = &itf[(i as usize) * k..(i as usize + 1) * k];
-            (dot(u, y), i)
+            (dot!(u, y), i)
         })
         .collect();
     let take = n.min(scored.len());
@@ -608,7 +527,7 @@ fn top_n_users(
     let mut scored: Vec<(f32, i32)> = (0..n_users as i32)
         .map(|u| {
             let x = &uf[(u as usize) * k..(u as usize + 1) * k];
-            (dot(x, y), u)
+            (dot!(x, y), u)
         })
         .collect();
     let take = n.min(scored.len());
@@ -625,8 +544,6 @@ fn top_n_users(
         scored.iter().map(|(s, _)| *s).collect(),
     )
 }
-
-// ─── PyO3 exports ────────────────────────────────────────────────────────────
 
 #[pyfunction]
 #[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0))]

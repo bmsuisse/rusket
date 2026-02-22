@@ -16,8 +16,9 @@ It demonstrates how to:
 import urllib.request
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from rusket import ALS
 from rusket.recommend import score_potential
 

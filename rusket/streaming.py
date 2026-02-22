@@ -127,7 +127,7 @@ class FPMiner:
         column_names: list[str] | None = None,
         method: typing.Literal["fpgrowth", "eclat", "auto"] = "auto",
         verbose: int = 0,
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Mine frequent itemsets from all accumulated transactions.
 
         Parameters
@@ -208,7 +208,7 @@ def mine_duckdb(
     min_support: float = 0.5,
     max_len: int | None = None,
     chunk_size: int = 1_000_000,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Stream directly from a DuckDB query via Arrow RecordBatches.
 
     This is extremely memory efficient, bypassing Pandas entirely.
@@ -229,7 +229,7 @@ def mine_spark(
     item_col: str,
     min_support: float = 0.5,
     max_len: int | None = None,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Stream natively from a PySpark DataFrame on Databricks via Arrow.
 
     Uses `toLocalIterator()` to fetch Arrow chunks incrementally directly

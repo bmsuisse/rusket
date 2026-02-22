@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import functools
 import time
 import unittest
 
 import numpy as np
 import pandas as pd
-
 from test_fpbase import (
     FPTestEdgeCases,
     FPTestErrors,
@@ -17,7 +17,6 @@ from test_fpbase import (
 )
 
 from rusket import fpgrowth
-import functools
 
 fpgrowth_algo = functools.partial(fpgrowth, method="fpgrowth")
 eclat_algo = functools.partial(fpgrowth, method="eclat")
@@ -168,7 +167,7 @@ def test_fpgrowth_completes_within_5_seconds() -> None:
 
 def _to_dataframe(transactions: list[list[str | int]]) -> pd.DataFrame:
     # Convert a list of transactions to a boolean one-hot encoded DataFrame
-    items = sorted(set(item for t in transactions for item in t))
+    items = sorted({item for t in transactions for item in t})
     data = [{item: (item in t) for item in items} for t in transactions]
     return pd.DataFrame(data)
 

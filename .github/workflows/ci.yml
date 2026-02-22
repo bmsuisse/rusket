@@ -52,6 +52,12 @@ jobs:
       - name: Run pyright
         run: uv run pyright || true
 
+      - name: Run ruff format check
+        run: uv run ruff format --check
+
+      - name: Run ruff lint check
+        run: uv run ruff check
+
   benchmark:
     name: Benchmark (regression guard)
     runs-on: ubuntu-latest

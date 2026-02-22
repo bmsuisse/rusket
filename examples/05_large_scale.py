@@ -10,9 +10,11 @@ Prints timing and memory info at each stage.
 
 import time
 import tracemalloc
+
 import numpy as np
 import pandas as pd
-from rusket import fpgrowth, association_rules
+
+from rusket import association_rules, fpgrowth
 
 
 def timed(label: str, fn, *args, **kwargs):

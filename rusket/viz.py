@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pandas as pd
-
 import typing
+
+import pandas as pd
 
 if typing.TYPE_CHECKING:
     import networkx
@@ -15,7 +15,7 @@ def to_networkx(
     source_col: str = "antecedents",
     target_col: str = "consequents",
     edge_attr: str = "lift",
-) -> "networkx.DiGraph":  # type: ignore
+) -> networkx.DiGraph:  # type: ignore
     """Converts a Rusket association rules DataFrame into a NetworkX Directed Graph.
 
     Nodes represent individual items. Directed edges represent rules (antecedent -> consequent).

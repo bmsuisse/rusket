@@ -11,8 +11,8 @@ the "Top 10 must-stock cross-sell opportunities" table.
 import numpy as np
 import pandas as pd
 from faker import Faker
-from rusket import fpgrowth, association_rules
 
+from rusket import association_rules, fpgrowth
 
 # ── 1. Generate dataset with Faker ──────────────────────────────────────────
 

@@ -1,15 +1,11 @@
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
-
-
-// Let's redefine Sequence as Vec<u32> for MVP
 fn prefixspan_simple(
     sequences: &[Vec<u32>],
     min_support: usize,
     max_len: Option<usize>,
 ) -> Vec<(usize, Vec<u32>)> {
-    // Initial projecting
     let mut pdb = Vec::with_capacity(sequences.len());
     for (i, seq) in sequences.iter().enumerate() {
         pdb.push((seq.as_slice(), i));
@@ -40,7 +36,6 @@ fn prefixspan_mine(
         }
     }
 
-    // 1. Count supports
     let mut item_counts: HashMap<u32, usize> = HashMap::new();
     let mut last_seen_seq: HashMap<u32, usize> = HashMap::new();
 
@@ -53,22 +48,17 @@ fn prefixspan_mine(
         }
     }
 
-    // 2. Filter frequent items
     let mut frequent_items: Vec<(u32, usize)> = item_counts
         .into_iter()
         .filter(|&(_, count)| count >= min_support)
         .collect();
 
-    // Sort descending by support
     frequent_items.sort_unstable_by(|a, b| b.1.cmp(&a.1));
 
-    // 3. Project and recurse
     for (item, support) in frequent_items {
-        // Record pattern
         current_pattern.push(item);
         results.push((support, current_pattern.clone()));
 
-        // Project DB
         let mut new_pdb = Vec::new();
         for &(seq, seq_id) in pdb.iter() {
             if let Some(pos) = seq.iter().position(|&x| x == item) {
@@ -82,7 +72,6 @@ fn prefixspan_mine(
             prefixspan_mine(&new_pdb, min_support, max_len, current_pattern, results);
         }
 
-        // Backtrack
         current_pattern.pop();
     }
 }

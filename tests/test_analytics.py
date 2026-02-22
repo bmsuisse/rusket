@@ -1,6 +1,6 @@
 import pandas as pd
 
-from rusket.analytics import find_substitutes, customer_saturation
+from rusket.analytics import customer_saturation, find_substitutes
 
 
 def test_find_substitutes():

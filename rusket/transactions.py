@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import time
 import typing
-from typing import TYPE_CHECKING, Any, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from ._compat import to_dataframe
 
@@ -283,9 +284,10 @@ def from_transactions_csr(
     >>> freq = rusket.fpgrowth(csr, min_support=0.001,
     ...                        use_colnames=True, column_names=names)
     """
+    from pathlib import Path
+
     import numpy as np
     import pandas as pd
-    from pathlib import Path
     from scipy import sparse as sp
 
     data = to_dataframe(data)

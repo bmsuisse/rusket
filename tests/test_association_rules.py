@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 from numpy.testing import assert_raises as numpy_assert_raises
 
-from rusket import fpgrowth, association_rules
+from rusket import association_rules, fpgrowth
 
 # ---------------------------------------------------------------------------
 # Shared fixtures (module-level, built once)
@@ -273,7 +273,7 @@ def test_with_empty_dataframe() -> None:
 
 
 def _to_dataframe(transactions: list[list[str]]) -> pd.DataFrame:
-    items = sorted(set(item for t in transactions for item in t))
+    items = sorted({item for t in transactions for item in t})
     data = [{item: (item in t) for item in items} for t in transactions]
     return pd.DataFrame(data)
 

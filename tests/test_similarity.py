@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from rusket import ALS, similar_items
 
 

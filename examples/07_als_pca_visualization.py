@@ -15,9 +15,10 @@ import sys
 import urllib.request
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.express as px
+
 from rusket import ALS
 
 
@@ -114,7 +115,7 @@ def main():
         height=800,
     )
 
-    fig.update_traces(marker=dict(size=3))
+    fig.update_traces(marker={"size": 3})
 
     # Save as HTML (or you can use fig.show() in a notebook)
     output_path = data_dir / "als_pca_visualization.html"

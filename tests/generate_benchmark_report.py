@@ -6,19 +6,17 @@ Size tiers: tiny / small / medium / large / HUGE (1M rows, ~GB scale).
 
 from __future__ import annotations
 
-import tracemalloc
-import time
 import os
+import time
+import tracemalloc
 
 import numpy as np
 import pandas as pd
-
-from faker import Faker
-
 import plotly.graph_objects as go
+from faker import Faker
 from plotly.subplots import make_subplots
 
-from rusket import fpgrowth, eclat
+from rusket import eclat, fpgrowth
 
 try:
     from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
@@ -247,14 +245,14 @@ def add_bars(col_idx, y_col, name, color, text_fmt, row=1, showlegend=True):
             name=name,
             x=[x_labels[i] for i in sub.index],
             y=sub[y_col],
-            marker=dict(
-                color=color,
-                line_width=0,
-                pattern_shape="" if name != "HUGE" else "/",
-            ),
+            marker={
+                "color": color,
+                "line_width": 0,
+                "pattern_shape": "" if name != "HUGE" else "/",
+            },
             text=[text_fmt.format(v) for v in sub[y_col]],
             textposition="outside",
-            textfont=dict(size=11),
+            textfont={"size": 11},
             showlegend=showlegend,
         ),
         row=row,
@@ -298,10 +296,10 @@ if has_compare:
             name="speedup (fpgrowth)",
             x=[x_labels[i] for i in sub.index],
             y=sub["speedup"],
-            marker=dict(color=colors, line_width=0),
+            marker={"color": colors, "line_width": 0},
             text=[f"<b>{v:.1f}×</b>" for v in sub["speedup"]],
             textposition="outside",
-            textfont=dict(size=13),
+            textfont={"size": 13},
             showlegend=False,
         ),
         row=2,
@@ -313,7 +311,7 @@ if has_compare:
             name="mem_ratio",
             x=[x_labels[i] for i in sub.index],
             y=sub["mem_ratio"],
-            marker=dict(color=POLARS_COLOR, line_width=0),
+            marker={"color": POLARS_COLOR, "line_width": 0},
             text=[f"{v:.1f}×" for v in sub["mem_ratio"]],
             textposition="outside",
             showlegend=False,
@@ -354,7 +352,7 @@ if not huge_rows.empty:
         showarrow=True,
         arrowhead=2,
         arrowcolor=HUGE_GLOW,
-        font=dict(color=HUGE_GLOW, size=12),
+        font={"color": HUGE_GLOW, "size": 12},
         bgcolor=PANEL,
         bordercolor=HUGE_GLOW,
         row=1,
@@ -362,18 +360,18 @@ if not huge_rows.empty:
     )
 
 fig.update_layout(
-    title=dict(
-        text="🦀 <b>rusket</b> — FP-Growth vs Eclat Benchmark (Faker synthetic market-basket data)",
-        font=dict(size=20, color=TEXT, family="'Courier New', monospace"),
-        x=0.5,
-    ),
+    title={
+        "text": "🦀 <b>rusket</b> — FP-Growth vs Eclat Benchmark (Faker synthetic market-basket data)",
+        "font": {"size": 20, "color": TEXT, "family": "'Courier New', monospace"},
+        "x": 0.5,
+    },
     barmode="group",
     paper_bgcolor=BG,
     plot_bgcolor=PANEL,
-    font=dict(color=TEXT, family="'Inter', 'Segoe UI', sans-serif", size=12),
-    legend=dict(bgcolor=PANEL, bordercolor=GRID, borderwidth=1, font=dict(size=13)),
+    font={"color": TEXT, "family": "'Inter', 'Segoe UI', sans-serif", "size": 12},
+    legend={"bgcolor": PANEL, "bordercolor": GRID, "borderwidth": 1, "font": {"size": 13}},
     height=800 if has_compare else 480,
-    margin=dict(t=110, b=70, l=70, r=70),
+    margin={"t": 110, "b": 70, "l": 70, "r": 70},
 )
 
 for row in range(1, n_plot_rows + 1):

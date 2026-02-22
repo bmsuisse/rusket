@@ -1,15 +1,3 @@
-/// FPMiner — streaming FP-Growth/Eclat accumulator.
-///
-/// Memory strategy (HashMap-first):
-///   • add_chunk(): aggregate into AHashMap<i64, Vec<i32>>.
-///     Peak memory = O(unique_txns × avg_items).
-///   • mine(): pre-filter rare items (below min_count), remap dense,
-///     build CSR, call algorithm. No k-way merge. No disk spill.
-///
-/// Key optimisation: item pre-filtering at mine() time.
-///   For sparse datasets (many items, low avg_items/txn) most items
-///   are globally infrequent. Pre-filtering before CSR build slashes
-///   the Eclat tidlist width from n_items → n_frequent_items.
 use ahash::AHashMap;
 use rayon::prelude::*;
 
@@ -146,14 +134,13 @@ impl FPMiner {
             return Ok((0, vec![], vec![], vec![], "eclat".into()));
         }
         let n_frequent = inv_remap.len();
-        // Density = avg items per txn (after filter) / n_frequent_items
         let total_items_in_csr = *indptr.last().unwrap_or(&0) as f64;
         let density = if n_frequent > 0 && n_txn > 0 {
             (total_items_in_csr / n_txn as f64) / n_frequent as f64
         } else {
             0.0
         };
-        let use_eclat = density < 0.15; // Borgelt threshold
+        let use_eclat = density < 0.15;
         let method_name = if use_eclat { "eclat" } else { "fpgrowth" };
         let (s, o, i) = if use_eclat {
             _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
@@ -172,21 +159,13 @@ impl FPMiner {
 }
 
 impl FPMiner {
-    /// Undo frequency remap: replace dense new_ids with original item IDs.
     fn unmap_items(items: Vec<u32>, inv_remap: &[u32]) -> Vec<u32> {
         items
             .into_iter()
             .map(|idx| inv_remap[idx as usize])
             .collect()
     }
-    /// Build a pre-filtered CSR matrix.
-    ///
-    /// Pass 1: count each item's global frequency across all transactions.
-    /// Pass 2: keep only items with count >= min_count, remap to [0, n_freq).
-    /// Pass 3: build CSR using remapped dense indices.
-    ///
-    /// Returns (indptr, indices, n_txn, inv_remap)
-    /// where inv_remap[new_id] = orig_item_id  (for undoing the remap after mining).
+
     fn build_csr_filtered(
         &self,
         min_count: u64,
@@ -195,7 +174,6 @@ impl FPMiner {
             return Ok((vec![0i32], vec![], 0, vec![]));
         }
 
-        // --- Pass 1: count item frequencies (parallel) ---
         let mut item_freq: Vec<u64> = vec![0u64; self.n_items];
         for items in self.txns.values() {
             for &item in items {
@@ -205,23 +183,19 @@ impl FPMiner {
             }
         }
 
-        // --- Build dense remap sorted by frequency DESCENDING (Borgelt 2003, §2.2/3.3) ---
-        // Most-frequent item → index 0. Eclat's depth-first prefix tree prunes better
-        // when high-frequency items appear first in the ordering.
         let mut freq_items: Vec<(u64, usize)> = item_freq
             .iter()
             .enumerate()
             .filter(|(_, &f)| f >= min_count)
             .map(|(id, &f)| (f, id))
             .collect();
-        freq_items.sort_unstable_by(|a, b| a.0.cmp(&b.0)); // ascending by freq → small tidlists first (Eclat-optimal)
+        freq_items.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
         let mut remap: Vec<u32> = vec![u32::MAX; self.n_items];
         let n_frequent = freq_items.len();
         for (new_id, &(_, orig_id)) in freq_items.iter().enumerate() {
             remap[orig_id] = new_id as u32;
         }
-        // Build inverse remap: new_id -> orig_id
         let inv_remap: Vec<u32> = freq_items
             .iter()
             .map(|&(_, orig_id)| orig_id as u32)
@@ -231,7 +205,6 @@ impl FPMiner {
             return Ok((vec![0i32], vec![], 0, vec![]));
         }
 
-        // --- Pass 2: collect + sort transactions by txn_id ---
         let mut entries: Vec<(i64, &Vec<i32>)> = self.txns.iter().map(|(&k, v)| (k, v)).collect();
         entries.par_sort_unstable_by_key(|(t, _)| *t);
 
@@ -241,7 +214,6 @@ impl FPMiner {
         indptr.push(0);
 
         for (_, items) in &entries {
-            // Remap items, keeping only frequent ones
             let mut mapped: Vec<i32> = items
                 .iter()
                 .filter_map(|&item| {
@@ -258,9 +230,6 @@ impl FPMiner {
             indices.extend_from_slice(&mapped);
             indptr.push(indices.len() as i32);
         }
-
-        // Drop transactions that became empty after filtering
-        // (their rows are already in indptr; we just leave them — FP/Eclat handles empty rows)
 
         Ok((indptr, indices, n_txn, inv_remap))
     }

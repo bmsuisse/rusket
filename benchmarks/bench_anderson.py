@@ -5,15 +5,15 @@ Compares plain CG-ALS vs ALS+Anderson(m=5) for different iteration counts,
 measuring fit time, convergence rate (RMSE proxy), and recommendation quality.
 """
 
-import time
-import zipfile
 import io
+import sys
+import time
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
-import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import rusket

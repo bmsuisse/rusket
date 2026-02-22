@@ -95,7 +95,7 @@ def association_rules(
         con_fs = [frozenset(c) for c in consequents_raw]
 
     result = pd.DataFrame({"antecedents": ant_fs, "consequents": con_fs})
-    for col_name, col_vals in zip(return_metrics, metric_cols):
+    for col_name, col_vals in zip(return_metrics, metric_cols, strict=False):
         result[col_name] = col_vals
 
     return result
