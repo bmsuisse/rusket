@@ -403,10 +403,6 @@ class TestOnlineRetailEASE:
             regularization=100.0,
         )
         # Using item weights as item representations
-        # We need to temporarily mock .item_factors to allow `similar_items` to work out of the box
-        # similar_items uses model.item_factors
-        model.item_factors = model.item_weights
-
         item_ids, sim_scores = rusket.similar_items(model, item_id=0, n=5)
         assert len(item_ids) >= 1
         assert (sim_scores <= 1.0).all()
