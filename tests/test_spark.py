@@ -82,12 +82,10 @@ def test_spark_als(spark_session) -> None:
     )
     spark_df = to_spark(spark_session, df)
 
-    model = ALS(factors=4, iterations=3, seed=42)
-    # The spark_df will be natively ingested via arrow buffers
-    model.fit_transactions(spark_df, user_col="user_id", item_col="item_id", rating_col="rating")
+    model = ALS.from_transactions(spark_df, user_col="user_id", item_col="item_id", rating_col="rating", factors=4, iterations=3, seed=42)
 
-    assert model.fitted
-    assert model.user_factors.shape[0] == 3
+    assert model.fitted  # type: ignore
+    assert model.user_factors.shape[0] == 3  # type: ignore
     assert model.item_factors.shape[0] == 3
 
     recs, scores = model.recommend_items(user_id=0, n=2)
@@ -105,12 +103,10 @@ def test_spark_bpr(spark_session) -> None:
     )
     spark_df = to_spark(spark_session, df)
 
-    model = BPR(factors=4, iterations=3, seed=42)
-    # The spark_df will be natively ingested via arrow buffers
-    model.fit_transactions(spark_df, user_col="user_id", item_col="item_id")
+    model = BPR.from_transactions(spark_df, user_col="user_id", item_col="item_id", factors=4, iterations=3, seed=42)
 
-    assert model.fitted
-    assert model.user_factors.shape[0] == 3
+    assert model.fitted  # type: ignore
+    assert model.user_factors.shape[0] == 3  # type: ignore
     assert model.item_factors.shape[0] == 3
 
     recs, scores = model.recommend_items(user_id=1, n=2)
@@ -118,7 +114,7 @@ def test_spark_bpr(spark_session) -> None:
 
 
 def test_spark_prefixspan(spark_session) -> None:
-    from rusket.prefixspan import prefixspan, sequences_from_event_log
+    from rusket.prefixspan import PrefixSpan, sequences_from_event_log
 
     df = pd.DataFrame(
         {
@@ -136,10 +132,10 @@ def test_spark_prefixspan(spark_session) -> None:
     # Seq 1: A, B, A (0, 1, 0)
     # Seq 2: B, A (1, 0)
     # Seq 3: A, C (0, 2)
-    assert len(seqs) == 3
+    assert len(seqs[0]) - 1 == 3
 
     # Run mining
-    freq = prefixspan(seqs, min_support=2, max_len=2)
+    freq = PrefixSpan(seqs, min_support=2, max_len=2, item_mapping=mapping_dict).mine()
 
     # Ensure decoding dictionary maps integer IDs back
     # The longest frequent itemset with support >= 2 is [A] (3), [B] (2), [B, A] (2)

@@ -213,7 +213,10 @@ class FPTestEx1:
         ary2[3, :] = 1
         sparse_ary = csr_matrix(ary2)
         sparse_ary[3, :] = self.one_ary[3, :]
+        # To avoid FutureWarning about fill_value subtype mismatch, explicitly cast or set fill_value
         sdf = pd.DataFrame.sparse.from_spmatrix(sparse_ary, columns=self.df.columns)
+        if hasattr(pd, "SparseDtype"):
+            sdf = sdf.astype(pd.SparseDtype(bool, False))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             res_df2 = self.fpalgo(sdf)
