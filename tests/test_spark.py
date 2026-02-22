@@ -139,13 +139,10 @@ def test_spark_prefixspan(spark_session) -> None:
 
     # Ensure decoding dictionary maps integer IDs back
     # The longest frequent itemset with support >= 2 is [A] (3), [B] (2), [B, A] (2)
-    def decode_seq(s):
-        return [mapping_dict[i] for i in s]
-
-    freq["sequence_str"] = freq["sequence"].apply(decode_seq)
+    # The PrefixSpan OOP API maps them natively if item_mapping is provided
 
     # Check [B, A] support
-    ba = freq[freq["sequence_str"].apply(lambda x: x == ["B", "A"])].iloc[0]
+    ba = freq[freq["sequence"].apply(lambda x: x == ["B", "A"])].iloc[0]
     assert ba["support"] == 2
 
 
