@@ -5,9 +5,32 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Benchmark
+
+- add script comparing dEclat vs ECLAT
+
+### Style
+
+- run ruff format
+
+### 📖 Documentation
+
+- expose llm.txt in docs root and fix test_real_world.py sampling
+- migrate to Mintlify
+
+### 📦 Miscellaneous
+
+- include Mintlify config and generated MDX docs
+
+### 🚀 Features
+
+- Add ultra-fast Sparse ItemKNN algorithm using BM25 and Rust Rayon
+
 ### Style
 
 - apply ruff formatting and fixes
+- Update logo colors from purple to orange.
+- refine logos with orange theme, update mkdocs palette and extra.css
 
 ### 🐛 Bug Fixes
 
@@ -18,16 +41,19 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - add Polars/PySpark PrefixSpan tests and cookbook examples
 - improve API documentation, update marketing copy, and setup PySpark skips
+- enhance PrefixSpan and HUPM cookbook sections with clearer descriptions, business scenarios, and updated Python code examples.
 
 ### 📦 Miscellaneous
 
 - commit remaining unstaged files from previous sessions
 - bump version to 0.1.21
 - bump version to 0.1.22
+- bump version to 0.1.23
 
 ### 🔧 Refactoring
 
 - simplify BaseModel and remove implicit recommender duplication
+- update logo SVG basket elements to use curved paths and refined wire details.
 
 ### 🚀 Features
 
@@ -35,6 +61,9 @@ This project follows [Semantic Versioning](https://semver.org/).
 - complete PySpark and Polars integration for PrefixSpan via native PyArrow sequences
 - implement recommend_items for association rule models
 - Introduce new documentation notebooks, update PySpark integration documentation, and add a notebook conversion workflow.
+- automated doc sync scripts (changelog, API ref, llm.txt)
+- enhance recommender system documentation and examples, update core logic, and refresh logos.
+- merge feature/fpgrowth-mlxtend-api
 
 ### ⚡ Performance
 
