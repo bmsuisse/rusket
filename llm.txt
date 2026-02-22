@@ -21,6 +21,8 @@ Convenience module-level functions.  For most use-cases these are the only entry
 Mine frequent itemsets using the optimal algorithm.
 
 This module-level function relies on the Object-Oriented APIs.
+Automatically selects between FP-Growth and Eclat based on density,
+or falls back to FPMiner (streaming) if memory is low.
 
 ```python
 from rusket.mine import mine
@@ -418,6 +420,8 @@ Eclat.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 Automatic frequent itemset miner.
 
 Selects the optimal miner (FP-Growth or Eclat) based on matrix density.
+Automatically falls back to streaming (FPMiner) if the dataset exceeds
+available memory.
 
 ```python
 from rusket.mine import AutoMiner
@@ -1320,6 +1324,10 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### Style
+
+- run ruff format and fix lints
 
 ### 🐛 Bug Fixes
 
