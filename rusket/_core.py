@@ -31,6 +31,22 @@ _RUST_CSR = {
 }
 
 
+def _estimate_dense_memory(shape: tuple[int, int]) -> int:
+    """Estimate memory (in bytes) of a dense uint8 array for the given shape."""
+    return shape[0] * shape[1]
+
+
+def _get_available_memory() -> int:
+    """Get available system memory in bytes."""
+    try:
+        import psutil
+
+        return psutil.virtual_memory().available
+    except ImportError:
+        # Fallback if psutil is not installed
+        return 4 * 1024 * 1024 * 1024  # Assume 4GB
+
+
 def _build_result(
     raw: tuple[np.ndarray, np.ndarray, np.ndarray],
     n_rows: int,
@@ -78,6 +94,68 @@ def _select_method(method: Method, density: float, verbose: int, label: str) -> 
     if verbose:
         print(f"[{time.strftime('%X')}] Auto-selected method: '{chosen}' ({label} density={density:.4f})")
     return chosen
+
+
+def _run_fpminer_fallback(
+    df: pd.DataFrame | pl.DataFrame | np.ndarray,
+    min_support: float,
+    max_len: int | None,
+    use_colnames: bool,
+    col_names: list[str],
+    verbose: int = 0,
+) -> pd.DataFrame:
+    """Fallback to FPMiner (streaming) when memory is low."""
+    if verbose:
+        print(f"[{time.strftime('%X')}] Low memory detected! Falling back to FPMiner (streaming)...")
+
+    from .streaming import FPMiner
+
+    n_items = len(col_names)
+    miner = FPMiner(n_items=n_items)
+
+    # Convert to numpy chunk by chunk or as a whole if it's already an array
+    # For now, we reuse the existing data since it's already in memory,
+    # but we feed it to the streaming miner which is more memory-efficient
+    # than the recursive FP-tree construction in some cases.
+    # To TRULY save memory, we should iterate over the input, but here the input
+    # is already in memory. The fallback is mostly to avoid the Peak RAM spike
+    # of the FP-tree building.
+
+    import numpy as np
+    import pandas as pd
+    import polars as pl
+
+    if isinstance(df, pd.DataFrame):
+        # We can iterate over rows without materializing a massive dense matrix
+        # However, FPMiner expects (txn_id, item_id) pairs.
+        # We'll use a simple loop for now.
+        for i, row in enumerate(df.itertuples(index=False)):
+            items = np.where(row)[0].astype(np.int32)
+            if len(items) > 0:
+                txns = np.full(len(items), i, dtype=np.int64)
+                miner.add_chunk(txns, items)
+    elif isinstance(df, pl.DataFrame):
+        # Similar logic for Polars
+        for i, row in enumerate(df.iter_rows()):
+            items = np.where(row)[0].astype(np.int32)
+            if len(items) > 0:
+                txns = np.full(len(items), i, dtype=np.int64)
+                miner.add_chunk(txns, items)
+    else:
+        # Numpy array
+        for i, row in enumerate(df):
+            items = np.where(row)[0].astype(np.int32)
+            if len(items) > 0:
+                txns = np.full(len(items), i, dtype=np.int64)
+                miner.add_chunk(txns, items)
+
+    return miner.mine(
+        min_support=min_support,
+        max_len=max_len,
+        use_colnames=use_colnames,
+        column_names=col_names,
+        verbose=verbose,
+    )
 
 
 def _run_dense(
@@ -158,6 +236,13 @@ def _run_polars(
     if method == "auto":
         nnz = df.select(pl.all().cast(pl.Boolean).sum()).sum_horizontal().item()
         density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+
+        # Memory check
+        required_mem = _estimate_dense_memory(df.shape)
+        available_mem = _get_available_memory()
+        if required_mem > available_mem * 0.7:  # 70% threshold
+            return _run_fpminer_fallback(df, min_support, max_len, use_colnames, list(df.columns), verbose)
+
         method = _select_method("auto", density, verbose, "polars")
 
     raw = _RUST_DENSE[method](arr, min_count, max_len)
@@ -213,6 +298,18 @@ def dispatch(
             print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
         density = csr.nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+
+        # Memory check for dense intermediate if we were to use fpgrowth/eclat
+        # Note: CSR is already space-efficient, but Rust algorithms might expand it.
+        # For CSR, we mostly care about the final itemsets size, but we'll stick to dense estimate
+        # for a safe fallback if the dense version would be too big.
+        if method == "auto":
+            required_mem = _estimate_dense_memory(csr.shape)
+            available_mem = _get_available_memory()
+            if required_mem > available_mem * 0.7:
+                col_names = column_names or [str(i) for i in range(n_cols)]
+                return _run_fpminer_fallback(csr.toarray(), min_support, max_len, use_colnames, col_names, verbose)
+
         method = _select_method(method, density, verbose, "csr")
         raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
         if verbose:
@@ -236,6 +333,14 @@ def dispatch(
             print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
         density = np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+
+        # Memory check
+        if method == "auto":
+            required_mem = _estimate_dense_memory(df_nd.shape)
+            available_mem = _get_available_memory()
+            if required_mem > available_mem * 0.7:
+                return _run_fpminer_fallback(df_nd, min_support, max_len, use_colnames, col_names, verbose)
+
         method = _select_method(method, density, verbose, "ndarray")
         raw = _RUST_DENSE[method](data, min_count, max_len)
         if verbose:
@@ -265,6 +370,14 @@ def dispatch(
     else:
         nnz = df_pd.sum().sum()
     density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+
+    # Memory check
+    if method == "auto":
+        required_mem = _estimate_dense_memory(df_pd.shape)
+        available_mem = _get_available_memory()
+        if required_mem > available_mem * 0.7:
+            return _run_fpminer_fallback(df_pd, min_support, max_len, use_colnames, col_names, verbose)
+
     method = _select_method(method, density, verbose, "pandas")
 
     if hasattr(df_pd, "sparse"):

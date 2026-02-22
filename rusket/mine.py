@@ -14,6 +14,8 @@ class AutoMiner(Miner, RuleMinerMixin):
     """Automatic frequent itemset miner.
 
     Selects the optimal miner (FP-Growth or Eclat) based on matrix density.
+    Automatically falls back to streaming (FPMiner) if the dataset exceeds
+    available memory.
     """
 
     def __init__(
@@ -97,6 +99,8 @@ def mine(
     """Mine frequent itemsets using the optimal algorithm.
 
     This module-level function relies on the Object-Oriented APIs.
+    Automatically selects between FP-Growth and Eclat based on density,
+    or falls back to FPMiner (streaming) if memory is low.
     """
     if method not in ("fpgrowth", "eclat", "auto"):
         raise ValueError(f"`method` must be 'fpgrowth', 'eclat', or 'auto'. Got: {method}")

@@ -139,9 +139,7 @@ def from_transactions(
     if isinstance(data, _pd.DataFrame):
         return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
 
-    raise TypeError(
-        f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}"
-    )
+    raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
 
 
 def from_pandas(

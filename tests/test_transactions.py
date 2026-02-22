@@ -8,7 +8,6 @@ import pytest
 import rusket
 from rusket import from_transactions
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -170,9 +169,7 @@ class TestFromPolars:
         pd_result = pd_result[sorted(pd_result.columns)].reset_index(drop=True)
         pl_result = pl_result[sorted(pl_result.columns)].reset_index(drop=True)
 
-        pd.testing.assert_frame_equal(
-            pd_result.astype(bool), pl_result.astype(bool), check_dtype=False
-        )
+        pd.testing.assert_frame_equal(pd_result.astype(bool), pl_result.astype(bool), check_dtype=False)
 
     def test_from_polars_helper(self) -> None:
         pl = pytest.importorskip("polars")
@@ -205,17 +202,13 @@ class TestFromSpark:
         session.stop()
 
     def test_returns_spark_dataframe(self, spark) -> None:  # type: ignore[no-untyped-def]
-        df = spark.createDataFrame(
-            [(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"]
-        )
+        df = spark.createDataFrame([(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"])
         result = from_transactions(df)
         assert type(result).__name__ == "DataFrame"
         assert getattr(type(result), "__module__", "").startswith("pyspark")
 
     def test_columns(self, spark) -> None:  # type: ignore[no-untyped-def]
-        df = spark.createDataFrame(
-            [(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"]
-        )
+        df = spark.createDataFrame([(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"])
         result = from_transactions(df)
         assert set(result.columns) == {"x", "y", "z"}
 
