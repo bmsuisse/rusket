@@ -14,10 +14,9 @@
       <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
     </filter>
 
-    <!-- Clip Path so crab sits explicitly *inside* the basket -->
+    <!-- Clip path matching the curved basket body -->
     <clipPath id="basketInsideClip">
-      <!-- Clipping rectangle matching the smaller basket inner bounds EXACTLY -->
-      <polygon points="120,200 150,290 310,290 340,200" />
+      <path d="M 118,200 C 130,202 150,292 152,294 L 308,294 C 310,292 330,202 342,200 Z" />
     </clipPath>
   </defs>
 
@@ -49,11 +48,12 @@
     }
   </style>
 
-  <!-- === Basket Back === -->
-  <!-- Handle arc (narrower) -->
-  <path d="M 150 200 C 150 80, 310 80, 310 200" fill="none" stroke="#C084FC" opacity="0.5" stroke-width="8" stroke-linecap="round"/>
-  <!-- Basket interior dark depth (narrower and shorter) -->
-  <polygon points="120,200 150,290 310,290 340,200" fill="none" />
+  <!-- === Basket Handle === -->
+  <path d="M 158 200 C 158 100, 302 100, 302 200" fill="none" stroke="#C084FC" opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- === Basket Body (subtle tint fill behind Ferris) === -->
+  <path d="M 118,200 C 130,202 150,294 152,296 L 308,296 C 310,294 330,202 342,200 Z"
+        fill="#9333EA" fill-opacity="0.07" stroke="none" />
 
   <!-- === Official Ferris (Crab) Inside Basket === -->
   <g clip-path="url(#basketInsideClip)">
@@ -92,35 +92,30 @@
     </g>
   </g>
 
-  <!-- === Basket Front Face (Semi-transparent) === -->
-  <!-- Matches smaller interior precisely -->
-  <polygon points="120,200 150,290 310,290 340,200" fill="none" />
-
-  <!-- === Basket Front Wires === -->
-  <!-- Fully scaled down and moved inwards to create a smaller basket -->
-  <g filter="url(#glow)" opacity="0.5">
-    <!-- Top Rim -->
-    <line x1="110" y1="200" x2="350" y2="200" stroke="#C084FC" stroke-width="8" stroke-linecap="round"/>
-    
-    <!-- Bottom Rim -->
-    <line x1="140" y1="290" x2="320" y2="290" stroke="#C084FC" stroke-width="6" stroke-linecap="round"/>
-    
-    <!-- Outer Side Wires -->
-    <line x1="120" y1="200" x2="150" y2="290" stroke="#E1B8FA" stroke-width="5" stroke-linecap="round"/>
-    <line x1="340" y1="200" x2="310" y2="290" stroke="#E1B8FA" stroke-width="5" stroke-linecap="round"/>
-    
-    <g class="basket-glow" stroke-width="3" stroke-linecap="round">
-      <!-- Horizontal Wires -->
-      <line x1="125" y1="220" x2="335" y2="220" />
-      <line x1="130" y1="240" x2="330" y2="240" />
-      <line x1="135" y1="260" x2="325" y2="260" />
-      
-      <!-- Vertical Wires -->
-      <line x1="165" y1="200" x2="185" y2="290" />
-      <line x1="200" y1="200" x2="210" y2="290" />
-      <line x1="230" y1="200" x2="230" y2="290" />
-      <line x1="260" y1="200" x2="250" y2="290" />
-      <line x1="295" y1="200" x2="275" y2="290" />
+  <!-- === Basket Wires === -->
+  <g clip-path="url(#basketInsideClip)">
+    <g filter="url(#glow)">
+      <line x1="114" y1="200" x2="346" y2="200" stroke="#C084FC" stroke-width="7" stroke-linecap="round" opacity="0.75"/>
+      <line x1="148" y1="296" x2="312" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+      <line x1="118" y1="200" x2="148" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+      <line x1="342" y1="200" x2="312" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
     </g>
+    <g stroke="#C084FC" stroke-linecap="round" opacity="0.4">
+      <line x1="120" y1="224" x2="340" y2="224" stroke-width="2.5"/>
+      <line x1="124" y1="248" x2="336" y2="248" stroke-width="2.5"/>
+      <line x1="130" y1="272" x2="330" y2="272" stroke-width="2"/>
+      <line x1="166" y1="200" x2="181" y2="296" stroke-width="2.5"/>
+      <line x1="198" y1="200" x2="207" y2="296" stroke-width="2.5"/>
+      <line x1="230" y1="200" x2="230" y2="296" stroke-width="2.5"/>
+      <line x1="262" y1="200" x2="253" y2="296" stroke-width="2.5"/>
+      <line x1="294" y1="200" x2="279" y2="296" stroke-width="2.5"/>
+    </g>
+  </g>
+  <!-- Outer rim redrawn outside clip so border stays fully visible -->
+  <g filter="url(#glow)">
+    <line x1="114" y1="200" x2="346" y2="200" stroke="#C084FC" stroke-width="7" stroke-linecap="round" opacity="0.75"/>
+    <line x1="148" y1="296" x2="312" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+    <line x1="118" y1="200" x2="148" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+    <line x1="342" y1="200" x2="312" y2="296" stroke="#C084FC" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
   </g>
 </svg>
