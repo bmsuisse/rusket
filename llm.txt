@@ -1339,6 +1339,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Optimizer
+
+- enhance PySpark toArrow to utilize pandas ArrowDtype
+
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
