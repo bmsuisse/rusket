@@ -13,6 +13,8 @@ from .fm import FM
 from .hupm import HUPM, hupm, mine_hupm
 from .item_knn import ItemKNN
 from .lcm import LCM
+from .lightgcn import LightGCN
+from .sasrec import SASRec
 from .mine import AutoMiner, mine
 from .model import BaseModel
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
@@ -52,6 +54,8 @@ __all__ = [
     "ItemKNN",
     "FPMC",
     "FM",
+    "LightGCN",
+    "SASRec",
     "prefixspan",
     "PrefixSpan",
     "sequences_from_event_log",

@@ -1,360 +1,390 @@
-use ndarray::{Array2, Axis, Zip};
-use ndarray_rand::rand_distr::Uniform;
-use ndarray_rand::RandomExt;
-use numpy::{IntoPyArray, PyReadonlyArray1};
+use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
-use rand::Rng;
 use rayon::prelude::*;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-struct AtomicF32Array {
-    data: Vec<AtomicU32>,
-    cols: usize,
+// ---- Fast RNG (same pattern as bpr.rs) ------------------------------------
+
+struct XorShift64 {
+    state: u64,
 }
 
-impl AtomicF32Array {
-    fn zeros(rows: usize, cols: usize) -> Self {
-        let len = rows * cols;
-        let mut data = Vec::with_capacity(len);
-        data.resize_with(len, || AtomicU32::new(0_f32.to_bits()));
-        Self { data, cols }
+impl XorShift64 {
+    fn new(seed: u64) -> Self {
+        Self {
+            state: if seed == 0 { 0xbad5eed } else { seed },
+        }
     }
 
     #[inline(always)]
-    fn add(&self, row: usize, col: usize, val: f32) {
-        let idx = row * self.cols + col;
-        let atomic = &self.data[idx];
-        let mut current = atomic.load(Ordering::Relaxed);
-        loop {
-            let current_f32 = f32::from_bits(current);
-            let new_val = current_f32 + val;
-            match atomic.compare_exchange_weak(
-                current,
-                new_val.to_bits(),
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(x) => current = x,
-            }
-        }
+    fn next(&mut self) -> u64 {
+        self.state ^= self.state << 13;
+        self.state ^= self.state >> 7;
+        self.state ^= self.state << 17;
+        self.state
     }
 
-    fn to_array2(&self, rows: usize) -> Array2<f32> {
-        let mut arr = Array2::zeros((rows, self.cols));
-        for r in 0..rows {
-            for c in 0..self.cols {
-                arr[[r, c]] = f32::from_bits(self.data[r * self.cols + c].load(Ordering::Relaxed));
-            }
-        }
-        arr
+    #[inline(always)]
+    fn next_usize(&mut self, n: usize) -> usize {
+        (self.next() as usize) % n
+    }
+
+    #[inline(always)]
+    fn next_f32(&mut self) -> f32 {
+        let v = self.next() & 0xFFFFFF;
+        v as f32 / 0xFFFFFF as f32
     }
 }
 
+fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
+    let mut rng = XorShift64::new(seed);
+    let scale = (1.0_f32 / k as f32).sqrt() * 0.1;
+    let mut out = vec![0.0f32; n * k];
+    for v in out.iter_mut() {
+        *v = (rng.next_f32() * 2.0 - 1.0) * scale;
+    }
+    out
+}
+
+// ---- Atomic f32 accumulation for parallel gradient reduction ---------------
+
+struct AtomicF32Buf {
+    data: Vec<AtomicU32>,
+}
+
+impl AtomicF32Buf {
+    fn zeros(n: usize) -> Self {
+        let data = (0..n).map(|_| AtomicU32::new(0_f32.to_bits())).collect();
+        Self { data }
+    }
+
+    #[inline(always)]
+    fn add(&self, idx: usize, val: f32) {
+        let atomic = &self.data[idx];
+        let mut cur = atomic.load(Ordering::Relaxed);
+        loop {
+            let new = (f32::from_bits(cur) + val).to_bits();
+            match atomic.compare_exchange_weak(cur, new, Ordering::Relaxed, Ordering::Relaxed) {
+                Ok(_) => break,
+                Err(x) => cur = x,
+            }
+        }
+    }
+
+    fn as_slice_f32(&self) -> Vec<f32> {
+        self.data
+            .iter()
+            .map(|a| f32::from_bits(a.load(Ordering::Relaxed)))
+            .collect()
+    }
+}
+
+// ---- Graph propagation (LightGCN forward pass) ----------------------------
+// Propagate embeddings through the bipartite graph for k_layers steps.
+// A_tilde = D_u^{-0.5} A D_i^{-0.5}   (normalised adjacency)
+// E^{l+1}_u = A_tilde * E^l_i, E^{l+1}_i = A_tilde^T * E^l_u
+// Final = mean of all layers including E^0
+
 fn propagate(
-    e_u: &Array2<f32>,
-    e_i: &Array2<f32>,
-    user_indptr: &[i32],
-    user_indices: &[i32],
-    item_indptr: &[i32],
-    item_indices: &[i32],
-    d_u: &[f32],
-    d_i: &[f32],
+    e_u: &[f32],      // n_users * k
+    e_i: &[f32],      // n_items * k
+    k: usize,
+    n_users: usize,
+    n_items: usize,
+    u_indptr: &[i64],  // CSR for user → items
+    u_indices: &[i32],
+    i_indptr: &[i64], // CSR for item → users (transpose)
+    i_indices: &[i32],
+    d_u: &[f32],      // degree of each user
+    d_i: &[f32],      // degree of each item
     k_layers: usize,
-) -> (Array2<f32>, Array2<f32>) {
-    let users = e_u.nrows();
-    let items = e_i.nrows();
-    let factors = e_u.ncols();
+) -> (Vec<f32>, Vec<f32>) {
+    // Accumulate final_u / final_i = sum of all layer E^l
+    let mut final_u = e_u.to_vec();
+    let mut final_i = e_i.to_vec();
 
-    let mut final_u = e_u.clone();
-    let mut final_i = e_i.clone();
-
-    let mut curr_u = e_u.clone();
-    let mut curr_i = e_i.clone();
+    let mut curr_u = e_u.to_vec();
+    let mut curr_i = e_i.to_vec();
 
     for _ in 0..k_layers {
-        let mut next_u = Array2::<f32>::zeros((users, factors));
-        let mut next_i = Array2::<f32>::zeros((items, factors));
+        // Next user embeddings: aggregate from items
+        let next_u_atomic = AtomicF32Buf::zeros(n_users * k);
+        u_indptr.par_windows(2).enumerate().for_each(|(u, w)| {
+            let start = w[0] as usize;
+            let end = w[1] as usize;
+            if start == end {
+                return;
+            }
+            let norm_u = d_u[u].sqrt();
+            for &i_raw in &u_indices[start..end] {
+                let i = i_raw as usize;
+                let alpha = 1.0_f32 / (norm_u * d_i[i].sqrt());
+                for f in 0..k {
+                    next_u_atomic.add(u * k + f, alpha * curr_i[i * k + f]);
+                }
+            }
+        });
+        let next_u = next_u_atomic.as_slice_f32();
 
-        next_u
-            .axis_iter_mut(Axis(0))
-            .into_par_iter()
-            .enumerate()
-            .for_each(|(u, mut row)| {
-                let start = user_indptr[u] as usize;
-                let end = user_indptr[u + 1] as usize;
-                if start == end {
-                    return;
+        // Next item embeddings: aggregate from users
+        let next_i_atomic = AtomicF32Buf::zeros(n_items * k);
+        i_indptr.par_windows(2).enumerate().for_each(|(i, w)| {
+            let start = w[0] as usize;
+            let end = w[1] as usize;
+            if start == end {
+                return;
+            }
+            let norm_i = d_i[i].sqrt();
+            for &u_raw in &i_indices[start..end] {
+                let u = u_raw as usize;
+                let alpha = 1.0_f32 / (norm_i * d_u[u].sqrt());
+                for f in 0..k {
+                    next_i_atomic.add(i * k + f, alpha * curr_u[u * k + f]);
                 }
-                let norm_u = d_u[u].sqrt();
-                for &i in &user_indices[start..end] {
-                    let i = i as usize;
-                    let norm_i = d_i[i].sqrt();
-                    let alpha = 1.0 / (norm_u * norm_i);
-                    let i_row = curr_i.row(i);
-                    for f in 0..factors {
-                        row[f] += alpha * i_row[f];
-                    }
-                }
-            });
+            }
+        });
+        let next_i = next_i_atomic.as_slice_f32();
 
-        next_i
-            .axis_iter_mut(Axis(0))
-            .into_par_iter()
-            .enumerate()
-            .for_each(|(i, mut row)| {
-                let start = item_indptr[i] as usize;
-                let end = item_indptr[i + 1] as usize;
-                if start == end {
-                    return;
-                }
-                let norm_i = d_i[i].sqrt();
-                for &u in &item_indices[start..end] {
-                    let u = u as usize;
-                    let norm_u = d_u[u].sqrt();
-                    let alpha = 1.0 / (norm_u * norm_i);
-                    let u_row = curr_u.row(u);
-                    for f in 0..factors {
-                        row[f] += alpha * u_row[f];
-                    }
-                }
-            });
+        // Accumulate
+        for idx in 0..final_u.len() {
+            final_u[idx] += next_u[idx];
+        }
+        for idx in 0..final_i.len() {
+            final_i[idx] += next_i[idx];
+        }
 
         curr_u = next_u;
         curr_i = next_i;
-
-        Zip::from(&mut final_u).and(&curr_u).par_for_each(|f, &c| *f += c);
-        Zip::from(&mut final_i).and(&curr_i).par_for_each(|f, &c| *f += c);
     }
 
-    let scale = 1.0 / (k_layers as f32 + 1.0);
-    final_u.mapv_inplace(|x| x * scale);
-    final_i.mapv_inplace(|x| x * scale);
+    // Average
+    let scale = 1.0_f32 / (k_layers as f32 + 1.0);
+    for v in final_u.iter_mut() {
+        *v *= scale;
+    }
+    for v in final_i.iter_mut() {
+        *v *= scale;
+    }
 
     (final_u, final_i)
 }
 
-#[pyclass]
-pub struct LightGCNCore {
-    users: usize,
-    items: usize,
-    factors: usize,
+// ---- BPR loss + Adam update ------------------------------------------------
+
+#[allow(clippy::too_many_arguments)]
+fn lightgcn_train(
+    u_indptr: &[i64],
+    u_indices: &[i32],
+    i_indptr: &[i64],
+    i_indices: &[i32],
+    n_users: usize,
+    n_items: usize,
+    k: usize,
     k_layers: usize,
     learning_rate: f32,
     lambda: f32,
-    e_u: Array2<f32>,
-    e_i: Array2<f32>,
-    adam_m_u: Array2<f32>,
-    adam_v_u: Array2<f32>,
-    adam_m_i: Array2<f32>,
-    adam_v_i: Array2<f32>,
-    beta1: f32,
-    beta2: f32,
-    t: usize,
-}
+    iterations: usize,
+    seed: u64,
+    verbose: bool,
+) -> (Vec<f32>, Vec<f32>) {
+    // Build degree vectors
+    let d_u: Vec<f32> = (0..n_users)
+        .map(|u| (u_indptr[u + 1] - u_indptr[u]) as f32)
+        .collect();
+    let d_i: Vec<f32> = (0..n_items)
+        .map(|i| (i_indptr[i + 1] - i_indptr[i]) as f32)
+        .collect();
 
-#[pymethods]
-impl LightGCNCore {
-    #[new]
-    fn new(
-        users: usize,
-        items: usize,
-        factors: usize,
-        k_layers: usize,
-        learning_rate: f32,
-        lambda: f32,
-    ) -> Self {
-        let e_u = Array2::random((users, factors), Uniform::new(-0.1, 0.1));
-        let e_i = Array2::random((items, factors), Uniform::new(-0.1, 0.1));
-        Self {
-            users,
-            items,
-            factors,
-            k_layers,
-            learning_rate,
-            lambda,
-            e_u,
-            e_i,
-            adam_m_u: Array2::zeros((users, factors)),
-            adam_v_u: Array2::zeros((users, factors)),
-            adam_m_i: Array2::zeros((items, factors)),
-            adam_v_i: Array2::zeros((items, factors)),
-            beta1: 0.9,
-            beta2: 0.999,
-            t: 0,
+    // Learnable base embeddings
+    let mut e_u = random_factors(n_users, k, seed);
+    let mut e_i = random_factors(n_items, k, seed.wrapping_add(1));
+
+    // Adam state
+    let mut m_u = vec![0.0_f32; n_users * k];
+    let mut v_u = vec![0.0_f32; n_users * k];
+    let mut m_i = vec![0.0_f32; n_items * k];
+    let mut v_i = vec![0.0_f32; n_items * k];
+    let beta1 = 0.9_f32;
+    let beta2 = 0.999_f32;
+    let eps = 1e-8_f32;
+
+    let num_threads = rayon::current_num_threads();
+    let n_interactions = *u_indptr.last().unwrap() as usize;
+
+    if verbose {
+        println!("LightGCN | users={n_users} items={n_items} k={k} layers={k_layers}");
+        println!("ITER |    LOSS | TIME");
+    }
+
+    for iter in 0..iterations {
+        let t_iter = std::time::Instant::now();
+
+        // Forward propagation to get final embeddings
+        let (final_u, final_i) = propagate(
+            &e_u, &e_i, k, n_users, n_items,
+            u_indptr, u_indices, i_indptr, i_indices,
+            &d_u, &d_i, k_layers,
+        );
+
+        // Compute BPR gradients in parallel
+        let g_final_u_atomic = AtomicF32Buf::zeros(n_users * k);
+        let g_final_i_atomic = AtomicF32Buf::zeros(n_items * k);
+
+        let total_loss: f32 = {
+            let chunk = (n_users / num_threads).max(1);
+            (0..num_threads)
+                .into_par_iter()
+                .map(|tid| {
+                    let mut rng = XorShift64::new(
+                        seed.wrapping_add(iter as u64).wrapping_add(tid as u64 * 997),
+                    );
+                    let mut loss = 0.0_f32;
+                    let u_start = tid * chunk;
+                    let u_end = ((tid + 1) * chunk).min(n_users);
+                    for u in u_start..u_end {
+                        let s = u_indptr[u] as usize;
+                        let e = u_indptr[u + 1] as usize;
+                        if s == e {
+                            continue;
+                        }
+                        // Pick a random positive item
+                        let pos_off = rng.next_usize(e - s);
+                        let i = u_indices[s + pos_off] as usize;
+
+                        // Sample a negative item
+                        let mut j = rng.next_usize(n_items);
+                        for _ in 0..10 {
+                            if u_indices[s..e].binary_search(&(j as i32)).is_err() {
+                                break;
+                            }
+                            j = rng.next_usize(n_items);
+                        }
+
+                        // Scores
+                        let mut y_i = 0.0_f32;
+                        let mut y_j = 0.0_f32;
+                        for f in 0..k {
+                            y_i += final_u[u * k + f] * final_i[i * k + f];
+                            y_j += final_u[u * k + f] * final_i[j * k + f];
+                        }
+
+                        let diff = y_i - y_j;
+                        // log sigmoid loss
+                        let log_sig = if diff >= 0.0 {
+                            let e = (-diff).exp();
+                            -(1.0 + e).ln()
+                        } else {
+                            diff - (1.0 + diff.exp()).ln()
+                        };
+                        loss -= log_sig;
+
+                        // Gradient of log(sigmoid(diff)) w.r.t. embeddings
+                        let sig = if diff >= 0.0 {
+                            let e = (-diff).exp();
+                            1.0 / (1.0 + e)
+                        } else {
+                            let e = diff.exp();
+                            e / (1.0 + e)
+                        };
+                        let g = sig - 1.0; // derivative of -log(sigmoid)
+
+                        for f in 0..k {
+                            let eu = final_u[u * k + f];
+                            let ei = final_i[i * k + f];
+                            let ej = final_i[j * k + f];
+                            g_final_u_atomic.add(u * k + f, g * (ei - ej));
+                            g_final_i_atomic.add(i * k + f, g * eu);
+                            g_final_i_atomic.add(j * k + f, -g * eu);
+                        }
+                    }
+                    loss
+                })
+                .sum()
+        };
+
+        let g_fu = g_final_u_atomic.as_slice_f32();
+        let g_fi = g_final_i_atomic.as_slice_f32();
+
+        // Back-propagate through graph layers to get gradient w.r.t. e_u, e_i
+        let (g_eu, g_ei) = propagate(
+            &g_fu, &g_fi, k, n_users, n_items,
+            u_indptr, u_indices, i_indptr, i_indices,
+            &d_u, &d_i, k_layers,
+        );
+
+        // Adam update
+        let t = (iter + 1) as f32;
+        let alpha = learning_rate * (1.0 - beta2.powf(t)).sqrt() / (1.0 - beta1.powf(t));
+
+        for idx in 0..e_u.len() {
+            let g = g_eu[idx] + lambda * e_u[idx];
+            m_u[idx] = beta1 * m_u[idx] + (1.0 - beta1) * g;
+            v_u[idx] = beta2 * v_u[idx] + (1.0 - beta2) * g * g;
+            e_u[idx] -= alpha * m_u[idx] / (v_u[idx].sqrt() + eps);
+        }
+        for idx in 0..e_i.len() {
+            let g = g_ei[idx] + lambda * e_i[idx];
+            m_i[idx] = beta1 * m_i[idx] + (1.0 - beta1) * g;
+            v_i[idx] = beta2 * v_i[idx] + (1.0 - beta2) * g * g;
+            e_i[idx] -= alpha * m_i[idx] / (v_i[idx].sqrt() + eps);
+        }
+
+        if verbose {
+            println!(
+                "{:>4} | {:>7.4} | {:.2}s",
+                iter + 1,
+                total_loss / n_interactions as f32,
+                t_iter.elapsed().as_secs_f64()
+            );
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn fit_epoch<'py>(
-        &mut self,
-        _py: Python<'py>,
-        user_indptr: PyReadonlyArray1<'py, i32>,
-        user_indices: PyReadonlyArray1<'py, i32>,
-        item_indptr: PyReadonlyArray1<'py, i32>,
-        item_indices: PyReadonlyArray1<'py, i32>,
-        d_u: PyReadonlyArray1<'py, f32>,
-        d_i: PyReadonlyArray1<'py, f32>,
-    ) -> f32 {
-        let u_ptr = user_indptr.as_slice().unwrap();
-        let u_idx = user_indices.as_slice().unwrap();
-        let i_ptr = item_indptr.as_slice().unwrap();
-        let i_idx = item_indices.as_slice().unwrap();
-        let du = d_u.as_slice().unwrap();
-        let di = d_i.as_slice().unwrap();
+    (e_u, e_i)
+}
 
-        let (final_u, final_i) = propagate(
-            &self.e_u,
-            &self.e_i,
-            u_ptr,
-            u_idx,
-            i_ptr,
-            i_idx,
-            du,
-            di,
-            self.k_layers,
-        );
+// ---- PyO3 entry point ------------------------------------------------------
 
-        let g_final_i_atomic = AtomicF32Array::zeros(self.items, self.factors);
-        let mut g_final_u = Array2::<f32>::zeros((self.users, self.factors));
+#[pyfunction]
+#[pyo3(signature = (
+    u_indptr, u_indices, i_indptr, i_indices,
+    n_users, n_items, factors, k_layers,
+    learning_rate, lambda_, iterations, seed, verbose
+))]
+#[allow(clippy::too_many_arguments)]
+pub fn lightgcn_fit<'py>(
+    py: Python<'py>,
+    u_indptr: PyReadonlyArray1<'py, i64>,
+    u_indices: PyReadonlyArray1<'py, i32>,
+    i_indptr: PyReadonlyArray1<'py, i64>,
+    i_indices: PyReadonlyArray1<'py, i32>,
+    n_users: usize,
+    n_items: usize,
+    factors: usize,
+    k_layers: usize,
+    learning_rate: f32,
+    lambda_: f32,
+    iterations: usize,
+    seed: u64,
+    verbose: bool,
+) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
+    let up = u_indptr.as_slice()?;
+    let ui = u_indices.as_slice()?;
+    let ip = i_indptr.as_slice()?;
+    let ii = i_indices.as_slice()?;
 
-        let loss: f32 = g_final_u
-            .axis_iter_mut(Axis(0))
-            .into_par_iter()
-            .enumerate()
-            .map(|(u, mut g_u)| {
-                let start = u_ptr[u] as usize;
-                let end = u_ptr[u + 1] as usize;
-                if start == end {
-                    return 0.0;
-                }
-
-                let mut rng = rand::thread_rng();
-                let mut local_loss = 0.0;
-
-                let e_u_row = final_u.row(u);
-
-                for &i in &u_idx[start..end] {
-                    let i = i as usize;
-
-                    let mut j = rng.gen_range(0..self.items);
-                    while u_idx[start..end].contains(&(j as i32)) {
-                        j = rng.gen_range(0..self.items);
-                    }
-
-                    let e_i_row = final_i.row(i);
-                    let e_j_row = final_i.row(j);
-
-                    let mut y_ui = 0.0;
-                    let mut y_uj = 0.0;
-                    for f in 0..self.factors {
-                        y_ui += e_u_row[f] * e_i_row[f];
-                        y_uj += e_u_row[f] * e_j_row[f];
-                    }
-
-                    let x_uij = y_ui - y_uj;
-                    let exp_nx = (-x_uij).exp();
-                    let sigmoid = 1.0 / (1.0 + exp_nx);
-
-                    local_loss += (1.0 + exp_nx).ln();
-                    let grad = sigmoid - 1.0;
-
-                    for f in 0..self.factors {
-                        let e_uf = e_u_row[f];
-                        let e_if = e_i_row[f];
-                        let e_jf = e_j_row[f];
-
-                        g_u[f] += grad * (e_if - e_jf);
-                        g_final_i_atomic.add(i, f, grad * e_uf);
-                        g_final_i_atomic.add(j, f, grad * (-e_uf));
-                    }
-                }
-                local_loss
-            })
-            .sum();
-
-        let g_final_i = g_final_i_atomic.to_array2(self.items);
-
-        let (g_0_u, g_0_i) = propagate(
-            &g_final_u,
-            &g_final_i,
-            u_ptr,
-            u_idx,
-            i_ptr,
-            i_idx,
-            du,
-            di,
-            self.k_layers,
-        );
-
-        self.t += 1;
-        let t_f32 = self.t as f32;
-        let beta1 = self.beta1;
-        let beta2 = self.beta2;
-        let lr = self.learning_rate;
-        let lambda = self.lambda;
-        let bias_correction1 = 1.0 - beta1.powf(t_f32);
-        let bias_correction2 = 1.0 - beta2.powf(t_f32);
-        let step_size = lr * (bias_correction2.sqrt()) / bias_correction1;
-
-        Zip::from(&mut self.e_u)
-            .and(&mut self.adam_m_u)
-            .and(&mut self.adam_v_u)
-            .and(&g_0_u)
-            .par_for_each(|e, m, v, &g| {
-                let grad = g + lambda * (*e);
-                *m = beta1 * (*m) + (1.0 - beta1) * grad;
-                *v = beta2 * (*v) + (1.0 - beta2) * grad.powi(2);
-                *e -= step_size * (*m) / (v.sqrt() + 1e-8);
-            });
-
-        Zip::from(&mut self.e_i)
-            .and(&mut self.adam_m_i)
-            .and(&mut self.adam_v_i)
-            .and(&g_0_i)
-            .par_for_each(|e, m, v, &g| {
-                let grad = g + lambda * (*e);
-                *m = beta1 * (*m) + (1.0 - beta1) * grad;
-                *v = beta2 * (*v) + (1.0 - beta2) * grad.powi(2);
-                *e -= step_size * (*m) / (v.sqrt() + 1e-8);
-            });
-
-        loss / (u_idx.len() as f32)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn get_final_embeddings<'py>(
-        &self,
-        py: Python<'py>,
-        user_indptr: PyReadonlyArray1<'py, i32>,
-        user_indices: PyReadonlyArray1<'py, i32>,
-        item_indptr: PyReadonlyArray1<'py, i32>,
-        item_indices: PyReadonlyArray1<'py, i32>,
-        d_u: PyReadonlyArray1<'py, f32>,
-        d_i: PyReadonlyArray1<'py, f32>,
-    ) -> (PyObject, PyObject) {
-        let u_ptr = user_indptr.as_slice().unwrap();
-        let u_idx = user_indices.as_slice().unwrap();
-        let i_ptr = item_indptr.as_slice().unwrap();
-        let i_idx = item_indices.as_slice().unwrap();
-        let du = d_u.as_slice().unwrap();
-        let di = d_i.as_slice().unwrap();
-
-        let (final_u, final_i) = propagate(
-            &self.e_u,
-            &self.e_i,
-            u_ptr,
-            u_idx,
-            i_ptr,
-            i_idx,
-            du,
-            di,
-            self.k_layers,
-        );
-
-        (
-            final_u.into_pyarray(py).into(),
-            final_i.into_pyarray(py).into(),
+    let (eu, ei) = py.detach(|| {
+        lightgcn_train(
+            up, ui, ip, ii,
+            n_users, n_items, factors, k_layers,
+            learning_rate, lambda_, iterations, seed, verbose,
         )
-    }
+    });
+
+    let ua = PyArray1::from_vec(py, eu);
+    let ia = PyArray1::from_vec(py, ei);
+
+    Ok((
+        ua.reshape([n_users, factors])?.into(),
+        ia.reshape([n_items, factors])?.into(),
+    ))
 }

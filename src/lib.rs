@@ -19,6 +19,7 @@ mod item_knn;
 mod fpmc;
 mod fm;
 mod lightgcn;
+mod sasrec;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -47,6 +48,8 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fpmc::fpmc_fit, m)?)?;
     m.add_function(wrap_pyfunction!(fm::fm_fit, m)?)?;
     m.add_function(wrap_pyfunction!(fm::fm_predict, m)?)?;
-    m.add_class::<lightgcn::LightGCNCore>()?;
+    m.add_function(wrap_pyfunction!(lightgcn::lightgcn_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(sasrec::sasrec_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(sasrec::sasrec_encode, m)?)?;
     Ok(())
 }
