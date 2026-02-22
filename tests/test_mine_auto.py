@@ -58,3 +58,35 @@ def test_auto_numpy_dense():
     data = np.ones((10, 10), dtype=np.uint8)
     res_auto = rusket.mine(data, min_support=0.5, method="auto")
     assert len(res_auto) > 0
+
+def test_rule_miner_mixin_api():
+    # Test association_rules and recommend_items from RuleMinerMixin
+    df = pd.DataFrame(
+        {
+            "Milk": [1, 1, 0, 1, 1],
+            "Bread": [1, 1, 0, 1, 0],
+            "Butter": [1, 0, 1, 1, 0],
+            "Eggs": [0, 1, 1, 1, 1],
+        }
+    )
+    # Using the OO API AutoMiner
+    from rusket.mine import AutoMiner
+    miner = AutoMiner(df, min_support=0.4, use_colnames=True)
+    
+    # Check that rules can be generated
+    rules = miner.association_rules(metric="confidence", min_threshold=0.5)
+    assert not rules.empty
+    assert "antecedents" in rules.columns
+    assert "consequents" in rules.columns
+    assert "confidence" in rules.columns
+    
+    # Check recommend_items
+    recs = miner.recommend_items(items=["Milk", "Butter"], n=2)
+    assert isinstance(recs, list)
+    
+    # "Bread" should be recommended since Milk & Butter -> Bread is a strong rule
+    # Bread support is 3/5, Milk support is 4/5, Butter is 3/5.
+    # We just ensure it runs and returns something valid.
+    assert len(recs) <= 2
+    for item in recs:
+        assert item not in ["Milk", "Butter"]
