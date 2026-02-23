@@ -223,8 +223,7 @@ class RuleMinerMixin:
         import warnings
 
         warnings.warn(
-            "RuleMinerMixin.recommend_items() is deprecated. "
-            "Use recommend_for_cart() instead.",
+            "RuleMinerMixin.recommend_items() is deprecated. Use recommend_for_cart() instead.",
             DeprecationWarning,
             stacklevel=2,
         )

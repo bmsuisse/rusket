@@ -22,8 +22,8 @@ from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
 from .recommend import NextBestAction, Recommender, score_potential
 from .sasrec import SASRec
 from .similarity import similar_items
-from .svd import SVD
 from .streaming import FPMiner, mine_duckdb, mine_spark
+from .svd import SVD
 from .transactions import (
     from_pandas,
     from_polars,

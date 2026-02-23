@@ -7,11 +7,10 @@ on a well-known dataset (Kosarak, 990,002 transactions, minsup=0.05).
 
 from __future__ import annotations
 
-import pytest
 import pandas as pd
+import pytest
 
 from rusket import association_rules
-
 
 # ---------------------------------------------------------------------------
 # Kosarak itemsets mined with min_support = 0.05 (count / 990002)
@@ -122,10 +121,12 @@ def _build_itemset_dataframe() -> pd.DataFrame:
     """Build a DataFrame matching the rusket association_rules input format."""
     rows = []
     for items, count in KOSARAK_ITEMSETS:
-        rows.append({
-            "itemsets": frozenset(items),
-            "support": count / DATASET_SIZE,
-        })
+        rows.append(
+            {
+                "itemsets": frozenset(items),
+                "support": count / DATASET_SIZE,
+            }
+        )
     df = pd.DataFrame(rows)
     df.attrs["num_itemsets"] = DATASET_SIZE
     return df
@@ -152,15 +153,13 @@ class TestKosarakRules:
         """The lift filter is applied post-hoc, count all rules with lift≥1.5."""
         filtered = self.rules[self.rules["lift"] >= 1.5]
         assert len(filtered) == len(EXPECTED_RULES), (
-            f"Expected {len(EXPECTED_RULES)} rules with lift>=1.5, "
-            f"got {len(filtered)}"
+            f"Expected {len(EXPECTED_RULES)} rules with lift>=1.5, got {len(filtered)}"
         )
 
     def test_all_expected_rules_present(self) -> None:
         """Every expected (antecedent, consequent) pair must be present."""
         generated_keys = {
-            (frozenset(row["antecedents"]), frozenset(row["consequents"]))
-            for _, row in self.rules.iterrows()
+            (frozenset(row["antecedents"]), frozenset(row["consequents"])) for _, row in self.rules.iterrows()
         }
         for key in EXPECTED_RULES:
             ant, con = key
@@ -174,8 +173,7 @@ class TestKosarakRules:
             if key in EXPECTED_RULES:
                 expected_conf, _, _ = EXPECTED_RULES[key]
                 assert _fuzzy_eq(row["confidence"], expected_conf), (
-                    f"Confidence mismatch for {key}: "
-                    f"expected {expected_conf}, got {row['confidence']:.3f}"
+                    f"Confidence mismatch for {key}: expected {expected_conf}, got {row['confidence']:.3f}"
                 )
 
     def test_lift_values(self) -> None:
@@ -185,8 +183,7 @@ class TestKosarakRules:
             if key in EXPECTED_RULES:
                 _, expected_lift, _ = EXPECTED_RULES[key]
                 assert _fuzzy_eq(row["lift"], expected_lift), (
-                    f"Lift mismatch for {key}: "
-                    f"expected {expected_lift}, got {row['lift']:.3f}"
+                    f"Lift mismatch for {key}: expected {expected_lift}, got {row['lift']:.3f}"
                 )
 
     def test_support_values(self) -> None:
@@ -196,6 +193,5 @@ class TestKosarakRules:
             if key in EXPECTED_RULES:
                 _, _, expected_sup = EXPECTED_RULES[key]
                 assert _fuzzy_eq(row["support"], expected_sup), (
-                    f"Support mismatch for {key}: "
-                    f"expected {expected_sup}, got {row['support']:.3f}"
+                    f"Support mismatch for {key}: expected {expected_sup}, got {row['support']:.3f}"
                 )

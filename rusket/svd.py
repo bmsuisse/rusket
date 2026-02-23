@@ -73,9 +73,7 @@ class SVD(ImplicitRecommender):
         self
         """
         if self._fitted:
-            raise RuntimeError(
-                "SVD model is already fitted. Create a new instance to refit."
-            )
+            raise RuntimeError("SVD model is already fitted. Create a new instance to refit.")
 
         import numpy as np
 
@@ -130,9 +128,7 @@ class SVD(ImplicitRecommender):
                 )
 
             if csr is None:
-                raise TypeError(
-                    f"Cannot convert {type(interactions).__name__} to CSR matrix."
-                )
+                raise TypeError(f"Cannot convert {type(interactions).__name__} to CSR matrix.")
 
         csr = csr.astype(np.float32)
         n_users, n_items = csr.shape
@@ -286,11 +282,13 @@ class SVD(ImplicitRecommender):
         if format == "polars":
             try:
                 import polars as pl
+
                 return pl.DataFrame(data)
             except ImportError:
                 pass
 
         import pandas as pd
+
         return pd.DataFrame(data)
 
     def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:

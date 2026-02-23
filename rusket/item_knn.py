@@ -226,5 +226,3 @@ class ItemKNN(ImplicitRecommender):
             self._n_items,
         )
         return np.asarray(ids), np.asarray(scores)
-
-
