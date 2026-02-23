@@ -6,7 +6,7 @@ import warnings
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    import numpy as np
+    pass
 
 from . import _rusket
 

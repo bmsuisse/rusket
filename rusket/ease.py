@@ -135,8 +135,6 @@ class EASE(ImplicitRecommender):
         )
         return np.asarray(ids), np.asarray(scores)
 
-
-
     @property
     def item_factors(self) -> Any:
         """Item factor matrix (n_items, n_items)."""

@@ -332,9 +332,9 @@ def als_grouped(
 
     import warnings
 
-    from .als import ALS
-
     import pandas as pd
+
+    from .als import ALS
 
     warnings.simplefilter("ignore", DeprecationWarning)
 
