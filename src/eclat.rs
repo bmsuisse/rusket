@@ -80,7 +80,12 @@ pub(crate) fn eclat_mine(
                 for (item_b, bs_b) in &active_items[i + 1..] {
                     let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                     if c >= min_count {
-                        next_active.push((*item_b, scratch.clone()));
+                        // Swap scratch with a fresh buffer instead of cloning
+                        let mut fresh = BitSet {
+                            blocks: vec![0u64; n_blocks],
+                        };
+                        std::mem::swap(&mut scratch, &mut fresh);
+                        next_active.push((*item_b, fresh));
                     }
                 }
 
@@ -170,7 +175,11 @@ pub fn eclat_from_dense(
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
-                            next_active.push((*item_b, scratch.clone()));
+                            let mut fresh = BitSet {
+                                blocks: vec![0u64; n_blocks],
+                            };
+                            std::mem::swap(&mut scratch, &mut fresh);
+                            next_active.push((*item_b, fresh));
                         }
                     }
                     if !next_active.is_empty() {
@@ -266,7 +275,11 @@ pub fn eclat_from_csr(
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
-                            next_active.push((*item_b, scratch.clone()));
+                            let mut fresh = BitSet {
+                                blocks: vec![0u64; n_blocks],
+                            };
+                            std::mem::swap(&mut scratch, &mut fresh);
+                            next_active.push((*item_b, fresh));
                         }
                     }
                     if !next_active.is_empty() {
@@ -349,7 +362,11 @@ pub(crate) fn _eclat_mine_csr(
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
-                            next_active.push((*item_b, scratch.clone()));
+                            let mut fresh = BitSet {
+                                blocks: vec![0u64; n_blocks],
+                            };
+                            std::mem::swap(&mut scratch, &mut fresh);
+                            next_active.push((*item_b, fresh));
                         }
                     }
                     if !next_active.is_empty() {

@@ -150,7 +150,7 @@ impl PPCTree {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct NodesetNode {
     pub pre: u32,
     pub post: u32,
@@ -185,8 +185,8 @@ impl Nodeset {
 
             if a.pre <= b.pre {
                 if b.post <= a.post {
-                    // b is a descendant of a
-                    result_nodes.push(b.clone());
+                    // b is a descendant of a  (Copy, no heap alloc)
+                    result_nodes.push(*b);
                     support += b.count;
                     j += 1;
                 } else {
@@ -232,12 +232,10 @@ pub(crate) fn fin_mine(
                     results.push((ns_ab.support, iset.clone()));
 
                     if max_len.is_none_or(|ml| new_len < ml) {
-                        let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
-                        for (item_c, ns_c) in &active_items[i + 1..] {
-                            next_active.push((*item_c, ns_c.clone()));
-                        }
-                        if !next_active.is_empty() {
-                            results.extend(fin_mine(&iset, &ns_ab, &next_active, min_count, max_len));
+                        // Pass a slice reference instead of cloning the Nodesets
+                        let remaining = &active_items[i + 1..];
+                        if !remaining.is_empty() {
+                            results.extend(fin_mine(&iset, &ns_ab, remaining, min_count, max_len));
                         }
                     }
                 }

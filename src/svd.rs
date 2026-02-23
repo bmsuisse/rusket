@@ -2,10 +2,32 @@ use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// ── SIMD-optimised primitives ─────────────────────────────────────────────
+// ── SIMD-optimised dot product (8-wide unrolling for NEON / AVX2) ──────────
 #[inline(always)]
 fn dot(a: &[f32], b: &[f32]) -> f32 {
-    a.iter().zip(b).map(|(x, y)| x * y).sum()
+    let k = a.len();
+    let chunks = k / 8;
+    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let mut idx = 0;
+    for _ in 0..chunks {
+        unsafe {
+            s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx);
+            s1 += *a.get_unchecked(idx + 1) * *b.get_unchecked(idx + 1);
+            s2 += *a.get_unchecked(idx + 2) * *b.get_unchecked(idx + 2);
+            s3 += *a.get_unchecked(idx + 3) * *b.get_unchecked(idx + 3);
+            s4 += *a.get_unchecked(idx + 4) * *b.get_unchecked(idx + 4);
+            s5 += *a.get_unchecked(idx + 5) * *b.get_unchecked(idx + 5);
+            s6 += *a.get_unchecked(idx + 6) * *b.get_unchecked(idx + 6);
+            s7 += *a.get_unchecked(idx + 7) * *b.get_unchecked(idx + 7);
+        }
+        idx += 8;
+    }
+    while idx < k {
+        unsafe { s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx); }
+        idx += 1;
+    }
+    (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
 }
 
 // ── Fast XorShift64 RNG ───────────────────────────────────────────────────
@@ -43,6 +65,55 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
         *v = (rng.next_float() * 2.0 - 1.0) * scale;
     }
     out
+}
+
+// ── Factor update with snapshot (avoids stale-value hazard) ───────────────
+// 8-wide unrolled: reads both pu[f] and qi[f] BEFORE writing, so updates
+// use the original values.
+#[inline(always)]
+unsafe fn update_factors(
+    pu: *mut f32,
+    qi: *mut f32,
+    k: usize,
+    lr_err: f32,
+    lr_reg: f32,
+) {
+    let chunks = k / 8;
+    let mut idx = 0;
+    for _ in 0..chunks {
+        let p0 = *pu.add(idx);   let q0 = *qi.add(idx);
+        let p1 = *pu.add(idx+1); let q1 = *qi.add(idx+1);
+        let p2 = *pu.add(idx+2); let q2 = *qi.add(idx+2);
+        let p3 = *pu.add(idx+3); let q3 = *qi.add(idx+3);
+        let p4 = *pu.add(idx+4); let q4 = *qi.add(idx+4);
+        let p5 = *pu.add(idx+5); let q5 = *qi.add(idx+5);
+        let p6 = *pu.add(idx+6); let q6 = *qi.add(idx+6);
+        let p7 = *pu.add(idx+7); let q7 = *qi.add(idx+7);
+        *pu.add(idx)   = p0 + lr_err * q0 - lr_reg * p0;
+        *qi.add(idx)   = q0 + lr_err * p0 - lr_reg * q0;
+        *pu.add(idx+1) = p1 + lr_err * q1 - lr_reg * p1;
+        *qi.add(idx+1) = q1 + lr_err * p1 - lr_reg * q1;
+        *pu.add(idx+2) = p2 + lr_err * q2 - lr_reg * p2;
+        *qi.add(idx+2) = q2 + lr_err * p2 - lr_reg * q2;
+        *pu.add(idx+3) = p3 + lr_err * q3 - lr_reg * p3;
+        *qi.add(idx+3) = q3 + lr_err * p3 - lr_reg * q3;
+        *pu.add(idx+4) = p4 + lr_err * q4 - lr_reg * p4;
+        *qi.add(idx+4) = q4 + lr_err * p4 - lr_reg * q4;
+        *pu.add(idx+5) = p5 + lr_err * q5 - lr_reg * p5;
+        *qi.add(idx+5) = q5 + lr_err * p5 - lr_reg * q5;
+        *pu.add(idx+6) = p6 + lr_err * q6 - lr_reg * p6;
+        *qi.add(idx+6) = q6 + lr_err * p6 - lr_reg * q6;
+        *pu.add(idx+7) = p7 + lr_err * q7 - lr_reg * p7;
+        *qi.add(idx+7) = q7 + lr_err * p7 - lr_reg * q7;
+        idx += 8;
+    }
+    while idx < k {
+        let pf = *pu.add(idx);
+        let qf = *qi.add(idx);
+        *pu.add(idx) = pf + lr_err * qf - lr_reg * pf;
+        *qi.add(idx) = qf + lr_err * pf - lr_reg * qf;
+        idx += 1;
+    }
 }
 
 fn svd_train(
@@ -94,30 +165,42 @@ fn svd_train(
 
     let start_time = std::time::Instant::now();
 
-    // Build a flat (user, item, rating) triplet array for shuffled SGD
-    let mut triplets: Vec<(u32, u32, f32)> = Vec::with_capacity(n_ratings);
+    // SoA layout: separate arrays for user, item, rating — 
+    // cache-friendly sequential reads for each field
+    let mut t_user: Vec<u32> = Vec::with_capacity(n_ratings);
+    let mut t_item: Vec<u32> = Vec::with_capacity(n_ratings);
+    let mut t_rating: Vec<f32> = Vec::with_capacity(n_ratings);
     for u in 0..n_users {
         let start = indptr[u] as usize;
         let end = indptr[u + 1] as usize;
         for idx in start..end {
-            triplets.push((u as u32, indices[idx] as u32, data[idx]));
+            t_user.push(u as u32);
+            t_item.push(indices[idx] as u32);
+            t_rating.push(data[idx]);
         }
     }
+
+    // Shuffle only u32 indices (4 bytes per swap vs 12 for tuples)
+    let mut index_buf: Vec<u32> = (0..n_ratings as u32).collect();
+
+    // Pre-compute lr * reg to avoid repeated multiplication in inner loop
+    let lr_reg = learning_rate * regularization;
 
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
 
+        // Fisher-Yates on u32 indices
         let mut shuffler = XorShift64::new(seed.wrapping_add(iter as u64).wrapping_add(999));
-        let len = triplets.len();
+        let len = index_buf.len();
         for i in (1..len).rev() {
             let j = (shuffler.next() as usize) % (i + 1);
-            triplets.swap(i, j);
+            index_buf.swap(i, j);
         }
 
         let chunk_size = (n_ratings + num_threads - 1) / num_threads;
 
-        // Parallel SGD with per-thread RMSE accumulation
-        let rmse_sum: f64 = triplets
+        // Parallel SGD — f32 SSE is sufficient for training
+        let sse_sum: f32 = index_buf
             .par_chunks(chunk_size)
             .map(|chunk| {
                 let uf_ptr = uf_ptr_raw as *mut f32;
@@ -125,33 +208,35 @@ fn svd_train(
                 let ub_ptr = ub_ptr_raw as *mut f32;
                 let ib_ptr = ib_ptr_raw as *mut f32;
 
-                let mut local_sse = 0.0f64;
+                let mut local_sse = 0.0f32;
 
-                for &(u, i, r) in chunk {
-                    let u = u as usize;
-                    let i = i as usize;
+                for &raw_idx in chunk {
+                    let idx = raw_idx as usize;
+                    let u = unsafe { *t_user.get_unchecked(idx) } as usize;
+                    let i = unsafe { *t_item.get_unchecked(idx) } as usize;
+                    let r = unsafe { *t_rating.get_unchecked(idx) };
 
                     unsafe {
-                        let pu = std::slice::from_raw_parts_mut(uf_ptr.add(u * k), k);
-                        let qi = std::slice::from_raw_parts_mut(if_ptr.add(i * k), k);
+                        let pu = uf_ptr.add(u * k);
+                        let qi = if_ptr.add(i * k);
                         let bu = &mut *ub_ptr.add(u);
                         let bi = &mut *ib_ptr.add(i);
 
-                        let pred = global_mean + *bu + *bi + dot(pu, qi);
+                        let d = dot(
+                            std::slice::from_raw_parts(pu, k),
+                            std::slice::from_raw_parts(qi, k),
+                        );
+                        let pred = global_mean + *bu + *bi + d;
                         let err = r - pred;
-                        local_sse += (err as f64) * (err as f64);
+                        local_sse += err * err;
 
                         // Update biases
                         *bu += learning_rate * (err - regularization * *bu);
                         *bi += learning_rate * (err - regularization * *bi);
 
-                        // Update factors
-                        for f in 0..k {
-                            let pu_f = pu[f];
-                            let qi_f = qi[f];
-                            pu[f] += learning_rate * (err * qi_f - regularization * pu_f);
-                            qi[f] += learning_rate * (err * pu_f - regularization * qi_f);
-                        }
+                        // Update factors — snapshot-based, 4-wide unrolled
+                        let lr_err = learning_rate * err;
+                        update_factors(pu, qi, k, lr_err, lr_reg);
                     }
                 }
 
@@ -159,10 +244,9 @@ fn svd_train(
             })
             .sum();
 
-        let rmse = (rmse_sum / n_ratings as f64).sqrt();
-        let iter_time = iter_start.elapsed().as_secs_f64();
-
         if verbose {
+            let rmse = ((sse_sum as f64) / n_ratings as f64).sqrt();
+            let iter_time = iter_start.elapsed().as_secs_f64();
             let samples_per_sec = (n_ratings as f64) / iter_time;
             println!(
                 "  {:>4} | {:>12.6} | {:>10.0} | {:>6.2}s",

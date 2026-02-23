@@ -1,7 +1,6 @@
 use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use std::sync::atomic::{AtomicU32, Ordering};
 
 // ---- Fast RNG (same pattern as bpr.rs) ------------------------------------
 
@@ -45,38 +44,32 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     }
     out
 }
-
-// ---- Atomic f32 accumulation for parallel gradient reduction ---------------
-
-struct AtomicF32Buf {
-    data: Vec<AtomicU32>,
-}
-
-impl AtomicF32Buf {
-    fn zeros(n: usize) -> Self {
-        let data = (0..n).map(|_| AtomicU32::new(0_f32.to_bits())).collect();
-        Self { data }
-    }
-
-    #[inline(always)]
-    fn add(&self, idx: usize, val: f32) {
-        let atomic = &self.data[idx];
-        let mut cur = atomic.load(Ordering::Relaxed);
-        loop {
-            let new = (f32::from_bits(cur) + val).to_bits();
-            match atomic.compare_exchange_weak(cur, new, Ordering::Relaxed, Ordering::Relaxed) {
-                Ok(_) => break,
-                Err(x) => cur = x,
-            }
+// ── SIMD-optimised dot product (8-wide unrolling for NEON / AVX2) ──────────
+#[inline(always)]
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    let k = a.len();
+    let chunks = k / 8;
+    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let mut idx = 0;
+    for _ in 0..chunks {
+        unsafe {
+            s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx);
+            s1 += *a.get_unchecked(idx + 1) * *b.get_unchecked(idx + 1);
+            s2 += *a.get_unchecked(idx + 2) * *b.get_unchecked(idx + 2);
+            s3 += *a.get_unchecked(idx + 3) * *b.get_unchecked(idx + 3);
+            s4 += *a.get_unchecked(idx + 4) * *b.get_unchecked(idx + 4);
+            s5 += *a.get_unchecked(idx + 5) * *b.get_unchecked(idx + 5);
+            s6 += *a.get_unchecked(idx + 6) * *b.get_unchecked(idx + 6);
+            s7 += *a.get_unchecked(idx + 7) * *b.get_unchecked(idx + 7);
         }
+        idx += 8;
     }
-
-    fn as_slice_f32(&self) -> Vec<f32> {
-        self.data
-            .iter()
-            .map(|a| f32::from_bits(a.load(Ordering::Relaxed)))
-            .collect()
+    while idx < k {
+        unsafe { s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx); }
+        idx += 1;
     }
+    (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
 }
 
 // ---- Graph propagation (LightGCN forward pass) ----------------------------
@@ -84,6 +77,9 @@ impl AtomicF32Buf {
 // A_tilde = D_u^{-0.5} A D_i^{-0.5}   (normalised adjacency)
 // E^{l+1}_u = A_tilde * E^l_i, E^{l+1}_i = A_tilde^T * E^l_u
 // Final = mean of all layers including E^0
+//
+// OPTIMISATION: uses par fold/reduce with thread-local buffers instead of
+// atomic CAS loops — eliminates all contention.
 
 fn propagate(
     e_u: &[f32],      // n_users * k
@@ -99,6 +95,10 @@ fn propagate(
     d_i: &[f32],      // degree of each item
     k_layers: usize,
 ) -> (Vec<f32>, Vec<f32>) {
+    // Pre-compute inverse square roots (avoid redundant sqrt per layer)
+    let inv_sqrt_u: Vec<f32> = d_u.iter().map(|d| if *d > 0.0 { 1.0 / d.sqrt() } else { 0.0 }).collect();
+    let inv_sqrt_i: Vec<f32> = d_i.iter().map(|d| if *d > 0.0 { 1.0 / d.sqrt() } else { 0.0 }).collect();
+
     // Accumulate final_u / final_i = sum of all layer E^l
     let mut final_u = e_u.to_vec();
     let mut final_i = e_i.to_vec();
@@ -107,43 +107,50 @@ fn propagate(
     let mut curr_i = e_i.to_vec();
 
     for _ in 0..k_layers {
-        // Next user embeddings: aggregate from items
-        let next_u_atomic = AtomicF32Buf::zeros(n_users * k);
-        u_indptr.par_windows(2).enumerate().for_each(|(u, w)| {
-            let start = w[0] as usize;
-            let end = w[1] as usize;
-            if start == end {
-                return;
-            }
-            let norm_u = d_u[u].sqrt();
-            for &i_raw in &u_indices[start..end] {
-                let i = i_raw as usize;
-                let alpha = 1.0_f32 / (norm_u * d_i[i].sqrt());
-                for f in 0..k {
-                    next_u_atomic.add(u * k + f, alpha * curr_i[i * k + f]);
+        // Next user embeddings: aggregate from items using thread-local fold/reduce
+        // Each user row is independent, so we scatter directly with no contention
+        let mut next_u = vec![0.0f32; n_users * k];
+        next_u
+            .par_chunks_mut(k)
+            .enumerate()
+            .for_each(|(u, out)| {
+                let start = u_indptr[u] as usize;
+                let end = u_indptr[u + 1] as usize;
+                if start == end {
+                    return;
                 }
-            }
-        });
-        let next_u = next_u_atomic.as_slice_f32();
+                let nu = inv_sqrt_u[u];
+                for &i_raw in &u_indices[start..end] {
+                    let i = i_raw as usize;
+                    let alpha = nu * inv_sqrt_i[i];
+                    let src = &curr_i[i * k..(i + 1) * k];
+                    for f in 0..k {
+                        unsafe { *out.get_unchecked_mut(f) += alpha * *src.get_unchecked(f); }
+                    }
+                }
+            });
 
         // Next item embeddings: aggregate from users
-        let next_i_atomic = AtomicF32Buf::zeros(n_items * k);
-        i_indptr.par_windows(2).enumerate().for_each(|(i, w)| {
-            let start = w[0] as usize;
-            let end = w[1] as usize;
-            if start == end {
-                return;
-            }
-            let norm_i = d_i[i].sqrt();
-            for &u_raw in &i_indices[start..end] {
-                let u = u_raw as usize;
-                let alpha = 1.0_f32 / (norm_i * d_u[u].sqrt());
-                for f in 0..k {
-                    next_i_atomic.add(i * k + f, alpha * curr_u[u * k + f]);
+        let mut next_i = vec![0.0f32; n_items * k];
+        next_i
+            .par_chunks_mut(k)
+            .enumerate()
+            .for_each(|(i, out)| {
+                let start = i_indptr[i] as usize;
+                let end = i_indptr[i + 1] as usize;
+                if start == end {
+                    return;
                 }
-            }
-        });
-        let next_i = next_i_atomic.as_slice_f32();
+                let ni = inv_sqrt_i[i];
+                for &u_raw in &i_indices[start..end] {
+                    let u = u_raw as usize;
+                    let alpha = ni * inv_sqrt_u[u];
+                    let src = &curr_u[u * k..(u + 1) * k];
+                    for f in 0..k {
+                        unsafe { *out.get_unchecked_mut(f) += alpha * *src.get_unchecked(f); }
+                    }
+                }
+            });
 
         // Accumulate
         for idx in 0..final_u.len() {
@@ -226,84 +233,87 @@ fn lightgcn_train(
             &d_u, &d_i, k_layers,
         );
 
-        // Compute BPR gradients in parallel
-        let g_final_u_atomic = AtomicF32Buf::zeros(n_users * k);
-        let g_final_i_atomic = AtomicF32Buf::zeros(n_items * k);
+        // Compute BPR gradients: user grads are race-free (disjoint user ranges),
+        // item grads use fold/reduce to avoid CAS contention
+        let mut g_fu = vec![0.0f32; n_users * k];
+        let g_fu_ptr = g_fu.as_mut_ptr() as usize;
 
-        let total_loss: f32 = {
-            let chunk = (n_users / num_threads).max(1);
-            (0..num_threads)
-                .into_par_iter()
-                .map(|tid| {
-                    let mut rng = XorShift64::new(
-                        seed.wrapping_add(iter as u64).wrapping_add(tid as u64 * 997),
-                    );
-                    let mut loss = 0.0_f32;
-                    let u_start = tid * chunk;
-                    let u_end = ((tid + 1) * chunk).min(n_users);
-                    for u in u_start..u_end {
-                        let s = u_indptr[u] as usize;
-                        let e = u_indptr[u + 1] as usize;
-                        if s == e {
-                            continue;
-                        }
-                        // Pick a random positive item
-                        let pos_off = rng.next_usize(e - s);
-                        let i = u_indices[s + pos_off] as usize;
-
-                        // Sample a negative item
-                        let mut j = rng.next_usize(n_items);
-                        for _ in 0..10 {
-                            if u_indices[s..e].binary_search(&(j as i32)).is_err() {
-                                break;
-                            }
-                            j = rng.next_usize(n_items);
-                        }
-
-                        // Scores
-                        let mut y_i = 0.0_f32;
-                        let mut y_j = 0.0_f32;
-                        for f in 0..k {
-                            y_i += final_u[u * k + f] * final_i[i * k + f];
-                            y_j += final_u[u * k + f] * final_i[j * k + f];
-                        }
-
-                        let diff = y_i - y_j;
-                        // log sigmoid loss
-                        let log_sig = if diff >= 0.0 {
-                            let e = (-diff).exp();
-                            -(1.0 + e).ln()
-                        } else {
-                            diff - (1.0 + diff.exp()).ln()
-                        };
-                        loss -= log_sig;
-
-                        // Gradient of log(sigmoid(diff)) w.r.t. embeddings
-                        let sig = if diff >= 0.0 {
-                            let e = (-diff).exp();
-                            1.0 / (1.0 + e)
-                        } else {
-                            let e = diff.exp();
-                            e / (1.0 + e)
-                        };
-                        let g = sig - 1.0; // derivative of -log(sigmoid)
-
-                        for f in 0..k {
-                            let eu = final_u[u * k + f];
-                            let ei = final_i[i * k + f];
-                            let ej = final_i[j * k + f];
-                            g_final_u_atomic.add(u * k + f, g * (ei - ej));
-                            g_final_i_atomic.add(i * k + f, g * eu);
-                            g_final_i_atomic.add(j * k + f, -g * eu);
-                        }
+        let chunk = (n_users / num_threads).max(1);
+        let (total_loss, g_fi): (f32, Vec<f32>) = (0..num_threads)
+            .into_par_iter()
+            .map(|tid| {
+                let mut rng = XorShift64::new(
+                    seed.wrapping_add(iter as u64).wrapping_add(tid as u64 * 997),
+                );
+                let mut loss = 0.0_f32;
+                let mut local_gi = vec![0.0f32; n_items * k];
+                let u_start = tid * chunk;
+                let u_end = ((tid + 1) * chunk).min(n_users);
+                for u in u_start..u_end {
+                    let s = u_indptr[u] as usize;
+                    let e = u_indptr[u + 1] as usize;
+                    if s == e {
+                        continue;
                     }
-                    loss
-                })
-                .sum()
-        };
+                    let pos_off = rng.next_usize(e - s);
+                    let i = u_indices[s + pos_off] as usize;
 
-        let g_fu = g_final_u_atomic.as_slice_f32();
-        let g_fi = g_final_i_atomic.as_slice_f32();
+                    let mut j = rng.next_usize(n_items);
+                    for _ in 0..10 {
+                        if u_indices[s..e].binary_search(&(j as i32)).is_err() {
+                            break;
+                        }
+                        j = rng.next_usize(n_items);
+                    }
+
+                    // SIMD dot product for scores
+                    let u_slice = &final_u[u * k..(u + 1) * k];
+                    let y_i = dot(u_slice, &final_i[i * k..(i + 1) * k]);
+                    let y_j = dot(u_slice, &final_i[j * k..(j + 1) * k]);
+
+                    let diff = y_i - y_j;
+                    let log_sig = if diff >= 0.0 {
+                        let e = (-diff).exp();
+                        -(1.0 + e).ln()
+                    } else {
+                        diff - (1.0 + diff.exp()).ln()
+                    };
+                    loss -= log_sig;
+
+                    let sig = if diff >= 0.0 {
+                        let e = (-diff).exp();
+                        1.0 / (1.0 + e)
+                    } else {
+                        let e = diff.exp();
+                        e / (1.0 + e)
+                    };
+                    let g = sig - 1.0;
+
+                    // User grads: no contention (disjoint user ranges)
+                    let gu_ptr = g_fu_ptr as *mut f32;
+                    for f in 0..k {
+                        let ei = final_i[i * k + f];
+                        let ej = final_i[j * k + f];
+                        unsafe { *gu_ptr.add(u * k + f) += g * (ei - ej); }
+                    }
+                    // Item grads: thread-local accumulation
+                    for f in 0..k {
+                        let eu = final_u[u * k + f];
+                        local_gi[i * k + f] += g * eu;
+                        local_gi[j * k + f] -= g * eu;
+                    }
+                }
+                (loss, local_gi)
+            })
+            .reduce(
+                || (0.0f32, vec![0.0f32; n_items * k]),
+                |(l1, mut g1), (l2, g2)| {
+                    for (a, b) in g1.iter_mut().zip(g2.iter()) {
+                        *a += b;
+                    }
+                    (l1 + l2, g1)
+                },
+            );
 
         // Back-propagate through graph layers to get gradient w.r.t. e_u, e_i
         let (g_eu, g_ei) = propagate(
