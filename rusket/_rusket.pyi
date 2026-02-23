@@ -90,11 +90,9 @@ def prefixspan_mine_py(
     min_count: int,
     max_len: int | None = None,
 ) -> tuple[list[int], list[list[int]]]: ...
-
 def fin_from_dense(
     data: npt.NDArray[np.uint8], min_count: int, max_len: int | None = None
 ) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]: ...
-
 def fin_from_csr(
     indptr: npt.NDArray[np.int32],
     indices: npt.NDArray[np.int32],
@@ -102,11 +100,9 @@ def fin_from_csr(
     min_count: int,
     max_len: int | None = None,
 ) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]: ...
-
 def lcm_from_dense(
     data: npt.NDArray[np.uint8], min_count: int, max_len: int | None = None
 ) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]: ...
-
 def lcm_from_csr(
     indptr: npt.NDArray[np.int32],
     indices: npt.NDArray[np.int32],
@@ -125,7 +121,9 @@ class FPMiner:
     def add_chunk(self, txn_ids: npt.NDArray[np.int64], item_ids: npt.NDArray[np.int32]) -> None: ...
     def mine_fpgrowth(self, min_support: float, max_len: int | None) -> tuple[int, list[int], list[int], list[int]]: ...
     def mine_eclat(self, min_support: float, max_len: int | None) -> tuple[int, list[int], list[int], list[int]]: ...
-    def mine_auto(self, min_support: float, max_len: int | None) -> tuple[int, list[int], list[int], list[int], str]: ...
+    def mine_auto(
+        self, min_support: float, max_len: int | None
+    ) -> tuple[int, list[int], list[int], list[int], str]: ...
     def reset(self) -> None: ...
 
 def ease_recommend_items(
@@ -136,16 +134,11 @@ def ease_recommend_items(
     user_id: int,
     n: int,
     exc_indptr: npt.NDArray[np.int64],
-    exc_indices: npt.NDArray[np.int32]
+    exc_indices: npt.NDArray[np.int32],
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
-
 def itemknn_top_k(
-    indptr: npt.NDArray[np.int64],
-    indices: npt.NDArray[np.int32],
-    data: npt.NDArray[np.float32],
-    k: int
+    indptr: npt.NDArray[np.int64], indices: npt.NDArray[np.int32], data: npt.NDArray[np.float32], k: int
 ) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
-
 def itemknn_recommend_items(
     w_indptr: npt.NDArray[np.int64],
     w_indices: npt.NDArray[np.int32],
@@ -157,9 +150,8 @@ def itemknn_recommend_items(
     n: int,
     exc_indptr: npt.NDArray[np.int64],
     exc_indices: npt.NDArray[np.int32],
-    n_items: int
+    n_items: int,
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
-
 def fpmc_fit(
     indptr: npt.NDArray[np.int64],
     indices: npt.NDArray[np.int32],
@@ -170,9 +162,8 @@ def fpmc_fit(
     regularization: float,
     iterations: int,
     seed: int,
-    verbose: bool
+    verbose: bool,
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
-
 def fm_fit(
     indptr: npt.NDArray[np.int64],
     indices: npt.NDArray[np.int32],
@@ -184,9 +175,8 @@ def fm_fit(
     regularization: float,
     iterations: int,
     seed: int,
-    verbose: bool
+    verbose: bool,
 ) -> tuple[float, npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
-
 def fm_predict(
     indptr: npt.NDArray[np.int64],
     indices: npt.NDArray[np.int32],
@@ -194,9 +184,8 @@ def fm_predict(
     w: npt.NDArray[np.float32],
     v: npt.NDArray[np.float32],
     factors: int,
-    n_samples: int
+    n_samples: int,
 ) -> npt.NDArray[np.float32]: ...
-
 def lightgcn_fit(
     u_indptr: npt.NDArray[np.int64],
     u_indices: npt.NDArray[np.int32],
@@ -210,9 +199,8 @@ def lightgcn_fit(
     lambda_: float,
     iterations: int,
     seed: int,
-    verbose: bool
+    verbose: bool,
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
-
 def sasrec_fit(
     sequences: list[list[int]],
     n_items: int,
@@ -223,13 +211,13 @@ def sasrec_fit(
     lambda_: float,
     iterations: int,
     seed: int,
-    verbose: bool
+    verbose: bool,
 ) -> npt.NDArray[np.float32]: ...
-
 def ndcg_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
 def precision_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
 def recall_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
 def hit_rate_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
-
 def train_test_split(ids: list[int], test_size: float) -> tuple[list[int], list[int]]: ...
-def leave_one_out(user_ids: list[int], item_ids: list[int], timestamps: list[float] | None) -> tuple[list[int], list[int]]: ...
+def leave_one_out(
+    user_ids: list[int], item_ids: list[int], timestamps: list[float] | None
+) -> tuple[list[int], list[int]]: ...

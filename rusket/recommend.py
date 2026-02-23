@@ -64,7 +64,7 @@ class Recommender:
 
         # 2. Hybrid scoring
         if not hasattr(self.model, "user_factors") or not hasattr(self.model, "item_factors"):
-            return cf_rec_tuple # fallback if model cant do hybrid easily
+            return cf_rec_tuple  # fallback if model cant do hybrid easily
 
         # Calculate full CF scores for all items
         u_factors = self.model.user_factors[user_id]
@@ -74,7 +74,10 @@ class Recommender:
         if target_item is None:
             try:
                 # Naive fallback: try to find an item the user bought
-                if getattr(self.model, "_fit_indptr", None) is not None and getattr(self.model, "_fit_indices", None) is not None:
+                if (
+                    getattr(self.model, "_fit_indptr", None) is not None
+                    and getattr(self.model, "_fit_indices", None) is not None
+                ):
                     start_idx = self.model._fit_indptr[user_id]
                     end_idx = self.model._fit_indptr[user_id + 1]
                     if end_idx > start_idx:
@@ -104,7 +107,10 @@ class Recommender:
 
         # Mask seen items
         try:
-            if getattr(self.model, "_fit_indptr", None) is not None and getattr(self.model, "_fit_indices", None) is not None:
+            if (
+                getattr(self.model, "_fit_indptr", None) is not None
+                and getattr(self.model, "_fit_indices", None) is not None
+            ):
                 start_idx = self.model._fit_indptr[user_id]
                 end_idx = self.model._fit_indptr[user_id + 1]
                 seen = self.model._fit_indices[start_idx:end_idx]

@@ -80,7 +80,9 @@ def evaluate(
                 r_items, r_scores = model.recommend_items(u, n=k, exclude_seen=True)
                 predictions[u] = r_items.tolist()
             except Exception as e:
-                warnings.warn(f"Failed to use recommend_items for user {u}: {e}. Falling back to 0.0 metrics.", stacklevel=2)
+                warnings.warn(
+                    f"Failed to use recommend_items for user {u}: {e}. Falling back to 0.0 metrics.", stacklevel=2
+                )
                 res: dict[str, float] = dict.fromkeys(metrics, 0.0)
                 return res
     else:

@@ -99,9 +99,9 @@ class PrefixSpan(Miner):
         max_len = kwargs.get("max_len", self.max_len)
 
         if isinstance(min_supp, float):
-            n_seqs = min(1, len(self.data)) if isinstance(self.data, list) else 1 # simplistic fallback
+            n_seqs = min(1, len(self.data)) if isinstance(self.data, list) else 1  # simplistic fallback
             if isinstance(self.data, tuple) and len(self.data) == 2:
-                n_seqs = len(self.data[0]) - 1 # len of indptr - 1 is number of sequences
+                n_seqs = len(self.data[0]) - 1  # len of indptr - 1 is number of sequences
             elif isinstance(self.data, list):
                 n_seqs = len(self.data)
 
