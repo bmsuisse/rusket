@@ -713,10 +713,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-batch-scoring-email-campaign-targeting" class="md-nav__link">
+  <a href="#4-databricks-batch-scoring-high-speed-cross-sell-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Batch scoring — email campaign targeting
+        4. Databricks / Batch scoring — high speed cross-sell generation
       
     </span>
   </a>
@@ -1189,10 +1189,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-batch-scoring-email-campaign-targeting" class="md-nav__link">
+  <a href="#4-databricks-batch-scoring-high-speed-cross-sell-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Batch scoring — email campaign targeting
+        4. Databricks / Batch scoring — high speed cross-sell generation
       
     </span>
   </a>
@@ -1407,9 +1407,18 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">cart</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;espresso_beans&quot;</span><span class="p">,</span> <span class="s2">&quot;grinder&quot;</span><span class="p">]</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">add_ons</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">cart</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="4-batch-scoring-email-campaign-targeting">4. Batch scoring — email campaign targeting<a class="headerlink" href="#4-batch-scoring-email-campaign-targeting" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">batch</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;s3://data-lake/recommendations/daily_picks.parquet&quot;</span><span class="p">)</span>
+<h3 id="4-databricks-batch-scoring-high-speed-cross-sell-generation">4. Databricks / Batch scoring — high speed cross-sell generation<a class="headerlink" href="#4-databricks-batch-scoring-high-speed-cross-sell-generation" title="Permanent link">&para;</a></h3>
+<p>Avoid slow Python <code>for</code> loops by using the Rust-accelerated <code>batch_recommend</code> to score all users across all CPU cores simultaneously.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Returns a native Polars DataFrame instantly: [user_id, item_id, score]</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">recommendations_pl</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">batch_recommend</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;polars&quot;</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Need it in Delta Lake? Export factors and scores directly to Spark DataFrames!</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">user_factors_df</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_user_factors</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">item_factors_df</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_factors</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">)</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># Save to Delta</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">user_factors_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;silver_layer.user_embeddings&quot;</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">item_factors_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;silver_layer.item_embeddings&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="item-to-item-similarity-you-may-also-like">Item-to-Item Similarity — "You May Also Like"<a class="headerlink" href="#item-to-item-similarity-you-may-also-like" title="Permanent link">&para;</a></h2>

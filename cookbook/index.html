@@ -778,15 +778,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#11-tuning-guide" class="md-nav__link">
+  <a href="#11-databricks-high-speed-cross-sell-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        11. Tuning Guide
+        11. Databricks: High-Speed Cross-Sell Generation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="11. Tuning Guide">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-tuning-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Tuning Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Tuning Guide">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -817,10 +828,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#12-item-similarity-and-cross-selling-potential" class="md-nav__link">
+  <a href="#13-item-similarity-and-cross-selling-potential" class="md-nav__link">
     <span class="md-ellipsis">
       
-        12. Item Similarity and Cross-Selling Potential
+        13. Item Similarity and Cross-Selling Potential
       
     </span>
   </a>
@@ -828,10 +839,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#13-hybrid-recommender-als-association-rules" class="md-nav__link">
+  <a href="#14-hybrid-recommender-als-association-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        13. Hybrid Recommender (ALS + Association Rules)
+        14. Hybrid Recommender (ALS + Association Rules)
       
     </span>
   </a>
@@ -839,10 +850,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#14-genai-llm-stack-integration" class="md-nav__link">
+  <a href="#15-genai-llm-stack-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        14. GenAI / LLM Stack Integration
+        15. GenAI / LLM Stack Integration
       
     </span>
   </a>
@@ -850,10 +861,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#15-visualizing-latent-spaces-pca" class="md-nav__link">
+  <a href="#16-visualizing-latent-spaces-pca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        15. Visualizing Latent Spaces (PCA)
+        16. Visualizing Latent Spaces (PCA)
       
     </span>
   </a>
@@ -1637,15 +1648,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#11-tuning-guide" class="md-nav__link">
+  <a href="#11-databricks-high-speed-cross-sell-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        11. Tuning Guide
+        11. Databricks: High-Speed Cross-Sell Generation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="11. Tuning Guide">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-tuning-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Tuning Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Tuning Guide">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1676,10 +1698,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#12-item-similarity-and-cross-selling-potential" class="md-nav__link">
+  <a href="#13-item-similarity-and-cross-selling-potential" class="md-nav__link">
     <span class="md-ellipsis">
       
-        12. Item Similarity and Cross-Selling Potential
+        13. Item Similarity and Cross-Selling Potential
       
     </span>
   </a>
@@ -1687,10 +1709,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#13-hybrid-recommender-als-association-rules" class="md-nav__link">
+  <a href="#14-hybrid-recommender-als-association-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        13. Hybrid Recommender (ALS + Association Rules)
+        14. Hybrid Recommender (ALS + Association Rules)
       
     </span>
   </a>
@@ -1698,10 +1720,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#14-genai-llm-stack-integration" class="md-nav__link">
+  <a href="#15-genai-llm-stack-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        14. GenAI / LLM Stack Integration
+        15. GenAI / LLM Stack Integration
       
     </span>
   </a>
@@ -1709,10 +1731,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#15-visualizing-latent-spaces-pca" class="md-nav__link">
+  <a href="#16-visualizing-latent-spaces-pca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        15. Visualizing Latent Spaces (PCA)
+        16. Visualizing Latent Spaces (PCA)
       
     </span>
   </a>
@@ -2066,7 +2088,37 @@
 </span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="11-tuning-guide">11. Tuning Guide<a class="headerlink" href="#11-tuning-guide" title="Permanent link">&para;</a></h2>
+<h2 id="11-databricks-high-speed-cross-sell-generation">11. Databricks: High-Speed Cross-Sell Generation<a class="headerlink" href="#11-databricks-high-speed-cross-sell-generation" title="Permanent link">&para;</a></h2>
+<p>When working in Databricks with millions of users, Python <code>for</code> loops are a massive bottleneck. Use <code>batch_recommend</code> to leverage Rust's parallel iterators (Rayon) and return native Spark or Polars DataFrames instantly.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SparkSession</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="n">purchases</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s2">&quot;bronze_layer.customer_transactions&quot;</span><span class="p">)</span>
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="c1"># 1. Train the model using the fast Polars bridge</span>
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>    <span class="n">purchases</span><span class="o">.</span><span class="n">toPandas</span><span class="p">(),</span> <span class="c1"># Or pass Polars directly if memory allows</span>
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>    <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span>
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product_id&quot;</span><span class="p">,</span>
+</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>    <span class="n">rating_col</span><span class="o">=</span><span class="s2">&quot;sales_amount&quot;</span><span class="p">,</span>
+</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="p">)</span>
+</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>
+</span><span id="__span-21-16"><a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="c1"># 2. Score ALL users simultaneously across all CPU cores (Rust Rayon)</span>
+</span><span id="__span-21-17"><a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a><span class="c1">#    Returns a fast Polars DataFrame: [user_id, item_id, score]</span>
+</span><span id="__span-21-18"><a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="n">recommendations_pl</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">batch_recommend</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;polars&quot;</span><span class="p">)</span>
+</span><span id="__span-21-19"><a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a>
+</span><span id="__span-21-20"><a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a><span class="c1"># 3. Export L2-normalized item and user factors directly to Spark for Delta tables</span>
+</span><span id="__span-21-21"><a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a><span class="n">user_factors_df</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_user_factors</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">)</span>
+</span><span id="__span-21-22"><a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a><span class="n">item_factors_df</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_factors</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">)</span>
+</span><span id="__span-21-23"><a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a>
+</span><span id="__span-21-24"><a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a><span class="c1"># 4. Save to Delta</span>
+</span><span id="__span-21-25"><a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a><span class="n">user_factors_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;silver_layer.user_embeddings&quot;</span><span class="p">)</span>
+</span><span id="__span-21-26"><a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a><span class="n">item_factors_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;silver_layer.item_embeddings&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="12-tuning-guide">12. Tuning Guide<a class="headerlink" href="#12-tuning-guide" title="Permanent link">&para;</a></h2>
 <h3 id="fpgrowth-eclat-autominer">FPGrowth / Eclat / AutoMiner<a class="headerlink" href="#fpgrowth-eclat-autominer" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2132,31 +2184,31 @@
 </tbody>
 </table>
 <hr />
-<h2 id="12-item-similarity-and-cross-selling-potential">12. Item Similarity and Cross-Selling Potential<a class="headerlink" href="#12-item-similarity-and-cross-selling-potential" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Now part of the Model class</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">item_ids</span><span class="p">,</span> <span class="n">match_scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">similar_items</span><span class="p">(</span><span class="n">item_id</span><span class="o">=</span><span class="mi">102</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<h2 id="13-item-similarity-and-cross-selling-potential">13. Item Similarity and Cross-Selling Potential<a class="headerlink" href="#13-item-similarity-and-cross-selling-potential" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Now part of the Model class</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">item_ids</span><span class="p">,</span> <span class="n">match_scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">similar_items</span><span class="p">(</span><span class="n">item_id</span><span class="o">=</span><span class="mi">102</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="13-hybrid-recommender-als-association-rules">13. Hybrid Recommender (ALS + Association Rules)<a class="headerlink" href="#13-hybrid-recommender-als-association-rules" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">item_ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">125</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">suggested_additions</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<h2 id="14-hybrid-recommender-als-association-rules">14. Hybrid Recommender (ALS + Association Rules)<a class="headerlink" href="#14-hybrid-recommender-als-association-rules" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">rules_df</span><span class="o">=</span><span class="n">rules</span><span class="p">)</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">item_ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">125</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="n">suggested_additions</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="14-genai-llm-stack-integration">14. GenAI / LLM Stack Integration<a class="headerlink" href="#14-genai-llm-stack-integration" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lancedb</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="c1"># Direct export from model</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="n">df_vectors</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">export_factors</span><span class="p">()</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="n">db</span> <span class="o">=</span> <span class="n">lancedb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;./lancedb&quot;</span><span class="p">)</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="n">table</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_table</span><span class="p">(</span><span class="s2">&quot;item_embeddings&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df_vectors</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span>
+<h2 id="15-genai-llm-stack-integration">15. GenAI / LLM Stack Integration<a class="headerlink" href="#15-genai-llm-stack-integration" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lancedb</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="c1"># Direct export from model</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">df_vectors</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">export_factors</span><span class="p">()</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">db</span> <span class="o">=</span> <span class="n">lancedb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;./lancedb&quot;</span><span class="p">)</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="n">table</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_table</span><span class="p">(</span><span class="s2">&quot;item_embeddings&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df_vectors</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="15-visualizing-latent-spaces-pca">15. Visualizing Latent Spaces (PCA)<a class="headerlink" href="#15-visualizing-latent-spaces-pca" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Built-in 3D PCA visualization</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">visualize_factors</span><span class="p">()</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<h2 id="16-visualizing-latent-spaces-pca">16. Visualizing Latent Spaces (PCA)<a class="headerlink" href="#16-visualizing-latent-spaces-pca" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Built-in 3D PCA visualization</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">visualize_factors</span><span class="p">()</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </span></code></pre></div>
 
 

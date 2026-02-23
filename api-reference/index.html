@@ -908,6 +908,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#alsbatch_recommend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALS.batch_recommend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#alsfit" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2233,6 +2244,17 @@
   
     <nav class="md-nav" aria-label="ALS">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alsbatch_recommend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ALS.batch_recommend
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#alsfit" class="md-nav__link">
@@ -3572,11 +3594,62 @@ a re-computation after re-mining.</p>
 </tr>
 </tbody>
 </table>
+<h4 id="alsbatch_recommend"><code>ALS.batch_recommend</code><a class="headerlink" href="#alsbatch_recommend" title="Permanent link">&para;</a></h4>
+<p>Top-N items for all users efficiently computed in parallel.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">batch_recommend</span>
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">batch_recommend</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;polars&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+</span></code></pre></div>
+<p><strong>Parameters</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n</td>
+<td>int, default=10</td>
+<td>The number of items to recommend per user.</td>
+</tr>
+<tr>
+<td>exclude_seen</td>
+<td>bool, default=True</td>
+<td>Whether to exclude items the user has already interacted with.</td>
+</tr>
+<tr>
+<td>format</td>
+<td>str, default="polars"</td>
+<td>The DataFrame format to return. One of "pandas", "polars", or "spark".</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DataFrame</td>
+<td></td>
+<td>A DataFrame with columns <code>user_id</code>, <code>item_id</code>, and <code>score</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h4 id="alsfit"><code>ALS.fit</code><a class="headerlink" href="#alsfit" title="Permanent link">&para;</a></h4>
 <p>Fit the model to the user-item interaction matrix.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">fit</span>
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ALS&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">fit</span>
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ALS&#39;</span>
 </span></code></pre></div>
 <p><strong>Raises</strong></p>
 <table>
@@ -3600,16 +3673,16 @@ a re-computation after re-mining.</p>
 <hr />
 <h4 id="alsrecommend_items"><code>ALS.recommend_items</code><a class="headerlink" href="#alsrecommend_items" title="Permanent link">&para;</a></h4>
 <p>Top-N items for a user. Set exclude_seen=False to include already-seen items.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">recommend_items</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">recommend_items</span>
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
 </span></code></pre></div>
 <hr />
 <h4 id="alsrecommend_users"><code>ALS.recommend_users</code><a class="headerlink" href="#alsrecommend_users" title="Permanent link">&para;</a></h4>
 <p>Top-N users for an item.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">recommend_users</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">recommend_users</span><span class="p">(</span><span class="n">item_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="o">.</span><span class="n">recommend_users</span>
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>
+</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="n">ALS</span><span class="o">.</span><span class="n">recommend_users</span><span class="p">(</span><span class="n">item_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
 </span></code></pre></div>
 <hr />
 <hr />
@@ -3618,9 +3691,9 @@ a re-computation after re-mining.</p>
 <p>BPR optimizes for ranking rather than reconstruction error (like ALS).
 It works by drawing positive items the user interacted with, and negative items
 they haven't, and adjusting latent factors to ensure the positive item scores higher.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span>
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span>
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3661,9 +3734,9 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 </table>
 <h4 id="bprfit"><code>BPR.fit</code><a class="headerlink" href="#bprfit" title="Permanent link">&para;</a></h4>
 <p>Fit the BPR model to the user-item interaction matrix.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span><span class="o">.</span><span class="n">fit</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="n">BPR</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BPR&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span><span class="o">.</span><span class="n">fit</span>
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>
+</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="n">BPR</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BPR&#39;</span>
 </span></code></pre></div>
 <p><strong>Raises</strong></p>
 <table>
@@ -3687,37 +3760,37 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 <hr />
 <h4 id="bprrecommend_items"><code>BPR.recommend_items</code><a class="headerlink" href="#bprrecommend_items" title="Permanent link">&para;</a></h4>
 <p>Top-N items for a user.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span><span class="o">.</span><span class="n">recommend_items</span>
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>
-</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="n">BPR</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span><span class="o">.</span><span class="n">recommend_items</span>
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="n">BPR</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
 </span></code></pre></div>
 <hr />
 <hr />
 <h3 id="recommender"><code>Recommender</code><a class="headerlink" href="#recommender" title="Permanent link">&para;</a></h3>
 <p>Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span>
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_embeddings</span><span class="p">:</span> <span class="s1">&#39;np.ndarray | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span>
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>
+</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="n">Recommender</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_embeddings</span><span class="p">:</span> <span class="s1">&#39;np.ndarray | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="recommenderpredict_next_chunk"><code>Recommender.predict_next_chunk</code><a class="headerlink" href="#recommenderpredict_next_chunk" title="Permanent link">&para;</a></h4>
 <p>Batch-rank the next best products for every user in <em>user_history_df</em>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">predict_next_chunk</span>
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>
-</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">predict_next_chunk</span>
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>
+</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
 </span></code></pre></div>
 <hr />
 <h4 id="recommenderrecommend_for_cart"><code>Recommender.recommend_for_cart</code><a class="headerlink" href="#recommenderrecommend_for_cart" title="Permanent link">&para;</a></h4>
 <p>Suggest items to add to an active cart using association rules.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_cart</span>
-</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>
-</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">cart_items</span><span class="p">:</span> <span class="s1">&#39;list[int]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;list[int]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_cart</span>
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>
+</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">cart_items</span><span class="p">:</span> <span class="s1">&#39;list[int]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;list[int]&#39;</span>
 </span></code></pre></div>
 <hr />
 <h4 id="recommenderrecommend_for_user"><code>Recommender.recommend_for_user</code><a class="headerlink" href="#recommenderrecommend_for_user" title="Permanent link">&para;</a></h4>
 <p>Top-N recommendations for a user via Hybrid ALS + Semantic.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_user</span>
-</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>
-</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">target_item_for_semantic</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_user</span>
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a><span class="n">Recommender</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">target_item_for_semantic</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3755,29 +3828,29 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 <hr />
 <h3 id="nextbestaction"><code>NextBestAction</code><a class="headerlink" href="#nextbestaction" title="Permanent link">&para;</a></h3>
 <p>Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span>
-</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>
-</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a><span class="n">NextBestAction</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_embeddings</span><span class="p">:</span> <span class="s1">&#39;np.ndarray | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span>
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>
+</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a><span class="n">NextBestAction</span><span class="p">(</span><span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_embeddings</span><span class="p">:</span> <span class="s1">&#39;np.ndarray | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 <h4 id="nextbestactionpredict_next_chunk"><code>NextBestAction.predict_next_chunk</code><a class="headerlink" href="#nextbestactionpredict_next_chunk" title="Permanent link">&para;</a></h4>
 <p>Batch-rank the next best products for every user in <em>user_history_df</em>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">predict_next_chunk</span>
-</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>
-</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">predict_next_chunk</span>
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>
+</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">predict_next_chunk</span><span class="p">(</span><span class="n">user_history_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
 </span></code></pre></div>
 <hr />
 <h4 id="nextbestactionrecommend_for_cart"><code>NextBestAction.recommend_for_cart</code><a class="headerlink" href="#nextbestactionrecommend_for_cart" title="Permanent link">&para;</a></h4>
 <p>Suggest items to add to an active cart using association rules.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_cart</span>
-</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>
-</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">cart_items</span><span class="p">:</span> <span class="s1">&#39;list[int]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;list[int]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_cart</span>
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>
+</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">cart_items</span><span class="p">:</span> <span class="s1">&#39;list[int]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;list[int]&#39;</span>
 </span></code></pre></div>
 <hr />
 <h4 id="nextbestactionrecommend_for_user"><code>NextBestAction.recommend_for_user</code><a class="headerlink" href="#nextbestactionrecommend_for_user" title="Permanent link">&para;</a></h4>
 <p>Top-N recommendations for a user via Hybrid ALS + Semantic.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_user</span>
-</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>
-</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">target_item_for_semantic</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_user</span>
+</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>
+</span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a><span class="n">NextBestAction</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">target_item_for_semantic</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3817,18 +3890,18 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 <h3 id="score_potential"><code>score_potential</code><a class="headerlink" href="#score_potential" title="Permanent link">&para;</a></h3>
 <p>Cross-selling potential scores — shape <code>(n_users, n_items)</code> or <code>(n_users, len(target_categories))</code>.</p>
 <p>Items the user has already interacted with are masked to <code>-inf</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
-</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>
-</span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a><span class="n">score_potential</span><span class="p">(</span><span class="n">user_history</span><span class="p">:</span> <span class="s1">&#39;list[list[int]]&#39;</span><span class="p">,</span> <span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS&#39;</span><span class="p">,</span> <span class="n">target_categories</span><span class="p">:</span> <span class="s1">&#39;list[int] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;np.ndarray&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommend</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
+</span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>
+</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="n">score_potential</span><span class="p">(</span><span class="n">user_history</span><span class="p">:</span> <span class="s1">&#39;list[list[int]]&#39;</span><span class="p">,</span> <span class="n">als_model</span><span class="p">:</span> <span class="s1">&#39;ALS&#39;</span><span class="p">,</span> <span class="n">target_categories</span><span class="p">:</span> <span class="s1">&#39;list[int] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;np.ndarray&#39;</span>
 </span></code></pre></div>
 <hr />
 <h3 id="similar_items"><code>similar_items</code><a class="headerlink" href="#similar_items" title="Permanent link">&para;</a></h3>
 <p>Find the most similar items to a given item ID based on latent factors.</p>
 <p>Computes cosine similarity between the specified item's latent vector
 and all other item vectors in the <code>item_factors</code> matrix.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
-</span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>
-</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">SupportsItemFactors</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
+</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>
+</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">SupportsItemFactors</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3879,9 +3952,9 @@ and all other item vectors in the <code>item_factors</code> matrix.</p>
 <p>Substitute/cannibalizing products via negative association rules.</p>
 <p>Items with high individual support but low co-occurrence (lift &lt; 1.0)
 likely cannibalize each other.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_substitutes</span>
-</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>
-</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a><span class="n">find_substitutes</span><span class="p">(</span><span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">max_lift</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_substitutes</span>
+</span><span id="__span-54-2"><a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>
+</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="n">find_substitutes</span><span class="p">(</span><span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">max_lift</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3925,9 +3998,9 @@ likely cannibalize each other.</p>
 <hr />
 <h3 id="customer_saturation"><code>customer_saturation</code><a class="headerlink" href="#customer_saturation" title="Permanent link">&para;</a></h3>
 <p>Customer saturation by unique items/categories bought, split into deciles.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_saturation</span>
-</span><span id="__span-54-2"><a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>
-</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="n">customer_saturation</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">category_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_saturation</span>
+</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>
+</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="n">customer_saturation</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">category_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3980,12 +4053,12 @@ likely cannibalize each other.</p>
 </table>
 <hr />
 <h3 id="export_item_factors"><code>export_item_factors</code><a class="headerlink" href="#export_item_factors" title="Permanent link">&para;</a></h3>
-<p>Exports latent item factors as a Pandas DataFrame for Vector DBs.</p>
+<p>Exports latent item factors as a DataFrame for Vector DBs.</p>
 <p>This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_item_factors</span>
-</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>
-</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s1">&#39;SupportsItemFactors&#39;</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;pd.DataFrame&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_item_factors</span>
+</span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>
+</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">SupportsItemFactors</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;pandas&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4007,6 +4080,16 @@ Retrieval-Augmented Generation (RAG) and semantic search.</p>
 <td>bool, default=True</td>
 <td>Whether to include the string item labels (if available from the model's fitting method).</td>
 </tr>
+<tr>
+<td>normalize</td>
+<td>bool, default=False</td>
+<td>Whether to L2-normalize the factors before export.</td>
+</tr>
+<tr>
+<td>format</td>
+<td>str, default="pandas"</td>
+<td>The DataFrame format to return. One of "pandas", "polars", or "spark".</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Returns</strong></p>
@@ -4020,17 +4103,17 @@ Retrieval-Augmented Generation (RAG) and semantic search.</p>
 </thead>
 <tbody>
 <tr>
-<td>pd.DataFrame</td>
+<td>Any</td>
 <td></td>
 <td>A DataFrame where each row is an item with columns <code>item_id</code>, optionally <code>item_label</code>, and <code>vector</code> (a dense 1-D numpy array of the item's latent factors).</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Examples</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
-</span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="c1"># Ingest into FAISS / Pinecone / Qdrant</span>
-</span><span id="__span-56-4"><a id="__codelineno-56-4" name="__codelineno-56-4" href="#__codelineno-56-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;vector&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">model</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</span><span id="__span-57-3"><a id="__codelineno-57-3" name="__codelineno-57-3" href="#__codelineno-57-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="c1"># Ingest into FAISS / Pinecone / Qdrant</span>
+</span><span id="__span-57-4"><a id="__codelineno-57-4" name="__codelineno-57-4" href="#__codelineno-57-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;vector&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="visualization-rusketviz">Visualization (<code>rusket.viz</code>)<a class="headerlink" href="#visualization-rusketviz" title="Permanent link">&para;</a></h2>
@@ -4043,9 +4126,9 @@ parameter (typically lift or confidence).</p>
 <p>This is extremely useful for running community detection algorithms
 (e.g., Louvain, Girvan-Newman) to automatically discover <strong>product clusters</strong>,
 or for visualising cross-selling patterns as a force-directed graph.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span>
-</span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a>
-</span><span id="__span-57-3"><a id="__codelineno-57-3" name="__codelineno-57-3" href="#__codelineno-57-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">source_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;antecedents&#39;</span><span class="p">,</span> <span class="n">target_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;consequents&#39;</span><span class="p">,</span> <span class="n">edge_attr</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;lift&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;networkx.DiGraph&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span>
+</span><span id="__span-58-2"><a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a>
+</span><span id="__span-58-3"><a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">:</span> <span class="s1">&#39;pd.DataFrame&#39;</span><span class="p">,</span> <span class="n">source_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;antecedents&#39;</span><span class="p">,</span> <span class="n">target_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;consequents&#39;</span><span class="p">,</span> <span class="n">edge_attr</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;lift&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;networkx.DiGraph&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4103,11 +4186,11 @@ When multiple rules produce the same directed edge, only the highest-weight
 rule is retained.</p>
 </blockquote>
 <p><strong>Examples</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
-</span><span id="__span-58-2"><a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">G</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
-</span><span id="__span-58-3"><a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="c1"># Community detection with networkx</span>
-</span><span id="__span-58-4"><a id="__codelineno-58-4" name="__codelineno-58-4" href="#__codelineno-58-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">networkx.algorithms.community</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx_comm</span>
-</span><span id="__span-58-5"><a id="__codelineno-58-5" name="__codelineno-58-5" href="#__codelineno-58-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">communities</span> <span class="o">=</span> <span class="n">nx_comm</span><span class="o">.</span><span class="n">greedy_modularity_communities</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-59-2"><a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">G</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
+</span><span id="__span-59-3"><a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="c1"># Community detection with networkx</span>
+</span><span id="__span-59-4"><a id="__codelineno-59-4" name="__codelineno-59-4" href="#__codelineno-59-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">networkx.algorithms.community</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx_comm</span>
+</span><span id="__span-59-5"><a id="__codelineno-59-5" name="__codelineno-59-5" href="#__codelineno-59-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">communities</span> <span class="o">=</span> <span class="n">nx_comm</span><span class="o">.</span><span class="n">greedy_modularity_communities</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">())</span>
 </span></code></pre></div>
 <hr />
 <h2 id="distributed-spark-api-rusketspark">Distributed Spark API (<code>rusket.spark</code>)<a class="headerlink" href="#distributed-spark-api-rusketspark" title="Permanent link">&para;</a></h2>
@@ -4118,9 +4201,9 @@ rule is retained.</p>
 <code>rusket.mine</code> to each group concurrently across the cluster.</p>
 <p>It assumes the input PySpark DataFrame is formatted like a dense
 boolean matrix (One-Hot Encoded) per group, where rows are transactions.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span>
-</span><span id="__span-59-2"><a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a>
-</span><span id="__span-59-3"><a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_support</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">use_colnames</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span>
+</span><span id="__span-60-2"><a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>
+</span><span id="__span-60-3"><a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">mine_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_support</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">use_colnames</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4186,9 +4269,9 @@ boolean matrix (One-Hot Encoded) per group, where rows are transactions.</p>
 <p>Distribute Association Rule Mining across PySpark partitions.</p>
 <p>This takes the frequent itemsets DataFrame (output of <code>mine_grouped</code>)
 and applies <code>association_rules</code> uniformly across the groups.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span>
-</span><span id="__span-60-2"><a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>
-</span><span id="__span-60-3"><a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="p">:</span> <span class="s1">&#39;dict[Any, int] | int&#39;</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;confidence&#39;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span>
+</span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a>
+</span><span id="__span-61-3"><a id="__codelineno-61-3" name="__codelineno-61-3" href="#__codelineno-61-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">rules_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="p">:</span> <span class="s1">&#39;dict[Any, int] | int&#39;</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;confidence&#39;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4249,9 +4332,9 @@ and applies <code>association_rules</code> uniformly across the groups.</p>
 <p>Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.</p>
 <p>This function groups a PySpark DataFrame by <code>group_col</code> and applies
 <code>PrefixSpan.from_transactions</code> to each group concurrently across the cluster.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">prefixspan_grouped</span>
-</span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a>
-</span><span id="__span-61-3"><a id="__codelineno-61-3" name="__codelineno-61-3" href="#__codelineno-61-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">prefixspan_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">time_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_support</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">prefixspan_grouped</span>
+</span><span id="__span-62-2"><a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a>
+</span><span id="__span-62-3"><a id="__codelineno-62-3" name="__codelineno-62-3" href="#__codelineno-62-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">prefixspan_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">time_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_support</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4322,9 +4405,9 @@ and applies <code>association_rules</code> uniformly across the groups.</p>
 <p>Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.</p>
 <p>This function groups a PySpark DataFrame by <code>group_col</code> and applies
 <code>HUPM.from_transactions</code> to each group concurrently across the cluster.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">hupm_grouped</span>
-</span><span id="__span-62-2"><a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a>
-</span><span id="__span-62-3"><a id="__codelineno-62-3" name="__codelineno-62-3" href="#__codelineno-62-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">hupm_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">utility_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_utility</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">hupm_grouped</span>
+</span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a>
+</span><span id="__span-63-3"><a id="__codelineno-63-3" name="__codelineno-63-3" href="#__codelineno-63-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">hupm_grouped</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">group_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">transaction_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">item_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">utility_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">min_utility</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4395,9 +4478,9 @@ and applies <code>association_rules</code> uniformly across the groups.</p>
 <p>Distribute Batch Recommendations across PySpark partitions.</p>
 <p>This function uses <code>mapInArrow</code> to process partitions of users concurrently,
 applying a pre-fitted <code>Recommender</code> (or <code>ALS</code>) to each chunk.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span>
-</span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a>
-</span><span id="__span-63-3"><a id="__codelineno-63-3" name="__codelineno-63-3" href="#__codelineno-63-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span>
+</span><span id="__span-64-2"><a id="__codelineno-64-2" name="__codelineno-64-2" href="#__codelineno-64-2"></a>
+</span><span id="__span-64-3"><a id="__codelineno-64-3" name="__codelineno-64-3" href="#__codelineno-64-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">recommend_batches</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">user_col</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4451,9 +4534,9 @@ applying a pre-fitted <code>Recommender</code> (or <code>ALS</code>) to each chu
 <hr />
 <h3 id="rusketsparkto_spark"><code>rusket.spark.to_spark</code><a class="headerlink" href="#rusketsparkto_spark" title="Permanent link">&para;</a></h3>
 <p>Convert a Pandas or Polars DataFrame into a PySpark DataFrame.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">to_spark</span>
-</span><span id="__span-64-2"><a id="__codelineno-64-2" name="__codelineno-64-2" href="#__codelineno-64-2"></a>
-</span><span id="__span-64-3"><a id="__codelineno-64-3" name="__codelineno-64-3" href="#__codelineno-64-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">to_spark</span><span class="p">(</span><span class="n">spark_session</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.spark</span><span class="w"> </span><span class="kn">import</span> <span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">to_spark</span>
+</span><span id="__span-65-2"><a id="__codelineno-65-2" name="__codelineno-65-2" href="#__codelineno-65-2"></a>
+</span><span id="__span-65-3"><a id="__codelineno-65-3" name="__codelineno-65-3" href="#__codelineno-65-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">spark</span><span class="o">.</span><span class="n">to_spark</span><span class="p">(</span><span class="n">spark_session</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>

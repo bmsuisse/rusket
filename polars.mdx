@@ -30,7 +30,7 @@ The `fpgrowth` function detects Polars DataFrames automatically — no extra par
 
 ```python
 import polars as pl
-from rusket import fpgrowth, association_rules
+from rusket import AutoMiner
 
 # Build a Polars one-hot DataFrame
 df = pl.DataFrame({
@@ -40,7 +40,8 @@ df = pl.DataFrame({
 })
 
 # Mine frequent itemsets — identical call as with pandas
-freq = fpgrowth(df, min_support=0.5, use_colnames=True)
+model = AutoMiner(df, min_support=0.5)
+freq = model.mine(use_colnames=True)
 print(freq)
 #    support          itemsets
 # 0     0.75          (milk,)
@@ -48,13 +49,12 @@ print(freq)
 # ...
 
 # association_rules always returns a pandas DataFrame
-rules = association_rules(freq, num_itemsets=len(df), metric="lift", min_threshold=1.0)
+rules = model.association_rules(metric="lift", min_threshold=1.0)
 print(rules)
 ```
 
 <Note>
-`fpgrowth` always returns a **pandas DataFrame**, regardless of input type.
-`association_rules` also returns a **pandas DataFrame**.
+`AutoMiner` always returns a **pandas DataFrame**, regardless of input type.
 </Note>
 
 ---
@@ -69,8 +69,8 @@ Polars DataFrame
     ▼  df.to_numpy()  (zero-copy for bool/int dtypes)
 numpy uint8 array
     │
-    ▼  fpgrowth_from_dense()  (Rust, PyO3 ReadonlyArray2<u8>)
-Rust FP-Tree mining
+    ▼  AutoMiner.from_transactions(...)  (Rust, PyO3 ReadonlyArray2<u8>)
+Rust FP-Tree / Eclat mining
     │
     ▼
 pandas DataFrame  [support, itemsets]
@@ -91,8 +91,8 @@ No intermediate Python object creation occurs between the Polars input and the R
 | Categorical / String | ❌ (pre-encode with `get_dummies`) |
 
 <Tip>
-**Lazy frames** — pass `.collect()` before calling `fpgrowth` if you have a `LazyFrame`:
+**Lazy frames** — pass `.collect()` before passing it to `AutoMiner` if you have a `LazyFrame`:
 ```python
-freq = fpgrowth(lazy_df.collect(), min_support=0.3, use_colnames=True)
+freq = AutoMiner(lazy_df.collect(), min_support=0.3).mine(use_colnames=True)
 ```
 </Tip>
