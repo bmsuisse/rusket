@@ -8,86 +8,16 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 
-// SIMD optimized dot with explicit chunks for 64-bit vectors
+// SIMD optimized dot using standard library zip iterators for optimal autovectorization
 #[inline(always)]
 fn dot_f32(a: &[f32], b: &[f32]) -> f32 {
-    let mut sum = 0.0;
-    let mut i = 0;
-    while i + 16 <= a.len() {
-        sum += a[i] * b[i] 
-             + a[i + 1] * b[i + 1] 
-             + a[i + 2] * b[i + 2] 
-             + a[i + 3] * b[i + 3] 
-             + a[i + 4] * b[i + 4] 
-             + a[i + 5] * b[i + 5] 
-             + a[i + 6] * b[i + 6] 
-             + a[i + 7] * b[i + 7]
-             + a[i + 8] * b[i + 8]
-             + a[i + 9] * b[i + 9]
-             + a[i + 10] * b[i + 10]
-             + a[i + 11] * b[i + 11]
-             + a[i + 12] * b[i + 12]
-             + a[i + 13] * b[i + 13]
-             + a[i + 14] * b[i + 14]
-             + a[i + 15] * b[i + 15];
-        i += 16;
-    }
-    while i + 8 <= a.len() {
-        sum += a[i] * b[i] 
-             + a[i + 1] * b[i + 1] 
-             + a[i + 2] * b[i + 2] 
-             + a[i + 3] * b[i + 3] 
-             + a[i + 4] * b[i + 4] 
-             + a[i + 5] * b[i + 5] 
-             + a[i + 6] * b[i + 6] 
-             + a[i + 7] * b[i + 7];
-        i += 8;
-    }
-    while i < a.len() {
-        sum += a[i] * b[i];
-        i += 1;
-    }
-    sum
+    a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
 }
 
-// SIMD optimized axpy with explicit chunks
+// SIMD optimized axpy using standard library zip iterators
 #[inline(always)]
 fn axpy_f32(alpha: f32, x: &[f32], y: &mut [f32]) {
-    let mut i = 0;
-    while i + 16 <= x.len() {
-        y[i] += alpha * x[i];
-        y[i + 1] += alpha * x[i + 1];
-        y[i + 2] += alpha * x[i + 2];
-        y[i + 3] += alpha * x[i + 3];
-        y[i + 4] += alpha * x[i + 4];
-        y[i + 5] += alpha * x[i + 5];
-        y[i + 6] += alpha * x[i + 6];
-        y[i + 7] += alpha * x[i + 7];
-        y[i + 8] += alpha * x[i + 8];
-        y[i + 9] += alpha * x[i + 9];
-        y[i + 10] += alpha * x[i + 10];
-        y[i + 11] += alpha * x[i + 11];
-        y[i + 12] += alpha * x[i + 12];
-        y[i + 13] += alpha * x[i + 13];
-        y[i + 14] += alpha * x[i + 14];
-        y[i + 15] += alpha * x[i + 15];
-        i += 16;
-    }
-    while i + 8 <= x.len() {
-        y[i] += alpha * x[i];
-        y[i + 1] += alpha * x[i + 1];
-        y[i + 2] += alpha * x[i + 2];
-        y[i + 3] += alpha * x[i + 3];
-        y[i + 4] += alpha * x[i + 4];
-        y[i + 5] += alpha * x[i + 5];
-        y[i + 6] += alpha * x[i + 6];
-        y[i + 7] += alpha * x[i + 7];
-        i += 8;
-    }
-    while i < x.len() {
-        y[i] += alpha * x[i];
-        i += 1;
-    }
+    y.iter_mut().zip(x.iter()).for_each(|(yi, &xi)| *yi += alpha * xi);
 }
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
@@ -159,9 +89,8 @@ fn solve_one_side_cg(
                 }
                 for idx in start..end {
                     let i = indices[idx] as usize;
-                    let c = 1.0 + alpha * data[idx];
                     let yi = &other[i * k..(i + 1) * k];
-                    let w = (c - 1.0) * dot_f32(yi, v);
+                    let w = alpha * data[idx] * dot_f32(yi, v);
                     axpy_f32(w, yi, out);
                 }
             };
