@@ -1372,6 +1372,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - als_model references in Recommender docs and test setups
 - add tabulate to dev dependencies for mkdocs
+- keep _orig_type resolution before to_dataframe data coercion
 
 ### 📦 Miscellaneous
 
