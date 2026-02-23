@@ -1043,40 +1043,51 @@
 </tbody>
 </table>
 <h2 id="why-rusket">Why rusket?<a class="headerlink" href="#why-rusket" title="Permanent link">&para;</a></h2>
+<p><strong>Zero runtime dependencies.</strong> No TensorFlow, no PyTorch, no JVM — just <code>pip install rusket</code>. The entire engine is compiled Rust (~3 MB wheel).</p>
 <table>
 <thead>
 <tr>
 <th>Feature</th>
 <th>rusket</th>
+<th>LibRecommender</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Speed (medium dataset)</td>
-<td><strong>~0.4 s</strong></td>
+<td><strong>Runtime deps</strong></td>
+<td><strong>0</strong></td>
+<td>TF + PyTorch + gensim (~2 GB)</td>
 </tr>
 <tr>
-<td>Memory (large dataset)</td>
-<td>~3 s</td>
+<td><strong>ALS fit (ML-100k)</strong></td>
+<td><strong>427 ms</strong></td>
+<td>1,324 ms (3.1× slower)</td>
 </tr>
 <tr>
-<td>Polars support</td>
-<td>✅</td>
+<td><strong>BPR fit (ML-100k)</strong></td>
+<td><strong>33 ms</strong></td>
+<td>681 ms (20.4× slower)</td>
 </tr>
 <tr>
-<td>Sparse DataFrame support</td>
-<td>✅</td>
+<td><strong>ItemKNN fit (ML-100k)</strong></td>
+<td><strong>55 ms</strong></td>
+<td>287 ms (5.2× slower)</td>
 </tr>
 <tr>
-<td>Zero Python dependencies</td>
-<td>✅ (<code>numpy</code>, <code>pandas</code>)</td>
+<td>Polars / Spark support</td>
+<td>✅ / ✅</td>
+<td>❌ / ❌</td>
 </tr>
 <tr>
-<td>12 association metrics</td>
-<td>✅</td>
+<td>Pattern Mining</td>
+<td>FP-Growth, Eclat, HUPM, PrefixSpan</td>
+<td>❌</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>Benchmarks: <code>pytest-benchmark</code>, 5 rounds, warmed up, GC disabled. MovieLens 100k.</p>
+</blockquote>
 <h2 id="quick-example-frequently-bought-together">Quick Example — "Frequently Bought Together"<a class="headerlink" href="#quick-example-frequently-bought-together" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoMiner</span>

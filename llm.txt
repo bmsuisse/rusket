@@ -1360,6 +1360,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add Kosarak regression test, Rust unit tests for association_rules, and benchmark vs arm-rs
 - Introduce SVD model, standardize `verbose` and `seed` parameters, and optimize imports across modules.
 - Refactor benchmarks, add new comparison benchmarks, enhance SVD API with type hints and `fitted` property, and expand documentation and test coverage.
+- add SVD model, LibRecommender benchmarks, zero-dep messaging
 
 ### 🐛 Bug Fixes
 
