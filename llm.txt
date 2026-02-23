@@ -1368,6 +1368,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- add remaining unstaged files from main
+
 ### Test
 
 - extract benchmark and regression tests into a separate workflow
