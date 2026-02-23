@@ -32,7 +32,7 @@ def test_hybrid_recommender():
         ]
     )
 
-    rec = Recommender(als_model=model, item_embeddings=embeddings)
+    rec = Recommender(model=model, item_embeddings=embeddings)
 
     # User 0 saw [0, 1, 2].
     # Semantic: anchor on item 0 -> [1,0]
