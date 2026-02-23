@@ -1368,6 +1368,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Style
+
+- apply ruff formatting
+
 ### 📦 Miscellaneous
 
 - add remaining unstaged files from main
