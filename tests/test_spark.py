@@ -392,8 +392,9 @@ def test_mine_auto_spark_returns_spark(spark_session) -> None:
 
     df = pd.DataFrame(
         {
-            "txn": [1, 1, 1, 2, 2, 3, 3],
-            "item": ["bread", "milk", "butter", "bread", "eggs", "milk", "eggs"],
+            "bread": [True, True, False, True, True, True, True],
+            "milk": [True, True, True, False, True, True, True],
+            "butter": [True, False, True, True, False, True, True],
         }
     )
     spark_df = to_spark(spark_session, df)

@@ -46,6 +46,7 @@ def from_transactions(
     item_col: str | None = ...,
     min_item_count: int = ...,
     verbose: int = ...,
+    verbose: int = ...,
 ) -> SparkDataFrame: ...
 
 
@@ -201,6 +202,7 @@ def from_spark(
     transaction_col: str | None = None,
     item_col: str | None = None,
     min_item_count: int = 1,
+    verbose: int = 0,
 ) -> SparkDataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count)

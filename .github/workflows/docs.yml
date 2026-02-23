@@ -59,6 +59,9 @@ jobs:
       - name: Rebuild llm.txt
         run: uv run python scripts/gen_llm_txt.py
 
+      - name: Evaluate doc snippets and generate Markdown tables
+        run: uv run python scripts/eval_doc_snippets.py
+
       # ── Benchmarks ───────────────────────────────────────────────────
       - name: Generate Scale Benchmark
         run: uv run python benchmarks/bench_scale.py

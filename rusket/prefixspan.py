@@ -20,7 +20,7 @@ class PrefixSpan(Miner):
     def __init__(
         self,
         data: list[list[int]],
-        min_support: int,
+        min_support: int | float,
         max_len: int | None = None,
         item_mapping: dict[int, Any] | None = None,
     ):

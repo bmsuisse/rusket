@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusket"
-version = "0.1.41"
+version = "0.1.42"
 description = "Ultra-fast Recommender Engines & Market Basket Analysis for Python, written in Rust."
 readme = "README.md"
 license = "MIT"

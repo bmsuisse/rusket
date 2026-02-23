@@ -54,8 +54,16 @@ model = AutoMiner(receipts, min_support=0.4)
 freq = model.mine(use_colnames=True)
 rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "confidence", "lift"]]
-      .sort_values("lift", ascending=False))
+      .sort_values("lift", ascending=False).to_markdown(index=False))
 ```
+
+<!-- output -->
+
+| antecedents           | consequents           |   confidence |   lift |
+|:----------------------|:----------------------|-------------:|-------:|
+| frozenset({'coffee'}) | frozenset({'eggs'})   |         1    |    1.5 |
+| frozenset({'eggs'})   | frozenset({'coffee'}) |         0.75 |    1.5 |
+<!-- /output -->
 
 ---
 

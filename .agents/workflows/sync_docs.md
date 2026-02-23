@@ -24,15 +24,20 @@ uv run python scripts/gen_api_reference.py
 uv run python scripts/gen_llm_txt.py
 ```
 
-4. Verify the MkDocs build passes without errors:
+4. Evaluate Python snippets in documentation and generate markdown tables:
+```
+uv run python scripts/eval_doc_snippets.py
+```
+
+5. Verify the MkDocs build passes without errors:
 ```
 uv run mkdocs build --strict
 ```
 
-5. (Optional) Preview locally:
+6. (Optional) Preview locally:
 ```
 uv run mkdocs serve
 ```
 
-If step 4 fails, check the output for broken links or malformed markdown.
+If step 5 fails, check the output for broken links or malformed markdown.
 The most common cause is a new public symbol added without a docstring.
