@@ -77,9 +77,18 @@ class RuleMinerMixin:
             return empty_df
 
         # self._num_itemsets must be set by Model.__init__
+        num_itemsets = getattr(self, "_num_itemsets", None)
+        if num_itemsets is None:
+            try:
+                num_itemsets = len(df_freq)
+            except TypeError:
+                num_itemsets = getattr(df_freq, "height", None)
+                if num_itemsets is None:
+                    num_itemsets = df_freq.count() if hasattr(df_freq, "count") else 0
+
         result_df = _assoc_rules(
             df_freq,
-            num_itemsets=getattr(self, "_num_itemsets", len(df_freq)),
+            num_itemsets=num_itemsets,
             metric=metric,
             min_threshold=min_threshold,
             return_metrics=return_metrics,
