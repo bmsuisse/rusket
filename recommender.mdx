@@ -104,14 +104,15 @@ top_customers, scores = als.recommend_users(item_id="D33", n=100)
 Blend **Collaborative Filtering** (ALS/BPR) with **Association Rules** to handle both the personalised homepage and the active shopping cart in a single engine.
 
 ```python
-from rusket import ALS, Recommender, mine, association_rules
+from rusket import ALS, AutoMiner, Recommender
 
 # 1. Personalised model trained on full purchase history
 als  = ALS(factors=64, iterations=15).fit(user_item_csr)
 
 # 2. Association rules mined from basket data
-freq  = mine(basket_ohe, min_support=0.01)
-rules = association_rules(freq, num_itemsets=n_receipts)
+model = AutoMiner(basket_ohe, min_support=0.01)
+freq  = model.mine()
+rules = model.association_rules()
 
 # 3. Combine into one engine
 rec = Recommender(als_model=als, rules_df=rules)
@@ -169,12 +170,12 @@ batch.to_parquet("s3://data-lake/recommendations/daily_picks.parquet")
 For anonymous visitors (no login, no history), fall back to latent-space item similarity:
 
 ```python
-from rusket import similar_items, ALS
+from rusket import ALS
 
 als = ALS(factors=128).fit(interactions)
 
 # Customer is viewing product B22 (a coffee grinder)
-similar_skus, similarity_scores = similar_items(als, item_id="B22", n=4)
+similar_skus, similarity_scores = als.similar_items(item_id="B22", n=4)
 print(similar_skus)      # → ["B25", "B18", "C10", "D05"]
 print(similarity_scores) # → [0.97, 0.93, 0.89, 0.84]
 ```
@@ -260,10 +261,8 @@ saturation = customer_saturation(
 Export ALS/BPR item factors as embeddings, ready for FAISS, Qdrant, or Pinecone — connect your recommender to a Generative AI retrieval pipeline:
 
 ```python
-from rusket import export_item_factors
-
 # Each row: one SKU, columns = latent dimensions
-df_vectors = export_item_factors(als, include_labels=True)
+df_vectors = als.export_item_factors(include_labels=True)
 
 # Write directly to your vector store
 import lancedb

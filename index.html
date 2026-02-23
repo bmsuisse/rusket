@@ -391,34 +391,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="./migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Migration from mlxtend
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1072,45 +1044,38 @@
 <tr>
 <th>Feature</th>
 <th>rusket</th>
-<th>mlxtend</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Speed (medium dataset)</td>
 <td><strong>~0.4 s</strong></td>
-<td>~4 s</td>
 </tr>
 <tr>
 <td>Memory (large dataset)</td>
 <td>~3 s</td>
-<td>OOM</td>
 </tr>
 <tr>
 <td>Polars support</td>
 <td>✅</td>
-<td>❌</td>
 </tr>
 <tr>
 <td>Sparse DataFrame support</td>
 <td>✅</td>
-<td>⚠️ limited</td>
 </tr>
 <tr>
 <td>Zero Python dependencies</td>
 <td>✅ (<code>numpy</code>, <code>pandas</code>)</td>
-<td>❌ (many)</td>
 </tr>
 <tr>
 <td>12 association metrics</td>
-<td>✅</td>
 <td>✅</td>
 </tr>
 </tbody>
 </table>
 <h2 id="quick-example-frequently-bought-together">Quick Example — "Frequently Bought Together"<a class="headerlink" href="#quick-example-frequently-bought-together" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">mine</span><span class="p">,</span> <span class="n">association_rules</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoMiner</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">receipts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="s2">&quot;milk&quot;</span><span class="p">:</span>    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
@@ -1120,12 +1085,11 @@
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="s2">&quot;coffee&quot;</span><span class="p">:</span>  <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">},</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">mine</span><span class="p">(</span><span class="n">receipts</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">association_rules</span><span class="p">(</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">freq</span><span class="p">,</span> <span class="n">num_itemsets</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">receipts</span><span class="p">),</span> <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="o">=</span><span class="mf">0.6</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="nb">print</span><span class="p">(</span><span class="n">rules</span><span class="p">[[</span><span class="s2">&quot;antecedents&quot;</span><span class="p">,</span> <span class="s2">&quot;consequents&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="s2">&quot;lift&quot;</span><span class="p">]]</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>      <span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;lift&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">model</span> <span class="o">=</span> <span class="n">AutoMiner</span><span class="p">(</span><span class="n">receipts</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">use_colnames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">association_rules</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="n">min_threshold</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="nb">print</span><span class="p">(</span><span class="n">rules</span><span class="p">[[</span><span class="s2">&quot;antecedents&quot;</span><span class="p">,</span> <span class="s2">&quot;consequents&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="s2">&quot;lift&quot;</span><span class="p">]]</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>      <span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;lift&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 </span></code></pre></div>
 <hr />
 <ul>
