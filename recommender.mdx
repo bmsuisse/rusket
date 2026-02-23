@@ -115,7 +115,7 @@ freq  = model.mine()
 rules = model.association_rules()
 
 # 3. Combine into one engine
-rec = Recommender(als_model=als, rules_df=rules)
+rec = Recommender(model=als, rules_df=rules)
 ```
 
 ### 1. Personalised homepage ("For You")
@@ -131,7 +131,7 @@ print(f"Homepage picks for customer 1001: {items}")
 When you have product description vectors (e.g. from a sentence-transformer model or your PIM), blend semantic similarity into the CF score:
 
 ```python
-rec = Recommender(als_model=als, rules_df=rules, item_embeddings=product_vectors)
+rec = Recommender(model=als, rules_df=rules, item_embeddings=product_vectors)
 
 # alpha=0.7 → 70% CF preference signal + 30% product similarity
 items, scores = rec.recommend_for_user(
@@ -208,7 +208,7 @@ accessory_skus = [60, 61, 62]  # descaler, portafilter, tamper
 # Already-purchased items are masked to -∞ so they never appear in rankings
 potential = score_potential(
     user_history=purchase_histories,
-    als_model=als,
+    model=als,
     target_categories=accessory_skus,
 )
 

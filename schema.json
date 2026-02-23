@@ -58,7 +58,7 @@
     "prefixspan": {
       "parameters": {
         "sequences": "list[list[int]]",
-        "min_support": "int",
+        "min_support": "int | float",
         "max_len": "int | None"
       },
       "returns": "pd.DataFrame",
@@ -170,7 +170,8 @@
         "df": "SparkDataFrame",
         "transaction_col": "str | None",
         "item_col": "str | None",
-        "min_item_count": "int"
+        "min_item_count": "int",
+        "verbose": "int"
       },
       "returns": "SparkDataFrame",
       "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."
@@ -178,7 +179,7 @@
     "score_potential": {
       "parameters": {
         "user_history": "list[list[int]]",
-        "als_model": "ALS",
+        "model": "Any",
         "target_categories": "list[int] | None"
       },
       "returns": "np.ndarray",
@@ -306,7 +307,7 @@
         "__init__": {
           "parameters": {
             "data": "list[list[int]]",
-            "min_support": "int",
+            "min_support": "int | float",
             "max_len": "int | None",
             "item_mapping": "dict[int, Any] | None"
           },
@@ -533,7 +534,7 @@
       "methods": {
         "__init__": {
           "parameters": {
-            "als_model": "ALS | None",
+            "model": "Any | None",
             "rules_df": "pd.DataFrame | None",
             "item_embeddings": "np.ndarray | None"
           },
@@ -574,7 +575,7 @@
       "methods": {
         "__init__": {
           "parameters": {
-            "als_model": "ALS | None",
+            "model": "Any | None",
             "rules_df": "pd.DataFrame | None",
             "item_embeddings": "np.ndarray | None"
           },
