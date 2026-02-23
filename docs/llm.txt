@@ -27,7 +27,7 @@ or falls back to FPMiner (streaming) if memory is low.
 ```python
 from rusket.mine import mine
 
-mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -41,7 +41,7 @@ This module-level function relies on the Object-Oriented APIs.
 ```python
 from rusket.fpgrowth import fpgrowth
 
-fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -55,7 +55,7 @@ This module-level function relies on the Object-Oriented APIs.
 ```python
 from rusket.eclat import eclat
 
-eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -156,7 +156,7 @@ sequences_from_event_log(df: 'Any', user_col: 'str', time_col: 'str', item_col: 
 
 | Name | Type | Description |
 | --- | --- | --- |
-| tuple of (sequences, item_mapping) |  | - sequences: The nested list of integers to pass to `prefixspan()`. - item_mapping: A dictionary mapping the integer IDs back to the original item labels. |
+| tuple of (indptr, indices, item_mapping) |  | - indptr: CSR-style index pointer list. - indices: Flattened item index list. - item_mapping: A dictionary mapping the integer IDs back to the original item labels. |
 
 ---
 
@@ -235,7 +235,7 @@ The return type mirrors the input type:
 ```python
 from rusket.transactions import from_transactions
 
-from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'Any'
+from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'Any'
 ```
 
 **Parameters**
@@ -245,6 +245,7 @@ from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', trans
 | data |  | One of:  - **Pandas / Polars / Spark DataFrame** with (at least) two columns: one for the transaction identifier and one for the item. - **List of lists** where each inner list contains the items of a single transaction, e.g. ``[["bread", "milk"], ["bread", "eggs"]]``. |
 | transaction_col |  | Name of the column that identifies transactions.  If ``None`` the first column is used.  Ignored for list-of-lists input. |
 | item_col |  | Name of the column that contains item values.  If ``None`` the second column is used.  Ignored for list-of-lists input. |
+| min_item_count |  | Minimum number of times an item must appear to be included in the resulting one-hot-encoded matrix. Default is 1. |
 
 **Returns**
 
@@ -317,7 +318,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_pandas
 
-from_pandas(df: 'pd.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pd.DataFrame'
+from_pandas(df: 'pd.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
 
 ---
@@ -329,7 +330,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_polars
 
-from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, verbose: 'int' = 0) -> 'pl.DataFrame'
+from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pl.DataFrame'
 ```
 
 ---
@@ -341,7 +342,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_spark
 
-from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None) -> 'SparkDataFrame'
+from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1) -> 'SparkDataFrame'
 ```
 
 ---
@@ -359,7 +360,7 @@ This class wraps the fast, core Rust FP-Growth implementation.
 ```python
 from rusket.fpgrowth import FPGrowth
 
-FPGrowth(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+FPGrowth(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
 
 #### `FPGrowth.mine`
@@ -392,7 +393,7 @@ efficient vertical bitset intersection logic.
 ```python
 from rusket.eclat import Eclat
 
-Eclat(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+Eclat(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
 
 #### `Eclat.mine`
@@ -426,7 +427,7 @@ available memory.
 ```python
 from rusket.mine import AutoMiner
 
-AutoMiner(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = False, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+AutoMiner(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
 
 #### `AutoMiner.mine`
@@ -547,7 +548,7 @@ Process a Parquet file 10 M rows at a time:
 ...     txn = chunk["txn_id"].to_numpy(dtype="int64")
 ...     item = chunk["item_idx"].to_numpy(dtype="int32")
 ...     miner.add_chunk(txn, item)
->>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+>>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=True)
 ```
 
 #### `FPMiner.add_arrow_batch`
@@ -595,7 +596,7 @@ Mine frequent itemsets from all accumulated transactions.
 ```python
 from rusket.streaming import FPMiner.mine
 
-FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = False, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat', 'auto']" = 'auto', verbose: 'int' = 0) -> 'pd.DataFrame'
+FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = True, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat', 'auto']" = 'auto', verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
 
 **Parameters**
@@ -1339,9 +1340,84 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🚀 Features
+
+- handle miner kwargs and preserve DataFrame return types
+- use labels by default in mining algorithms
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🔄 CI/CD
+
+- skip git-auto-commit on tags to prevent race conditions and bump to v0.1.39
+
+### Optimizer
+
+- enhance PySpark toArrow to utilize pandas ArrowDtype
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- resolve u.vlock conflict
+
+### 🔄 CI/CD
+
+- fix detached head for auto-commit and bump to v0.1.37
+- remove experimental python 3.14 to fix pipeline hang and bump to v0.1.38
+
+### 🔄 CI/CD
+
+- add git-auto-commit for ruff format and bump to v0.1.36
+
+### 📦 Miscellaneous
+
+- fix ruff format issues from type ignores and bump to v0.1.35
+
+### 📦 Miscellaneous
+
+- bypass pandas-stubs typing issues for older Python versions and bump to v0.1.34
+
+### 📦 Miscellaneous
+
+- fix Ruff trailing whitespace formatting error in test_fpbase.py, bump to v0.1.33
+
+### 📦 Miscellaneous
+
+- fix PrefixSpan KeyError in test_spark_prefixspan and bump to v0.1.32
+
+### 📦 Miscellaneous
+
+- fix pandas FutureWarning in tests and bump to v0.1.31
+
+### 📦 Miscellaneous
+
+- fix PySpark assertion and Pytest deprecation warnings, bump v0.1.30
+
+### Benchmarks
+
+- add comprehensive benchmark scripts and final report against Python libraries
+- fix missing imports and numpy compatibility, fix ruff lints
+
+### Mining
+
+- optimize prefixspan removing hashmaps and pyo3 object lists for 1.15x speedup
+- optimize prefixspan with zero-copy numpy ffi over pyo3 for 2.05x speedup
+
+### 📦 Miscellaneous
+
+- untrack benchmarking, profile, and recbole test artifacts
+- fix pytest warnings/pyright errors and bump version to v0.1.29
+
+### 📦 Miscellaneous
+
+- bump to v0.1.28, fix typing issues in tests
+
 ### Style
 
 - run ruff format and fix lints
+- Auto-format with Ruff
 
 ### 🐛 Bug Fixes
 
@@ -1354,6 +1430,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - update uv.lock for 0.1.26
+- exclude non-essential files from sdist
+- exclude dev/docs from sdist and wheels
+
+### 🚀 Features
+
+- Add strict UI typings (SupportsItemFactors), classes API filtering, and generated Schema
+- add natively rust-backed evaluation metrics and model selection splitters
 
 ### 📖 Documentation
 
@@ -1890,15 +1973,7 @@ To also enable **Polars** support:
     uv add "rusket[polars]"
     ```
 
-!!! tip "Coming from mlxtend?"
-    rusket is a **drop-in replacement**. In most cases you only need to change your import:
-    ```python
-    # Before
-    from mlxtend.frequent_patterns import fpgrowth, association_rules
-    # After
-    from rusket import mine, association_rules
-    ```
-    See the full [Migration Guide](migration.md) for details.
+
 
 ---
 
@@ -1906,11 +1981,11 @@ To also enable **Polars** support:
 
 ## Step 1 — Prepare your data
 
-`mine` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
+`AutoMiner` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
 
 ```python
 import pandas as pd
-from rusket import from_transactions
+from rusket import AutoMiner
 
 orders = pd.DataFrame({
     "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
@@ -1920,7 +1995,7 @@ orders = pd.DataFrame({
                    "milk", "bread", "eggs", "coffee"],
 })
 
-basket = from_transactions(orders, transaction_col="receipt_id", item_col="product")
+model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
 ```
 
 ---
@@ -1928,45 +2003,27 @@ basket = from_transactions(orders, transaction_col="receipt_id", item_col="produ
 ## Step 2 — Mine frequent product combinations
 
 ```python
-from rusket import mine
-
-freq = mine(basket, min_support=0.4, use_colnames=True)
+freq = model.mine(use_colnames=True)
 print(freq.sort_values("support", ascending=False))
 ```
 
 !!! tip
-    `mine(method="auto")` picks `eclat` for sparse data (density < 0.15) and `fpgrowth` for dense data.
+    `AutoMiner` picks `Eclat` for sparse data (density < 0.15) and `FPGrowth` for dense data.
 
 ---
 
 ## Step 3 — Generate "Frequently Bought Together" rules
 
 ```python
-from rusket import association_rules
-
-rules = association_rules(
-    freq,
-    num_itemsets=len(basket),
-    metric="confidence",
-    min_threshold=0.6,
-)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]])
 ```
 
-!!! note
-    Pass the **total transaction count** (`len(basket)`) as `num_itemsets` so that support-based metrics are computed correctly.
-
 ---
 
-## OOP API — Fluent Pipeline
+## Recommendations
 
 ```python
-from rusket import AutoMiner
-
-model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
-freq  = model.mine(use_colnames=True)
-rules = model.association_rules(metric="lift", min_threshold=1.0)
-
 basket_contents = ["milk", "bread"]
 suggestions = model.recommend_items(basket_contents, n=3)
 ```
@@ -1986,7 +2043,7 @@ for chunk in pd.read_parquet("sales_fact.parquet", chunksize=10_000_000):
     miner.add_chunk(txn, item)
 
 freq  = miner.mine(min_support=0.001, max_len=3)
-rules = association_rules(freq, num_itemsets=miner.n_transactions)
+rules = miner.association_rules()
 ```
 
 !!! tip
@@ -1996,20 +2053,19 @@ rules = association_rules(freq, num_itemsets=miner.n_transactions)
 
 ```python
 from scipy import sparse as sp
-from rusket import mine
+from rusket import AutoMiner
 
 csr = sp.csr_matrix(
     (np.ones(len(receipt_ids), dtype=np.int8), (receipt_ids, sku_indices)),
     shape=(n_receipts, n_skus),
 )
-freq = mine(csr, min_support=0.001, column_names=sku_names)
+freq = AutoMiner(csr).mine(min_support=0.001, column_names=sku_names)
 ```
 
 ---
 
 ## What's Next?
 
-- [Migration from mlxtend](migration.md)
 - [API Reference](api-reference.md)
 - [Polars Support](polars.md)
 - [Recommender Workflows](recommender.md)

@@ -105,3 +105,15 @@ def test_auto_output_matches_input_type():
     df_pl = pl.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]})
     res_pl = rusket.mine(df_pl, min_support=0.5, method="auto")
     assert isinstance(res_pl, pl.DataFrame), f"Expected Polars DataFrame, got {type(res_pl)}"
+
+def test_auto_output_labels_strings():
+    import rusket
+    df_pd = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}).astype(bool)
+    
+    # Test use_colnames=True (default) to get string labels
+    res_labels = rusket.mine(df_pd, min_support=0.5, method="auto", use_colnames=True)
+    assert isinstance(res_labels.iloc[0]["itemsets"][0], str), "Expected string labels!"
+    
+    # Test use_colnames=False to get integer indices
+    res_indices = rusket.mine(df_pd, min_support=0.5, method="auto", use_colnames=False)
+    assert isinstance(res_indices.iloc[0]["itemsets"][0], (int, np.integer)), "Expected integer indices!"

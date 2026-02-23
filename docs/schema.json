@@ -127,6 +127,7 @@
         "data": "DataFrame | Sequence[Sequence[str | int]] | Any",
         "transaction_col": "str | None",
         "item_col": "str | None",
+        "min_item_count": "int",
         "verbose": "int"
       },
       "returns": "Any",
@@ -147,6 +148,7 @@
         "df": "pd.DataFrame",
         "transaction_col": "str | None",
         "item_col": "str | None",
+        "min_item_count": "int",
         "verbose": "int"
       },
       "returns": "pd.DataFrame",
@@ -157,6 +159,7 @@
         "df": "pl.DataFrame",
         "transaction_col": "str | None",
         "item_col": "str | None",
+        "min_item_count": "int",
         "verbose": "int"
       },
       "returns": "pl.DataFrame",
@@ -166,7 +169,8 @@
       "parameters": {
         "df": "SparkDataFrame",
         "transaction_col": "str | None",
-        "item_col": "str | None"
+        "item_col": "str | None",
+        "min_item_count": "int"
       },
       "returns": "SparkDataFrame",
       "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."

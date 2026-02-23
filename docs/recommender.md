@@ -76,11 +76,12 @@ top_customers, scores = als.recommend_users(item_id="D33", n=100)
 ## The Hybrid Recommender
 
 ```python
-from rusket import ALS, Recommender, mine, association_rules
+from rusket import ALS, AutoMiner, Recommender
 
 als  = ALS(factors=64, iterations=15).fit(user_item_csr)
-freq  = mine(basket_ohe, min_support=0.01)
-rules = association_rules(freq, num_itemsets=n_receipts)
+model = AutoMiner(basket_ohe, min_support=0.01)
+freq  = model.mine()
+rules = model.association_rules()
 rec = Recommender(als_model=als, rules_df=rules)
 ```
 
@@ -120,10 +121,10 @@ batch.to_parquet("s3://data-lake/recommendations/daily_picks.parquet")
 ## Item-to-Item Similarity — "You May Also Like"
 
 ```python
-from rusket import similar_items, ALS
+from rusket import ALS
 
 als = ALS(factors=128).fit(interactions)
-similar_skus, similarity_scores = similar_items(als, item_id="B22", n=4)
+similar_skus, similarity_scores = als.similar_items(item_id="B22", n=4)
 ```
 
 !!! note "Latent-space similarity"
@@ -170,9 +171,7 @@ saturation = customer_saturation(
 ## Vector DB Export
 
 ```python
-from rusket import export_item_factors
-
-df_vectors = export_item_factors(als, include_labels=True)
+df_vectors = als.export_item_factors(include_labels=True)
 
 import lancedb
 db    = lancedb.connect("./product_vectors")
