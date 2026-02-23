@@ -19,28 +19,27 @@
 
 **rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.
 
-It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) as a high-performance, drop-in replacement for `mlxtend`. Both functional and OOP APIs are available for seamless integration.
+It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
 ## ✨ Highlights
 
-| | `rusket` | `mlxtend` | `implicit` | `pyspark.ml` |
-|---|---|---|---|---|
-| **Core language** | Rust (PyO3) | Pure Python | Cython / C++ | Scala / Java (JVM) |
-| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | FP-Growth, Apriori | ALS, BPR | ALS, FP-Growth, PrefixSpan |
-| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ | ✅ | ✅ (ALS only) |
-| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
-| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ❌ | ✅ | ✅ |
-| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
-| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ❌ Not supported | ✅ (via PyArrow) |
-| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
-| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ Not supported | ❌ (conversion needed) |
-| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ❌ | ✅ Native distributed |
-| **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded | ✅ OpenMP / Threads | ✅ Spark Cluster |
-| **Memory** | Low (native Rust buffers) | High (Python objects) | Low (C++ arrays) | High (JVM overhead) |
-| **API compatibility** | ✅ Drop-in replacement for `mlxtend` | — | — | — |
-| **Metrics** | 12 built-in metrics | 9 | N/A | Limited |
+| | `rusket` | `implicit` | `pyspark.ml` |
+|---|---|---|---|
+| **Core language** | Rust (PyO3) | Cython / C++ | Scala / Java (JVM) |
+| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ (ALS only) |
+| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ |
+| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ✅ | ✅ |
+| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
+| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ✅ (via PyArrow) |
+| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
+| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ (conversion needed) |
+| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ✅ Native distributed |
+| **Parallel mining** | ✅ Rayon work-stealing | ✅ OpenMP / Threads | ✅ Spark Cluster |
+| **Memory** | Low (native Rust buffers) | Low (C++ arrays) | High (JVM overhead) |
+| **Metrics** | 12 built-in metrics | N/A | Limited |
 
 ---
 
@@ -438,31 +437,6 @@ recs_df.show(5, truncate=False)
 
 ---
 
-### 🔄 Migrating from mlxtend
-
-`rusket` is a **drop-in replacement**. The only API difference is `num_itemsets`:
-
-```diff
-- from mlxtend.frequent_patterns import fpgrowth, association_rules
-+ from rusket import mine, association_rules
-
-- freq  = fpgrowth(df, min_support=0.05, use_colnames=True)
-+ freq  = mine(df, min_support=0.05, use_colnames=True)
-
-- rules = association_rules(freq, metric="lift", min_threshold=1.2)
-+ rules = association_rules(freq, num_itemsets=len(df),             # ← add this
-+                           metric="lift", min_threshold=1.2)
-```
-
-> **Why `num_itemsets`?** This makes support calculation explicit and avoids a hidden internal pandas join that `mlxtend` performs.
-
-**Gotchas:**
-1. Input must be `bool` or `0/1` integers — `rusket` warns if you pass floats
-2. Polars is supported natively — just pass the DataFrame directly
-3. Sparse pandas DataFrames work too — and use much less RAM
-
----
-
 ## 📖 API Reference
 
 ### OOP Class API
@@ -565,7 +539,7 @@ Equivalent to `FPGrowth(...).mine()`. See class table above.
 | `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
 | `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
 | `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
-| `verbose` | `int` | Verbosity level (kept for API compatibility with mlxtend). |
+| `verbose` | `int` | Verbosity level. |
 
 **Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
 
@@ -826,10 +800,10 @@ freq = AutoMiner(csr, item_names=item_names).mine(
 
 ### Real-World Datasets
 
-| Dataset | Transactions | Items | `rusket` | `mlxtend` | Speedup |
-|---------|:----------:|:-----:|:--------:|:---------:|:-------:|
-| [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) | **TIMEOUT** 💥 | ∞ |
-| [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** | 16.2 s | **2×** |
+| Dataset | Transactions | Items | `rusket` |
+|---------|:----------:|:-----:|:--------:|
+| [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) |
+| [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** |
 
 Run benchmarks yourself:
 
@@ -951,8 +925,6 @@ uv run python examples/04_sparse_input.py
 # Large-scale mining (100k+ rows)
 uv run python examples/05_large_scale.py
 
-# mlxtend migration guide
-uv run python examples/06_mlxtend_migration.py
 ```
 
 ---

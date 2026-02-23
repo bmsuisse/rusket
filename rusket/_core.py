@@ -104,50 +104,59 @@ def _run_fpminer_fallback(
     col_names: list[str],
     verbose: int = 0,
 ) -> pd.DataFrame:
-    """Fallback to FPMiner (streaming) when memory is low."""
+    """Fallback to FPMiner (streaming) when memory is low, avoiding slow row loops."""
     if verbose:
+        import time
         print(f"[{time.strftime('%X')}] Low memory detected! Falling back to FPMiner (streaming)...")
 
     from .streaming import FPMiner
-
     n_items = len(col_names)
     miner = FPMiner(n_items=n_items)
 
-    # Convert to numpy chunk by chunk or as a whole if it's already an array
-    # For now, we reuse the existing data since it's already in memory,
-    # but we feed it to the streaming miner which is more memory-efficient
-    # than the recursive FP-tree construction in some cases.
-    # To TRULY save memory, we should iterate over the input, but here the input
-    # is already in memory. The fallback is mostly to avoid the Peak RAM spike
-    # of the FP-tree building.
-
     import numpy as np
     import pandas as pd
-    import polars as pl
 
-    if isinstance(df, pd.DataFrame):
-        # We can iterate over rows without materializing a massive dense matrix
-        # However, FPMiner expects (txn_id, item_id) pairs.
-        # We'll use a simple loop for now.
-        for i, row in enumerate(df.itertuples(index=False)):
-            items = np.where(row)[0].astype(np.int32)
-            if len(items) > 0:
-                txns = np.full(len(items), i, dtype=np.int64)
-                miner.add_chunk(txns, items)
-    elif isinstance(df, pl.DataFrame):
-        # Similar logic for Polars
-        for i, row in enumerate(df.iter_rows()):
-            items = np.where(row)[0].astype(np.int32)
-            if len(items) > 0:
-                txns = np.full(len(items), i, dtype=np.int64)
-                miner.add_chunk(txns, items)
+    # Vectorized extraction of row/col indices where data is True/>0
+    if hasattr(df, "sparse"):
+        # Pandas Sparse DataFrame
+        df_pd = typing.cast("pd.DataFrame", df)
+        csr = df_pd.sparse.to_coo().tocsr()
+        csr.eliminate_zeros()
+        # Find non-zero row and column indices fast
+        row_indices, col_indices = csr.nonzero()
+        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
+    elif getattr(df, "__module__", "").startswith("polars"):
+        # Use NumPy to find indices directly from the fast internal representation
+        # It's faster to do a nonzero on the numpy array, but we must be careful not to trigger full dense copy if memory is truly sparse.
+        # But for polars, sparse isn't supported yet, so it's a dense matrix anyway.
+        nd = df.to_numpy() # type: ignore
+        row_indices, col_indices = np.nonzero(nd)
+        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
+    elif isinstance(df, np.ndarray):
+        row_indices, col_indices = np.nonzero(df)
+        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
     else:
-        # Numpy array
-        for i, row in enumerate(df):
-            items = np.where(row)[0].astype(np.int32)
-            if len(items) > 0:
-                txns = np.full(len(items), i, dtype=np.int64)
-                miner.add_chunk(txns, items)
+        import pandas as pd
+        if isinstance(df, pd.DataFrame):
+            # Normal Pandas dense dataframe
+            row_indices, col_indices = np.nonzero(df.values)
+            miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
+        else:
+            # Fallback for Scipy sparse matrices or other objects
+            try:
+                # Assuming CSR or COO
+                coo = df.tocoo() # type: ignore
+                row_indices = coo.row
+                col_indices = coo.col
+                miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
+            except AttributeError:
+                # Extreme fallback, try to convert to numpy
+                row_indices, col_indices = np.nonzero(np.asarray(df))
+                miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
+
+    if verbose:
+        import time
+        print(f"[{time.strftime('%X')}] Finished ingesting data into FPMiner. Mining...")
 
     return miner.mine(
         min_support=min_support,
@@ -169,15 +178,18 @@ def _run_dense(
 
     t0 = 0.0
     if verbose:
+        import time
         print(f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array...")
         t0 = time.perf_counter()
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
     if verbose:
+        import time
         t1 = time.perf_counter()
         print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_DENSE[method](data, min_count, max_len)
     if verbose:
+        import time
         print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
@@ -194,6 +206,7 @@ def _run_sparse(
 
     t0 = 0.0
     if verbose:
+        import time
         print(f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array...")
         t0 = time.perf_counter()
     csr = df.sparse.to_coo().tocsr()
@@ -201,11 +214,13 @@ def _run_sparse(
     indptr = np.asarray(csr.indptr, dtype=np.int32)
     indices = np.asarray(csr.indices, dtype=np.int32)
     if verbose:
+        import time
         t1 = time.perf_counter()
         print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
     if verbose:
+        import time
         print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
@@ -218,26 +233,19 @@ def _run_polars(
     method: Method,
     verbose: int = 0,
 ) -> pd.DataFrame:
+    import time
+
     import numpy as np
     import polars as pl
 
-    t0 = 0.0
-    if verbose:
-        print(f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array...")
-        t0 = time.perf_counter()
     n_rows, n_cols = df.shape
     min_count = math.ceil(min_support * n_rows)
-    arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
-    if verbose:
-        t1 = time.perf_counter()
-        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
-        t0 = t1
 
     if method == "auto":
         nnz = df.select(pl.all().cast(pl.Boolean).sum()).sum_horizontal().item()
         density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
 
-        # Memory check
+        # Memory check MUST occur before array mapping to prevent OOM
         required_mem = _estimate_dense_memory(df.shape)
         available_mem = _get_available_memory()
         if required_mem > available_mem * 0.7:  # 70% threshold
@@ -245,8 +253,19 @@ def _run_polars(
 
         method = _select_method("auto", density, verbose, "polars")
 
+    t0 = 0.0
+    if verbose:
+        print(f"[{time.strftime('%X')}] Converting Polars DataFrame to C-contiguous uint8 array...")
+        t0 = time.perf_counter()
+    arr = np.ascontiguousarray(df.to_numpy(), dtype=np.uint8)
+    if verbose:
+        t1 = time.perf_counter()
+        print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
+        t0 = t1
+
     raw = _RUST_DENSE[method](arr, min_count, max_len)
     if verbose:
+        import time
         print(
             f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
         )
@@ -321,9 +340,21 @@ def dispatch(
 
     if t == "ndarray":
         df_nd = typing.cast("np.ndarray", df)
+        # Convert Spark or other types to np array. Note: if it is sparse, handle accordingly.
         n_rows, n_cols = df_nd.shape
         min_count = math.ceil(min_support * n_rows)
         col_names = [str(i) for i in range(n_cols)]
+
+        density = np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
+
+        # Memory check MUST occur before array mapping to prevent OOM
+        if method == "auto":
+            required_mem = _estimate_dense_memory(df_nd.shape)
+            available_mem = _get_available_memory()
+            if required_mem > available_mem * 0.7:
+                return _run_fpminer_fallback(df_nd, min_support, max_len, use_colnames, col_names, verbose)
+            method = _select_method(method, density, verbose, "ndarray")
+
         if verbose:
             print(f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8...")
             t0 = time.perf_counter()
@@ -332,16 +363,7 @@ def dispatch(
             t1 = time.perf_counter()
             print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
-        density = np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
 
-        # Memory check
-        if method == "auto":
-            required_mem = _estimate_dense_memory(df_nd.shape)
-            available_mem = _get_available_memory()
-            if required_mem > available_mem * 0.7:
-                return _run_fpminer_fallback(df_nd, min_support, max_len, use_colnames, col_names, verbose)
-
-        method = _select_method(method, density, verbose, "ndarray")
         raw = _RUST_DENSE[method](data, min_count, max_len)
         if verbose:
             print(
@@ -377,8 +399,9 @@ def dispatch(
         available_mem = _get_available_memory()
         if required_mem > available_mem * 0.7:
             return _run_fpminer_fallback(df_pd, min_support, max_len, use_colnames, col_names, verbose)
-
-    method = _select_method(method, density, verbose, "pandas")
+        method = _select_method(method, density, verbose, "pandas")
+    else:
+        method = _select_method(method, density, verbose, "pandas")
 
     if hasattr(df_pd, "sparse"):
         raw = _run_sparse(df_pd, n_cols, min_count, max_len, method, verbose)

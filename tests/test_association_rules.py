@@ -38,7 +38,7 @@ cols = [
 ]
 
 df = pd.DataFrame(one_ary, columns=cols).astype(bool)
-df_freq_items = fpgrowth(df, min_support=0.6)
+df_freq_items = fpgrowth(df, min_support=0.6, use_colnames=False)
 df_freq_items_with_colnames = fpgrowth(df, min_support=0.6, use_colnames=True)
 
 
