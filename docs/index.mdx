@@ -27,14 +27,14 @@ The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and a
 
 ## Why rusket?
 
-| Feature | rusket | mlxtend |
-|---|---|---|
-| Speed (medium dataset) | **~0.4 s** | ~4 s |
-| Memory (large dataset) | ~3 s | OOM |
-| Polars support | ✅ | ❌ |
-| Sparse DataFrame support | ✅ | ⚠️ limited |
-| Zero Python dependencies | ✅ (`numpy`, `pandas`) | ❌ (many) |
-| 12 association metrics | ✅ | ✅ |
+| Feature | rusket |
+|---|---|
+| Speed (medium dataset) | **~0.4 s** |
+| Memory (large dataset) | ~3 s |
+| Polars support | ✅ |
+| Sparse DataFrame support | ✅ |
+| Zero Python dependencies | ✅ (`numpy`, `pandas`) |
+| 12 association metrics | ✅ |
 
 ## Quick Example — "Frequently Bought Together"
 
@@ -42,7 +42,7 @@ Identify which products are bought together most often — the foundation of cro
 
 ```python
 import pandas as pd
-from rusket import mine, association_rules
+from rusket import AutoMiner
 
 # One week of grocery checkout data (1 row = 1 receipt, 1 col = 1 SKU)
 receipts = pd.DataFrame({
@@ -54,12 +54,11 @@ receipts = pd.DataFrame({
 }, dtype=bool)
 
 # Step 1 — find which product combinations appear in ≥40% of receipts
-freq = mine(receipts, min_support=0.4, use_colnames=True)
+model = AutoMiner(receipts, min_support=0.4)
+freq = model.mine(use_colnames=True)
 
 # Step 2 — keep rules with ≥60% confidence
-rules = association_rules(
-    freq, num_itemsets=len(receipts), metric="confidence", min_threshold=0.6
-)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "confidence", "lift"]]
       .sort_values("lift", ascending=False))
 ```

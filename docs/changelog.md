@@ -5,9 +5,84 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🚀 Features
+
+- handle miner kwargs and preserve DataFrame return types
+- use labels by default in mining algorithms
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🔄 CI/CD
+
+- skip git-auto-commit on tags to prevent race conditions and bump to v0.1.39
+
+### Optimizer
+
+- enhance PySpark toArrow to utilize pandas ArrowDtype
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- resolve u.vlock conflict
+
+### 🔄 CI/CD
+
+- fix detached head for auto-commit and bump to v0.1.37
+- remove experimental python 3.14 to fix pipeline hang and bump to v0.1.38
+
+### 🔄 CI/CD
+
+- add git-auto-commit for ruff format and bump to v0.1.36
+
+### 📦 Miscellaneous
+
+- fix ruff format issues from type ignores and bump to v0.1.35
+
+### 📦 Miscellaneous
+
+- bypass pandas-stubs typing issues for older Python versions and bump to v0.1.34
+
+### 📦 Miscellaneous
+
+- fix Ruff trailing whitespace formatting error in test_fpbase.py, bump to v0.1.33
+
+### 📦 Miscellaneous
+
+- fix PrefixSpan KeyError in test_spark_prefixspan and bump to v0.1.32
+
+### 📦 Miscellaneous
+
+- fix pandas FutureWarning in tests and bump to v0.1.31
+
+### 📦 Miscellaneous
+
+- fix PySpark assertion and Pytest deprecation warnings, bump v0.1.30
+
+### Benchmarks
+
+- add comprehensive benchmark scripts and final report against Python libraries
+- fix missing imports and numpy compatibility, fix ruff lints
+
+### Mining
+
+- optimize prefixspan removing hashmaps and pyo3 object lists for 1.15x speedup
+- optimize prefixspan with zero-copy numpy ffi over pyo3 for 2.05x speedup
+
+### 📦 Miscellaneous
+
+- untrack benchmarking, profile, and recbole test artifacts
+- fix pytest warnings/pyright errors and bump version to v0.1.29
+
+### 📦 Miscellaneous
+
+- bump to v0.1.28, fix typing issues in tests
+
 ### Style
 
 - run ruff format and fix lints
+- Auto-format with Ruff
 
 ### 🐛 Bug Fixes
 
@@ -20,6 +95,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - update uv.lock for 0.1.26
+- exclude non-essential files from sdist
+- exclude dev/docs from sdist and wheels
+
+### 🚀 Features
+
+- Add strict UI typings (SupportsItemFactors), classes API filtering, and generated Schema
+- add natively rust-backed evaluation metrics and model selection splitters
 
 ### 📖 Documentation
 

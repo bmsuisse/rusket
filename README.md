@@ -19,28 +19,27 @@
 
 **rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.
 
-It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) as a high-performance, drop-in replacement for `mlxtend`. Both functional and OOP APIs are available for seamless integration.
+It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
 ## ✨ Highlights
 
-| | `rusket` | `mlxtend` | `implicit` | `pyspark.ml` |
-|---|---|---|---|---|
-| **Core language** | Rust (PyO3) | Pure Python | Cython / C++ | Scala / Java (JVM) |
-| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | FP-Growth, Apriori | ALS, BPR | ALS, FP-Growth, PrefixSpan |
-| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ❌ | ✅ | ✅ (ALS only) |
-| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
-| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ❌ | ✅ | ✅ |
-| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ✅ | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
-| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ❌ Not supported | ✅ (via PyArrow) |
-| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ❌ Densifies first | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
-| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ Not supported | ❌ (conversion needed) |
-| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ❌ | ✅ Native distributed |
-| **Parallel mining** | ✅ Rayon work-stealing | ❌ Single-threaded | ✅ OpenMP / Threads | ✅ Spark Cluster |
-| **Memory** | Low (native Rust buffers) | High (Python objects) | Low (C++ arrays) | High (JVM overhead) |
-| **API compatibility** | ✅ Drop-in replacement for `mlxtend` | — | — | — |
-| **Metrics** | 12 built-in metrics | 9 | N/A | Limited |
+| | `rusket` | `implicit` | `pyspark.ml` |
+|---|---|---|---|
+| **Core language** | Rust (PyO3) | Cython / C++ | Scala / Java (JVM) |
+| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ (ALS only) |
+| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ |
+| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ✅ | ✅ |
+| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
+| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ✅ (via PyArrow) |
+| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
+| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ (conversion needed) |
+| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ✅ Native distributed |
+| **Parallel mining** | ✅ Rayon work-stealing | ✅ OpenMP / Threads | ✅ Spark Cluster |
+| **Memory** | Low (native Rust buffers) | Low (C++ arrays) | High (JVM overhead) |
+| **Metrics** | 12 built-in metrics | N/A | Limited |
 
 ---
 
@@ -135,14 +134,14 @@ suggestions = model.recommend_items(["HDPHONES"], n=3)
 Or use the explicit type variants:
 
 ```python
-from rusket import from_pandas, from_polars
+from rusket import AutoMiner
 
-ohe = from_pandas(orders, transaction_col="order_id", item_col="sku")
-ohe = from_polars(pl_orders, transaction_col="order_id", item_col="sku")
-ohe = from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
+ohe = AutoMiner.from_pandas(orders, transaction_col="order_id", item_col="sku")
+ohe = AutoMiner.from_polars(pl_orders, transaction_col="order_id", item_col="sku")
+ohe = AutoMiner.from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
 ```
 
-> **Spark** is also supported: `from_spark(spark_df)` calls `.toPandas()` internally.
+> **Spark** is also supported: `AutoMiner.from_spark(spark_df)` calls `.toPandas()` internally.
 
 ---
 
@@ -171,12 +170,12 @@ print(rules)
 
 #### When to use which?
 
-You almost always want to use `rusket.mine(method="auto")`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
+You almost always want to use `AutoMiner`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
 
-| Scenario | Algorithm chosen by `method="auto"` |
+| Scenario | Algorithm chosen by `AutoMiner` |
 |---|---|
-| Large SKU catalogue, small basket size (density < 0.15) | `eclat` (bitset/SIMD intersections) |
-| Smaller catalogue, dense baskets (density > 0.15) | `fpgrowth` (FP-tree traversals) |
+| Large SKU catalogue, small basket size (density < 0.15) | `Eclat` (bitset/SIMD intersections) |
+| Smaller catalogue, dense baskets (density > 0.15) | `FPGrowth` (FP-tree traversals) |
 
 ---
 
@@ -438,31 +437,6 @@ recs_df.show(5, truncate=False)
 
 ---
 
-### 🔄 Migrating from mlxtend
-
-`rusket` is a **drop-in replacement**. The only API difference is `num_itemsets`:
-
-```diff
-- from mlxtend.frequent_patterns import fpgrowth, association_rules
-+ from rusket import mine, association_rules
-
-- freq  = fpgrowth(df, min_support=0.05, use_colnames=True)
-+ freq  = mine(df, min_support=0.05, use_colnames=True)
-
-- rules = association_rules(freq, metric="lift", min_threshold=1.2)
-+ rules = association_rules(freq, num_itemsets=len(df),             # ← add this
-+                           metric="lift", min_threshold=1.2)
-```
-
-> **Why `num_itemsets`?** This makes support calculation explicit and avoids a hidden internal pandas join that `mlxtend` performs.
-
-**Gotchas:**
-1. Input must be `bool` or `0/1` integers — `rusket` warns if you pass floats
-2. Polars is supported natively — just pass the DataFrame directly
-3. Sparse pandas DataFrames work too — and use much less RAM
-
----
-
 ## 📖 API Reference
 
 ### OOP Class API
@@ -511,153 +485,7 @@ items, scores = model.recommend_items(user_id=42, n=10, exclude_seen=True)
 users, scores = model.recommend_users(item_id=99, n=5)
 ```
 
----
 
-### `mine` (functional)
-
-```python
-rusket.mine(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    method: str = "auto",
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Dynamically selects the optimal mining algorithm based on the dataset density heuristically. It's highly recommended to use this instead of `fpgrowth` or `eclat` directly. Equivalent to `AutoMiner(...).mine()`.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` \| `pl.DataFrame` \| `np.ndarray` | One-hot encoded input (bool / 0-1). Dense, sparse, or Polars. |
-| `min_support` | `float` | Minimum support threshold in `(0, 1]`. |
-| `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
-| `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
-| `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
-| `method` | `"auto" \| "fpgrowth" \| "eclat"` | Algorithm to use. "auto" selects Eclat for `<0.15` density distributions. |
-| `verbose` | `int` | Verbosity level. |
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `fpgrowth` (functional)
-
-```python
-rusket.fpgrowth(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Equivalent to `FPGrowth(...).mine()`. See class table above.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` \| `pl.DataFrame` \| `np.ndarray` | One-hot encoded input (bool / 0-1). Dense, sparse, or Polars. |
-| `min_support` | `float` | Minimum support threshold in `(0, 1]`. |
-| `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
-| `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
-| `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
-| `verbose` | `int` | Verbosity level (kept for API compatibility with mlxtend). |
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `eclat` (functional)
-
-```python
-rusket.eclat(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Equivalent to `Eclat(...).mine()`. Same parameters as `fpgrowth`. Uses vertical bitset representation (Eclat algorithm) instead of FP-Tree.
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `association_rules` (functional)
-
-```python
-rusket.association_rules(
-    df,
-    num_itemsets: int,
-    metric: str = "confidence",
-    min_threshold: float = 0.8,
-    support_only: bool = False,
-    return_metrics: list[str] = [...],  # all 12 metrics by default
-) -> pd.DataFrame
-```
-
-Alternatively, if you used the OOP API, call `model.association_rules(metric=..., min_threshold=...)` directly — `num_itemsets` is tracked automatically.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` | Output from `fpgrowth()`. |
-| `num_itemsets` | `int` | Number of transactions in the original dataset (`len(df_original)`). |
-| `metric` | `str` | Metric to filter rules on (see table below). |
-| `min_threshold` | `float` | Minimum value of `metric` to include a rule. |
-| `support_only` | `bool` | Only compute support; fill other columns with `NaN`. |
-| `return_metrics` | `list[str]` | Subset of metrics to include in the result. |
-
-**Returns** a `pd.DataFrame` with columns `antecedents`, `consequents`, plus all requested metric columns.
-
-#### Available Metrics
-
-| Metric | Formula / Description |
-|--------|----------------------|
-| `support` | P(A ∪ B) |
-| `confidence` | P(B \| A) |
-| `lift` | confidence / P(B) |
-| `leverage` | support − P(A)·P(B) |
-| `conviction` | (1 − P(B)) / (1 − confidence) |
-| `zhangs_metric` | Symmetrical correlation measure |
-| `jaccard` | Jaccard similarity between A and B |
-| `certainty` | Certainty factor |
-| `kulczynski` | Average of P(B\|A) and P(A\|B) |
-| `representativity` | Rule coverage across transactions |
-| `antecedent support` | P(A) |
-| `consequent support` | P(B) |
-
----
-
-### `from_transactions` (functional)
-
-```python
-rusket.from_transactions(
-    data,
-    transaction_col: str | None = None,
-    item_col: str | None = None,
-) -> pd.DataFrame
-```
-
-Converts long-format transactional data to a one-hot boolean matrix. Accepts Pandas DataFrames, Polars DataFrames, Spark DataFrames, or `list[list[...]]`.
-
-### `from_pandas` / `from_polars` / `from_spark`
-
-Explicit typed variants of `from_transactions` for specific DataFrame types:
-
-```python
-rusket.from_pandas(df, transaction_col=None, item_col=None) -> pd.DataFrame
-rusket.from_polars(df, transaction_col=None, item_col=None) -> pd.DataFrame
-rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
-```
-
----
 
 ## 🧠 Advanced Pattern & Recommendation Algorithms
 
@@ -747,8 +575,6 @@ saturation = customer_saturation(
 
 `rusket` natively extracts PrefixSpan sequences from **Pandas, Polars, and PySpark** event logs with zero-copy Arrow mapping:
 
-#### OOP Class API
-
 ```python
 from rusket import PrefixSpan
 
@@ -766,29 +592,14 @@ freq_seqs = model.mine()
 # e.g. [broadband] → [mobile] → [tv_bundle] appears in 312 journeys
 ```
 
-#### Functional API
-
-```python
-from rusket.prefixspan import sequences_from_event_log, prefixspan
-
-sequences, mapping = sequences_from_event_log(
-    df=subscription_events,
-    user_col="customer_id",
-    time_col="subscription_date",
-    item_col="product_id",
-)
-
-freq_seqs = prefixspan(sequences, min_support=50, max_len=4)
-```
-
 
 
 ### 🕸️ Graph Analytics & Embeddings
 
 Integrate natively with the modern GenAI/LLM stack:
 
-- **Vector Export:** Export user/item factors to a Pandas `DataFrame` ready for FAISS/Qdrant using `rusket.export_item_factors`.
-- **Item-to-Item Similarity:** Fast Cosine Similarity on embeddings using `rusket.similar_items(als_model, item_id)`.
+- **Vector Export:** Export user/item factors to a Pandas `DataFrame` ready for FAISS/Qdrant using `model.export_item_factors()`.
+- **Item-to-Item Similarity:** Fast Cosine Similarity on embeddings using `model.similar_items(item_id)`.
 - **Graph Generation:** Automatically convert association rules into a `networkx` directed Graph for community detection using `rusket.viz.to_networkx(rules)`.
 
 ---
@@ -826,10 +637,10 @@ freq = AutoMiner(csr, item_names=item_names).mine(
 
 ### Real-World Datasets
 
-| Dataset | Transactions | Items | `rusket` | `mlxtend` | Speedup |
-|---------|:----------:|:-----:|:--------:|:---------:|:-------:|
-| [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) | **TIMEOUT** 💥 | ∞ |
-| [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** | 16.2 s | **2×** |
+| Dataset | Transactions | Items | `rusket` |
+|---------|:----------:|:-----:|:--------:|
+| [andi_data.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 8,416 | 119 | **9.7 s** (22.8M itemsets) |
+| [andi_data2.txt](https://github.com/andi611/Apriori-and-Eclat-Frequent-Itemset-Mining) | 540,455 | 2,603 | **7.9 s** |
 
 Run benchmarks yourself:
 
@@ -951,8 +762,6 @@ uv run python examples/04_sparse_input.py
 # Large-scale mining (100k+ rows)
 uv run python examples/05_large_scale.py
 
-# mlxtend migration guide
-uv run python examples/06_mlxtend_migration.py
 ```
 
 ---

@@ -68,6 +68,14 @@ class TestFromList:
         assert result.shape == (3, 3)
         assert result.values.sum() == 3
 
+    def test_min_item_count(self) -> None:
+        transactions = [[1, 2, 3], [1, 2], [3, 4]]
+        # 1: 2, 2: 2, 3: 2, 4: 1
+        result = from_transactions(transactions, min_item_count=2)
+        assert set(result.columns) == {"1", "2", "3"}
+        assert "4" not in result.columns
+        assert result.shape == (3, 3)
+
 
 # ---------------------------------------------------------------------------
 # Pandas → Pandas
@@ -120,6 +128,27 @@ class TestFromPandas:
         df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
         with pytest.raises(ValueError, match="not found"):
             from_transactions(df, transaction_col="missing")
+
+    def test_min_item_count(self) -> None:
+        df = pd.DataFrame({"txn": [1, 1, 1, 2, 2, 3, 3], "item": ["a", "b", "c", "a", "b", "c", "d"]})
+        # a: 2, b: 2, c: 2, d: 1
+        result = from_transactions(df, min_item_count=2)
+        assert set(result.columns) == {"a", "b", "c"}
+        assert result.shape == (3, 3)
+
+    def test_mine_kwargs_and_return_type(self) -> None:
+        from rusket import AutoMiner
+
+        df = pd.DataFrame({"txn": [1, 1, 1, 2, 2], "item": ["a", "b", "c", "a", "b"]})
+        model = AutoMiner.from_transactions(df, min_support=0.5)
+        # Should return pandas by default for pandas input
+        freq = model.mine(use_colnames=True)
+        assert isinstance(freq, pd.DataFrame)
+        assert isinstance(freq.iloc[0]["itemsets"][0], str)
+
+        rules = model.association_rules()  # type: ignore
+        assert isinstance(rules, pd.DataFrame)
+        assert len(rules) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +214,29 @@ class TestFromPolars:
         assert isinstance(result, pl.DataFrame)
         assert result.shape == (2, 3)
 
+    def test_min_item_count(self) -> None:
+        pl = pytest.importorskip("polars")
+        df = pl.DataFrame({"txn": [1, 1, 1, 2, 2, 3, 3], "item": ["a", "b", "c", "a", "b", "c", "d"]})
+        result = from_transactions(df, min_item_count=2)
+        assert set(result.columns) == {"a", "b", "c"}
+        assert result.shape == (3, 3)
+
+    def test_mine_kwargs_and_return_type(self) -> None:
+        pl = pytest.importorskip("polars")
+        from rusket import AutoMiner
+
+        df = pl.DataFrame({"txn": [1, 1, 1, 2, 2], "item": ["a", "b", "c", "a", "b"]})
+        model = AutoMiner.from_transactions(df, min_support=0.5)
+
+        freq = model.mine(use_colnames=True)
+        assert isinstance(freq, pl.DataFrame)
+        # Check that it actually used column names (strings)
+        assert isinstance(freq["itemsets"][0][0], str)
+
+        rules = model.association_rules()  # type: ignore
+        assert isinstance(rules, pl.DataFrame)
+        assert len(rules) > 0
+
 
 # ---------------------------------------------------------------------------
 # Spark → Spark
@@ -223,6 +275,28 @@ class TestFromSpark:
         df = spark.createDataFrame([(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"])
         result = from_transactions(df)
         assert set(result.columns) == {"x", "y", "z"}
+
+    def test_mine_kwargs_and_return_type(self, spark) -> None:  # type: ignore[no-untyped-def]
+        from rusket import AutoMiner
+
+        df = spark.createDataFrame(
+            [(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b")],
+            ["txn", "item"],
+        )
+        model = AutoMiner.from_transactions(df, min_support=0.5)
+
+        freq = model.mine(use_colnames=True)
+        assert type(freq).__name__ == "DataFrame"
+        assert getattr(type(freq), "__module__", "").startswith("pyspark")
+
+        # The itemsets column should be array<string>
+        schema = dict(freq.dtypes)
+        if "itemsets" in schema:
+            assert "string" in schema["itemsets"].lower()
+
+        rules = model.association_rules()  # type: ignore
+        assert type(rules).__name__ == "DataFrame"
+        assert getattr(type(rules), "__module__", "").startswith("pyspark")
 
     def test_bool_dtype(self, spark) -> None:  # type: ignore[no-untyped-def]
         from pyspark.sql import types as T
@@ -266,6 +340,14 @@ class TestFromSpark:
             pd_result[common_cols].astype(bool).sort_values(by=common_cols).reset_index(drop=True),  # type: ignore
             check_dtype=False,
         )
+
+    def test_min_item_count(self, spark) -> None:  # type: ignore[no-untyped-def]
+        df = spark.createDataFrame(
+            [(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b"), (3, "c"), (3, "d")], ["txn", "item"]
+        )
+        result = from_transactions(df, min_item_count=2)
+        assert set(result.columns) == {"a", "b", "c"}
+        assert "d" not in result.columns
 
 
 # ---------------------------------------------------------------------------

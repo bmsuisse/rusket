@@ -21,6 +21,10 @@ def test_auto_dense_polars():
     res_auto = rusket.mine(df, min_support=0.5, method="auto")
     res_fpgrowth = rusket.fpgrowth(df, min_support=0.5)
 
+    if isinstance(res_auto, pl.DataFrame):
+        res_auto = res_auto.to_pandas()
+    if isinstance(res_fpgrowth, pl.DataFrame):
+        res_fpgrowth = res_fpgrowth.to_pandas()
     pd.testing.assert_frame_equal(res_auto, res_fpgrowth)
 
 
@@ -89,3 +93,27 @@ def test_rule_miner_mixin_api():
     assert len(recs) <= 2
     for item in recs:
         assert item not in ["Milk", "Butter"]
+
+
+def test_auto_output_matches_input_type():
+    # Pandas input -> Pandas output
+    df_pd = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}).astype(bool)
+    res_pd = rusket.mine(df_pd, min_support=0.5, method="auto")
+    assert isinstance(res_pd, pd.DataFrame), f"Expected Pandas DataFrame, got {type(res_pd)}"
+
+    # Polars input -> Polars output
+    df_pl = pl.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]})
+    res_pl = rusket.mine(df_pl, min_support=0.5, method="auto")
+    assert isinstance(res_pl, pl.DataFrame), f"Expected Polars DataFrame, got {type(res_pl)}"
+
+def test_auto_output_labels_strings():
+    import rusket
+    df_pd = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}).astype(bool)
+    
+    # Test use_colnames=True (default) to get string labels
+    res_labels = rusket.mine(df_pd, min_support=0.5, method="auto", use_colnames=True)
+    assert isinstance(res_labels.iloc[0]["itemsets"][0], str), "Expected string labels!"
+    
+    # Test use_colnames=False to get integer indices
+    res_indices = rusket.mine(df_pd, min_support=0.5, method="auto", use_colnames=False)
+    assert isinstance(res_indices.iloc[0]["itemsets"][0], (int, np.integer)), "Expected integer indices!"

@@ -385,3 +385,35 @@ def test_als_grouped(spark_session) -> None:
     assert len(store_a_res) == 2
     user_1_recs = store_a_res[store_a_res["user_id"] == "1"].iloc[0]["recommended_items"]
     assert len(user_1_recs) > 0
+
+
+def test_mine_auto_spark_returns_spark(spark_session) -> None:
+    import rusket
+
+    df = pd.DataFrame(
+        {
+            "txn": [1, 1, 1, 2, 2, 3, 3],
+            "item": ["bread", "milk", "butter", "bread", "eggs", "milk", "eggs"],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    # Use the module-level 'mine' function with method="auto" explicitly
+    freq = rusket.mine(spark_df, min_support=0.4, method="auto")
+
+    import pyspark
+
+    # Validate the type is exactly a PySpark DataFrame
+    assert isinstance(freq, pyspark.sql.DataFrame)
+
+    # Verify data inside the Spark DataFrame
+    pd_freq = freq.toPandas()
+    assert len(pd_freq) > 0
+    assert "support" in pd_freq.columns
+    assert "itemsets" in pd_freq.columns
+
+    # Verify that the itemsets are lists of strings (labels), not integers
+    first_itemset = pd_freq["itemsets"].iloc[0]
+    assert isinstance(first_itemset, (list, np.ndarray))
+    assert len(first_itemset) > 0
+    assert isinstance(first_itemset[0], str), f"Expected string labels, got {type(first_itemset[0])}"

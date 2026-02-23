@@ -23,7 +23,7 @@ class Eclat(Miner, RuleMinerMixin):
         item_names: list[str] | None = None,
         min_support: float = 0.5,
         null_values: bool = False,
-        use_colnames: bool = False,
+        use_colnames: bool = True,
         max_len: int | None = None,
         verbose: int = 0,
         **kwargs: Any,
@@ -66,30 +66,38 @@ class Eclat(Miner, RuleMinerMixin):
             - `support`: the support score.
             - `itemsets`: list of items (indices or column names).
         """
-        if self.min_support <= 0.0:
+        # Merge kwargs over instance attributes
+        min_support = kwargs.get("min_support", self.min_support)
+        null_values = kwargs.get("null_values", self.null_values)
+        use_colnames = kwargs.get("use_colnames", self.use_colnames)
+        max_len = kwargs.get("max_len", self.max_len)
+        verbose = kwargs.get("verbose", self.verbose)
+
+        if min_support <= 0.0:
             raise ValueError(
-                f"`min_support` must be a positive number within the interval `(0, 1]`. Got {self.min_support}."
+                f"`min_support` must be a positive number within the interval `(0, 1]`. Got {min_support}."
             )
 
         from ._core import dispatch
 
-        return dispatch(
+        result_df = dispatch(
             self.data,
-            self.min_support,
-            self.null_values,
-            self.use_colnames,
-            self.max_len,
+            min_support,
+            null_values,
+            use_colnames,
+            max_len,
             "eclat",
             self.item_names,
-            self.verbose,
+            verbose,
         )  # type: ignore[arg-type]
+        return self._convert_to_orig_type(result_df)
 
 
 def eclat(
     df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
     min_support: float = 0.5,
     null_values: bool = False,
-    use_colnames: bool = False,
+    use_colnames: bool = True,
     max_len: int | None = None,
     verbose: int = 0,
     column_names: list[str] | None = None,

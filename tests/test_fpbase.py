@@ -232,7 +232,7 @@ class FPTestEx1All(FPTestEx1):
         FPTestEx1.setUp(self, fpalgo, one_ary=one_ary)
 
     def test_default(self) -> None:
-        res_df = self.fpalgo(self.df)
+        res_df = self.fpalgo(self.df, use_colnames=False)
         expect = pd.DataFrame(
             [
                 [0.8, np.array([3])],

@@ -31,15 +31,7 @@ To also enable **Polars** support:
     uv add "rusket[polars]"
     ```
 
-!!! tip "Coming from mlxtend?"
-    rusket is a **drop-in replacement**. In most cases you only need to change your import:
-    ```python
-    # Before
-    from mlxtend.frequent_patterns import fpgrowth, association_rules
-    # After
-    from rusket import mine, association_rules
-    ```
-    See the full [Migration Guide](migration.md) for details.
+
 
 ---
 
@@ -47,11 +39,11 @@ To also enable **Polars** support:
 
 ## Step 1 — Prepare your data
 
-`mine` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
+`AutoMiner` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
 
 ```python
 import pandas as pd
-from rusket import from_transactions
+from rusket import AutoMiner
 
 orders = pd.DataFrame({
     "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
@@ -61,7 +53,7 @@ orders = pd.DataFrame({
                    "milk", "bread", "eggs", "coffee"],
 })
 
-basket = from_transactions(orders, transaction_col="receipt_id", item_col="product")
+model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
 ```
 
 ---
@@ -69,45 +61,27 @@ basket = from_transactions(orders, transaction_col="receipt_id", item_col="produ
 ## Step 2 — Mine frequent product combinations
 
 ```python
-from rusket import mine
-
-freq = mine(basket, min_support=0.4, use_colnames=True)
+freq = model.mine(use_colnames=True)
 print(freq.sort_values("support", ascending=False))
 ```
 
 !!! tip
-    `mine(method="auto")` picks `eclat` for sparse data (density < 0.15) and `fpgrowth` for dense data.
+    `AutoMiner` picks `Eclat` for sparse data (density < 0.15) and `FPGrowth` for dense data.
 
 ---
 
 ## Step 3 — Generate "Frequently Bought Together" rules
 
 ```python
-from rusket import association_rules
-
-rules = association_rules(
-    freq,
-    num_itemsets=len(basket),
-    metric="confidence",
-    min_threshold=0.6,
-)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "support", "confidence", "lift"]])
 ```
 
-!!! note
-    Pass the **total transaction count** (`len(basket)`) as `num_itemsets` so that support-based metrics are computed correctly.
-
 ---
 
-## OOP API — Fluent Pipeline
+## Recommendations
 
 ```python
-from rusket import AutoMiner
-
-model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
-freq  = model.mine(use_colnames=True)
-rules = model.association_rules(metric="lift", min_threshold=1.0)
-
 basket_contents = ["milk", "bread"]
 suggestions = model.recommend_items(basket_contents, n=3)
 ```
@@ -127,7 +101,7 @@ for chunk in pd.read_parquet("sales_fact.parquet", chunksize=10_000_000):
     miner.add_chunk(txn, item)
 
 freq  = miner.mine(min_support=0.001, max_len=3)
-rules = association_rules(freq, num_itemsets=miner.n_transactions)
+rules = miner.association_rules()
 ```
 
 !!! tip
@@ -137,20 +111,19 @@ rules = association_rules(freq, num_itemsets=miner.n_transactions)
 
 ```python
 from scipy import sparse as sp
-from rusket import mine
+from rusket import AutoMiner
 
 csr = sp.csr_matrix(
     (np.ones(len(receipt_ids), dtype=np.int8), (receipt_ids, sku_indices)),
     shape=(n_receipts, n_skus),
 )
-freq = mine(csr, min_support=0.001, column_names=sku_names)
+freq = AutoMiner(csr).mine(min_support=0.001, column_names=sku_names)
 ```
 
 ---
 
 ## What's Next?
 
-- [Migration from mlxtend](migration.md)
 - [API Reference](api-reference.md)
 - [Polars Support](polars.md)
 - [Recommender Workflows](recommender.md)

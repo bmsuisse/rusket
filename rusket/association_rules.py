@@ -35,8 +35,19 @@ def association_rules(
 ) -> pd.DataFrame:
     import pandas as pd
 
+    # Convert non-Pandas DataFrames to Pandas for the internal operations,
+    # the returned type is re-converted to Spark/Polars by RuleMinerMixin.
     if not isinstance(df, pd.DataFrame):
-        raise TypeError(f"Expected a pandas DataFrame, got {type(df)}")
+        try:
+            if hasattr(df, "to_pandas"):
+                df = df.to_pandas()
+            elif hasattr(df, "toPandas"):
+                df = df.toPandas()
+            else:
+                raise TypeError(f"Expected a pandas/polars/spark DataFrame, got {type(df)}")
+        except Exception as e:
+            raise TypeError(f"Expected a pandas/polars/spark DataFrame, got {type(df)}: {e}") from e
+
     if "support" not in df.columns:
         raise ValueError("The input DataFrame must contain a 'support' column")
     if "itemsets" not in df.columns:

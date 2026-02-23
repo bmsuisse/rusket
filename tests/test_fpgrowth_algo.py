@@ -241,6 +241,41 @@ def test_spark_mllib_fpgrowth_int() -> None:
     assert len(res1) == 65
 
 
+def test_rust_fpgrowth_compat() -> None:
+    # Ported from rust fp-growth crate: https://docs.rs/fp-growth/latest/src/fp_growth/lib.rs.html#1-128
+    transactions = [
+        ["a", "c", "e", "b", "f", "h", "a", "e", "f"],
+        ["a", "c", "g"],
+        ["e"],
+        ["e", "c", "a", "g", "d"],
+        ["a", "c", "e", "g"],
+        ["e", "e"],
+        ["a", "c", "e", "b", "f"],
+        ["a", "c", "d"],
+        ["g", "c", "e", "a"],
+        ["a", "c", "e", "g"],
+        ["i"],
+    ]
+    df = _to_dataframe(transactions)  # type: ignore
+
+    # test cases: (minimum_support, frequent_patterns_num)
+    test_cases = [
+        (1, 88),
+        (2, 43),
+        (3, 15),
+        (4, 15),
+        (5, 11),
+        (6, 7),
+        (7, 4),
+        (8, 4),
+        (9, 0),
+    ]
+
+    for min_supp_count, expected_patterns in test_cases:
+        res = fpgrowth(df, min_support=min_supp_count / len(df), use_colnames=True)
+        assert len(res) == expected_patterns
+
+
 class TestEx1BoolInput_FPGrowth(Ex1BoolInputBase):
     method_func = staticmethod(fpgrowth_algo)
 

@@ -24,6 +24,7 @@ def from_transactions(
     data: pd.DataFrame,
     transaction_col: str | None = ...,
     item_col: str | None = ...,
+    min_item_count: int = ...,
     verbose: int = ...,
 ) -> pd.DataFrame: ...
 
@@ -33,6 +34,7 @@ def from_transactions(
     data: pl.DataFrame,
     transaction_col: str | None = ...,
     item_col: str | None = ...,
+    min_item_count: int = ...,
     verbose: int = ...,
 ) -> pl.DataFrame: ...
 
@@ -42,6 +44,7 @@ def from_transactions(
     data: SparkDataFrame,
     transaction_col: str | None = ...,
     item_col: str | None = ...,
+    min_item_count: int = ...,
     verbose: int = ...,
 ) -> SparkDataFrame: ...
 
@@ -51,6 +54,7 @@ def from_transactions(
     data: Sequence[Sequence[str | int]],
     transaction_col: str | None = ...,
     item_col: str | None = ...,
+    min_item_count: int = ...,
     verbose: int = ...,
 ) -> pd.DataFrame: ...
 
@@ -59,6 +63,7 @@ def from_transactions(
     data: DataFrame | Sequence[Sequence[str | int]] | Any,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    min_item_count: int = 1,
     verbose: int = 0,
 ) -> Any:
     """Convert long-format transactional data to a one-hot boolean matrix.
@@ -88,6 +93,10 @@ def from_transactions(
         Name of the column that contains item values.  If ``None`` the
         second column is used.  Ignored for list-of-lists input.
 
+    min_item_count
+        Minimum number of times an item must appear to be included in the
+        resulting one-hot-encoded matrix. Default is 1.
+
     Returns
     -------
     DataFrame
@@ -111,6 +120,17 @@ def from_transactions(
     _is_spark = _type.__name__ == "DataFrame" and getattr(_type, "__module__", "").startswith("pyspark")
 
     if _is_spark:
+        if min_item_count > 1:
+            if verbose:
+                print(f"[{time.strftime('%X')}] Spark: Filtering items with < {min_item_count} occurrences...")
+            import pyspark.sql.functions as F
+
+            spark_df = typing.cast("SparkDataFrame", data)
+            _itm_c = item_col or spark_df.columns[1]
+            item_counts = spark_df.groupBy(_itm_c).count()
+            valid_items = item_counts.filter(F.col("count") >= min_item_count).select(_itm_c)
+            data = spark_df.join(valid_items, on=_itm_c, how="inner")
+
         if hasattr(data, "toArrow"):
             import pandas as pd
 
@@ -118,7 +138,7 @@ def from_transactions(
         else:
             pandas_df = data.toPandas()  # type: ignore[union-attr]
 
-        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
+        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, min_item_count=1, verbose=verbose)
         # Convert back via Arrow for efficiency
         import pyarrow as _pa
 
@@ -130,7 +150,7 @@ def from_transactions(
     data = to_dataframe(data)
 
     if isinstance(data, (list, tuple)):
-        return _from_list(data, verbose=verbose)
+        return _from_list(data, min_item_count=min_item_count, verbose=verbose)
 
     import pandas as _pd
     import polars as _pl
@@ -138,12 +158,14 @@ def from_transactions(
     # --- Polars ---
     if isinstance(data, _pl.DataFrame):
         pandas_df = data.to_pandas()
-        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, verbose=verbose)
+        result_pd = _from_dataframe(
+            pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose
+        )
         return _pl.from_pandas(result_pd.astype(bool))
 
     # --- Pandas ---
     if isinstance(data, _pd.DataFrame):
-        return _from_dataframe(data, transaction_col, item_col, verbose=verbose)
+        return _from_dataframe(data, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose)
 
     raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
 
@@ -152,33 +174,41 @@ def from_pandas(
     df: pd.DataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    min_item_count: int = 1,
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose
+    )
 
 
 def from_polars(
     df: pl.DataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    min_item_count: int = 1,
     verbose: int = 0,
 ) -> pl.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose)
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose
+    )
 
 
 def from_spark(
     df: SparkDataFrame,
     transaction_col: str | None = None,
     item_col: str | None = None,
+    min_item_count: int = 1,
 ) -> SparkDataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col)
+    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count)
 
 
 def _from_list(
     transactions: Sequence[Sequence[str | int]],
+    min_item_count: int = 1,
     verbose: int = 0,
 ) -> pd.DataFrame:
     import numpy as np
@@ -190,9 +220,19 @@ def _from_list(
         print(f"[{time.strftime('%X')}] Extracting unique items from list of lists...")
         t0 = time.perf_counter()
 
-    all_items_set: set[str | int] = set()
-    for txn in transactions:
-        all_items_set.update(txn)
+    if min_item_count > 1:
+        from collections import Counter
+
+        counts = Counter()  # type: ignore[var-annotated]
+        for txn in transactions:
+            counts.update(txn)
+        all_items_set = {item for item, count in counts.items() if count >= min_item_count}
+    else:
+        all_items_set_any: set[Any] = set()
+        for txn in transactions:
+            all_items_set_any.update(txn)
+        all_items_set = all_items_set_any
+
     all_items = sorted(all_items_set, key=lambda x: (isinstance(x, str), x))
     item_to_idx = {item: i for i, item in enumerate(all_items)}
 
@@ -215,8 +255,9 @@ def _from_list(
 
     for i, txn in iterator:
         for item in txn:
-            row_idx.append(i)
-            col_idx.append(item_to_idx[item])
+            if item in item_to_idx:
+                row_idx.append(i)
+                col_idx.append(item_to_idx[item])
 
     data = np.ones(len(row_idx), dtype=bool)
     csr = sp.csr_matrix(
@@ -239,6 +280,7 @@ def _from_dataframe(
     df: pd.DataFrame,
     transaction_col: str | None,
     item_col: str | None,
+    min_item_count: int = 1,
     verbose: int = 0,
 ) -> pd.DataFrame:
     import numpy as np
@@ -262,6 +304,14 @@ def _from_dataframe(
         raise ValueError(f"Transaction column '{txn_col}' not found. Available columns: {cols}")
     if itm_col not in df.columns:
         raise ValueError(f"Item column '{itm_col}' not found. Available columns: {cols}")
+
+    if min_item_count > 1:
+        if verbose:
+            print(f"[{time.strftime('%X')}] Pandas: Filtering items with < {min_item_count} occurrences...")
+        raw_counts = df[itm_col].value_counts()
+        counts: Any = raw_counts
+        valid_items_idx = typing.cast("pd.Index", counts[counts >= min_item_count].index)
+        df = df.loc[df[itm_col].isin(valid_items_idx)]
 
     txn_codes, _txn_uniques = pd.factorize(df[txn_col], sort=False)
     item_codes, item_uniques = pd.factorize(df[itm_col], sort=True)

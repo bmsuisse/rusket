@@ -42,7 +42,7 @@ class FPMiner:
     ...     txn = chunk["txn_id"].to_numpy(dtype="int64")
     ...     item = chunk["item_idx"].to_numpy(dtype="int32")
     ...     miner.add_chunk(txn, item)
-    >>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=False)
+    >>> freq = miner.mine(min_support=0.001, max_len=3, use_colnames=True)
     """
 
     def __init__(
@@ -122,7 +122,7 @@ class FPMiner:
         self,
         min_support: float = 0.5,
         max_len: int | None = None,
-        use_colnames: bool = False,
+        use_colnames: bool = True,
         column_names: list[str] | None = None,
         method: typing.Literal["fpgrowth", "eclat", "auto"] = "auto",
         verbose: int = 0,

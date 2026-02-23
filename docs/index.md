@@ -24,20 +24,20 @@ The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and a
 
 ## Why rusket?
 
-| Feature | rusket | mlxtend |
-|---|---|---|
-| Speed (medium dataset) | **~0.4 s** | ~4 s |
-| Memory (large dataset) | ~3 s | OOM |
-| Polars support | ✅ | ❌ |
-| Sparse DataFrame support | ✅ | ⚠️ limited |
-| Zero Python dependencies | ✅ (`numpy`, `pandas`) | ❌ (many) |
-| 12 association metrics | ✅ | ✅ |
+| Feature | rusket |
+|---|---|
+| Speed (medium dataset) | **~0.4 s** |
+| Memory (large dataset) | ~3 s |
+| Polars support | ✅ |
+| Sparse DataFrame support | ✅ |
+| Zero Python dependencies | ✅ (`numpy`, `pandas`) |
+| 12 association metrics | ✅ |
 
 ## Quick Example — "Frequently Bought Together"
 
 ```python
 import pandas as pd
-from rusket import mine, association_rules
+from rusket import AutoMiner
 
 receipts = pd.DataFrame({
     "milk":    [1, 1, 0, 1, 0, 1],
@@ -47,10 +47,9 @@ receipts = pd.DataFrame({
     "coffee":  [0, 1, 0, 0, 1, 1],
 }, dtype=bool)
 
-freq = mine(receipts, min_support=0.4, use_colnames=True)
-rules = association_rules(
-    freq, num_itemsets=len(receipts), metric="confidence", min_threshold=0.6
-)
+model = AutoMiner(receipts, min_support=0.4)
+freq = model.mine(use_colnames=True)
+rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "confidence", "lift"]]
       .sort_values("lift", ascending=False))
 ```

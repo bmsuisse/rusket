@@ -7,7 +7,6 @@ nav = [
   { "Getting Started" = [
     { "Introduction" = "index.md" },
     { "Quick Start" = "quickstart.md" },
-    { "Migration from mlxtend" = "migration.md" },
   ]},
   { "User Guide" = [
     { "API Reference" = "api-reference.md" },

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+    from typing_extensions import Self
 
 
 class RuleMinerMixin:
@@ -50,19 +51,42 @@ class RuleMinerMixin:
         # self.mine() must be implemented by the subclass
         df_freq = self.mine()  # type: ignore
 
-        if df_freq is None or df_freq.empty:
+        is_empty = False
+        if df_freq is None:
+            is_empty = True
+        elif hasattr(df_freq, "empty"):
+            is_empty = df_freq.empty
+        elif hasattr(df_freq, "is_empty"):
+            # Polars
+            is_empty = df_freq.is_empty()
+        elif hasattr(df_freq, "isEmpty"):
+            # Spark
+            is_empty = df_freq.isEmpty()
+        else:
+            try:
+                is_empty = len(df_freq) == 0
+            except Exception:
+                pass
+
+        if is_empty:
             import pandas as pd
 
-            return pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)  # type: ignore[arg-type]
+            empty_df = pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)
+            if hasattr(self, "_convert_to_orig_type"):
+                return self._convert_to_orig_type(empty_df)  # type: ignore[attr-defined]
+            return empty_df
 
         # self._num_itemsets must be set by Model.__init__
-        return _assoc_rules(
+        result_df = _assoc_rules(
             df_freq,
             num_itemsets=getattr(self, "_num_itemsets", len(df_freq)),
             metric=metric,
             min_threshold=min_threshold,
             return_metrics=return_metrics,
         )
+        if hasattr(self, "_convert_to_orig_type"):
+            return self._convert_to_orig_type(result_df)  # type: ignore[attr-defined]
+        return result_df
 
     def recommend_items(self, items: list[Any], n: int = 5) -> list[Any]:
         """Suggest items to add to an active cart using association rules.
@@ -93,8 +117,37 @@ class RuleMinerMixin:
 
         rules_df = self._rules_cache[cache_key]
 
-        if rules_df.empty:
+        is_empty = False
+        if rules_df is None:
+            is_empty = True
+        elif hasattr(rules_df, "empty"):
+            is_empty = rules_df.empty
+        elif hasattr(rules_df, "is_empty"):
+            # Polars
+            is_empty = rules_df.is_empty()
+        elif hasattr(rules_df, "isEmpty"):
+            # Spark
+            is_empty = rules_df.isEmpty()
+        else:
+            try:
+                is_empty = len(rules_df) == 0
+            except Exception:
+                pass
+
+        if is_empty:
             return []
+
+        # Ensure we are working with Pandas for recommend_items logic since we use .apply()
+        import pandas as pd
+
+        if not isinstance(rules_df, pd.DataFrame):
+            try:
+                if hasattr(rules_df, "to_pandas"):
+                    rules_df = rules_df.to_pandas()
+                else:
+                    rules_df = rules_df.toPandas()
+            except Exception:
+                pass
 
         cart_set = frozenset(items)
         valid_rules = rules_df[
@@ -130,7 +183,7 @@ class BaseModel(ABC):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> BaseModel:
+    ) -> Self:
         """Initialize the model from a long-format DataFrame or sequences.
 
         Must be implemented by subclasses.
@@ -151,7 +204,7 @@ class BaseModel(ABC):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> BaseModel:
+    ) -> Self:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs)
 
@@ -163,7 +216,7 @@ class BaseModel(ABC):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> BaseModel:
+    ) -> Self:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, verbose=verbose, **kwargs)
 
@@ -174,7 +227,7 @@ class BaseModel(ABC):
         transaction_col: str | None = None,
         item_col: str | None = None,
         **kwargs: Any,
-    ) -> BaseModel:
+    ) -> Self:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, **kwargs)
 
@@ -213,6 +266,51 @@ class Miner(BaseModel):
             except TypeError:
                 self._num_itemsets = 0  # Fallback for unknown iterables
 
+        # Store the original dataframe type to convert outputs back
+        _type = type(self.data)
+        self._orig_df_type: str = "pandas"
+        if _type.__name__ == "DataFrame":
+            mod_name = getattr(_type, "__module__", "")
+            if mod_name.startswith("pyspark"):
+                self._orig_df_type = "spark"
+            elif mod_name.startswith("polars"):
+                self._orig_df_type = "polars"
+
+    def _convert_to_orig_type(self, df: pd.DataFrame) -> Any:
+        """Helper to convert the resulting pandas DataFrame back to the input DataFrame type."""
+        import pandas as pd
+
+        if df is None or not isinstance(df, pd.DataFrame):
+            return df
+
+        if self._orig_df_type == "polars":
+            import polars as pl
+
+            # Convert frozensets to lists for pyarrow compatibility
+            for col in ["antecedents", "consequents", "itemsets"]:
+                if col in df.columns:
+                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (frozenset, set)) else x)
+
+            return pl.from_pandas(df)
+        elif self._orig_df_type == "spark":
+            # Best-effort conversion to Spark
+            try:
+                from pyspark.sql import SparkSession
+
+                # Convert frozensets to lists for Spark schema compatibility
+                for col in ["antecedents", "consequents", "itemsets"]:
+                    if col in df.columns:
+                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (frozenset, set)) else x)
+
+                spark = SparkSession.getActiveSession()
+                if spark is not None:
+                    # Arrow conversion requires types_mapper trick for ArrowDtype
+                    # Since we are returning strings/floats/lists, basic createDataFrame usually works
+                    return spark.createDataFrame(df)
+            except ImportError:
+                pass
+        return df
+
     @classmethod
     def from_transactions(
         cls,
@@ -221,7 +319,7 @@ class Miner(BaseModel):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> Miner:
+    ) -> Self:
         """Load long-format transactional data into the algorithm.
 
         Parameters
@@ -253,10 +351,20 @@ class Miner(BaseModel):
         from .transactions import _from_dataframe, _from_list
 
         data = to_dataframe(data)
+        _type = type(data)
+        _orig_type = "pandas"
+        if _type.__name__ == "DataFrame":
+            mod_name = getattr(_type, "__module__", "")
+            if mod_name.startswith("pyspark"):
+                _orig_type = "spark"
+            elif mod_name.startswith("polars"):
+                _orig_type = "polars"
 
         if isinstance(data, (list, tuple)):
             sparse_df = _from_list(data, verbose=verbose)
-            return cls(sparse_df, **kwargs)
+            miner = cls(sparse_df, **kwargs)
+            miner._orig_df_type = "pandas"
+            return miner
 
         import pandas as _pd
         import polars as _pl
@@ -268,7 +376,9 @@ class Miner(BaseModel):
             data = data.to_pandas()
 
         sparse_df = _from_dataframe(data, transaction_col, item_col, verbose=verbose)
-        return cls(sparse_df, **kwargs)
+        miner = cls(sparse_df, **kwargs)
+        miner._orig_df_type = _orig_type
+        return miner
 
     @abstractmethod
     def mine(self, **kwargs: Any) -> pd.DataFrame:
