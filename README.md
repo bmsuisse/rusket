@@ -608,6 +608,8 @@ Integrate natively with the modern GenAI/LLM stack:
 
 ## ⚡ Benchmarks
 
+> **Benchmark environment:** Apple Silicon MacBook Air (M-series, arm64, 8 GB RAM). All timings are single-run wall-clock measurements.
+
 ### Scale Benchmarks (1M → 200M rows)
 
 | Scale | `from_transactions` → fpgrowth | Direct CSR → Rust | **Speedup** |

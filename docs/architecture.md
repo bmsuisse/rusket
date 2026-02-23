@@ -4,6 +4,68 @@ How rusket relies on Rust, PyO3, and Rayon for zero-copy, zero-allocation Python
 
 rusket is structured as a thin Python layer over a Rust core, compiled as a native extension module via [PyO3](https://pyo3.rs) and [maturin](https://github.com/PyO3/maturin).
 
+## Class hierarchy & API conventions
+
+rusket has two class families: **Miners** (frequent pattern discovery) and **Recommenders** (collaborative filtering). All share common API patterns.
+
+### Base classes
+
+```
+BaseModel (ABC)
+├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+│             PrefixSpan, HUPM (specialized miners)
+├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
+├── SequentialRecommender ─── FPMC, SASRec
+└── FM (standalone, uses explicit feature matrices)
+```
+
+### Common conventions
+
+| Convention | Rule |
+|---|---|
+| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init |
+| `from_pandas()`, `from_polars()`, `from_spark()` | Aliases delegating to `from_transactions()` |
+| `verbose: int` | `0` = silent, `1`+ = progress logs |
+| `seed: int` | Random-seed parameter (never `random_state`) |
+| `fitted: bool` | Attribute set to `True` after `.fit()` or `.mine()` |
+| `__repr__` | Every class has a `__repr__` showing key hyperparameters |
+| Docstrings | NumPy-style (`Parameters`, `Returns`, `Raises`) |
+
+### Miner interface
+
+```python
+miner = FPGrowth.from_transactions(df, transaction_col="tid", item_col="item")
+freq  = miner.mine()                        # → pd.DataFrame (support, itemsets)
+rules = miner.association_rules()            # → pd.DataFrame (metrics)
+recs  = miner.recommend_for_cart(items, n=5) # → list[Any]
+```
+
+### Recommender interface
+
+```python
+model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64)
+ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+```
+
+| Method | Available on |
+|---|---|
+| `fit(interactions)` | All recommenders |
+| `recommend_items(user_id, n, exclude_seen)` | All recommenders |
+| `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
+| `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
+| `user_factors` / `item_factors` | ALS, BPR, SVD, LightGCN |
+
+### Sequential recommenders (FPMC, SASRec)
+
+Work on ordered sequences. SASRec also accepts ad-hoc sequences:
+
+```python
+model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts")
+ids, scores = model.recommend_items([1, 2, 3], n=10)
+```
+
+---
+
 ## Repository layout
 
 ```

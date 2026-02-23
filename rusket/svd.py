@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import typing
 from typing import Any
 
 from . import _rusket as _rust  # type: ignore
@@ -61,7 +60,7 @@ class SVD(ImplicitRecommender):
             f"reg={self.regularization}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any) -> "SVD":
+    def fit(self, interactions: Any) -> SVD:
         """Fit the model to the user-item interaction matrix.
 
         Parameters
@@ -309,28 +308,24 @@ class SVD(ImplicitRecommender):
             n,
         )
 
-    @typing.no_type_check
     @property
     def user_factors(self):
         """User factor matrix (n_users, factors)."""
         self._check_fitted()
         return self._user_factors
 
-    @typing.no_type_check
     @property
     def item_factors(self):
         """Item factor matrix (n_items, factors)."""
         self._check_fitted()
         return self._item_factors
 
-    @typing.no_type_check
     @property
     def user_biases(self):
         """User bias vector (n_users,)."""
         self._check_fitted()
         return self._user_biases
 
-    @typing.no_type_check
     @property
     def item_biases(self):
         """Item bias vector (n_items,)."""
@@ -342,6 +337,11 @@ class SVD(ImplicitRecommender):
         """Global mean rating from training data."""
         self._check_fitted()
         return self._global_mean
+
+    @property
+    def fitted(self) -> bool:
+        """Whether the model has been fitted."""
+        return self._fitted
 
     def _check_fitted(self) -> None:
         if not self._fitted:

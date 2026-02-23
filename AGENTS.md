@@ -98,6 +98,94 @@ uv run pytest tests/ -x -q
 uv run pyright
 ```
 
+## Class Hierarchy & API Conventions
+
+rusket has two major class families: **Miners** and **Recommenders**. All share common patterns.
+
+### Base Classes
+
+```
+BaseModel (ABC)
+├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+│             PrefixSpan, HUPM (specialized miners)
+├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
+├── SequentialRecommender ─── FPMC, SASRec
+└── FM (standalone, uses explicit feature matrices)
+```
+
+### Common Patterns (all classes)
+
+| Convention | Rule |
+|---|---|
+| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init |
+| `from_pandas()`, `from_polars()`, `from_spark()` | Aliases that delegate to `from_transactions()` |
+| `verbose: int` | `0` = silent, `1`+ = progress. **Never** use `bool`. Cast to `bool()` at Rust FFI boundaries |
+| `seed: int` | Random seed parameter. **Never** use `random_state` |
+| `fitted: bool` | Attribute set to `True` after `.fit()` or `.mine()` |
+| `__repr__` | Every class must have a `__repr__` showing key hyperparameters |
+| Docstrings | **NumPy-style** everywhere (`Parameters`, `Returns`, `Raises`) |
+
+### Miner API
+
+All miners inherit `Miner` + `RuleMinerMixin`. Common interface:
+
+```python
+miner = FPGrowth(data, min_support=0.05, use_colnames=True)
+# or
+miner = FPGrowth.from_transactions(df, transaction_col="tid", item_col="item")
+
+freq = miner.mine()                        # → pd.DataFrame (support, itemsets)
+rules = miner.association_rules()          # → pd.DataFrame (antecedents, consequents, metrics)
+recs  = miner.recommend_for_cart(items)    # → list[Any] (cart-based recommendations)
+```
+
+- `recommend_for_cart()` is the primary method for cart recommendations
+- `recommend_items()` on miners is **deprecated** (backward-compat alias for `recommend_for_cart`)
+
+### Recommender API
+
+All recommenders expose:
+
+```python
+model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64)
+# or
+model = ALS(factors=64, seed=42)
+model.fit(csr_matrix)
+
+ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+```
+
+| Method | Available on |
+|---|---|
+| `fit(interactions)` | All recommenders |
+| `recommend_items(user_id, n, exclude_seen)` | All recommenders |
+| `recommend_users(item_id, n)` | Base default raises `NotImplementedError`; ALS, SVD implement it |
+| `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
+| `user_factors` / `item_factors` | ALS, BPR, SVD, LightGCN (properties) |
+| `similar_items(item_id, n)` | All `ImplicitRecommender` subclasses |
+| `export_factors()` / `export_user_factors()` | All `ImplicitRecommender` subclasses |
+
+### Sequential Recommenders (FPMC, SASRec)
+
+These work on ordered sequences rather than a flat interaction matrix:
+
+```python
+model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts")
+ids, scores = model.recommend_items(user_id=0, n=10)
+# SASRec also accepts raw sequences:
+ids, scores = model.recommend_items([1, 2, 3], n=10)
+```
+
+### FM (standalone)
+
+FM requires explicit feature matrices — `from_transactions()` raises `NotImplementedError`:
+
+```python
+model = FM(factors=8, seed=42)
+model.fit(X_train, y_train)
+probs = model.predict_proba(X_test)
+```
+
 ## Architecture Notes
 - **Rust Library Root**: `src/lib.rs`
 - **Core FP-Growth mining**: `src/fpgrowth.rs` (builds the FP-Tree and mines itemsets)

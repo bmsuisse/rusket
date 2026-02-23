@@ -45,17 +45,6 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     out
 }
 
-// ── Funk SVD Training ─────────────────────────────────────────────────────
-//
-// r̂_ui = μ + b_u + b_i + p_u · q_i
-//
-// SGD updates:
-//   e_ui = r_ui - r̂_ui
-//   p_u += lr * (e_ui * q_i - reg * p_u)
-//   q_i += lr * (e_ui * p_u - reg * q_i)
-//   b_u += lr * (e_ui - reg * b_u)
-//   b_i += lr * (e_ui - reg * b_i)
-//
 fn svd_train(
     indptr: &[i64],
     indices: &[i32],
@@ -69,7 +58,6 @@ fn svd_train(
     seed: u64,
     verbose: bool,
 ) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, f32) {
-    // Compute global mean
     let total_ratings: f64 = data.iter().map(|&v| v as f64).sum();
     let n_ratings = data.len();
     let global_mean = if n_ratings > 0 {
@@ -85,7 +73,6 @@ fn svd_train(
 
     let num_threads = rayon::current_num_threads();
 
-    // Raw pointers for lock-free parallel SGD (same trick as BPR)
     let uf_ptr_raw = user_factors.as_mut_ptr() as usize;
     let if_ptr_raw = item_factors.as_mut_ptr() as usize;
     let ub_ptr_raw = user_biases.as_mut_ptr() as usize;
@@ -120,7 +107,6 @@ fn svd_train(
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
 
-        // Fisher-Yates shuffle with XorShift
         let mut shuffler = XorShift64::new(seed.wrapping_add(iter as u64).wrapping_add(999));
         let len = triplets.len();
         for i in (1..len).rev() {
@@ -202,7 +188,6 @@ fn svd_train(
     )
 }
 
-// ── Top-N recommendation using biased dot product ─────────────────────────
 fn top_n_items(
     uf: &[f32],
     itf: &[f32],
@@ -278,8 +263,6 @@ fn top_n_users(
         scored.iter().map(|(s, _)| *s).collect(),
     )
 }
-
-// ── PyO3 Bindings ─────────────────────────────────────────────────────────
 
 #[pyfunction]
 #[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, learning_rate, regularization, iterations, seed, verbose))]

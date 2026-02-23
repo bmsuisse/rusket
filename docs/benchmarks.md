@@ -4,7 +4,8 @@ Performance comparisons: rusket vs mlxtend, scaling to 1 Billion rows, and FPMin
 
 `rusket` includes two mining algorithms (**FP-Growth** and **Eclat**), both implemented in Rust. These benchmarks compare `rusket` against **mlxtend** (pure Python) on synthetic and real-world datasets.
 
-Measured on Apple M-series (arm64).
+> **Benchmark environment:** Apple Silicon MacBook Air (M-series, arm64, 8 GB RAM).
+> All timings are single-run wall-clock measurements. Your results may vary depending on hardware, thermal throttling, and background load.
 
 ---
 
