@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import warnings
+from typing import TYPE_CHECKING
 
-import numpy as np
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
@@ -17,6 +18,9 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
     null_values:
         Whether NaN values are allowed in *df*.
     """
+    import numpy as np
+    import pandas as pd
+
     if df is None:
         return
 

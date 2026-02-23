@@ -1,18 +1,22 @@
+"""LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import scipy.sparse as sp
 
 from rusket._rusket import lightgcn_fit  # type: ignore[attr-defined]
 
+from .model import ImplicitRecommender
+
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
 
-class LightGCN:
+class LightGCN(ImplicitRecommender):
     """LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation.
 
     A state-of-the-art collaborative filtering model that propagates embeddings
@@ -20,14 +24,22 @@ class LightGCN:
 
     Typical training time on ml-100k: < 0.5s/epoch.
 
-    Args:
-        factors: Embedding dimensionality (latent factors).
-        k_layers: Number of graph-propagation layers (1–4).
-        learning_rate: Adam learning rate.
-        lambda_: L2 regularization coefficient.
-        iterations: Number of training epochs.
-        random_state: Seed for reproducible training.
-        verbose: Print training progress.
+    Parameters
+    ----------
+    factors : int
+        Embedding dimensionality (latent factors).
+    k_layers : int
+        Number of graph-propagation layers (1–4).
+    learning_rate : float
+        Adam learning rate.
+    lambda\\_ : float
+        L2 regularization coefficient.
+    iterations : int
+        Number of training epochs.
+    seed : int or None
+        Seed for reproducible training.
+    verbose : int
+        Print training progress.
     """
 
     def __init__(
@@ -37,15 +49,17 @@ class LightGCN:
         learning_rate: float = 1e-3,
         lambda_: float = 1e-4,
         iterations: int = 20,
-        random_state: int | None = None,
+        seed: int | None = None,
         verbose: int = 0,
+        **kwargs: Any,
     ) -> None:
+        super().__init__(**kwargs)
         self.factors = factors
         self.k_layers = k_layers
         self.learning_rate = learning_rate
         self.lambda_ = lambda_
         self.iterations = iterations
-        self.random_state = random_state
+        self.seed = seed
         self.verbose = verbose
 
         self._user_factors: np.ndarray | None = None
@@ -56,53 +70,81 @@ class LightGCN:
 
         self._fit_indptr: np.ndarray | None = None
         self._fit_indices: np.ndarray | None = None
+        self._n_users: int = 0
+        self._n_items: int = 0
+        self.fitted: bool = False
+
+    def __repr__(self) -> str:
+        return (
+            f"LightGCN(factors={self.factors}, k_layers={self.k_layers}, "
+            f"learning_rate={self.learning_rate}, iterations={self.iterations})"
+        )
 
     @classmethod
     def from_transactions(
         cls,
-        data: pd.DataFrame | pl.DataFrame,
-        user_col: str | None = None,
+        data: pd.DataFrame | pl.DataFrame | Any,
+        transaction_col: str | None = None,
         item_col: str | None = None,
-        **kwargs,
+        verbose: int = 0,
+        **kwargs: Any,
     ) -> LightGCN:
-        model = cls(**kwargs)
+        """Initialize and fit the LightGCN model from a long-format DataFrame.
+
+        Parameters
+        ----------
+        data : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
+            Event log containing user IDs and item IDs.
+        transaction_col : str, optional
+            Column name identifying the user ID (aliases ``user_col``).
+        item_col : str, optional
+            Column name identifying the item ID.
+        verbose : int, default=0
+            Verbosity level.
+        **kwargs
+            Model hyperparameters (e.g., ``factors``, ``k_layers``).
+
+        Returns
+        -------
+        LightGCN
+            The fitted model.
+        """
+        user_col = kwargs.pop("user_col", transaction_col)
+        model = cls(verbose=verbose, **kwargs)
         model._fit_from_df(data, user_col, item_col)
         return model
 
-    def _fit_from_df(
-        self,
-        data: pd.DataFrame | pl.DataFrame,
-        user_col: str | None,
-        item_col: str | None,
-    ) -> None:
+    def fit(self, interactions: Any) -> LightGCN:
+        """Fit the model to a user-item interaction matrix.
 
-        if hasattr(data, "to_pandas"):
-            data = data.to_pandas()
+        Parameters
+        ----------
+        interactions : scipy.sparse.csr_matrix or numpy.ndarray
+            A sparse or dense user-item interaction matrix.
 
-        user_col = user_col or "user_id"
-        item_col = item_col or "item_id"
+        Returns
+        -------
+        LightGCN
+            The fitted model.
+        """
+        if self.fitted:
+            raise RuntimeError("Model is already fitted. Create a new instance to refit.")
 
-        users = np.asarray(data[user_col])  # type: ignore[call-overload]
-        items = np.asarray(data[item_col])  # type: ignore[call-overload]
+        if sp.issparse(interactions):
+            csr = sp.csr_matrix(interactions, dtype=np.float32)
+        elif isinstance(interactions, np.ndarray):
+            csr = sp.csr_matrix(interactions.astype(np.float32))
+        else:
+            raise TypeError(f"Expected scipy sparse matrix or numpy array, got {type(interactions)}")
 
-        unique_users = np.unique(users.astype(object))  # type: ignore[arg-type]
-        unique_items = np.unique(items.astype(object))  # type: ignore[arg-type]
+        if not isinstance(csr, sp.csr_matrix):
+            csr = csr.tocsr()
 
-        self._user_map = {u: i for i, u in enumerate(unique_users)}
-        self._item_map = {it: i for i, it in enumerate(unique_items)}
-        self._rev_item_map = {i: it for it, i in self._item_map.items()}
-
-        u_idx = np.array([self._user_map[u] for u in users], dtype=np.int32)
-        i_idx = np.array([self._item_map[it] for it in items], dtype=np.int32)
-
-        n_users = len(unique_users)
-        n_items = len(unique_items)
+        csr.eliminate_zeros()
+        n_users, n_items = csr.shape
 
         # Build CSR (user → items) and CSC-as-CSR (item → users)
-        ui_csr = sp.csr_matrix(
-            (np.ones(len(u_idx)), (u_idx, i_idx)),
-            shape=(n_users, n_items),
-        )
+        ui_csr = csr
         ui_csr.sort_indices()
 
         iu_csr = ui_csr.T.tocsr()
@@ -113,7 +155,7 @@ class LightGCN:
         i_indptr = iu_csr.indptr.astype(np.int64)
         i_indices = iu_csr.indices.astype(np.int32)
 
-        seed = self.random_state if self.random_state is not None else int(np.random.randint(1 << 31))
+        seed = self.seed if self.seed is not None else int(np.random.randint(1 << 31))
 
         eu, ei = lightgcn_fit(
             u_indptr,
@@ -131,7 +173,6 @@ class LightGCN:
             bool(self.verbose),
         )
 
-        # Compute final propagated embeddings for scoring
         self._user_factors = np.asarray(eu, dtype=np.float32)
         self._item_factors = np.asarray(ei, dtype=np.float32)
         self._n_users = n_users
@@ -139,25 +180,74 @@ class LightGCN:
 
         self._fit_indptr = u_indptr
         self._fit_indices = u_indices
+        self.fitted = True
+
+        return self
+
+    def _fit_from_df(
+        self,
+        data: pd.DataFrame | pl.DataFrame | Any,
+        user_col: str | None,
+        item_col: str | None,
+    ) -> None:
+        """Internal: fit from a DataFrame with user/item columns."""
+        if hasattr(data, "to_pandas"):
+            data = data.to_pandas()
+
+        user_col = user_col or str(data.columns[0])
+        item_col = item_col or str(data.columns[1])
+
+        users = np.asarray(data[user_col])
+        items = np.asarray(data[item_col])
+
+        unique_users = np.unique(users.astype(object))
+        unique_items = np.unique(items.astype(object))
+
+        self._user_map = {u: i for i, u in enumerate(unique_users)}
+        self._item_map = {it: i for i, it in enumerate(unique_items)}
+        self._rev_item_map = {i: it for it, i in self._item_map.items()}
+
+        u_idx = np.array([self._user_map[u] for u in users], dtype=np.int32)
+        i_idx = np.array([self._item_map[it] for it in items], dtype=np.int32)
+
+        n_users = len(unique_users)
+        n_items = len(unique_items)
+
+        csr = sp.csr_matrix(
+            (np.ones(len(u_idx)), (u_idx, i_idx)),
+            shape=(n_users, n_items),
+        )
+        self.fit(csr)
+
+        self._user_labels = [str(u) for u in unique_users]
+        self._item_labels = [str(it) for it in unique_items]
+        self.item_names = self._item_labels
 
     def recommend_items(self, user_id: int, n: int = 10, exclude_seen: bool = True) -> tuple[np.ndarray, np.ndarray]:
-        """Return top-n recommended item IDs and scores for a given user.
+        """Top-N items for a user.
 
-        Args:
-            user_id: Original user ID (before encoding).
-            n: Number of recommendations.
-            exclude_seen: Whether to exclude items the user has already interacted with.
+        Parameters
+        ----------
+        user_id : int
+            Original user ID (before encoding).
+        n : int, default=10
+            Number of recommendations.
+        exclude_seen : bool, default=True
+            Whether to exclude items the user has already interacted with.
 
-        Returns:
-            Tuple of (item_ids, scores) arrays sorted by descending score.
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``(item_ids, scores)`` sorted by descending score.
         """
-        if self._user_factors is None:
-            raise RuntimeError("Model not fitted yet.")
+        self._check_fitted()
+        assert self._user_factors is not None
+        assert self._item_factors is not None
+
         uid = self._user_map.get(user_id)
         if uid is None:
             return np.array([], dtype=np.int64), np.array([], dtype=np.float32)
 
-        assert self._item_factors is not None
         scores = self._user_factors[uid] @ self._item_factors.T
 
         if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
@@ -169,3 +259,19 @@ class LightGCN:
         top_idx = np.argsort(scores)[::-1][:n]
         original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)
         return original_ids, scores[top_idx]
+
+    @property
+    def user_factors(self) -> Any:
+        """User factor matrix (n_users, factors)."""
+        self._check_fitted()
+        return self._user_factors
+
+    @property
+    def item_factors(self) -> Any:
+        """Item factor matrix (n_items, factors)."""
+        self._check_fitted()
+        return self._item_factors
+
+    def _check_fitted(self) -> None:
+        if not self.fitted:
+            raise RuntimeError("Model has not been fitted yet. Call .fit() first.")

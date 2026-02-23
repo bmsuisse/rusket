@@ -39,7 +39,7 @@ class FM(BaseModel):
         regularization: float = 0.01,
         iterations: int = 100,
         seed: int = 42,
-        verbose: bool = False,
+        verbose: int = 0,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -113,7 +113,7 @@ class FM(BaseModel):
             self.regularization,
             self.iterations,
             self.seed,
-            self.verbose,
+            bool(self.verbose),
         )
 
         self._n_features = n_features

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 from . import _rusket as _rust  # type: ignore
 from ._compat import to_dataframe
@@ -97,6 +98,8 @@ class PrefixSpan(Miner):
         """
         min_supp = kwargs.get("min_support", self.min_support)
         max_len = kwargs.get("max_len", self.max_len)
+
+        import pandas as pd
 
         if isinstance(min_supp, float):
             n_seqs = min(1, len(self.data)) if isinstance(self.data, list) else 1  # simplistic fallback
@@ -226,7 +229,9 @@ def prefixspan(
         DeprecationWarning,
         stacklevel=2,
     )
+
     import numpy as np
+    import pandas as pd
 
     indptr_list = [0]
     indices_list = []

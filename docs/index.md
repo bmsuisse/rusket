@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="rusket logo" width="320" />
+  <img src="assets/logo_single.svg" alt="rusket logo" width="320" />
 </p>
 
 # rusket

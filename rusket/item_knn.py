@@ -1,7 +1,10 @@
-from typing import Any, Literal
+from __future__ import annotations
 
-import numpy as np
-import scipy.sparse as sp
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    import numpy as np
+    import scipy.sparse as sp
 
 from . import _rusket as _rust  # type: ignore
 from .model import ImplicitRecommender
@@ -9,6 +12,9 @@ from .model import ImplicitRecommender
 
 def _bm25_weight(X: sp.csr_matrix, K1: float = 1.2, B: float = 0.75) -> sp.csr_matrix:
     """Weighs each item-user interaction by BM25."""
+    import numpy as np
+    import scipy.sparse as sp
+
     X_coo = X.tocoo()
 
     # Calculate item frequencies
@@ -31,6 +37,9 @@ def _bm25_weight(X: sp.csr_matrix, K1: float = 1.2, B: float = 0.75) -> sp.csr_m
 
 def _tfidf_weight(X: sp.csr_matrix) -> sp.csr_matrix:
     """Weighs each item-user interaction by TF-IDF."""
+    import numpy as np
+    import scipy.sparse as sp
+
     X_coo = X.tocoo()
 
     N = float(X_coo.shape[0])  # type: ignore[index]
@@ -45,6 +54,9 @@ def _tfidf_weight(X: sp.csr_matrix) -> sp.csr_matrix:
 
 def _cosine_weight(X: sp.csr_matrix) -> sp.csr_matrix:
     """Normalize rows for cosine similarity."""
+    import numpy as np
+    import scipy.sparse as sp
+
     row_norms = np.array(X.multiply(X).sum(axis=1)).flatten()
     row_norms = np.sqrt(row_norms)
     row_norms[row_norms == 0] = 1.0
@@ -68,7 +80,7 @@ class ItemKNN(ImplicitRecommender):
         k: int = 20,
         bm25_k1: float = 1.2,
         bm25_b: float = 0.75,
-        verbose: bool = False,
+        verbose: int = 0,
         **kwargs: Any,
     ):
         super().__init__()
@@ -81,14 +93,27 @@ class ItemKNN(ImplicitRecommender):
         self.w_indptr: np.ndarray | None = None
         self.w_indices: np.ndarray | None = None
         self.w_data: np.ndarray | None = None
+        self.fitted: bool = False
 
-    def fit(self, interactions: Any) -> "ItemKNN":
-        """
-        Fit the ItemKNN model.
+    def __repr__(self) -> str:
+        return f"ItemKNN(method='{self.method}', k={self.k})"
 
-        Args:
-            interactions: A scipy.sparse.csr_matrix of shape (n_users, n_items).
+    def fit(self, interactions: Any) -> ItemKNN:
+        """Fit the ItemKNN model.
+
+        Parameters
+        ----------
+        interactions : scipy.sparse.csr_matrix
+            A sparse matrix of shape (n_users, n_items).
+
+        Returns
+        -------
+        ItemKNN
+            The fitted model.
         """
+        import numpy as np
+        import scipy.sparse as sp
+
         if not sp.isspmatrix_csr(interactions):
             interactions = interactions.tocsr()
 
@@ -134,17 +159,13 @@ class ItemKNN(ImplicitRecommender):
         self._fit_indptr = interactions.indptr
         self._fit_indices = interactions.indices
         self._fit_data = interactions.data
+        self.fitted = True
 
         return self
 
     def _check_fitted(self) -> None:
-        if self.w_indptr is None:
-            raise RuntimeError("Model has not been fitted.")
-
-    @property
-    def fitted(self) -> bool:
-        """Return True if the model has been fitted."""
-        return self.w_indptr is not None
+        if not self.fitted:
+            raise RuntimeError("Model has not been fitted. Call .fit() first.")
 
     def recommend_items(
         self,
@@ -152,8 +173,26 @@ class ItemKNN(ImplicitRecommender):
         n: int = 10,
         exclude_seen: bool = True,
     ) -> tuple[Any, Any]:
-        """Top-N items for a user. Set exclude_seen=False to include already-seen items."""
+        """Top-N items for a user.
+
+        Parameters
+        ----------
+        user_id : int
+            The user ID to generate recommendations for.
+        n : int, default=10
+            Number of items to return.
+        exclude_seen : bool, default=True
+            Whether to exclude items the user has already interacted with.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``(item_ids, scores)`` sorted by descending score.
+        """
         self._check_fitted()
+
+        import numpy as np
+
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
 
@@ -188,6 +227,4 @@ class ItemKNN(ImplicitRecommender):
         )
         return np.asarray(ids), np.asarray(scores)
 
-    def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
-        """Top-N users for an item. Not implemented for ItemKNN currently."""
-        raise NotImplementedError("ItemKNN does not support recommend_users efficiently.")
+

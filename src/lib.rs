@@ -22,6 +22,7 @@ mod lightgcn;
 mod metrics;
 mod model_selection;
 mod sasrec;
+mod svd;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -60,5 +61,9 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(metrics::hit_rate_at_k, m)?)?;
     m.add_function(wrap_pyfunction!(model_selection::leave_one_out, m)?)?;
     m.add_function(wrap_pyfunction!(model_selection::train_test_split, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svd_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svd_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svd_recommend_users, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svd_recommend_all, m)?)?;
     Ok(())
 }

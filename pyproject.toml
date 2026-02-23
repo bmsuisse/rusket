@@ -45,6 +45,8 @@ exclude = [
     "profile_als.dSYM/**/*",
     "llm.txt",
     "zensical.toml",
+    "**/__pycache__/**/*",
+    "**/*.pyc",
 ]
 
 [dependency-groups]

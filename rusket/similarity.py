@@ -1,4 +1,9 @@
-import numpy as np
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from .typing import SupportsItemFactors
 
@@ -27,6 +32,8 @@ def similar_items(
     tuple[np.ndarray, np.ndarray]
         ``(item_ids, cosine_similarities)`` sorted in descending order.
     """
+    import numpy as np
+
     factors = model.item_factors  # raises if not fitted
     n_items, _ = factors.shape
 

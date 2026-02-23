@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
-import pandas as pd
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
 
 
 class Recommender:
@@ -55,6 +56,8 @@ class Recommender:
         """
         if self.model is None:
             raise ValueError("Model is not provided to the Recommender.")
+
+        import numpy as np
 
         # 1. Get raw CF scores
         cf_rec_tuple = self.model.recommend_items(user_id=user_id, n=n, exclude_seen=True)
@@ -127,6 +130,8 @@ class Recommender:
 
     def predict_next_chunk(self, user_history_df: pd.DataFrame, user_col: str = "user_id", k: int = 5) -> pd.DataFrame:
         """Batch-rank the next best products for every user in *user_history_df*."""
+        import pandas as pd
+
         recs = [
             {
                 user_col: u,
@@ -175,6 +180,8 @@ def score_potential(
     """
     if not hasattr(model, "user_factors") or not hasattr(model, "item_factors"):
         raise ValueError("Model must expose `user_factors` and `item_factors` for score_potential.")
+
+    import numpy as np
 
     u_factors = model.user_factors
     i_factors = model.item_factors

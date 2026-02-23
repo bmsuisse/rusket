@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def _is_spark(df: Any) -> bool:
@@ -47,6 +48,8 @@ def mine_grouped(
         return pl.DataFrame(schema={group_col: pl.Utf8, "support": pl.Float64, "itemsets": pl.List(pl.Utf8)})
 
     else:
+        import pandas as pd
+
         res_dfs = []
         for name, group_df in df.groupby(group_col):
             if isinstance(name, tuple):
@@ -104,6 +107,8 @@ def rules_grouped(
         )
 
     else:
+        import pandas as pd
+
         res_dfs = []
         for name, group_df in df.groupby(group_col):
             if isinstance(name, tuple):
@@ -291,6 +296,8 @@ def recommend_batches(
 
             return pl.from_pandas(res_df)
         else:
+            import pandas as pd
+
             return recommender.predict_next_chunk(df, user_col=user_col, k=k)
     except Exception:
         if is_pl:
@@ -326,6 +333,8 @@ def als_grouped(
     import warnings
 
     from .als import ALS
+
+    import pandas as pd
 
     warnings.simplefilter("ignore", DeprecationWarning)
 

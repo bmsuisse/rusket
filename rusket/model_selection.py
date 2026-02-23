@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from . import _rusket
 
@@ -38,6 +41,8 @@ def train_test_split(
         import pandas as pd
     except ImportError as e:
         raise ImportError("pandas is required for model_selection utility.") from e
+
+    import numpy as np
 
     if not isinstance(df, pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame.")
@@ -84,6 +89,8 @@ def leave_one_out_split(
         import pandas as pd
     except ImportError as e:
         raise ImportError("pandas is required for model_selection utility.") from e
+
+    import numpy as np
 
     if not isinstance(df, pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame.")

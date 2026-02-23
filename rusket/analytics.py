@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-import pandas as pd
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def find_substitutes(rules_df: pd.DataFrame, max_lift: float = 0.8) -> pd.DataFrame:
@@ -55,6 +58,8 @@ def customer_saturation(
     """
     if category_col is None and item_col is None:
         raise ValueError("Must provide either category_col or item_col.")
+
+    import pandas as pd
 
     target_col = category_col or item_col
     assert target_col is not None  # narrowing for type checker

@@ -140,7 +140,7 @@ class RuleMinerMixin:
             min_threshold=min_threshold,
         )
 
-    def recommend_items(self, items: list[Any], n: int = 5) -> list[Any]:
+    def recommend_for_cart(self, items: list[Any], n: int = 5) -> list[Any]:
         """Suggest items to add to an active cart using association rules.
 
         Parameters
@@ -189,7 +189,7 @@ class RuleMinerMixin:
         if is_empty:
             return []
 
-        # Ensure we are working with Pandas for recommend_items logic since we use .apply()
+        # Ensure we are working with Pandas for recommend_for_cart logic since we use .apply()
         import pandas as pd
 
         if not isinstance(rules_df, pd.DataFrame):
@@ -217,6 +217,18 @@ class RuleMinerMixin:
                     if len(suggestions) >= n:
                         return suggestions
         return suggestions
+
+    def recommend_items(self, items: list[Any], n: int = 5) -> list[Any]:
+        """Deprecated: use :meth:`recommend_for_cart` instead."""
+        import warnings
+
+        warnings.warn(
+            "RuleMinerMixin.recommend_items() is deprecated. "
+            "Use recommend_for_cart() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.recommend_for_cart(items, n)
 
 
 class BaseModel(ABC):
@@ -607,6 +619,18 @@ class ImplicitRecommender(BaseModel):
         Must be implemented by subclasses.
         """
         pass
+
+    def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
+        """Top-N users for an item.
+
+        Override in subclasses that support this operation.
+
+        Raises
+        ------
+        NotImplementedError
+            If the subclass does not support this operation.
+        """
+        raise NotImplementedError(f"{self.__class__.__name__} does not support recommend_users.")
 
     @property
     def item_factors(self) -> Any:

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 from . import _rusket as _rust  # type: ignore
 from ._compat import to_dataframe
@@ -92,12 +93,14 @@ class HUPM(Miner):
             )
             transactions = grouped["items"].to_list()
             utilities = grouped["utils"].to_list()
-        elif isinstance(data, pd.DataFrame):
+        else:
+            import pandas as pd
+
+            if not isinstance(data, pd.DataFrame):
+                raise TypeError(f"Expected Pandas or Polars DataFrame, got {type(data)}")
             grouped = data.groupby(transaction_col).agg(items=(item_col, list), utils=(utility_col, list))
             transactions = grouped["items"].tolist()
             utilities = grouped["utils"].tolist()
-        else:
-            raise TypeError(f"Expected Pandas or Polars DataFrame, got {type(data)}")
 
         return cls(transactions=transactions, utilities=utilities, min_utility=min_utility, max_len=max_len)
 
@@ -110,6 +113,8 @@ class HUPM(Miner):
             A DataFrame containing 'utility' and 'itemset' columns.
         """
         from typing import cast
+
+        import pandas as pd
 
         data_list = cast(list[list[int]], self.data)
         total_utils, patterns = _rust.hupm_mine_py(data_list, self.utilities, self.min_utility, self.max_len)
@@ -206,6 +211,9 @@ def hupm(
     warnings.warn(
         "rusket.hupm() is deprecated. Use HUPM.from_transactions() instead.", DeprecationWarning, stacklevel=2
     )
+
+    import pandas as pd
+
     total_utils, patterns = _rust.hupm_mine_py(transactions, utilities, min_utility, max_len)
 
     return (

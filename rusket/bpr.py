@@ -37,7 +37,7 @@ class BPR(ImplicitRecommender):
         regularization: float = 0.01,
         iterations: int = 150,
         seed: int = 42,
-        verbose: bool = False,
+        verbose: int = 0,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -105,7 +105,7 @@ class BPR(ImplicitRecommender):
             self.regularization,
             self.iterations,
             self.seed,
-            self.verbose,
+            bool(self.verbose),
         )
         self._n_users = n_users
         self._n_items = n_items

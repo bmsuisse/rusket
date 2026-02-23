@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
 
 from .mine import mine
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 def to_spark(spark_session: Any, df: Any) -> Any:

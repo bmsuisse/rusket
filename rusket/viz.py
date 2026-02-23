@@ -5,11 +5,10 @@ from __future__ import annotations
 import typing
 from typing import Any
 
-import numpy as np
-import pandas as pd
-
 if typing.TYPE_CHECKING:
     import networkx  # type: ignore
+    import numpy as np
+    import pandas as pd
 
 
 def to_networkx(
@@ -113,6 +112,8 @@ def compute_pca_3d(data: np.ndarray) -> np.ndarray:
     np.ndarray
         3D projection of shape (n_samples, 3).
     """
+    import numpy as np
+
     data_centered = data - np.mean(data, axis=0)
     _, _, Vt = np.linalg.svd(data_centered, full_matrices=False)
     return np.dot(data_centered, Vt[:3].T)
@@ -139,6 +140,9 @@ def visualize_latent_space(
     plotly.graph_objects.Figure
         A Plotly figure object.
     """
+    import numpy as np
+    import pandas as pd
+
     try:
         import plotly.express as px
     except ImportError as err:

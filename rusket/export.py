@@ -1,7 +1,10 @@
-from typing import Any
+from __future__ import annotations
 
-import numpy as np
-import pandas as pd
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
 
 from .typing import SupportsItemFactors, SupportsUserFactors
 
@@ -40,6 +43,9 @@ def export_item_factors(
     >>> # Ingest into FAISS / Pinecone / Qdrant
     >>> vectors = np.stack(df["vector"].values)
     """
+    import numpy as np
+    import pandas as pd
+
     factors = model.item_factors
     if factors is None:
         raise ValueError("Model has not been fitted yet.")
@@ -107,6 +113,9 @@ def export_user_factors(
         A DataFrame where each row is a user with columns ``user_id``,
         optionally ``user_label``, and ``vector``.
     """
+    import numpy as np
+    import pandas as pd
+
     factors = model.user_factors
     if factors is None:
         raise ValueError("Model has not been fitted yet.")

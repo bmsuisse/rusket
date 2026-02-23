@@ -27,7 +27,7 @@ class EASE(ImplicitRecommender):
     def __init__(
         self,
         regularization: float = 500.0,
-        verbose: bool = False,
+        verbose: int = 0,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -135,9 +135,7 @@ class EASE(ImplicitRecommender):
         )
         return np.asarray(ids), np.asarray(scores)
 
-    def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
-        """Top-N users for an item. Not implemented for EASE currently."""
-        raise NotImplementedError("EASE does not efficiently support recommending users for an item.")
+
 
     @property
     def item_factors(self) -> Any:

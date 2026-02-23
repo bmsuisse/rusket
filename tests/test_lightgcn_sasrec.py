@@ -46,7 +46,7 @@ class TestLightGCN:
             factors=16,
             k_layers=2,
             iterations=5,
-            random_state=42,
+            seed=42,
         )
         ids, scores = model.recommend_items(user_id=0, n=3)
         assert len(ids) == 3
@@ -61,7 +61,7 @@ class TestLightGCN:
             item_col="item_id",
             factors=8,
             iterations=3,
-            random_state=1,
+            seed=1,
         )
         ids, scores = model.recommend_items(user_id=0, n=10)
         assert len(ids) > 0
@@ -75,19 +75,19 @@ class TestLightGCN:
             item_col="item_id",
             factors=8,
             iterations=2,
-            random_state=0,
+            seed=0,
         )
         ids, scores = model.recommend_items(user_id=999, n=5)
         assert len(ids) == 0
 
-    def test_reproducible_with_random_state(self, interactions_df):
+    def test_reproducible_with_seed(self, interactions_df):
         m1 = rusket.LightGCN.from_transactions(
             interactions_df,
             user_col="user_id",
             item_col="item_id",
             factors=16,
             iterations=5,
-            random_state=42,
+            seed=42,
         )
         m2 = rusket.LightGCN.from_transactions(
             interactions_df,
@@ -95,7 +95,7 @@ class TestLightGCN:
             item_col="item_id",
             factors=16,
             iterations=5,
-            random_state=42,
+            seed=42,
         )
         ids1, _ = m1.recommend_items(user_id=0, n=5)
         ids2, _ = m2.recommend_items(user_id=0, n=5)
@@ -112,7 +112,7 @@ class TestLightGCN:
             item_col="item_id",
             factors=8,
             iterations=2,
-            random_state=0,
+            seed=0,
         )
         ids, scores = model.recommend_items(user_id=0, n=3)
         assert len(ids) > 0
@@ -136,7 +136,7 @@ class TestSASRec:
             n_layers=1,
             max_seq=10,
             iterations=3,
-            random_state=42,
+            seed=42,
         )
         model.fit(sequences)
         self.model = model
@@ -163,7 +163,7 @@ class TestSASRec:
             item_col="item_id",
             factors=8,
             iterations=2,
-            random_state=0,
+            seed=0,
         )
         ids, scores = model.recommend_items([1, 2, 3], n=3)
         assert len(ids) > 0

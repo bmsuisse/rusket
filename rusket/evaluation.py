@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import warnings
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
 from . import _rusket
 
@@ -42,6 +43,8 @@ def evaluate(
     """
     if metrics is None:
         metrics = ["ndcg", "hr", "precision", "recall"]
+
+    import numpy as np
 
     try:
         import pandas as pd
