@@ -129,7 +129,7 @@ def from_transactions(
             _itm_c = item_col or spark_df.columns[1]
             item_counts = spark_df.groupBy(_itm_c).count()
             valid_items = item_counts.filter(F.col("count") >= min_item_count).select(_itm_c)
-            data = spark_df.join(valid_items, on=_itm_c, how="inner")
+            data = spark_df.join(valid_items, on=_itm_c, how="inner").select(*spark_df.columns)
 
         if hasattr(data, "toArrow"):
             import pandas as pd
