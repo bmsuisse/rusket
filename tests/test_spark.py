@@ -301,7 +301,7 @@ def test_recommend_batches(spark_session) -> None:
     warnings.simplefilter("ignore", DeprecationWarning)
 
     model.fit_transactions(train_df, user_col="user_id", item_col="item_id", rating_col="rating")
-    recommender = Recommender(als_model=model)
+    recommender = Recommender(model=model)
 
     # Now pretend we have a Spark DF of user histories to batch score
     batch_df = pd.DataFrame(

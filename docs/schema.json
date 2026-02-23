@@ -58,7 +58,7 @@
     "prefixspan": {
       "parameters": {
         "sequences": "list[list[int]]",
-        "min_support": "int",
+        "min_support": "int | float",
         "max_len": "int | None"
       },
       "returns": "pd.DataFrame",
@@ -170,7 +170,8 @@
         "df": "SparkDataFrame",
         "transaction_col": "str | None",
         "item_col": "str | None",
-        "min_item_count": "int"
+        "min_item_count": "int",
+        "verbose": "int"
       },
       "returns": "SparkDataFrame",
       "doc": "Shorthand for ``from_transactions(df, transaction_col, item_col)``."
@@ -178,7 +179,7 @@
     "score_potential": {
       "parameters": {
         "user_history": "list[list[int]]",
-        "als_model": "ALS",
+        "model": "Any",
         "target_categories": "list[int] | None"
       },
       "returns": "np.ndarray",
@@ -306,7 +307,7 @@
         "__init__": {
           "parameters": {
             "data": "list[list[int]]",
-            "min_support": "int",
+            "min_support": "int | float",
             "max_len": "int | None",
             "item_mapping": "dict[int, Any] | None"
           },
@@ -330,6 +331,19 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine sequential patterns using PrefixSpan."
+        },
+        "mine_grouped": {
+          "parameters": {
+            "df": "Any",
+            "group_col": "str",
+            "user_col": "str",
+            "time_col": "str",
+            "item_col": "str",
+            "min_support": "int",
+            "max_len": "int | None"
+          },
+          "returns": "Any",
+          "doc": "Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions."
         }
       },
       "doc": "Sequential Pattern Mining (PrefixSpan) model."
@@ -363,6 +377,19 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine high-utility itemsets."
+        },
+        "mine_grouped": {
+          "parameters": {
+            "df": "Any",
+            "group_col": "str",
+            "transaction_col": "str",
+            "item_col": "str",
+            "utility_col": "str",
+            "min_utility": "float",
+            "max_len": "int | None"
+          },
+          "returns": "Any",
+          "doc": "Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions."
         }
       },
       "doc": "High-Utility Pattern Mining (HUPM) model."
@@ -507,7 +534,7 @@
       "methods": {
         "__init__": {
           "parameters": {
-            "als_model": "ALS | None",
+            "model": "Any | None",
             "rules_df": "pd.DataFrame | None",
             "item_embeddings": "np.ndarray | None"
           },
@@ -548,7 +575,7 @@
       "methods": {
         "__init__": {
           "parameters": {
-            "als_model": "ALS | None",
+            "model": "Any | None",
             "rules_df": "pd.DataFrame | None",
             "item_embeddings": "np.ndarray | None"
           },

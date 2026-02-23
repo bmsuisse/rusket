@@ -8,13 +8,51 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### Style
+
+- apply ruff formatting
+
+### 📦 Miscellaneous
+
+- add remaining unstaged files from main
+
+### 🔄 CI/CD
+
+- enforce regression and benchmark job pass before PyPI release
+
+### Test
+
+- extract benchmark and regression tests into a separate workflow
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🐛 Bug Fixes
+
+- resolve E0432 unresolved import and E0308 type mismatch in FPGrowth and ALS
+
+### 📖 Documentation
+
+- promote OOP API, update Ferris logo color to blue, fix pyright errors
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
 - updating docs and testing
+- auto-format code with Ruff [skip ci]
 
 ### 🚀 Features
 
 - handle miner kwargs and preserve DataFrame return types
 - use labels by default in mining algorithms
+- Enhance ALS and FPGrowth algorithms, update ALS benchmarks, add Databricks cookbook, refresh project logos, and remove `test_colnames.py`.
 
 ### 📦 Miscellaneous
 

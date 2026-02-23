@@ -468,7 +468,7 @@ item_ids, match_scores = model.similar_items(item_id=102, n=5)
 ```python
 from rusket import Recommender
 
-rec = Recommender(als_model=model, rules_df=rules)
+rec = Recommender(model=model, rules_df=rules)
 item_ids, scores = rec.recommend_for_user(user_id=125, n=5)
 suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 ```

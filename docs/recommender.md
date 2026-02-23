@@ -82,7 +82,7 @@ als  = ALS(factors=64, iterations=15).fit(user_item_csr)
 model = AutoMiner(basket_ohe, min_support=0.01)
 freq  = model.mine()
 rules = model.association_rules()
-rec = Recommender(als_model=als, rules_df=rules)
+rec = Recommender(model=als, rules_df=rules)
 ```
 
 ### 1. Personalised homepage ("For You")
@@ -94,7 +94,7 @@ items, scores = rec.recommend_for_user(user_id=1001, n=5)
 ### 2. Hybrid — CF + product embeddings
 
 ```python
-rec = Recommender(als_model=als, rules_df=rules, item_embeddings=product_vectors)
+rec = Recommender(model=als, rules_df=rules, item_embeddings=product_vectors)
 
 items, scores = rec.recommend_for_user(
     user_id=1001, n=5, alpha=0.7,
@@ -149,7 +149,7 @@ from rusket import score_potential
 
 potential = score_potential(
     user_history=purchase_histories,
-    als_model=als,
+    model=als,
     target_categories=accessory_skus,
 )
 ```

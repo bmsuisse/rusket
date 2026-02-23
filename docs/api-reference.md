@@ -71,7 +71,7 @@ Currently, this assumes sequences where each event consists of a single item
 ```python
 from rusket.prefixspan import prefixspan
 
-prefixspan(sequences: 'list[list[int]]', min_support: 'int', max_len: 'int | None' = None) -> 'pd.DataFrame'
+prefixspan(sequences: 'list[list[int]]', min_support: 'int | float', max_len: 'int | None' = None) -> 'pd.DataFrame'
 ```
 
 **Parameters**
@@ -79,7 +79,7 @@ prefixspan(sequences: 'list[list[int]]', min_support: 'int', max_len: 'int | Non
 | Parameter | Type | Description |
 | --- | --- | --- |
 | sequences | list of list of int | A list of sequences, where each sequence is a list of integers representing items. Example: `[[1, 2, 3], [1, 3], [2, 3]]`. |
-| min_support | int | The minimum absolute support (number of sequences a pattern must appear in). |
+| min_support | int \| float | The minimum absolute support (number of sequences a pattern must appear in), or float percent. |
 | max_len | int, optional | The maximum length of the sequential patterns to mine. |
 
 **Returns**
@@ -332,7 +332,7 @@ Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 ```python
 from rusket.transactions import from_spark
 
-from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1) -> 'SparkDataFrame'
+from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'SparkDataFrame'
 ```
 
 ---
@@ -449,7 +449,7 @@ This class discovers frequent sequences of items across multiple users/sessions.
 ```python
 from rusket.prefixspan import PrefixSpan
 
-PrefixSpan(data: 'list[list[int]]', min_support: 'int', max_len: 'int | None' = None, item_mapping: 'dict[int, Any] | None' = None)
+PrefixSpan(data: 'list[list[int]]', min_support: 'int | float', max_len: 'int | None' = None, item_mapping: 'dict[int, Any] | None' = None)
 ```
 
 #### `PrefixSpan.mine`
@@ -854,7 +854,7 @@ Hybrid recommender combining ALS collaborative filtering, semantic similarities,
 ```python
 from rusket.recommend import Recommender
 
-Recommender(als_model: 'ALS | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
+Recommender(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
 
 #### `Recommender.predict_next_chunk`
@@ -911,7 +911,7 @@ Hybrid recommender combining ALS collaborative filtering, semantic similarities,
 ```python
 from rusket.recommend import NextBestAction
 
-NextBestAction(als_model: 'ALS | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
+NextBestAction(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
 
 #### `NextBestAction.predict_next_chunk`
@@ -972,7 +972,7 @@ Items the user has already interacted with are masked to ``-inf``.
 ```python
 from rusket.recommend import score_potential
 
-score_potential(user_history: 'list[list[int]]', als_model: 'ALS', target_categories: 'list[int] | None' = None) -> 'np.ndarray'
+score_potential(user_history: 'list[list[int]]', model: 'Any', target_categories: 'list[int] | None' = None) -> 'np.ndarray'
 ```
 
 ---

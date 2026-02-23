@@ -538,7 +538,7 @@ freq  = miner.mine()
 rules = miner.association_rules()
 
 # 3. Create the Hybrid Engine
-rec = Recommender(als_model=als, rules_df=rules)
+rec = Recommender(model=als, rules_df=rules)
 
 # "For You" homepage — personalised for customer 1001
 items, scores = rec.recommend_for_user(user_id=1001, n=5)
