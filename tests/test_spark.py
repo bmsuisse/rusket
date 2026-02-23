@@ -495,4 +495,3 @@ def test_oo_hupm_grouped(spark_session) -> None:
     )
 
     assert isinstance(result, pyspark.sql.DataFrame)
-

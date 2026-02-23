@@ -1,5 +1,8 @@
-# rusket
+<p align="center">
+  <img src="assets/logo.svg" alt="rusket logo" width="320" />
+</p>
 
+# rusket
 > Ultra-fast Recommender Engines & Market Basket Analysis for Python, written in Rust.
 > 
 > *Made with ❤️ by the Data & AI Team.*
