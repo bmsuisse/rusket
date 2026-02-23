@@ -7,10 +7,7 @@ from .typing import SupportsItemFactors, SupportsUserFactors
 
 
 def export_item_factors(
-    model: SupportsItemFactors,
-    include_labels: bool = True,
-    normalize: bool = False,
-    format: str = "pandas"
+    model: SupportsItemFactors, include_labels: bool = True, normalize: bool = False, format: str = "pandas"
 ) -> Any:
     """Exports latent item factors as a DataFrame for Vector DBs.
 
@@ -75,20 +72,21 @@ def export_item_factors(
         return df
     elif format == "polars":
         import polars as pl
+
         return pl.from_pandas(df)
     elif format == "spark":
         from pyspark.sql import SparkSession
+
         spark = SparkSession.getActiveSession()
         if spark is None:
             raise RuntimeError("No active SparkSession found.")
         return spark.createDataFrame(df)
     else:
         raise ValueError(f"Unknown format: {format}")
+
+
 def export_user_factors(
-    model: SupportsUserFactors,
-    include_labels: bool = True,
-    normalize: bool = False,
-    format: str = "pandas"
+    model: SupportsUserFactors, include_labels: bool = True, normalize: bool = False, format: str = "pandas"
 ) -> Any:
     """Exports latent user factors as a DataFrame.
 
@@ -140,9 +138,11 @@ def export_user_factors(
         return df
     elif format == "polars":
         import polars as pl
+
         return pl.from_pandas(df)
     elif format == "spark":
         from pyspark.sql import SparkSession
+
         spark = SparkSession.getActiveSession()
         if spark is None:
             raise RuntimeError("No active SparkSession found.")

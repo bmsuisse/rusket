@@ -184,7 +184,7 @@ class ALS(ImplicitRecommender):
         format: str = "polars",
     ) -> Any:
         """Top-N items for all users efficiently computed in parallel.
-        
+
         Parameters
         ----------
         n : int, default=10
@@ -222,23 +222,16 @@ class ALS(ImplicitRecommender):
         scores_arr = np.asarray(scores)
 
         import polars as pl
-        df = pl.DataFrame({
-            "user_id": u_ids_arr,
-            "item_id": i_ids_arr,
-            "score": scores_arr
-        })
+
+        df = pl.DataFrame({"user_id": u_ids_arr, "item_id": i_ids_arr, "score": scores_arr})
         if self._user_labels is not None and len(self._user_labels) == self._n_users:
             # Use categorical / explicit mapping
             mapping = dict(enumerate(self._user_labels))
-            df = df.with_columns(
-                pl.col("user_id").replace_strict(mapping, default=pl.col("user_id")).alias("user_id")
-            )
+            df = df.with_columns(pl.col("user_id").replace_strict(mapping, default=pl.col("user_id")).alias("user_id"))
 
         if self._item_labels is not None and len(self._item_labels) == self._n_items:
             mapping = dict(enumerate(self._item_labels))
-            df = df.with_columns(
-                pl.col("item_id").replace_strict(mapping, default=pl.col("item_id")).alias("item_id")
-            )
+            df = df.with_columns(pl.col("item_id").replace_strict(mapping, default=pl.col("item_id")).alias("item_id"))
 
         if format == "polars":
             return df
@@ -246,6 +239,7 @@ class ALS(ImplicitRecommender):
             return df.to_pandas()
         elif format == "spark":
             from pyspark.sql import SparkSession
+
             spark = SparkSession.getActiveSession()
             if spark is None:
                 raise RuntimeError("No active SparkSession found. Initialize Spark first.")
