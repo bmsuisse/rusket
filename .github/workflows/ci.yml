@@ -238,11 +238,16 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  regression:
+    name: Regression & Benchmark
+    uses: ./.github/workflows/regression.yml
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+
   release:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [test, linux, musllinux, windows, macos, sdist]
+    needs: [test, linux, musllinux, windows, macos, sdist, regression]
     environment: pypi
     permissions:
       id-token: write
