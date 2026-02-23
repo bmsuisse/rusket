@@ -73,3 +73,6 @@ recbole_test_model_auto.py
 recbole_tests.json
 tests_*
 warnings_*
+
+# Specific script ignores
+test_colnames.py

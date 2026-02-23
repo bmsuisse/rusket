@@ -1,0 +1,85 @@
+=================================================================
+  rusket ALS — Multi-Method MovieLens Benchmark
+  factors=64, iterations=15, alpha=40.0, reg=0.01
+  Methods: rusket(cg=3), rusket(cg=10), implicit
+=================================================================
+
+=================================================================
+  MovieLens 1M
+  6,040 users × 3,706 movies, 1,000,209 ratings
+
+  ─── MovieLens 1M ───
+  6,040u × 3,706i  |  1,000,209 nnz  |  CSR=8 MB  factors=2 MB
+
+  Method: rusket ALS  cg_iters=3  (fast)
+    fit: 0.9s  |  rec/user: 0.10ms
+
+  Method: rusket ALS  Cholesky (exact)
+    fit: 2.7s  |  rec/user: 0.10ms
+
+  Method: rusket ALS  cg_iters=10 (default)
+    fit: 2.8s  |  rec/user: 0.09ms
+
+  Method: implicit ALS
+    ⚠️  `implicit` not installed — skipping (pip install implicit)
+
+  Method                  Fit (s)   Rec (ms)
+  ------------------------------------------
+  rusket cg=3                 0.9       0.10
+  rusket cholesky             2.7       0.10
+  rusket cg=10                2.8       0.09
+
+=================================================================
+  MovieLens 10M
+  69,878 users × 10,677 movies, 10,000,054 ratings
+
+  ─── MovieLens 10M ───
+  69,878u × 10,677i  |  10,000,054 nnz  |  CSR=80 MB  factors=21 MB
+
+  Method: rusket ALS  cg_iters=3  (fast)
+    fit: 9.2s  |  rec/user: 0.26ms
+
+  Method: rusket ALS  Cholesky (exact)
+    fit: 30.2s  |  rec/user: 0.30ms
+
+  Method: rusket ALS  cg_iters=10 (default)
+    fit: 32.4s  |  rec/user: 0.27ms
+
+  Method: implicit ALS
+    ⚠️  `implicit` not installed — skipping (pip install implicit)
+
+  Method                  Fit (s)   Rec (ms)
+  ------------------------------------------
+  rusket cg=3                 9.2       0.26
+  rusket cholesky            30.2       0.30
+  rusket cg=10               32.4       0.27
+
+=================================================================
+  MovieLens 25M
+  162,541 users × 59,047 movies, 25,000,095 ratings
+
+  ─── MovieLens 25M ───
+  162,541u × 59,047i  |  25,000,095 nnz  |  CSR=201 MB  factors=57 MB
+
+  Method: rusket ALS  cg_iters=3  (fast)
+    fit: 31.5s  |  rec/user: 1.44ms
+
+  Method: rusket ALS  Cholesky (exact)
+    fit: 114.3s  |  rec/user: 1.58ms
+
+  Method: rusket ALS  cg_iters=10 (default)
+    fit: 167.9s  |  rec/user: 1.82ms
+
+  Method: implicit ALS
+    ⚠️  `implicit` not installed — skipping (pip install implicit)
+
+  Method                  Fit (s)   Rec (ms)
+  ------------------------------------------
+  rusket cg=3                31.5       1.44
+  rusket cholesky           114.3       1.58
+  rusket cg=10              167.9       1.82
+
+✅ Chart → /Users/dominikpeter/DevOps/rusket/docs/assets/als_benchmark.html
+✅ JSON  → /Users/dominikpeter/DevOps/rusket/docs/assets/als_benchmark.json
+
+✅ Done
