@@ -158,7 +158,9 @@ def from_transactions(
     # --- Polars ---
     if isinstance(data, _pl.DataFrame):
         pandas_df = data.to_pandas()
-        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose)
+        result_pd = _from_dataframe(
+            pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose
+        )
         return _pl.from_pandas(result_pd.astype(bool))
 
     # --- Pandas ---
@@ -176,7 +178,9 @@ def from_pandas(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose)
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose
+    )
 
 
 def from_polars(
@@ -187,7 +191,9 @@ def from_polars(
     verbose: int = 0,
 ) -> pl.DataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
-    return from_transactions(df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose)
+    return from_transactions(
+        df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count, verbose=verbose
+    )
 
 
 def from_spark(
@@ -216,6 +222,7 @@ def _from_list(
 
     if min_item_count > 1:
         from collections import Counter
+
         counts = Counter()  # type: ignore[var-annotated]
         for txn in transactions:
             counts.update(txn)

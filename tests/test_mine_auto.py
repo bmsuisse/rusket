@@ -94,6 +94,7 @@ def test_rule_miner_mixin_api():
     for item in recs:
         assert item not in ["Milk", "Butter"]
 
+
 def test_auto_output_matches_input_type():
     # Pandas input -> Pandas output
     df_pd = pd.DataFrame({"apple": [1, 1, 0, 1], "banana": [1, 0, 0, 1], "cherry": [0, 0, 1, 0]}).astype(bool)

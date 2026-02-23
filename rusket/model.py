@@ -139,6 +139,7 @@ class RuleMinerMixin:
 
         # Ensure we are working with Pandas for recommend_items logic since we use .apply()
         import pandas as pd
+
         if not isinstance(rules_df, pd.DataFrame):
             try:
                 if hasattr(rules_df, "to_pandas"):

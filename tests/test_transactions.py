@@ -342,7 +342,9 @@ class TestFromSpark:
         )
 
     def test_min_item_count(self, spark) -> None:  # type: ignore[no-untyped-def]
-        df = spark.createDataFrame([(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b"), (3, "c"), (3, "d")], ["txn", "item"])
+        df = spark.createDataFrame(
+            [(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b"), (3, "c"), (3, "d")], ["txn", "item"]
+        )
         result = from_transactions(df, min_item_count=2)
         assert set(result.columns) == {"a", "b", "c"}
         assert "d" not in result.columns
