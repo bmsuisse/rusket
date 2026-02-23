@@ -4140,7 +4140,7 @@ wheels = [
 
 [[package]]
 name = "rusket"
-version = "0.1.46"
+version = "0.1.47"
 source = { editable = "." }
 
 [package.optional-dependencies]

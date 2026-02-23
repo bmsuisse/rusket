@@ -185,6 +185,24 @@ def run_benchmark():
 
     import rusket
 
+    # Warmup LibRecommender runtime (TF/PyTorch JIT, graph compilation, etc.)
+    if has_libreco and lr_train_data is not None:
+        print("  Warming up LibRecommender runtime...")
+        try:
+            from libreco.algorithms import BPR as _WarmupBPR
+            _warmup_model = _WarmupBPR(
+                task="ranking", data_info=lr_info,
+                embed_size=4, n_epochs=1, use_tf=False,
+            )
+            _warmup_model.fit(lr_train_data, neg_sampling=True, verbose=0)
+            del _warmup_model
+            # Rebuild data after warmup (LibRecommender mutates state)
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
+            print("  Warmup complete ✅\n")
+        except Exception as e:
+            print(f"  Warmup failed: {e}\n")
+
     results = []
 
     # ── ALS ──────────────────────────────────────────────────────────────
@@ -199,6 +217,10 @@ def run_benchmark():
     if has_libreco and lr_train_data is not None:
         try:
             from libreco.algorithms import ALS as LibALS
+
+            # Rebuild data (LibRecommender mutates state after each fit)
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
 
             lr_model = LibALS(
                 task="ranking", data_info=lr_info,
@@ -227,12 +249,14 @@ def run_benchmark():
     if has_libreco and lr_train_data is not None:
         try:
             from libreco.algorithms import SVD as LibSVD
-            import tensorflow as tf
-            tf.compat.v1.reset_default_graph()
+
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
 
             lr_model = LibSVD(
                 task="ranking", data_info=lr_info,
                 embed_size=64, n_epochs=20, lr=0.005, reg=0.02,
+                use_tf=False,
             )
             t0 = time.perf_counter()
             lr_model.fit(lr_train_data, neg_sampling=True, verbose=0)
@@ -256,12 +280,14 @@ def run_benchmark():
     if has_libreco and lr_train_data is not None:
         try:
             from libreco.algorithms import BPR as LibBPR
-            import tensorflow as tf
-            tf.compat.v1.reset_default_graph()
+
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
 
             lr_model = LibBPR(
                 task="ranking", data_info=lr_info,
                 embed_size=64, n_epochs=10, lr=0.01,
+                use_tf=False,
             )
             t0 = time.perf_counter()
             lr_model.fit(lr_train_data, neg_sampling=True, verbose=0)
@@ -286,6 +312,9 @@ def run_benchmark():
         try:
             from libreco.algorithms import ItemCF as LibItemCF
 
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
+
             lr_model = LibItemCF(task="ranking", data_info=lr_info, k_sim=100)
             t0 = time.perf_counter()
             lr_model.fit(lr_train_data, neg_sampling=True, verbose=0)
@@ -309,12 +338,14 @@ def run_benchmark():
     if has_libreco and lr_train_data is not None:
         try:
             from libreco.algorithms import LightGCN as LibLightGCN
-            import tensorflow as tf
-            tf.compat.v1.reset_default_graph()
+
+            lr_train_data, lr_info = DatasetPure.build_trainset(lr_train_df)
+            lr_eval_data = DatasetPure.build_evalset(lr_eval_df)
 
             lr_model = LibLightGCN(
                 task="ranking", data_info=lr_info,
                 embed_size=64, n_epochs=10, lr=0.001,
+                use_tf=False,
             )
             t0 = time.perf_counter()
             lr_model.fit(lr_train_data, neg_sampling=True, verbose=0)

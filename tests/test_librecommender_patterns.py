@@ -16,8 +16,8 @@ from scipy import sparse
 
 from rusket import ALS, BPR, EASE, SVD, ItemKNN, LightGCN, evaluate
 
-
 # ── Shared fixtures ───────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def synthetic_implicit_matrix():
@@ -49,28 +49,32 @@ def synthetic_df():
     """Small DataFrame for from_transactions tests."""
     rng = np.random.default_rng(42)
     n = 500
-    return pd.DataFrame({
-        "user": rng.integers(0, 50, n),
-        "item": rng.integers(0, 30, n),
-        "rating": rng.uniform(1.0, 5.0, n).astype(np.float32),
-    })
+    return pd.DataFrame(
+        {
+            "user": rng.integers(0, 50, n),
+            "item": rng.integers(0, 30, n),
+            "rating": rng.uniform(1.0, 5.0, n).astype(np.float32),
+        }
+    )
 
 
 # ── Test: Full workflow (train → predict → evaluate) ─────────────────────
 # Adapted from LibRecommender's per-model test pattern:
 #   model.fit() → ptest_preds() → ptest_recommends() → save_load_model()
 
+
 class TestImplicitWorkflow:
     """Test full workflow for implicit models (ALS, BPR, ItemKNN, EASE, LightGCN)."""
 
-    @pytest.mark.parametrize("model_cls,kwargs", [
-        (ALS, {"factors": 16, "iterations": 3, "seed": 42}),
-        (BPR, {"factors": 16, "iterations": 3, "seed": 42}),
-        (LightGCN, {"factors": 16, "iterations": 3, "seed": 42}),
-    ])
-    def test_fit_recommend_evaluate(
-        self, synthetic_implicit_matrix: sparse.csr_matrix, model_cls, kwargs
-    ) -> None:
+    @pytest.mark.parametrize(
+        "model_cls,kwargs",
+        [
+            (ALS, {"factors": 16, "iterations": 3, "seed": 42}),
+            (BPR, {"factors": 16, "iterations": 3, "seed": 42}),
+            (LightGCN, {"factors": 16, "iterations": 3, "seed": 42}),
+        ],
+    )
+    def test_fit_recommend_evaluate(self, synthetic_implicit_matrix: sparse.csr_matrix, model_cls, kwargs) -> None:
         mat = synthetic_implicit_matrix
         model = model_cls(**kwargs)
         model.fit(mat)
@@ -113,9 +117,7 @@ class TestImplicitWorkflow:
 class TestExplicitWorkflow:
     """Test full workflow for explicit models (SVD)."""
 
-    def test_svd_fit_predict_recommend(
-        self, synthetic_explicit_matrix: sparse.csr_matrix
-    ) -> None:
+    def test_svd_fit_predict_recommend(self, synthetic_explicit_matrix: sparse.csr_matrix) -> None:
         model = SVD(factors=16, iterations=10, seed=42)
         model.fit(synthetic_explicit_matrix)
 
@@ -130,6 +132,7 @@ class TestExplicitWorkflow:
 
 # ── Test: Invalid parameter handling ──────────────────────────────────────
 # Adapted from LibRecommender's parametrized error-checking pattern
+
 
 class TestInvalidParams:
     """Verify models raise on invalid parameters.
@@ -180,13 +183,17 @@ class TestInvalidParams:
 # ── Test: from_transactions convenience constructors ──────────────────────
 # Adapted from LibRecommender's data preparation tests in conftest.py
 
+
 class TestFromTransactions:
     """Test from_transactions for all models that support it."""
 
     def test_als_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = ALS.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item",
-            factors=16, iterations=2,
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
+            factors=16,
+            iterations=2,
         )
         assert model.fitted
         items, _ = model.recommend_items(0, n=3)
@@ -194,15 +201,22 @@ class TestFromTransactions:
 
     def test_bpr_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = BPR.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item",
-            factors=16, iterations=2,
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
+            factors=16,
+            iterations=2,
         )
         assert model.fitted
 
     def test_svd_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = SVD.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item", rating_col="rating",
-            factors=16, iterations=2,
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
+            rating_col="rating",
+            factors=16,
+            iterations=2,
         )
         assert model.fitted
         pred = model.predict(0, 0)
@@ -210,20 +224,28 @@ class TestFromTransactions:
 
     def test_itemknn_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = ItemKNN.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item", k=10,
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
+            k=10,
         )
         assert model.fitted
 
     def test_ease_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = EASE.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item",
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
         )
         assert model.fitted
 
     def test_lightgcn_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
         model = LightGCN.from_transactions(
-            synthetic_df, transaction_col="user", item_col="item",
-            factors=16, iterations=2,
+            synthetic_df,
+            transaction_col="user",
+            item_col="item",
+            factors=16,
+            iterations=2,
         )
         assert model.fitted
 
@@ -231,16 +253,18 @@ class TestFromTransactions:
 # ── Test: batch_recommend across models ──────────────────────────────────
 # Adapted from LibRecommender's ptest_recommends pattern
 
+
 class TestBatchRecommend:
     """Test batch_recommend for all models."""
 
-    @pytest.mark.parametrize("model_cls,kwargs", [
-        (ALS, {"factors": 8, "iterations": 2, "seed": 42}),
-        (SVD, {"factors": 8, "iterations": 2, "seed": 42}),
-    ])
-    def test_batch_recommend_pandas(
-        self, synthetic_implicit_matrix: sparse.csr_matrix, model_cls, kwargs
-    ) -> None:
+    @pytest.mark.parametrize(
+        "model_cls,kwargs",
+        [
+            (ALS, {"factors": 8, "iterations": 2, "seed": 42}),
+            (SVD, {"factors": 8, "iterations": 2, "seed": 42}),
+        ],
+    )
+    def test_batch_recommend_pandas(self, synthetic_implicit_matrix: sparse.csr_matrix, model_cls, kwargs) -> None:
         mat = synthetic_implicit_matrix
         if model_cls == SVD:
             # SVD needs explicit ratings
@@ -260,6 +284,7 @@ class TestBatchRecommend:
 
 # ── Test: evaluate metrics in valid range ────────────────────────────────
 # Adapted from LibRecommender's utils_metrics.py pattern
+
 
 class TestEvaluateMetrics:
     """Ensure evaluate() metrics are always in [0, 1]."""
@@ -292,6 +317,7 @@ class TestEvaluateMetrics:
 
 # ── Test: Similarity correctness ─────────────────────────────────────────
 # Adapted from LibRecommender's test_similarities.py
+
 
 class TestSimilarityCorrectness:
     """Test similarity computations, inspired by LibRecommender."""

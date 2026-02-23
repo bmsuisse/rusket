@@ -4,11 +4,10 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import rusket
 from rusket import SVD
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def small_explicit_matrix():
@@ -26,6 +25,7 @@ def small_explicit_matrix():
 
 
 # ── Basic fit / predict / recommend tests ─────────────────────────────────
+
 
 class TestSVDBasic:
     def test_fit_sparse(self, small_explicit_matrix: sparse.csr_matrix) -> None:
@@ -93,6 +93,7 @@ class TestSVDBasic:
 
 # ── Error handling tests ──────────────────────────────────────────────────
 
+
 class TestSVDErrors:
     def test_not_fitted(self) -> None:
         model = SVD()
@@ -113,20 +114,22 @@ class TestSVDErrors:
 
 # ── from_transactions convenience ─────────────────────────────────────────
 
+
 class TestSVDFromTransactions:
     def test_from_transactions(self) -> None:
         import pandas as pd
 
         rng = np.random.default_rng(42)
         n = 500
-        df = pd.DataFrame({
-            "user": rng.integers(0, 50, n),
-            "item": rng.integers(0, 30, n),
-            "rating": rng.uniform(1.0, 5.0, n).astype(np.float32),
-        })
+        df = pd.DataFrame(
+            {
+                "user": rng.integers(0, 50, n),
+                "item": rng.integers(0, 30, n),
+                "rating": rng.uniform(1.0, 5.0, n).astype(np.float32),
+            }
+        )
         model = SVD.from_transactions(
-            df, user_col="user", item_col="item", rating_col="rating",
-            factors=16, iterations=5
+            df, user_col="user", item_col="item", rating_col="rating", factors=16, iterations=5
         )
         assert model._fitted
         items, scores = model.recommend_items(0, n=3)
@@ -134,6 +137,7 @@ class TestSVDFromTransactions:
 
 
 # ── RMSE convergence test ─────────────────────────────────────────────────
+
 
 class TestSVDConvergence:
     def test_rmse_decreases(self, small_explicit_matrix: sparse.csr_matrix) -> None:
@@ -144,7 +148,7 @@ class TestSVDConvergence:
         # Measure RMSE on training data
         mat = small_explicit_matrix.tocoo()
         errors = []
-        for u, i, r in zip(mat.row, mat.col, mat.data):
+        for u, i, r in zip(mat.row, mat.col, mat.data, strict=True):
             pred = model.predict(int(u), int(i))
             errors.append((r - pred) ** 2)
         rmse = np.sqrt(np.mean(errors))

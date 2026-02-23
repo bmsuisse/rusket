@@ -21,27 +21,26 @@
 
 **rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.
 
-It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
+**Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket` and go. The entire engine is compiled Rust, distributed as a single ~3 MB wheel.
+
+It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
 ## ✨ Highlights
 
-| | `rusket` | `implicit` | `pyspark.ml` |
-|---|---|---|---|
-| **Core language** | Rust (PyO3) | Cython / C++ | Scala / Java (JVM) |
-| **Algorithms** | ALS, BPR, PrefixSpan, FP-Growth, Eclat, HUPM | ALS, BPR | ALS, FP-Growth, PrefixSpan |
-| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ (ALS only) |
-| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ |
-| **OOP class API** | ✅ `FPGrowth.from_transactions(df).mine()` | ✅ | ✅ |
-| **Pandas dense input** | ✅ C-contiguous `np.uint8` | ❌ (requires CSR/COO) | ❌ (requires Spark DF) |
-| **Pandas Arrow backend** | ✅ Arrow zero-copy (pandas 2.0+) | ❌ Not supported | ✅ (via PyArrow) |
-| **Pandas sparse input** | ✅ Zero-copy CSR → Rust | ✅ (CSR native) | ❌ (Requires `SparseVector`) |
-| **Polars input** | ✅ Arrow zero-copy | ❌ Not supported | ❌ (conversion needed) |
-| **Spark / distributed** | ✅ `mine_grouped`, `recommend_batches`, etc. | ❌ | ✅ Native distributed |
-| **Parallel mining** | ✅ Rayon work-stealing | ✅ OpenMP / Threads | ✅ Spark Cluster |
-| **Memory** | Low (native Rust buffers) | Low (C++ arrays) | High (JVM overhead) |
-| **Metrics** | 12 built-in metrics | N/A | Limited |
+| | `rusket` | `LibRecommender` | `implicit` | `pyspark.ml` |
+|---|---|---|---|---|
+| **Core language** | Rust (PyO3) | TF + PyTorch + Cython | Cython / C++ | Scala / Java (JVM) |
+| **Runtime deps** | **0** | TF + PyTorch + gensim (~2 GB) | OpenBLAS / MKL | JVM + Spark |
+| **Install size** | ~3 MB | ~2 GB | ~50 MB | ~300 MB |
+| **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, EASE, FP-Growth, Eclat, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ | ✅ (ALS only) |
+| **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
+| **OOP class API** | ✅ `ALS.from_transactions(df)` | ✅ | ✅ | ✅ |
+| **Pandas / Polars / Spark** | ✅ / ✅ / ✅ | ✅ / ❌ / ❌ | ❌ / ❌ / ❌ | ❌ / ❌ / ✅ |
+| **Parallel execution** | ✅ Rayon work-stealing | ✅ TF/PyTorch threads | ✅ OpenMP | ✅ Spark Cluster |
+| **Memory** | Low (native Rust buffers) | High (TF/PyTorch graphs) | Low (C++ arrays) | High (JVM overhead) |
 
 ---
 
@@ -454,6 +453,10 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 | `PrefixSpan` | `Miner` | Sequential pattern mining |
 | `ALS` | `ImplicitRecommender` | Alternating Least Squares CF |
 | `BPR` | `ImplicitRecommender` | Bayesian Personalized Ranking CF |
+| `SVD` | `ImplicitRecommender` | Funk SVD (biased SGD) |
+| `LightGCN` | `ImplicitRecommender` | Graph Convolutional CF |
+| `ItemKNN` | `ImplicitRecommender` | Item-based k-NN CF |
+| `EASE` | `ImplicitRecommender` | Embarrassingly Shallow Autoencoders |
 
 All classes share the following data-ingestion class methods inherited from `BaseModel`:
 
@@ -649,9 +652,27 @@ freq = AutoMiner(csr, item_names=item_names).mine(
 Run benchmarks yourself:
 
 ```bash
-uv run python benchmarks/bench_scale.py       # Scale benchmark + Plotly chart
-uv run python benchmarks/bench_realworld.py   # Real-world datasets
-uv run pytest tests/test_benchmark.py -v -s   # pytest-benchmark
+uv run pytest benchmarks/bench_scale.py -v -s   # Scale benchmark
+uv run python benchmarks/bench_realworld.py     # Real-world datasets
+uv run pytest tests/test_benchmark.py -v -s      # pytest-benchmark
+```
+
+### Recommender Benchmarks vs LibRecommender
+
+> **Measured with `pytest-benchmark`** (5 rounds, warmed up, GC disabled). MovieLens 100k dataset (943 users, 1,682 items, 100k ratings). Only `model.fit()` is timed — no startup or data loading overhead.
+
+| Benchmark | rusket | LibRecommender | **Speedup** |
+|---|:---:|:---:|:---:|
+| **ALS** (64 factors, 15 epochs) | **427 ms** | 1,324 ms | **3.1×** |
+| **BPR** (64 factors, 10 epochs) | **33 ms** | 681 ms | **20.4×** |
+| **ItemKNN** (k=100) | **55 ms** | 287 ms | **5.2×** |
+| **SVD** (64 factors, 20 epochs) | **55 ms** | ❌ TF-only (broken) | — |
+| **EASE** | **71 ms** | *N/A* | — |
+
+> **Note:** LibRecommender requires TensorFlow + PyTorch + gensim + Cython (~2 GB of dependencies). rusket has **zero runtime dependencies**.
+
+```bash
+uv run pytest benchmarks/bench_pytest_librecommender.py -v --benchmark-columns=mean,stddev,rounds
 ```
 
 ---

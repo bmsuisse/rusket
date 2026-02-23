@@ -27,14 +27,18 @@ The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and a
 
 ## Why rusket?
 
-| Feature | rusket |
-|---|---|
-| Speed (medium dataset) | **~0.4 s** |
-| Memory (large dataset) | ~3 s |
-| Polars support | ✅ |
-| Sparse DataFrame support | ✅ |
-| Zero Python dependencies | ✅ (`numpy`, `pandas`) |
-| 12 association metrics | ✅ |
+**Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket`. The entire engine is compiled Rust (~3 MB wheel).
+
+| Feature | rusket | LibRecommender |
+|---|---|---|
+| **Runtime deps** | **0** | TF + PyTorch + gensim (~2 GB) |
+| **ALS fit (ML-100k)** | **427 ms** | 1,324 ms (3.1× slower) |
+| **BPR fit (ML-100k)** | **33 ms** | 681 ms (20.4× slower) |
+| **ItemKNN fit (ML-100k)** | **55 ms** | 287 ms (5.2× slower) |
+| Polars / Spark support | ✅ / ✅ | ❌ / ❌ |
+| Pattern Mining | FP-Growth, Eclat, HUPM, PrefixSpan | ❌ |
+
+> Benchmarks: `pytest-benchmark`, 5 rounds, warmed up, GC disabled. MovieLens 100k.
 
 ## Quick Example — "Frequently Bought Together"
 
