@@ -524,6 +524,11 @@ class ImplicitRecommender(BaseModel):
         raise NotImplementedError(f"{self.__class__.__name__} does not implement item_factors.")
 
     @property
+    def user_factors(self) -> Any:
+        """User factor matrix (n_users, factors)."""
+        raise NotImplementedError(f"{self.__class__.__name__} does not implement user_factors.")
+
+    @property
     def item_embeddings(self) -> Any:
         """Alias for item_factors, commonly used in GenAI/LLM contexts."""
         return self.item_factors
@@ -550,23 +555,69 @@ class ImplicitRecommender(BaseModel):
 
         return similar_items(self, item_id, n)
 
-    def export_factors(self, include_labels: bool = True) -> pd.DataFrame:
-        """Exports latent item factors as a Pandas DataFrame for Vector DBs.
+    def export_factors(
+        self,
+        include_labels: bool = True,
+        normalize: bool = False,
+        format: str = "pandas",
+    ) -> Any:
+        """Exports latent item factors as a DataFrame for Vector DBs.
 
         Parameters
         ----------
         include_labels : bool, default=True
             Whether to include the string item labels (if available).
+        normalize : bool, default=False
+            Whether to L2-normalize the factors before export.
+        format : str, default="pandas"
+            The DataFrame format to return. One of "pandas", "polars", or "spark".
 
         Returns
         -------
-        pd.DataFrame
+        Any
             A DataFrame with columns ``item_id``, optionally ``item_label``,
             and ``vector``.
         """
         from .export import export_item_factors
 
-        return export_item_factors(self, include_labels=include_labels)
+        return export_item_factors(
+            self,
+            include_labels=include_labels,
+            normalize=normalize,
+            format=format,
+        )
+
+    def export_user_factors(
+        self,
+        include_labels: bool = True,
+        normalize: bool = False,
+        format: str = "pandas",
+    ) -> Any:
+        """Exports latent user factors as a DataFrame.
+
+        Parameters
+        ----------
+        include_labels : bool, default=True
+            Whether to include the string user labels (if available).
+        normalize : bool, default=False
+            Whether to L2-normalize the factors before export.
+        format : str, default="pandas"
+            The DataFrame format to return. One of "pandas", "polars", or "spark".
+
+        Returns
+        -------
+        Any
+            A DataFrame with columns ``user_id``, optionally ``user_label``,
+            and ``vector``.
+        """
+        from .export import export_user_factors
+
+        return export_user_factors(
+            self,
+            include_labels=include_labels,
+            normalize=normalize,
+            format=format,
+        )
 
     def visualize_factors(self, labels: bool = True, n_items: int | None = None) -> Any:
         """Visualizes the item latent space in 3D using PCA.

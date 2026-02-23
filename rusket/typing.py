@@ -32,3 +32,13 @@ class SupportsItemFactors(Protocol):
 
     @property
     def _item_labels(self) -> list[Any] | None: ...
+
+
+class SupportsUserFactors(Protocol):
+    """Protocol for models that expose latent user factors."""
+
+    @property
+    def user_factors(self) -> np.ndarray: ...
+
+    @property
+    def _user_labels(self) -> list[Any] | None: ...

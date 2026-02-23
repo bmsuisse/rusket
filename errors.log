@@ -1,0 +1,175 @@
+    Checking rusket v0.1.28 (/Users/dominikpeter/DevOps/rusket)
+error[E0432]: unresolved import `crate::fpgrowth::flatten_results`
+ --> src/eclat.rs:5:23
+  |
+5 | use crate::fpgrowth::{flatten_results, process_item_counts};
+  |                       ^^^^^^^^^^^^^^^ no `flatten_results` in `fpgrowth`
+
+error[E0432]: unresolved import `crate::fpgrowth::flatten_results`
+   --> src/eclat.rs:297:27
+    |
+297 |     use crate::fpgrowth::{flatten_results, process_item_counts};
+    |                           ^^^^^^^^^^^^^^^ no `flatten_results` in `fpgrowth`
+    |
+    = help: consider importing this unresolved item through its public re-export instead:
+            crate::eclat::flatten_results
+
+error[E0432]: unresolved import `crate::fpgrowth::flatten_results`
+ --> src/lcm.rs:7:23
+  |
+7 | use crate::fpgrowth::{flatten_results, process_item_counts};
+  |                       ^^^^^^^^^^^^^^^ no `flatten_results` in `fpgrowth`
+
+error[E0432]: unresolved import `crate::fpgrowth::flatten_results`
+ --> src/fin.rs:5:23
+  |
+5 | use crate::fpgrowth::{flatten_results, process_item_counts};
+  |                       ^^^^^^^^^^^^^^^ no `flatten_results` in `fpgrowth`
+
+warning: unused import: `PyArray2`
+ --> src/ease.rs:2:28
+  |
+2 |     IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2,
+  |                            ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:188:9
+    |
+188 |         flat_supports.into_pyarray(py).into(),
+    |         ^^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:189:9
+    |
+189 |         flat_offsets.into_pyarray(py).into(),
+    |         ^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:190:9
+    |
+190 |         flat_items.into_pyarray(py).into(),
+    |         ^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:284:9
+    |
+284 |         flat_supports.into_pyarray(py).into(),
+    |         ^^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:285:9
+    |
+285 |         flat_offsets.into_pyarray(py).into(),
+    |         ^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/eclat.rs:286:9
+    |
+286 |         flat_items.into_pyarray(py).into(),
+    |         ^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:234:9
+    |
+234 |         flat_supports.into_pyarray(py),
+    |         ^^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:235:9
+    |
+235 |         flat_offsets.into_pyarray(py),
+    |         ^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:236:9
+    |
+236 |         flat_items.into_pyarray(py),
+    |         ^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:324:9
+    |
+324 |         flat_supports.into_pyarray(py),
+    |         ^^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:325:9
+    |
+325 |         flat_offsets.into_pyarray(py),
+    |         ^^^^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+   --> src/lcm.rs:326:9
+    |
+326 |         flat_items.into_pyarray(py),
+    |         ^^^^^^^^^^ cannot infer type
+
+error[E0308]: mismatched types
+  --> src/miner.rs:94:13
+   |
+94 | ...et (s, o, i) = _mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?;
+   |       ^^^^^^^^^   ------------------------------------------------------------- this expression has type `FlatResults`
+   |       |
+   |       expected `FlatResults`, found `(_, _, _)`
+   |
+   = note: expected struct `FlatResults`
+               found tuple `(_, _, _)`
+
+error[E0308]: `if` and `else` have incompatible types
+   --> src/miner.rs:148:13
+    |
+145 |           let (s, o, i) = if use_eclat {
+    |  _________________________-
+146 | |             _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
+    | |             ------------------------------------------------------------------- expected because of this
+147 | |         } else {
+148 | |             _mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
+    | |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `(Vec<u64>, Vec<u32>, Vec<u32>)`, found `FlatResults`
+149 | |         };
+    | |_________- `if` and `else` have incompatible types
+    |
+    = note: expected tuple `(Vec<u64>, Vec<u32>, Vec<u32>)`
+              found struct `FlatResults`
+
+warning: unused import: `PyUntypedArrayMethods`
+ --> src/item_knn.rs:3:5
+  |
+3 |     PyUntypedArrayMethods,
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused variable: `root_bs`
+   --> src/lcm.rs:116:9
+    |
+116 |     let root_bs = BitSet { blocks: root_blocks };
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_root_bs`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `root_ns`
+   --> src/fin.rs:304:9
+    |
+304 |     let root_ns = Nodeset {
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_root_ns`
+
+warning: variable does not need to be mutable
+  --> src/model_selection.rs:34:17
+   |
+34 |     for (_user, mut indices) in user_interactions {
+   |                 ----^^^^^^^
+   |                 |
+   |                 help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `n_users`
+   --> src/sasrec.rs:313:9
+    |
+313 |     let n_users = sequences.len();
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_n_users`
+
+Some errors have detailed explanations: E0282, E0308, E0432.
+For more information about an error, try `rustc --explain E0282`.
+warning: `rusket` (lib) generated 6 warnings
+error: could not compile `rusket` (lib) due to 18 previous errors; 6 warnings emitted

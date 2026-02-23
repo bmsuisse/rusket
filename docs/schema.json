@@ -213,11 +213,13 @@
     },
     "export_item_factors": {
       "parameters": {
-        "model": "SupportsItemFactors",
-        "include_labels": "bool"
+        "model": "<class 'rusket.SupportsItemFactors'>",
+        "include_labels": "<class 'bool'>",
+        "normalize": "<class 'bool'>",
+        "format": "<class 'str'>"
       },
-      "returns": "pd.DataFrame",
-      "doc": "Exports latent item factors as a Pandas DataFrame for Vector DBs."
+      "returns": "Any",
+      "doc": "Exports latent item factors as a DataFrame for Vector DBs."
     }
   },
   "classes": {
@@ -430,6 +432,15 @@
           },
           "returns": "None",
           "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "batch_recommend": {
+          "parameters": {
+            "n": "int",
+            "exclude_seen": "bool",
+            "format": "str"
+          },
+          "returns": "Any",
+          "doc": "Top-N items for all users efficiently computed in parallel."
         },
         "fit": {
           "parameters": {

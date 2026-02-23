@@ -397,7 +397,42 @@ model = ALS.from_transactions(
 
 ---
 
-## 11. Tuning Guide
+## 11. Databricks: High-Speed Cross-Sell Generation
+
+When working in Databricks with millions of users, Python `for` loops are a massive bottleneck. Use `batch_recommend` to leverage Rust's parallel iterators (Rayon) and return native Spark or Polars DataFrames instantly.
+
+```python
+from rusket import ALS
+import polars as pl
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.getOrCreate()
+purchases = spark.table("bronze_layer.customer_transactions")
+
+# 1. Train the model using the fast Polars bridge
+als = ALS(factors=128, iterations=15).from_transactions(
+    purchases.toPandas(), # Or pass Polars directly if memory allows
+    transaction_col="customer_id",
+    item_col="product_id",
+    rating_col="sales_amount",
+)
+
+# 2. Score ALL users simultaneously across all CPU cores (Rust Rayon)
+#    Returns a fast Polars DataFrame: [user_id, item_id, score]
+recommendations_pl = als.batch_recommend(n=10, format="polars")
+
+# 3. Export L2-normalized item and user factors directly to Spark for Delta tables
+user_factors_df = als.export_user_factors(normalize=True, format="spark")
+item_factors_df = als.export_factors(normalize=True, format="spark")
+
+# 4. Save to Delta
+user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.user_embeddings")
+item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
+```
+
+---
+
+## 12. Tuning Guide
 
 ### FPGrowth / Eclat / AutoMiner
 
@@ -419,7 +454,7 @@ model = ALS.from_transactions(
 
 ---
 
-## 12. Item Similarity and Cross-Selling Potential
+## 13. Item Similarity and Cross-Selling Potential
 
 ```python
 # Now part of the Model class
@@ -428,7 +463,7 @@ item_ids, match_scores = model.similar_items(item_id=102, n=5)
 
 ---
 
-## 13. Hybrid Recommender (ALS + Association Rules)
+## 14. Hybrid Recommender (ALS + Association Rules)
 
 ```python
 from rusket import Recommender
@@ -440,7 +475,7 @@ suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 
 ---
 
-## 14. GenAI / LLM Stack Integration
+## 15. GenAI / LLM Stack Integration
 
 ```python
 import lancedb
@@ -452,7 +487,7 @@ table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 
 ---
 
-## 15. Visualizing Latent Spaces (PCA)
+## 16. Visualizing Latent Spaces (PCA)
 
 ```python
 # Built-in 3D PCA visualization

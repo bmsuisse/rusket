@@ -97,7 +97,7 @@ For maximum performance at 100M+ scale, skip pandas entirely:
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import fpgrowth
+from rusket import AutoMiner
 
 # Your data: integer arrays of (txn_id, item_id)
 txn_ids = np.array([...], dtype=np.int64)  # transaction IDs
@@ -110,8 +110,7 @@ csr = sp.csr_matrix(
 )
 
 # Mine directly from CSR — no pandas overhead
-freq = fpgrowth(csr, min_support=0.001, use_colnames=True,
-                max_len=3, column_names=item_names)
+freq = AutoMiner(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
 ```
 
 At 100M rows, the mining step takes **1.2 seconds** (not a typo).

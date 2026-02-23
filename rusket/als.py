@@ -177,6 +177,82 @@ class ALS(ImplicitRecommender):
         )
         return np.asarray(ids), np.asarray(scores)
 
+    def batch_recommend(
+        self,
+        n: int = 10,
+        exclude_seen: bool = True,
+        format: str = "polars",
+    ) -> Any:
+        """Top-N items for all users efficiently computed in parallel.
+        
+        Parameters
+        ----------
+        n : int, default=10
+            The number of items to recommend per user.
+        exclude_seen : bool, default=True
+            Whether to exclude items the user has already interacted with.
+        format : str, default="polars"
+            The DataFrame format to return. One of "pandas", "polars", or "spark".
+
+        Returns
+        -------
+        DataFrame
+            A DataFrame with columns `user_id`, `item_id`, and `score`.
+        """
+        import numpy as np
+
+        self._check_fitted()
+        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+            exc_indptr = self._fit_indptr
+            exc_indices = self._fit_indices
+        else:
+            exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
+            exc_indices = np.array([], dtype=np.int32)
+
+        u_ids, i_ids, scores = _rust.als_recommend_all(
+            self._user_factors,
+            self._item_factors,
+            n,
+            exc_indptr,
+            exc_indices,
+        )
+
+        u_ids_arr = np.asarray(u_ids)
+        i_ids_arr = np.asarray(i_ids)
+        scores_arr = np.asarray(scores)
+
+        import polars as pl
+        df = pl.DataFrame({
+            "user_id": u_ids_arr,
+            "item_id": i_ids_arr,
+            "score": scores_arr
+        })
+        if self._user_labels is not None and len(self._user_labels) == self._n_users:
+            # Use categorical / explicit mapping
+            mapping = dict(enumerate(self._user_labels))
+            df = df.with_columns(
+                pl.col("user_id").replace_strict(mapping, default=pl.col("user_id")).alias("user_id")
+            )
+
+        if self._item_labels is not None and len(self._item_labels) == self._n_items:
+            mapping = dict(enumerate(self._item_labels))
+            df = df.with_columns(
+                pl.col("item_id").replace_strict(mapping, default=pl.col("item_id")).alias("item_id")
+            )
+
+        if format == "polars":
+            return df
+        elif format == "pandas":
+            return df.to_pandas()
+        elif format == "spark":
+            from pyspark.sql import SparkSession
+            spark = SparkSession.getActiveSession()
+            if spark is None:
+                raise RuntimeError("No active SparkSession found. Initialize Spark first.")
+            return spark.createDataFrame(df.to_pandas())
+        else:
+            raise ValueError(f"Unknown format: {format}")
+
     def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
         """Top-N users for an item."""
         import numpy as np

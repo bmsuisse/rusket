@@ -719,6 +719,32 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
 
+#### `ALS.batch_recommend`
+
+Top-N items for all users efficiently computed in parallel.
+
+```python
+from rusket.als import ALS.batch_recommend
+
+ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| n | int, default=10 | The number of items to recommend per user. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+| format | str, default="polars" | The DataFrame format to return. One of "pandas", "polars", or "spark". |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DataFrame |  | A DataFrame with columns `user_id`, `item_id`, and `score`. |
+
+---
+
 #### `ALS.fit`
 
 Fit the model to the user-item interaction matrix.
@@ -1037,7 +1063,7 @@ customer_saturation(df: 'pd.DataFrame', user_col: 'str', category_col: 'str | No
 
 ### `export_item_factors`
 
-Exports latent item factors as a Pandas DataFrame for Vector DBs.
+Exports latent item factors as a DataFrame for Vector DBs.
 
 This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.
@@ -1045,7 +1071,7 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True) -> 'pd.DataFrame'
+export_item_factors(model: rusket.typing.SupportsItemFactors, include_labels: bool = True, normalize: bool = False, format: str = 'pandas') -> Any
 ```
 
 **Parameters**
@@ -1054,12 +1080,14 @@ export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True)
 | --- | --- | --- |
 | model | SupportsItemFactors | A fitted model instance with an ``item_factors`` property. |
 | include_labels | bool, default=True | Whether to include the string item labels (if available from the model's fitting method). |
+| normalize | bool, default=False | Whether to L2-normalize the factors before export. |
+| format | str, default="pandas" | The DataFrame format to return. One of "pandas", "polars", or "spark". |
 
 **Returns**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| pd.DataFrame |  | A DataFrame where each row is an item with columns ``item_id``, optionally ``item_label``, and ``vector`` (a dense 1-D numpy array of the item's latent factors). |
+| Any |  | A DataFrame where each row is an item with columns ``item_id``, optionally ``item_label``, and ``vector`` (a dense 1-D numpy array of the item's latent factors). |
 
 **Examples**
 

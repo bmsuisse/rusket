@@ -86,15 +86,14 @@ For real-world retail datasets scaling to 1 Billion rows, `FPMiner` uses a memor
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import fpgrowth
+from rusket import AutoMiner
 
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
 
-freq = fpgrowth(csr, min_support=0.001, use_colnames=True,
-                max_len=3, column_names=item_names)
+freq = AutoMiner(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
 ```
 
 At 100M rows, the mining step takes **1.2 seconds** (not a typo).

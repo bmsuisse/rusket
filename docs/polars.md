@@ -26,7 +26,7 @@ The `fpgrowth` function detects Polars DataFrames automatically — no extra par
 
 ```python
 import polars as pl
-from rusket import fpgrowth, association_rules
+from rusket import AutoMiner
 
 df = pl.DataFrame({
     "milk":  [True, True,  False, True],
@@ -34,13 +34,13 @@ df = pl.DataFrame({
     "eggs":  [False, True, True,  True],
 })
 
-freq = fpgrowth(df, min_support=0.5, use_colnames=True)
-rules = association_rules(freq, num_itemsets=len(df), metric="lift", min_threshold=1.0)
+model = AutoMiner(df, min_support=0.5)
+freq = model.mine(use_colnames=True)
+rules = model.association_rules(metric="lift", min_threshold=1.0)
 ```
 
 !!! note
-    `fpgrowth` always returns a **pandas DataFrame**, regardless of input type.
-    `association_rules` also returns a **pandas DataFrame**.
+    `AutoMiner` always returns a **pandas DataFrame**, regardless of input type.
 
 ---
 
@@ -54,8 +54,8 @@ Polars DataFrame
     ▼  df.to_numpy()  (zero-copy for bool/int dtypes)
 numpy uint8 array
     │
-    ▼  fpgrowth_from_dense()  (Rust, PyO3 ReadonlyArray2<u8>)
-Rust FP-Tree mining
+    ▼  AutoMiner.from_transactions(...)  (Rust, PyO3 ReadonlyArray2<u8>)
+Rust FP-Tree / Eclat mining
     │
     ▼
 pandas DataFrame  [support, itemsets]
@@ -74,7 +74,7 @@ pandas DataFrame  [support, itemsets]
 | Categorical / String | ❌ (pre-encode with `get_dummies`) |
 
 !!! tip "Lazy frames"
-    Pass `.collect()` before calling `fpgrowth` if you have a `LazyFrame`:
+    Pass `.collect()` before supplying it to `AutoMiner` if you have a `LazyFrame`:
     ```python
-    freq = fpgrowth(lazy_df.collect(), min_support=0.3, use_colnames=True)
+    freq = AutoMiner(lazy_df.collect(), min_support=0.3).mine(use_colnames=True)
     ```

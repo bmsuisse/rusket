@@ -5,6 +5,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+- updating docs and testing
+
 ### 🚀 Features
 
 - handle miner kwargs and preserve DataFrame return types

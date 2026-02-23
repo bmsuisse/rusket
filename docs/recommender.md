@@ -109,11 +109,21 @@ cart = ["espresso_beans", "grinder"]
 add_ons = rec.recommend_for_cart(cart, n=3)
 ```
 
-### 4. Batch scoring — email campaign targeting
+### 4. Databricks / Batch scoring — high speed cross-sell generation
+
+Avoid slow Python `for` loops by using the Rust-accelerated `batch_recommend` to score all users across all CPU cores simultaneously.
 
 ```python
-batch = rec.predict_next_chunk(user_history_df, user_col="customer_id", k=5)
-batch.to_parquet("s3://data-lake/recommendations/daily_picks.parquet")
+# Returns a native Polars DataFrame instantly: [user_id, item_id, score]
+recommendations_pl = als.batch_recommend(n=10, format="polars")
+
+# Need it in Delta Lake? Export factors and scores directly to Spark DataFrames!
+user_factors_df = als.export_user_factors(normalize=True, format="spark")
+item_factors_df = als.export_factors(normalize=True, format="spark")
+
+# Save to Delta
+user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.user_embeddings")
+item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
 ```
 
 ---

@@ -15,7 +15,7 @@ import plotly.express as px
 import polars as pl
 import pyarrow.compute as pc
 
-from rusket import association_rules, fpgrowth
+from rusket import AutoMiner
 
 # ## 1. Synthetic Dataset Generation
 #
@@ -75,7 +75,8 @@ df.head()
 
 
 # Extract frequent itemsets
-fi = fpgrowth(df, min_support=0.05, use_colnames=True)
+model = AutoMiner(df, min_support=0.05)
+fi = model.mine(use_colnames=True)
 
 print(f"Found {len(fi)} frequent itemsets.")
 fi.sort_values(by="support", ascending=False).head(10)
@@ -118,7 +119,7 @@ fig.show()
 
 
 # Generate association rules
-rules = association_rules(fi, num_itemsets=len(df), min_threshold=0.3)
+rules = model.association_rules(min_threshold=0.3)
 
 print(f"Generated {len(rules)} association rules.")
 rules.sort_values(by="lift", ascending=False).head()
@@ -167,10 +168,11 @@ fig.show()
 
 
 df_pl = pl.from_pandas(df)
-fi_pl = fpgrowth(df_pl, min_support=0.05, use_colnames=True)
+model_pl = AutoMiner(df_pl, min_support=0.05)
+fi_pl = model_pl.mine(use_colnames=True)
 
 # Generate rules directly from Polars dataframe
-rules_pl = association_rules(fi_pl, num_itemsets=df_pl.height, min_threshold=0.3)
+rules_pl = model_pl.association_rules(min_threshold=0.3)
 rules_pl.head(5)
 
 

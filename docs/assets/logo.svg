@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 75 460 315" width="100%" height="100%">
   <defs>
     <linearGradient id="warmGlow" gradientUnits="userSpaceOnUse" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FF4500" />
-      <stop offset="50%" stop-color="#FF8C00" />
-      <stop offset="100%" stop-color="#FFA500" />
+      <stop offset="0%" stop-color="#0052FF" />
+      <stop offset="50%" stop-color="#0088FF" />
+      <stop offset="100%" stop-color="#00D4FF" />
     </linearGradient>
     <linearGradient id="warmDark" gradientUnits="userSpaceOnUse" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#CC3700" />
-      <stop offset="50%" stop-color="#CC7000" />
-      <stop offset="100%" stop-color="#CC8400" />
+      <stop offset="0%" stop-color="#003DCC" />
+      <stop offset="50%" stop-color="#0066CC" />
+      <stop offset="100%" stop-color="#0099CC" />
     </linearGradient>
 
 
@@ -64,7 +64,7 @@
 
     @keyframes pulseGlow {
       0% { stroke: url(#warmGlow); }
-      100% { stroke: url(#warmGlow); filter: drop-shadow(0 0 8px #FF7300); }
+      100% { stroke: url(#warmGlow); filter: drop-shadow(0 0 8px #0088FF); }
     }
   </style>
 

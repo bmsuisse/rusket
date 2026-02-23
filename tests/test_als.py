@@ -319,3 +319,52 @@ def test_recommend_items_no_nan_scores() -> None:
     for user_id in range(10):
         _, scores = model.recommend_items(user_id=user_id, n=10, exclude_seen=True)
         assert np.isfinite(scores).all(), f"NaN in scores for user {user_id}"
+
+def test_als_batch_recommend() -> None:
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, regularization=0.1, iterations=15, seed=42)
+    model.fit(mat)
+    
+    # Test polars returns
+    df = model.batch_recommend(n=5, exclude_seen=True, format="polars")
+    import polars as pl
+    assert isinstance(df, pl.DataFrame)
+    assert len(df) == 20 * 5
+    assert df.columns == ["user_id", "item_id", "score"]
+    
+    # Test pandas returns
+    df_pd = model.batch_recommend(n=5, exclude_seen=True, format="pandas")
+    import pandas as pd
+    assert isinstance(df_pd, pd.DataFrame)
+    assert len(df_pd) == 20 * 5
+
+
+def test_als_export_formats() -> None:
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, regularization=0.1, iterations=15, seed=42)
+    model.fit(mat)
+    
+    df_items = model.export_factors(format="polars")
+    df_users = model.export_user_factors(format="pandas")
+    
+    import polars as pl
+    import pandas as pd
+    
+    assert isinstance(df_items, pl.DataFrame)
+    assert len(df_items) == 20
+    assert "vector" in df_items.columns
+    
+    assert isinstance(df_users, pd.DataFrame)
+    assert len(df_users) == 20
+    assert "vector" in df_users.columns
+
+
+def test_als_normalization() -> None:
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, regularization=0.1, iterations=15, seed=42)
+    model.fit(mat)
+    
+    df_norm = model.export_factors(format="pandas", normalize=True)
+    lengths = df_norm["vector"].apply(lambda v: np.linalg.norm(v)).values
+    np.testing.assert_allclose(lengths, np.ones(20), rtol=1e-5)
+

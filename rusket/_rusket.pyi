@@ -54,6 +54,13 @@ def als_recommend_items(
     exclude_indptr: npt.NDArray[np.int64],
     exclude_indices: npt.NDArray[np.int32],
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
+def als_recommend_all(
+    user_factors: npt.NDArray[np.float32],
+    item_factors: npt.NDArray[np.float32],
+    n: int,
+    exclude_indptr: npt.NDArray[np.int64],
+    exclude_indices: npt.NDArray[np.int32],
+) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
 def als_recommend_users(
     user_factors: npt.NDArray[np.float32],
     item_factors: npt.NDArray[np.float32],

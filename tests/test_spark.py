@@ -404,7 +404,7 @@ def test_mine_auto_spark_returns_spark(spark_session) -> None:
     import pyspark
 
     # Validate the type is exactly a PySpark DataFrame
-    assert isinstance(freq, pyspark.sql.DataFrame)
+    assert isinstance(freq, pyspark.sql.DataFrame)  # type: ignore
 
     # Verify data inside the Spark DataFrame
     pd_freq = freq.toPandas()

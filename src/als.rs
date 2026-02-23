@@ -701,3 +701,52 @@ pub fn als_recommend_users<'py>(
     let (ids, scores) = top_n_users(uf, itf, item_id, n_users, k, n);
     Ok((ids.into_pyarray(py), scores.into_pyarray(py)))
 }
+
+#[pyfunction]
+#[pyo3(signature = (user_factors, item_factors, n, exclude_indptr, exclude_indices))]
+pub fn als_recommend_all<'py>(
+    py: Python<'py>,
+    user_factors: PyReadonlyArray2<f32>,
+    item_factors: PyReadonlyArray2<f32>,
+    n: usize,
+    exclude_indptr: PyReadonlyArray1<i64>,
+    exclude_indices: PyReadonlyArray1<i32>,
+) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f32>>)> {
+    let uf = user_factors.as_slice()?;
+    let itf = item_factors.as_slice()?;
+    let k = user_factors.shape()[1];
+    let n_users = user_factors.shape()[0];
+    let n_items = item_factors.shape()[0];
+    let ep = exclude_indptr.as_slice()?;
+    let ex = exclude_indices.as_slice()?;
+
+    // Parallel processing across all users
+    let results: Vec<(Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_users)
+        .into_par_iter()
+        .map(|user_id| {
+            let es = ep[user_id] as usize;
+            let ee = ep[user_id + 1] as usize;
+            let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee);
+            
+            let user_ids = vec![user_id as i32; ids.len()];
+            (user_ids, ids, scores)
+        })
+        .collect();
+
+    // Flatten results
+    let mut all_user_ids = Vec::with_capacity(n_users * n);
+    let mut all_item_ids = Vec::with_capacity(n_users * n);
+    let mut all_scores = Vec::with_capacity(n_users * n);
+
+    for (u_ids, i_ids, sc) in results {
+        all_user_ids.extend(u_ids);
+        all_item_ids.extend(i_ids);
+        all_scores.extend(sc);
+    }
+
+    Ok((
+        all_user_ids.into_pyarray(py),
+        all_item_ids.into_pyarray(py),
+        all_scores.into_pyarray(py),
+    ))
+}

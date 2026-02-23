@@ -218,14 +218,46 @@ fn combinations<T: Copy>(items: &[T], size: usize) -> impl Iterator<Item = Vec<T
     })
 }
 
-pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>) -> Vec<(u64, Vec<u32>)> {
+pub(crate) struct FlatResults {
+    pub supports: Vec<u64>,
+    pub offsets: Vec<u32>,
+    pub items: Vec<u32>,
+}
+
+impl FlatResults {
+    pub fn new() -> Self {
+        Self {
+            supports: Vec::new(),
+            offsets: vec![0],
+            items: Vec::new(),
+        }
+    }
+
+    pub fn push(&mut self, support: u64, iset: &[u32]) {
+        self.supports.push(support);
+        self.items.extend_from_slice(iset);
+        self.offsets.push(self.items.len() as u32);
+    }
+
+    pub fn append(&mut self, mut other: FlatResults) {
+        self.supports.append(&mut other.supports);
+        let base_offset = self.items.len() as u32;
+        for &offset in &other.offsets[1..] {
+            self.offsets.push(base_offset + offset);
+        }
+        self.items.append(&mut other.items);
+    }
+}
+
+pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>) -> FlatResults {
     let num_items = tree.original_items.len();
     let cond_len = tree.cond_items.len();
-    let mut results: Vec<(u64, Vec<u32>)> = Vec::with_capacity(num_items.saturating_mul(2));
+    let mut results = FlatResults::new();
 
     if tree.is_path() {
         let max_size_from_len = max_len.map_or(num_items + 1, |ml| ml.saturating_sub(cond_len) + 1);
         let size_remain = std::cmp::min(num_items + 1, max_size_from_len);
+        let mut iset_buf = tree.cond_items.clone();
         for size in 1..size_remain {
             let local_ids: Vec<u32> = (0..num_items as u32).collect();
             for combo in combinations(&local_ids, size) {
@@ -236,17 +268,17 @@ pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>) -> Ve
                     })
                     .min()
                     .unwrap_or(0);
-                let mut iset = tree.cond_items.clone();
-                iset.extend(combo.iter().map(|&id| tree.original_items[id as usize]));
-                results.push((support, iset));
+                iset_buf.truncate(cond_len);
+                iset_buf.extend(combo.iter().map(|&id| tree.original_items[id as usize]));
+                results.push(support, &iset_buf);
             }
         }
     } else if max_len.is_none_or(|ml| ml > cond_len) {
         let prefix = &tree.cond_items;
 
         let use_par = num_items >= PAR_ITEMS_CUTOFF;
-        let sub_results: Vec<Vec<(u64, Vec<u32>)>> = if use_par {
-            (0..num_items as u32)
+        if use_par {
+            let sub_results: Vec<FlatResults> = (0..num_items as u32)
                 .into_par_iter()
                 .rev()
                 .map(|local_id| {
@@ -255,37 +287,32 @@ pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>) -> Ve
                         .map(|&ni| tree.nodes[ni as usize].count)
                         .sum();
                     let cond_tree = tree.conditional_tree(local_id, minsup);
-                    let mut sub = Vec::new();
+                    let mut sub = FlatResults::new();
                     let mut iset = Vec::with_capacity(prefix.len() + 1);
                     iset.extend_from_slice(prefix);
                     iset.push(tree.original_items[local_id as usize]);
-                    sub.push((support, iset));
-                    sub.extend(fpg_step(&cond_tree, minsup, max_len));
+                    sub.push(support, &iset);
+                    sub.append(fpg_step(&cond_tree, minsup, max_len));
                     sub
                 })
-                .collect()
-        } else {
-            (0..num_items as u32)
-                .rev()
-                .map(|local_id| {
-                    let support: u64 = tree.item_nodes[local_id as usize]
-                        .iter()
-                        .map(|&ni| tree.nodes[ni as usize].count)
-                        .sum();
-                    let cond_tree = tree.conditional_tree(local_id, minsup);
-                    let mut sub = Vec::new();
-                    let mut iset = Vec::with_capacity(prefix.len() + 1);
-                    iset.extend_from_slice(prefix);
-                    iset.push(tree.original_items[local_id as usize]);
-                    sub.push((support, iset));
-                    sub.extend(fpg_step(&cond_tree, minsup, max_len));
-                    sub
-                })
-                .collect()
-        };
+                .collect();
 
-        for mut chunk in sub_results {
-            results.append(&mut chunk);
+            for chunk in sub_results {
+                results.append(chunk);
+            }
+        } else {
+            for local_id in (0..num_items as u32).rev() {
+                let support: u64 = tree.item_nodes[local_id as usize]
+                    .iter()
+                    .map(|&ni| tree.nodes[ni as usize].count)
+                    .sum();
+                let cond_tree = tree.conditional_tree(local_id, minsup);
+                let mut iset = Vec::with_capacity(prefix.len() + 1);
+                iset.extend_from_slice(prefix);
+                iset.push(tree.original_items[local_id as usize]);
+                results.push(support, &iset);
+                results.append(fpg_step(&cond_tree, minsup, max_len));
+            }
         }
     }
 
@@ -330,7 +357,7 @@ fn mine_itemsets(
     original_items: Vec<u32>,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<Vec<(u64, Vec<u32>)>> {
+) -> PyResult<FlatResults> {
     use ahash::AHashMap;
     let mut basket_counts: AHashMap<Vec<u32>, u64> = AHashMap::with_capacity(itemsets.len());
     for basket in itemsets {
@@ -345,29 +372,12 @@ fn mine_itemsets(
 
 use numpy::{IntoPyArray, PyArray1};
 
-pub(crate) fn flatten_results(results: Vec<(u64, Vec<u32>)>) -> (Vec<u64>, Vec<u32>, Vec<u32>) {
-    let mut supports = Vec::with_capacity(results.len());
-    let mut offsets = Vec::with_capacity(results.len() + 1);
-
-    let total_items: usize = results.iter().map(|(_, items)| items.len()).sum();
-    let mut all_items = Vec::with_capacity(total_items);
-
-    offsets.push(0);
-    for (support, mut items) in results {
-        supports.push(support);
-        all_items.append(&mut items);
-        offsets.push(all_items.len() as u32);
-    }
-
-    (supports, offsets, all_items)
-}
-
 fn _mine_dense(
     flat: &[u8],
     n_cols: usize,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
+) -> PyResult<FlatResults> {
     let item_count: Vec<u64> = flat
         .par_chunks(n_cols)
         .fold(
@@ -398,7 +408,7 @@ fn _mine_dense(
     let (_global_to_local, original_items, frequent_cols, frequent_len) =
         match process_item_counts(item_count, min_count, n_cols) {
             Some(v) => v,
-            None => return Ok((vec![], vec![], vec![])),
+            None => return Ok(FlatResults::new()),
         };
 
     let itemsets: Vec<Vec<u32>> = flat
@@ -422,7 +432,7 @@ fn _mine_dense(
         .collect();
 
     let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
-    Ok(flatten_results(results))
+    Ok(results)
 }
 
 pub(crate) fn _mine_csr(
@@ -431,7 +441,7 @@ pub(crate) fn _mine_csr(
     n_cols: usize,
     min_count: u64,
     max_len: Option<usize>,
-) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
+) -> PyResult<FlatResults> {
     let n_rows = indptr.len() - 1;
 
     let item_count: Vec<u64> = (0..n_rows)
@@ -466,7 +476,7 @@ pub(crate) fn _mine_csr(
     let (global_to_local, original_items, _, frequent_len) =
         match process_item_counts(item_count, min_count, n_cols) {
             Some(v) => v,
-            None => return Ok((vec![], vec![], vec![])),
+            None => return Ok(FlatResults::new()),
         };
 
     let itemsets: Vec<Vec<u32>> = (0..n_rows)
@@ -498,7 +508,7 @@ pub(crate) fn _mine_csr(
         .collect();
 
     let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
-    Ok(flatten_results(results))
+    Ok(results)
 }
 
 #[pyfunction]
@@ -526,12 +536,12 @@ pub fn fpgrowth_from_dense<'py>(
     }
 
     let flat: &[u8] = arr.as_slice().unwrap();
-    let (supports, offsets, items) = _mine_dense(flat, n_cols, min_count, max_len)?;
+    let results = _mine_dense(flat, n_cols, min_count, max_len)?;
 
     Ok((
-        supports.into_pyarray(py),
-        offsets.into_pyarray(py),
-        items.into_pyarray(py),
+        results.supports.into_pyarray(py),
+        results.offsets.into_pyarray(py),
+        results.items.into_pyarray(py),
     ))
 }
 
@@ -560,11 +570,11 @@ pub fn fpgrowth_from_csr<'py>(
         ));
     }
 
-    let (supports, offsets, items) = _mine_csr(ip, ix, n_cols, min_count, max_len)?;
+    let results = _mine_csr(ip, ix, n_cols, min_count, max_len)?;
 
     Ok((
-        supports.into_pyarray(py),
-        offsets.into_pyarray(py),
-        items.into_pyarray(py),
+        results.supports.into_pyarray(py),
+        results.offsets.into_pyarray(py),
+        results.items.into_pyarray(py),
     ))
 }
