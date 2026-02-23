@@ -17,6 +17,8 @@
 
 ---
 
+> **⚠️ Note:** `rusket` is currently under heavy construction. The API will probably change in upcoming versions.
+
 **rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.
 
 It features Collaborative Filtering (ALS, BPR) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.

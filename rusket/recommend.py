@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
-
-from .als import ALS
 
 
 class Recommender:
@@ -13,18 +13,19 @@ class Recommender:
 
     def __init__(
         self,
-        als_model: ALS | None = None,
+        model: Any | None = None,
         rules_df: pd.DataFrame | None = None,
         item_embeddings: np.ndarray | None = None,
     ):
-        self.als_model = als_model
+        self.model = model
         self.rules_df = rules_df
         self.item_embeddings = item_embeddings
 
-        if self.item_embeddings is not None and self.als_model is not None:
-            if self.item_embeddings.shape[0] != self.als_model.item_factors.shape[0]:
+        item_factors = getattr(self.model, "item_factors", None)
+        if self.item_embeddings is not None and item_factors is not None:
+            if self.item_embeddings.shape[0] != item_factors.shape[0]:
                 raise ValueError(
-                    f"Dimension mismatch: ALS model has {self.als_model.item_factors.shape[0]} items, "
+                    f"Dimension mismatch: model has {item_factors.shape[0]} items, "
                     f"but embeddings matrix has {self.item_embeddings.shape[0]} items."
                 )
 
@@ -52,29 +53,32 @@ class Recommender:
             the user's most recently interacted item (if history is available)
             or falls back to pure CF.
         """
-        if self.als_model is None:
-            raise ValueError("ALS model is not provided to the Recommender.")
+        if self.model is None:
+            raise ValueError("Model is not provided to the Recommender.")
 
         # 1. Get raw CF scores
-        cf_rec_tuple = self.als_model.recommend_items(user_id=user_id, n=n, exclude_seen=True)
+        cf_rec_tuple = self.model.recommend_items(user_id=user_id, n=n, exclude_seen=True)
 
         if self.item_embeddings is None or alpha == 1.0:
             return cf_rec_tuple
 
         # 2. Hybrid scoring
+        if not hasattr(self.model, "user_factors") or not hasattr(self.model, "item_factors"):
+            return cf_rec_tuple # fallback if model cant do hybrid easily
+
         # Calculate full CF scores for all items
-        u_factors = self.als_model.user_factors[user_id]
-        cf_raw_scores = np.dot(self.als_model.item_factors, u_factors)
+        u_factors = self.model.user_factors[user_id]
+        cf_raw_scores = np.dot(self.model.item_factors, u_factors)
 
         target_item = target_item_for_semantic
         if target_item is None:
             try:
                 # Naive fallback: try to find an item the user bought
-                if self.als_model._fit_indptr is not None and self.als_model._fit_indices is not None:
-                    start_idx = self.als_model._fit_indptr[user_id]
-                    end_idx = self.als_model._fit_indptr[user_id + 1]
+                if getattr(self.model, "_fit_indptr", None) is not None and getattr(self.model, "_fit_indices", None) is not None:
+                    start_idx = self.model._fit_indptr[user_id]
+                    end_idx = self.model._fit_indptr[user_id + 1]
                     if end_idx > start_idx:
-                        target_item = self.als_model._fit_indices[end_idx - 1]
+                        target_item = self.model._fit_indices[end_idx - 1]
             except (AttributeError, IndexError):
                 pass
 
@@ -100,10 +104,10 @@ class Recommender:
 
         # Mask seen items
         try:
-            if self.als_model._fit_indptr is not None and self.als_model._fit_indices is not None:
-                start_idx = self.als_model._fit_indptr[user_id]
-                end_idx = self.als_model._fit_indptr[user_id + 1]
-                seen = self.als_model._fit_indices[start_idx:end_idx]
+            if getattr(self.model, "_fit_indptr", None) is not None and getattr(self.model, "_fit_indices", None) is not None:
+                start_idx = self.model._fit_indptr[user_id]
+                end_idx = self.model._fit_indptr[user_id + 1]
+                seen = self.model._fit_indices[start_idx:end_idx]
                 hybrid_scores[seen] = -np.inf
         except (AttributeError, IndexError):
             pass
@@ -156,15 +160,18 @@ NextBestAction = Recommender
 
 def score_potential(
     user_history: list[list[int]],
-    als_model: ALS,
+    model: Any,
     target_categories: list[int] | None = None,
 ) -> np.ndarray:
     """Cross-selling potential scores — shape ``(n_users, n_items)`` or ``(n_users, len(target_categories))``.
 
     Items the user has already interacted with are masked to ``-inf``.
     """
-    u_factors = als_model.user_factors
-    i_factors = als_model.item_factors
+    if not hasattr(model, "user_factors") or not hasattr(model, "item_factors"):
+        raise ValueError("Model must expose `user_factors` and `item_factors` for score_potential.")
+
+    u_factors = model.user_factors
+    i_factors = model.item_factors
 
     if target_categories is not None:
         i_factors = i_factors[target_categories]

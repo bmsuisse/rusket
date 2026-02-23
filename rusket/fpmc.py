@@ -55,11 +55,11 @@ class FPMC(SequentialRecommender):
         self._vil: Any = None
         self._vli: Any = None
 
-        self._n_users: int = 0
-        self._n_items: int = 0
+        import numpy as np
 
         # Last items for users to make predictions
         self._user_last_items: dict[int, int] = {}
+        self._user_seen_items: dict[int, np.ndarray] = {}
 
         self.fitted: bool = False
 
@@ -102,6 +102,7 @@ class FPMC(SequentialRecommender):
         for u, seq in enumerate(sequences):
             if seq:
                 self._user_last_items[u] = seq[-1]
+                self._user_seen_items[u] = np.unique(seq)
                 indices.extend(seq)
             indptr[u + 1] = len(indices)
 
@@ -151,10 +152,9 @@ class FPMC(SequentialRecommender):
 
         # Top-N selection
         if exclude_seen:
-            # We don't track full sequence in Python directly after fitting,
-            # but usually in sequential RecSys we don't strictly exclude seen.
-            # If strictly needed, we should extract seen items.
-            pass
+            seen_items = self._user_seen_items.get(user_id)
+            if seen_items is not None:
+                scores[seen_items] = -np.inf
 
         idx = np.argpartition(scores, -n)[-n:]
         sorted_idx = idx[np.argsort(scores[idx])[::-1]]

@@ -5,7 +5,7 @@
 This project works **directly on `main`** — no feature branches, no PRs required.
 
 - `git add -A && git commit -m "..." && git push origin main` is the standard flow.
-- Only create a branch if the user explicitly asks for one.
+- We **only** work on the `main` branch. Do not create feature branches under any circumstances.
 
 ## Quick Reference
 

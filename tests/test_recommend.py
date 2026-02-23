@@ -27,7 +27,7 @@ def test_recommender_recommend_for_user():
     als._fit_indptr = np.array([0, 1], dtype=np.int64)
     als._fit_indices = np.array([0], dtype=np.int32)  # user 0 has seen item 0
 
-    rec = Recommender(als_model=als)
+    rec = Recommender(model=als)
     items, scores = rec.recommend_for_user(user_id=0, n=2)
 
     # User vector [1,0] dot item 1 [0.5, 0.5] = 0.5

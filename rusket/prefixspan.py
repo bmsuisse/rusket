@@ -95,6 +95,18 @@ class PrefixSpan(Miner):
             A DataFrame containing 'support' and 'sequence' columns.
             Sequences are mapped back to original item names if `from_transactions` was used.
         """
+        min_supp = kwargs.get("min_support", self.min_support)
+        max_len = kwargs.get("max_len", self.max_len)
+
+        if isinstance(min_supp, float):
+            n_seqs = min(1, len(self.data)) if isinstance(self.data, list) else 1 # simplistic fallback
+            if isinstance(self.data, tuple) and len(self.data) == 2:
+                n_seqs = len(self.data[0]) - 1 # len of indptr - 1 is number of sequences
+            elif isinstance(self.data, list):
+                n_seqs = len(self.data)
+
+            min_supp = max(1, int(min_supp * n_seqs))
+
         # If already CSR-format from our internal loader:
         if isinstance(self.data, tuple) and len(self.data) == 2:
             indptr, indices = self.data
@@ -114,7 +126,7 @@ class PrefixSpan(Miner):
             indptr = np.array(indptr_list, dtype=np.uintp)
             indices = np.array(indices_list, dtype=np.uint32)
 
-        supports, patterns = _rust.prefixspan_mine_py(indptr, indices, self.min_support, self.max_len)  # type: ignore
+        supports, patterns = _rust.prefixspan_mine_py(indptr, indices, int(min_supp), max_len)  # type: ignore
 
         if self.item_mapping is not None:
             mapped_patterns = []
@@ -158,8 +170,8 @@ class PrefixSpan(Miner):
             The column used for ordering events within a sequence.
         item_col : str
             The column containing the items.
-        min_support : int, default=1
-            The minimum absolute support (number of sequences a pattern must appear in).
+        min_support : int | float, default=1
+            The minimum absolute support (number of sequences), or a float percent.
         max_len : int | None, default=None
             Maximum length of the sequential patterns to mine.
 
@@ -183,7 +195,7 @@ class PrefixSpan(Miner):
 
 def prefixspan(
     sequences: list[list[int]],
-    min_support: int,
+    min_support: int | float,
     max_len: int | None = None,
 ) -> pd.DataFrame:
     """Mine sequential patterns using the PrefixSpan algorithm.
@@ -197,8 +209,8 @@ def prefixspan(
     sequences : list of list of int
         A list of sequences, where each sequence is a list of integers representing items.
         Example: `[[1, 2, 3], [1, 3], [2, 3]]`.
-    min_support : int
-        The minimum absolute support (number of sequences a pattern must appear in).
+    min_support : int | float
+        The minimum absolute support (number of sequences a pattern must appear in), or float percent.
     max_len : int, optional
         The maximum length of the sequential patterns to mine.
 
@@ -225,7 +237,10 @@ def prefixspan(
     indptr = np.array(indptr_list, dtype=np.uintp)
     indices = np.array(indices_list, dtype=np.uint32)
 
-    supports, patterns = _rust.prefixspan_mine_py(indptr, indices, min_support, max_len)  # type: ignore
+    if isinstance(min_support, float):
+        min_support = max(1, int(min_support * len(sequences)))
+
+    supports, patterns = _rust.prefixspan_mine_py(indptr, indices, int(min_support), max_len)  # type: ignore
 
     return (
         pd.DataFrame(

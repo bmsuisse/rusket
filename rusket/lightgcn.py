@@ -54,6 +54,9 @@ class LightGCN:
         self._item_map: dict[int, int] = {}
         self._rev_item_map: dict[int, int] = {}
 
+        self._fit_indptr: np.ndarray | None = None
+        self._fit_indices: np.ndarray | None = None
+
     @classmethod
     def from_transactions(
         cls,
@@ -134,12 +137,16 @@ class LightGCN:
         self._n_users = n_users
         self._n_items = n_items
 
-    def recommend_items(self, user_id: int, n: int = 10) -> tuple[np.ndarray, np.ndarray]:
+        self._fit_indptr = u_indptr
+        self._fit_indices = u_indices
+
+    def recommend_items(self, user_id: int, n: int = 10, exclude_seen: bool = True) -> tuple[np.ndarray, np.ndarray]:
         """Return top-n recommended item IDs and scores for a given user.
 
         Args:
             user_id: Original user ID (before encoding).
             n: Number of recommendations.
+            exclude_seen: Whether to exclude items the user has already interacted with.
 
         Returns:
             Tuple of (item_ids, scores) arrays sorted by descending score.
@@ -152,6 +159,13 @@ class LightGCN:
 
         assert self._item_factors is not None
         scores = self._user_factors[uid] @ self._item_factors.T
+
+        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+            start_idx = self._fit_indptr[uid]
+            end_idx = self._fit_indptr[uid + 1]
+            seen_items = self._fit_indices[start_idx:end_idx]
+            scores[seen_items] = -np.inf
+
         top_idx = np.argsort(scores)[::-1][:n]
         original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)
         return original_ids, scores[top_idx]

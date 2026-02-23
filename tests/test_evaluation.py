@@ -36,17 +36,14 @@ def test_rust_metrics():
 
 
 class MockRecommender:
-    def recommend_users(self, user_ids, n=10, filter_already_liked_items=True):
+    def recommend_items(self, user_id, n=10, exclude_seen=True):
         # Recommend items (user_id + i) for i in 1..n
-        r_users = []
         r_items = []
         r_scores = []
-        for u in user_ids:
-            for i in range(1, n + 1):
-                r_users.append(u)
-                r_items.append(u + i)
-                r_scores.append(1.0)
-        return np.array(r_users), np.array(r_items), np.array(r_scores)
+        for i in range(1, n + 1):
+            r_items.append(user_id + i)
+            r_scores.append(1.0)
+        return np.array(r_items), np.array(r_scores)
 
 
 def test_python_evaluate_wrapper():

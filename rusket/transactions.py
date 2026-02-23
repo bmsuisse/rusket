@@ -22,41 +22,40 @@ if TYPE_CHECKING:
 @overload
 def from_transactions(
     data: pd.DataFrame,
-    transaction_col: str | None = ...,
-    item_col: str | None = ...,
-    min_item_count: int = ...,
-    verbose: int = ...,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
 ) -> pd.DataFrame: ...
 
 
 @overload
 def from_transactions(
     data: pl.DataFrame,
-    transaction_col: str | None = ...,
-    item_col: str | None = ...,
-    min_item_count: int = ...,
-    verbose: int = ...,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
 ) -> pl.DataFrame: ...
 
 
 @overload
 def from_transactions(
     data: SparkDataFrame,
-    transaction_col: str | None = ...,
-    item_col: str | None = ...,
-    min_item_count: int = ...,
-    verbose: int = ...,
-    verbose: int = ...,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
 ) -> SparkDataFrame: ...
 
 
 @overload
 def from_transactions(
     data: Sequence[Sequence[str | int]],
-    transaction_col: str | None = ...,
-    item_col: str | None = ...,
-    min_item_count: int = ...,
-    verbose: int = ...,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
 ) -> pd.DataFrame: ...
 
 

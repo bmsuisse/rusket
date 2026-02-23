@@ -627,7 +627,7 @@ def recommend_batches(
     try:
         from rusket.recommend import Recommender
 
-        recommender = model if isinstance(model, Recommender) else Recommender(als_model=model)
+        recommender = model if isinstance(model, Recommender) else Recommender(model=model)
     except Exception:
         recommender = model  # Trust the duck-typing
 

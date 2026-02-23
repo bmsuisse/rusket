@@ -25,8 +25,8 @@ def evaluate(
 
     Parameters
     ----------
-    model : SupportsItemFactors / Recommender
-        A trained recommendation model supporting ``recommend_users(user_ids, k)``.
+    model : Any
+        A trained recommendation model supporting ``recommend_items(user_id, k, exclude_seen)``.
     test_interactions : np.ndarray or pd.DataFrame
         Ground truth test interactions. Must either have columns "user" and "item",
         or be a 2D array format.
@@ -72,23 +72,20 @@ def evaluate(
 
     unique_users = np.array(list(user_test_items.keys()), dtype=np.int32)
 
-    if hasattr(model, "recommend_users"):
-        # Bulk predict top-k for all test users
-        try:
-            r_users, r_items, r_scores = model.recommend_users(unique_users, n=k, filter_already_liked_items=True)
+    predictions: dict[int, list[int]] = {u: [] for u in unique_users}
 
-            # Form dict mapping user -> predicted items
-            predictions: dict[int, list[int]] = {u: [] for u in unique_users}
-            for u, i in zip(r_users, r_items, strict=False):
-                predictions[u].append(i)
-
-        except Exception as e:
-            warnings.warn(f"Failed to use bulk recommend_users: {e}. Falling back to 0.0 metrics.", stacklevel=2)
-            res: dict[str, float] = dict.fromkeys(metrics, 0.0)
-            return res
+    if hasattr(model, "recommend_items"):
+        for u in unique_users:
+            try:
+                r_items, r_scores = model.recommend_items(u, n=k, exclude_seen=True)
+                predictions[u] = r_items.tolist()
+            except Exception as e:
+                warnings.warn(f"Failed to use recommend_items for user {u}: {e}. Falling back to 0.0 metrics.", stacklevel=2)
+                res: dict[str, float] = dict.fromkeys(metrics, 0.0)
+                return res
     else:
         # Try a slower fallback (can be implemented later)
-        raise TypeError("Model must support rank-based `recommend_users()`.")
+        raise TypeError("Model must support `recommend_items(user_id, n, exclude_seen)`.")
 
     results: dict[str, float] = dict.fromkeys(metrics, 0.0)
     n_users = len(unique_users)

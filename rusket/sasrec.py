@@ -47,6 +47,8 @@ class SASRec:
         self._item_map: dict[int, int] = {}
         self._rev_item_map: dict[int, int] = {}
 
+        self._user_sequences: dict[int, list[int]] = {}
+
     def fit(self, sequences: list[list[int]]) -> SASRec:
         """Train SASRec on integer-encoded sequences (0-indexed item IDs).
 
@@ -72,6 +74,9 @@ class SASRec:
             bool(self.verbose),
         )
         self._n_items = n_items
+
+        self._user_sequences = dict(enumerate(sequences))
+
         return self
 
     @classmethod
@@ -124,20 +129,25 @@ class SASRec:
         return model
 
     def recommend_items(
-        self, user_sequence: list[int], n: int = 10, exclude: list[int] | None = None
+        self, user_id: int | list[int], n: int = 10, exclude_seen: bool = True
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Return top-n recommended item IDs and scores given a user sequence.
+        """Return top-n recommended item IDs and scores given a user ID or an ad-hoc sequence.
 
         Args:
-            user_sequence: Recent item IDs (1-indexed internal encoding).
+            user_id: The ID of the user (implicitly 0 to len(sequences)-1 from fit), or a list of items.
             n: Number of recommendations.
-            exclude: Item IDs to exclude from recommendations.
+            exclude_seen: Whether to exclude items the user has already interacted with.
 
         Returns:
             (item_ids, scores) sorted by descending score.
         """
         if self._item_emb is None:
             raise RuntimeError("Model is not fitted yet.")
+
+        if isinstance(user_id, int):
+            user_sequence = self._user_sequences.get(user_id, [])
+        else:
+            user_sequence = user_id
 
         seq = [i for i in user_sequence if i > 0]
         if not seq:
@@ -155,10 +165,12 @@ class SASRec:
 
         # Score all items
         scores = self._item_emb[1:] @ seq_repr
-        exclude_set: set[int] = set(exclude or [])
-        for exc in exclude_set:
-            if 1 <= exc <= len(scores):
-                scores[exc - 1] = -np.inf
+
+        if exclude_seen:
+            exclude_set: set[int] = set(user_sequence)
+            for exc in exclude_set:
+                if 1 <= exc <= len(scores):
+                    scores[exc - 1] = -np.inf
 
         top_idx = np.argsort(scores)[::-1][:n]
         original_ids = np.array([self._rev_item_map.get(i + 1, i + 1) for i in top_idx], dtype=np.int64)
