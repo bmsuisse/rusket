@@ -133,6 +133,53 @@ class PrefixSpan(Miner):
             .reset_index(drop=True)
         )
 
+    @classmethod
+    def mine_grouped(
+        cls,
+        df: Any,
+        group_col: str,
+        user_col: str,
+        time_col: str,
+        item_col: str,
+        min_support: int = 1,
+        max_len: int | None = None,
+    ) -> Any:
+        """Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions.
+
+        Parameters
+        ----------
+        df : pyspark.sql.DataFrame
+            The input PySpark DataFrame (event log).
+        group_col : str
+            The column to group by (e.g. `store_id`).
+        user_col : str
+            The column identifying the sequence within each group.
+        time_col : str
+            The column used for ordering events within a sequence.
+        item_col : str
+            The column containing the items.
+        min_support : int, default=1
+            The minimum absolute support (number of sequences a pattern must appear in).
+        max_len : int | None, default=None
+            Maximum length of the sequential patterns to mine.
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            A PySpark DataFrame containing group_col, support, and sequence.
+        """
+        from .spark import prefixspan_grouped
+
+        return prefixspan_grouped(
+            df=df,
+            group_col=group_col,
+            user_col=user_col,
+            time_col=time_col,
+            item_col=item_col,
+            min_support=min_support,
+            max_len=max_len,
+        )
+
 
 def prefixspan(
     sequences: list[list[int]],

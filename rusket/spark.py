@@ -116,6 +116,9 @@ def mine_grouped(
             use_colnames=True,
         )
 
+        if isinstance(result_pd, pl.DataFrame):
+            result_pd = result_pd.to_pandas()
+
         # If no itemsets were found
         if len(result_pd) == 0:
             return pa.Table.from_batches(
@@ -237,6 +240,9 @@ def prefixspan_grouped(
                 max_len=max_len,
             )
             result_pd = model.mine()
+
+            if isinstance(result_pd, pl.DataFrame):
+                result_pd = result_pd.to_pandas()
 
             # Ensure items in the sequences are cast to string for the array<string> schema
             if not result_pd.empty:
@@ -370,6 +376,9 @@ def hupm_grouped(
                 max_len=max_len,
             )
             result_pd = model.mine()
+
+            if isinstance(result_pd, pl.DataFrame):
+                result_pd = result_pd.to_pandas()
 
             # Ensure items in the sequences are cast to int64 for the array<long> schema
             if not result_pd.empty:

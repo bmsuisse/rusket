@@ -125,6 +125,53 @@ class HUPM(Miner):
             .reset_index(drop=True)
         )
 
+    @classmethod
+    def mine_grouped(
+        cls,
+        df: Any,
+        group_col: str,
+        transaction_col: str,
+        item_col: str,
+        utility_col: str,
+        min_utility: float,
+        max_len: int | None = None,
+    ) -> Any:
+        """Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions.
+
+        Parameters
+        ----------
+        df : pyspark.sql.DataFrame
+            The input PySpark DataFrame.
+        group_col : str
+            The column to group by (e.g. `store_id`).
+        transaction_col : str
+            The column identifying the transaction within each group.
+        item_col : str
+            The column containing the numeric item IDs.
+        utility_col : str
+            The column containing the numeric utility of the item in the transaction.
+        min_utility : float
+            The minimum total utility required.
+        max_len : int | None, default=None
+            Maximum length of the itemsets to mine.
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            A PySpark DataFrame containing group_col, utility, and itemset.
+        """
+        from .spark import hupm_grouped
+
+        return hupm_grouped(
+            df=df,
+            group_col=group_col,
+            transaction_col=transaction_col,
+            item_col=item_col,
+            utility_col=utility_col,
+            min_utility=min_utility,
+            max_len=max_len,
+        )
+
 
 def hupm(
     transactions: list[list[int]],
