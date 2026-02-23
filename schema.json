@@ -187,11 +187,11 @@
     },
     "similar_items": {
       "parameters": {
-        "model": "<class 'rusket.SupportsItemFactors'>",
-        "item_id": "<class 'int'>",
-        "n": "<class 'int'>"
+        "model": "SupportsItemFactors",
+        "item_id": "int",
+        "n": "int"
       },
-      "returns": "tuple[numpy.ndarray, numpy.ndarray]",
+      "returns": "tuple[np.ndarray, np.ndarray]",
       "doc": "Find the most similar items to a given item ID based on latent factors."
     },
     "find_substitutes": {
@@ -214,10 +214,10 @@
     },
     "export_item_factors": {
       "parameters": {
-        "model": "<class 'rusket.SupportsItemFactors'>",
-        "include_labels": "<class 'bool'>",
-        "normalize": "<class 'bool'>",
-        "format": "<class 'str'>"
+        "model": "SupportsItemFactors",
+        "include_labels": "bool",
+        "normalize": "bool",
+        "format": "str"
       },
       "returns": "Any",
       "doc": "Exports latent item factors as a DataFrame for Vector DBs."
@@ -451,7 +451,7 @@
             "alpha": "float",
             "iterations": "int",
             "seed": "int",
-            "verbose": "bool",
+            "verbose": "int",
             "cg_iters": "int",
             "use_cholesky": "bool",
             "anderson_m": "int",
@@ -505,7 +505,7 @@
             "regularization": "float",
             "iterations": "int",
             "seed": "int",
-            "verbose": "bool",
+            "verbose": "int",
             "kwargs": "Any"
           },
           "returns": "None",

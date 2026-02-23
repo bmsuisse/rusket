@@ -3477,56 +3477,11 @@ Zero-copy extraction is used if types match (Int64/Int32).</p>
 </table>
 <hr />
 <h3 id="ruleminermixinrecommend_items"><code>RuleMinerMixin.recommend_items</code><a class="headerlink" href="#ruleminermixinrecommend_items" title="Permanent link">&para;</a></h3>
-<p>Suggest items to add to an active cart using association rules.</p>
+<p>Deprecated: use :meth:<code>recommend_for_cart</code> instead.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RuleMinerMixin</span><span class="o">.</span><span class="n">recommend_items</span>
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>
 </span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="n">RuleMinerMixin</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="s1">&#39;list[Any]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;list[Any]&#39;</span>
 </span></code></pre></div>
-<p><strong>Parameters</strong></p>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>items</td>
-<td>list[Any]</td>
-<td>The items currently in the cart or basket.</td>
-</tr>
-<tr>
-<td>n</td>
-<td>int, default=5</td>
-<td>The maximum number of items to recommend.</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Returns</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>list[Any]</td>
-<td></td>
-<td>List of recommended items, ordered by lift and then confidence.</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>Notes</strong>
-Rules are computed once and cached with the key <code>(metric="lift",
-min_threshold=1.0)</code>.  Call :meth:<code>_invalidate_rules_cache</code> to force
-a re-computation after re-mining.</p>
-</blockquote>
 <hr />
 <h3 id="ruleminermixin_invalidate_rules_cache"><code>RuleMinerMixin._invalidate_rules_cache</code><a class="headerlink" href="#ruleminermixin_invalidate_rules_cache" title="Permanent link">&para;</a></h3>
 <p>Clear the cached association rules (call after re-mining).</p>
@@ -3540,7 +3495,7 @@ a re-computation after re-mining.</p>
 <p>Implicit ALS collaborative filtering model.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.als</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
 </span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>
-</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cg_iters</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">use_cholesky</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">anderson_m</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cg_iters</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">use_cholesky</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">anderson_m</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3693,7 +3648,7 @@ It works by drawing positive items the user interacted with, and negative items
 they haven't, and adjusting latent factors to ensure the positive item scores higher.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.bpr</span><span class="w"> </span><span class="kn">import</span> <span class="n">BPR</span>
 </span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -3901,7 +3856,7 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 and all other item vectors in the <code>item_factors</code> matrix.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.similarity</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_items</span>
 </span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>
-</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">SupportsItemFactors</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a><span class="n">similar_items</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s1">&#39;SupportsItemFactors&#39;</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -4058,7 +4013,7 @@ likely cannibalize each other.</p>
 Retrieval-Augmented Generation (RAG) and semantic search.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_item_factors</span>
 </span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>
-</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">rusket</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">SupportsItemFactors</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;pandas&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span>
+</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="n">export_item_factors</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s1">&#39;SupportsItemFactors&#39;</span><span class="p">,</span> <span class="n">include_labels</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">normalize</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;pandas&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Any&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>

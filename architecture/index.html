@@ -797,6 +797,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#class-hierarchy-api-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class hierarchy &amp; API conventions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class hierarchy &amp; API conventions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#miner-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Miner interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommender-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommender interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential-recommenders-fpmc-sasrec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sequential recommenders (FPMC, SASRec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repository-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -994,6 +1066,78 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#class-hierarchy-api-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class hierarchy &amp; API conventions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class hierarchy &amp; API conventions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Base classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#miner-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Miner interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommender-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommender interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential-recommenders-fpmc-sasrec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sequential recommenders (FPMC, SASRec)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#repository-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1083,27 +1227,122 @@
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
 <p>How rusket relies on Rust, PyO3, and Rayon for zero-copy, zero-allocation Python bindings.</p>
 <p>rusket is structured as a thin Python layer over a Rust core, compiled as a native extension module via <a href="https://pyo3.rs">PyO3</a> and <a href="https://github.com/PyO3/maturin">maturin</a>.</p>
+<h2 id="class-hierarchy-api-conventions">Class hierarchy &amp; API conventions<a class="headerlink" href="#class-hierarchy-api-conventions" title="Permanent link">&para;</a></h2>
+<p>rusket has two class families: <strong>Miners</strong> (frequent pattern discovery) and <strong>Recommenders</strong> (collaborative filtering). All share common API patterns.</p>
+<h3 id="base-classes">Base classes<a class="headerlink" href="#base-classes" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BaseModel (ABC)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│             PrefixSpan, HUPM (specialized miners)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── SequentialRecommender ─── FPMC, SASRec
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>└── FM (standalone, uses explicit feature matrices)
+</span></code></pre></div>
+<h3 id="common-conventions">Common conventions<a class="headerlink" href="#common-conventions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Convention</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>from_transactions(data, transaction_col, item_col, verbose, **kwargs)</code></td>
+<td>Class method on every class for DataFrame-based init</td>
+</tr>
+<tr>
+<td><code>from_pandas()</code>, <code>from_polars()</code>, <code>from_spark()</code></td>
+<td>Aliases delegating to <code>from_transactions()</code></td>
+</tr>
+<tr>
+<td><code>verbose: int</code></td>
+<td><code>0</code> = silent, <code>1</code>+ = progress logs</td>
+</tr>
+<tr>
+<td><code>seed: int</code></td>
+<td>Random-seed parameter (never <code>random_state</code>)</td>
+</tr>
+<tr>
+<td><code>fitted: bool</code></td>
+<td>Attribute set to <code>True</code> after <code>.fit()</code> or <code>.mine()</code></td>
+</tr>
+<tr>
+<td><code>__repr__</code></td>
+<td>Every class has a <code>__repr__</code> showing key hyperparameters</td>
+</tr>
+<tr>
+<td>Docstrings</td>
+<td>NumPy-style (<code>Parameters</code>, <code>Returns</code>, <code>Raises</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="miner-interface">Miner interface<a class="headerlink" href="#miner-interface" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">miner</span> <span class="o">=</span> <span class="n">FPGrowth</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;tid&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">freq</span>  <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">mine</span><span class="p">()</span>                        <span class="c1"># → pd.DataFrame (support, itemsets)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">rules</span> <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">association_rules</span><span class="p">()</span>            <span class="c1"># → pd.DataFrame (metrics)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">recs</span>  <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># → list[Any]</span>
+</span></code></pre></div>
+<h3 id="recommender-interface">Recommender interface<a class="headerlink" href="#recommender-interface" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ALS</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Available on</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fit(interactions)</code></td>
+<td>All recommenders</td>
+</tr>
+<tr>
+<td><code>recommend_items(user_id, n, exclude_seen)</code></td>
+<td>All recommenders</td>
+</tr>
+<tr>
+<td><code>recommend_users(item_id, n)</code></td>
+<td>ALS, SVD (others raise <code>NotImplementedError</code>)</td>
+</tr>
+<tr>
+<td><code>batch_recommend(n, exclude_seen, format)</code></td>
+<td>ALS, SVD</td>
+</tr>
+<tr>
+<td><code>user_factors</code> / <code>item_factors</code></td>
+<td>ALS, BPR, SVD, LightGCN</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sequential-recommenders-fpmc-sasrec">Sequential recommenders (FPMC, SASRec)<a class="headerlink" href="#sequential-recommenders-fpmc-sasrec" title="Permanent link">&para;</a></h3>
+<p>Work on ordered sequences. SASRec also accepts ad-hoc sequences:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SASRec</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">timestamp_col</span><span class="o">=</span><span class="s2">&quot;ts&quot;</span><span class="p">)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
 <h2 id="repository-layout">Repository layout<a class="headerlink" href="#repository-layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>rusket/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── src/                          # Rust (PyO3)
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── lib.rs                    # Module root — exports to Python
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   ├── fpgrowth.rs               # FP-Tree + FP-Growth algorithm
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── association_rules.rs      # Rule generation + 12 metrics
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── common.rs                 # Shared helpers
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── python/
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   ├── rusket/                  # Primary Python package (pyproject.toml name)
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│   │   ├── __init__.py
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│   │   ├── fpgrowth.py           # Dispatch + numpy conversion
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   │   ├── association_rules.py  # Label mapping + Rust call
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│   │   └── _validation.py        # Input validation helpers
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│   └── fpgrowth_pyo3/            # Legacy compat package
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│       └── ...
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>└── tests/
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    ├── conftest.py
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    ├── test_fpbase.py            # Shared base test classes
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    ├── test_fpgrowth.py          # FP-Growth tests
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    ├── test_association_rules.py # Association rules tests
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    └── test_benchmark.py         # Performance benchmarks
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>rusket/
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>├── src/                          # Rust (PyO3)
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│   ├── lib.rs                    # Module root — exports to Python
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>│   ├── fpgrowth.rs               # FP-Tree + FP-Growth algorithm
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│   ├── association_rules.rs      # Rule generation + 12 metrics
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│   └── common.rs                 # Shared helpers
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>├── python/
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│   ├── rusket/                  # Primary Python package (pyproject.toml name)
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│   │   ├── __init__.py
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│   │   ├── fpgrowth.py           # Dispatch + numpy conversion
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│   │   ├── association_rules.py  # Label mapping + Rust call
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│   │   └── _validation.py        # Input validation helpers
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>│   └── fpgrowth_pyo3/            # Legacy compat package
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>│       └── ...
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>└── tests/
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    ├── conftest.py
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    ├── test_fpbase.py            # Shared base test classes
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    ├── test_fpgrowth.py          # FP-Growth tests
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    ├── test_association_rules.py # Association rules tests
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    └── test_benchmark.py         # Performance benchmarks
 </span></code></pre></div>
 <hr />
 <h2 id="data-flow">Data flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
@@ -1180,25 +1419,25 @@
 </ol>
 <hr />
 <h2 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Prerequisites: Rust 1.83+, Python 3.10+, uv</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>rustup<span class="w"> </span>update
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>uv<span class="w"> </span>sync
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Debug build (fast compile, slower runtime)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Release build (optimised)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Type checking</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>uv<span class="w"> </span>run<span class="w"> </span>basedpyright
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Tests</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-x<span class="w"> </span>-q
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Cargo lint</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>cargo<span class="w"> </span>check
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>cargo<span class="w"> </span>clippy
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Prerequisites: Rust 1.83+, Python 3.10+, uv</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>rustup<span class="w"> </span>update
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>uv<span class="w"> </span>sync
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Debug build (fast compile, slower runtime)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Release build (optimised)</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>uv<span class="w"> </span>run<span class="w"> </span>maturin<span class="w"> </span>develop<span class="w"> </span>--release
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># Type checking</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>uv<span class="w"> </span>run<span class="w"> </span>basedpyright
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Tests</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-x<span class="w"> </span>-q
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="c1"># Cargo lint</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>cargo<span class="w"> </span>check
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>cargo<span class="w"> </span>clippy
 </span></code></pre></div>
 
 

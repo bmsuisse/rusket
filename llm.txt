@@ -664,31 +664,13 @@ RuleMinerMixin.association_rules(metric: 'str' = 'confidence', min_threshold: 'f
 
 ### `RuleMinerMixin.recommend_items`
 
-Suggest items to add to an active cart using association rules.
+Deprecated: use :meth:`recommend_for_cart` instead.
 
 ```python
 from rusket.model import RuleMinerMixin.recommend_items
 
 RuleMinerMixin.recommend_items(items: 'list[Any]', n: 'int' = 5) -> 'list[Any]'
 ```
-
-**Parameters**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| items | list[Any] | The items currently in the cart or basket. |
-| n | int, default=5 | The maximum number of items to recommend. |
-
-**Returns**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| list[Any] |  | List of recommended items, ordered by lift and then confidence. |
-
-> **Notes**
-> Rules are computed once and cached with the key ``(metric="lift",
-min_threshold=1.0)``.  Call :meth:`_invalidate_rules_cache` to force
-a re-computation after re-mining.
 
 ---
 
@@ -713,7 +695,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'bool' = False, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -811,7 +793,7 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 ```python
 from rusket.bpr import BPR
 
-BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'bool' = False, **kwargs: 'Any') -> 'None'
+BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -997,7 +979,7 @@ and all other item vectors in the ``item_factors`` matrix.
 ```python
 from rusket.similarity import similar_items
 
-similar_items(model: rusket.typing.SupportsItemFactors, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+similar_items(model: 'SupportsItemFactors', item_id: 'int', n: 'int' = 5) -> 'tuple[np.ndarray, np.ndarray]'
 ```
 
 **Parameters**
@@ -1081,7 +1063,7 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(model: rusket.typing.SupportsItemFactors, include_labels: bool = True, normalize: bool = False, format: str = 'pandas') -> Any
+export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True, normalize: 'bool' = False, format: 'str' = 'pandas') -> 'Any'
 ```
 
 **Parameters**
@@ -1368,6 +1350,17 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- add Kosarak regression test, Rust unit tests for association_rules, and benchmark vs arm-rs
+- Introduce SVD model, standardize `verbose` and `seed` parameters, and optimize imports across modules.
+- Refactor benchmarks, add new comparison benchmarks, enhance SVD API with type hints and `fitted` property, and expand documentation and test coverage.
+
 ### 🐛 Bug Fixes
 
 - als_model references in Recommender docs and test setups
@@ -1379,6 +1372,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
+- bump version to 0.1.46
 
 ### 📦 Miscellaneous
 
@@ -1904,6 +1898,68 @@ This project follows [Semantic Versioning](https://semver.org/).
 How rusket relies on Rust, PyO3, and Rayon for zero-copy, zero-allocation Python bindings.
 
 rusket is structured as a thin Python layer over a Rust core, compiled as a native extension module via [PyO3](https://pyo3.rs) and [maturin](https://github.com/PyO3/maturin).
+
+## Class hierarchy & API conventions
+
+rusket has two class families: **Miners** (frequent pattern discovery) and **Recommenders** (collaborative filtering). All share common API patterns.
+
+### Base classes
+
+```
+BaseModel (ABC)
+├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+│             PrefixSpan, HUPM (specialized miners)
+├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
+├── SequentialRecommender ─── FPMC, SASRec
+└── FM (standalone, uses explicit feature matrices)
+```
+
+### Common conventions
+
+| Convention | Rule |
+|---|---|
+| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init |
+| `from_pandas()`, `from_polars()`, `from_spark()` | Aliases delegating to `from_transactions()` |
+| `verbose: int` | `0` = silent, `1`+ = progress logs |
+| `seed: int` | Random-seed parameter (never `random_state`) |
+| `fitted: bool` | Attribute set to `True` after `.fit()` or `.mine()` |
+| `__repr__` | Every class has a `__repr__` showing key hyperparameters |
+| Docstrings | NumPy-style (`Parameters`, `Returns`, `Raises`) |
+
+### Miner interface
+
+```python
+miner = FPGrowth.from_transactions(df, transaction_col="tid", item_col="item")
+freq  = miner.mine()                        # → pd.DataFrame (support, itemsets)
+rules = miner.association_rules()            # → pd.DataFrame (metrics)
+recs  = miner.recommend_for_cart(items, n=5) # → list[Any]
+```
+
+### Recommender interface
+
+```python
+model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64)
+ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+```
+
+| Method | Available on |
+|---|---|
+| `fit(interactions)` | All recommenders |
+| `recommend_items(user_id, n, exclude_seen)` | All recommenders |
+| `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
+| `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
+| `user_factors` / `item_factors` | ALS, BPR, SVD, LightGCN |
+
+### Sequential recommenders (FPMC, SASRec)
+
+Work on ordered sequences. SASRec also accepts ad-hoc sequences:
+
+```python
+model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts")
+ids, scores = model.recommend_items([1, 2, 3], n=10)
+```
+
+---
 
 ## Repository layout
 
