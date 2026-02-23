@@ -84,7 +84,7 @@ def test_rule_miner_mixin_api():
     assert "confidence" in rules.columns
 
     # Check recommend_items
-    recs = miner.recommend_items(items=["Milk", "Butter"], n=2)
+    recs = miner.recommend_for_cart(items=["Milk", "Butter"], n=2)
     assert isinstance(recs, list)
 
     # "Bread" should be recommended since Milk & Butter -> Bread is a strong rule

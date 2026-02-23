@@ -111,7 +111,7 @@ class TestOnlineRetailBasketAnalysis:
         )
         # Use the most common items as a realistic cart
         top_items = online_retail_df["Description"].value_counts().head(3).index.tolist()
-        recs = model.recommend_items(top_items, n=5)  # type: ignore
+        recs = model.recommend_for_cart(top_items, n=5)
         # Recommendations must not include the input items
         for item in recs:
             assert item not in top_items, f"Recommended item {item!r} was in the input cart"
@@ -128,8 +128,8 @@ class TestOnlineRetailBasketAnalysis:
             use_colnames=True,
         )
         top_items = online_retail_df["Description"].value_counts().head(2).index.tolist()
-        recs1 = model.recommend_items(top_items, n=5)  # type: ignore
-        recs2 = model.recommend_items(top_items, n=5)  # type: ignore
+        recs1 = model.recommend_for_cart(top_items, n=5)
+        recs2 = model.recommend_for_cart(top_items, n=5)
         assert recs1 == recs2, "Cached recommend_items must be deterministic"
 
     def test_find_substitutes_no_negative_lift(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
