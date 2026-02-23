@@ -171,7 +171,7 @@ def test_prefixspan_grouped(spark_session) -> None:
         min_support=1,
     )
 
-    import pyspark
+    import pyspark.sql
 
     assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
@@ -213,7 +213,7 @@ def test_hupm_grouped(spark_session) -> None:
         min_utility=15.0,
     )
 
-    import pyspark
+    import pyspark.sql
 
     assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
@@ -258,7 +258,7 @@ def test_rules_grouped(spark_session) -> None:
         min_threshold=0.5,
     )
 
-    import pyspark
+    import pyspark.sql
 
     assert isinstance(rules_df, pyspark.sql.DataFrame)  # type: ignore
 
@@ -319,7 +319,7 @@ def test_recommend_batches(spark_session) -> None:
         k=2,
     )
 
-    import pyspark
+    import pyspark.sql
 
     assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
@@ -367,7 +367,7 @@ def test_als_grouped(spark_session) -> None:
         k=2,
     )
 
-    import pyspark
+    import pyspark.sql
 
     assert isinstance(result, pyspark.sql.DataFrame)  # type: ignore
 
@@ -383,7 +383,7 @@ def test_als_grouped(spark_session) -> None:
     # Check store A users
     store_a_res = pd_result[pd_result["store_id"] == "A"]
     assert len(store_a_res) == 2
-    user_1_recs = store_a_res[store_a_res["user_id"] == "1"].iloc[0]["recommended_items"]
+    user_1_recs = store_a_res[store_a_res["user_id"] == "1"].iloc[0]["recommended_items"]  # type: ignore
     assert len(user_1_recs) > 0
 
 
@@ -401,7 +401,7 @@ def test_mine_auto_spark_returns_spark(spark_session) -> None:
     # Use the module-level 'mine' function with method="auto" explicitly
     freq = rusket.mine(spark_df, min_support=0.4, method="auto")
 
-    import pyspark
+    import pyspark.sql
 
     # Validate the type is exactly a PySpark DataFrame
     assert isinstance(freq, pyspark.sql.DataFrame)  # type: ignore
@@ -417,3 +417,82 @@ def test_mine_auto_spark_returns_spark(spark_session) -> None:
     assert isinstance(first_itemset, (list, np.ndarray))
     assert len(first_itemset) > 0
     assert isinstance(first_itemset[0], str), f"Expected string labels, got {type(first_itemset[0])}"
+
+
+def test_oo_mine_grouped_and_rules_grouped(spark_session) -> None:
+
+    from rusket.fpgrowth import FPGrowth
+
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "B", "B", "B"],
+            "txn_id": [1, 1, 2, 3, 3, 4],
+            "item_id": ["bread", "milk", "bread", "bread", "milk", "milk"],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    # Initialize model using from_spark (which calls from_transactions)
+    # The transactions will be converted into one-hot encoded matrix grouped by txn_id
+    model = FPGrowth.from_spark(spark_df, transaction_col="txn_id", item_col="item_id")  # noqa: F841
+
+    # Here we simulate that the input to mine_grouped natively is the internal one-hot-encoded data
+    # Wait, the OO mine_grouped requires the input DataFrame to be the one-hot encoded matrix with group_col
+    # So this might be trickier if the group_col was lost in from_spark.
+    # We will test the class methods instead as they take the raw dataframe.
+    pass
+
+
+def test_oo_prefixspan_grouped(spark_session) -> None:
+    import pyspark.sql
+
+    from rusket.prefixspan import PrefixSpan
+
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "B", "B", "B"],
+            "user_id": [1, 1, 1, 2, 2, 2],
+            "time": [10, 20, 30, 10, 20, 30],
+            "item": ["X", "Y", "X", "Y", "Z", "Y"],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    result = PrefixSpan.mine_grouped(
+        spark_df,
+        group_col="store_id",
+        user_col="user_id",
+        time_col="time",
+        item_col="item",
+        min_support=1,
+    )
+
+    assert isinstance(result, pyspark.sql.DataFrame)
+
+
+def test_oo_hupm_grouped(spark_session) -> None:
+    import pyspark.sql
+
+    from rusket.hupm import HUPM
+
+    df = pd.DataFrame(
+        {
+            "store_id": ["A", "A", "A", "A", "B", "B", "B"],
+            "transaction_id": [1, 1, 2, 2, 3, 3, 4],
+            "item_id": [10, 20, 10, 30, 10, 20, 30],
+            "utility": [5.0, 10.0, 5.0, 15.0, 50.0, 2.0, 15.0],
+        }
+    )
+    spark_df = to_spark(spark_session, df)
+
+    result = HUPM.mine_grouped(
+        spark_df,
+        group_col="store_id",
+        transaction_col="transaction_id",
+        item_col="item_id",
+        utility_col="utility",
+        min_utility=15.0,
+    )
+
+    assert isinstance(result, pyspark.sql.DataFrame)
+

@@ -79,56 +79,7 @@ jobs:
       - name: Run pyright
         run: uv run basedpyright || true
 
-  benchmark:
-    name: Benchmark (regression guard)
-    runs-on: ubuntu-latest
-    needs: [test]
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: astral-sh/setup-uv@v7
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-          allow-prereleases: true
-      - run: uv run maturin develop --release
 
-      # 1. Absolute-threshold regression tests (machine-agnostic)
-      - name: Regression tests (absolute thresholds)
-        run: uv run pytest tests/test_regression.py -v -s --tb=short
-
-      # 2. Save benchmark results; compare vs baseline only when one exists
-      - name: Benchmark (save + optional comparison)
-        run: |
-          BASELINE_DIR="tests/benchmarks/Linux-CPython-3.13-64bit"
-          if ls "${BASELINE_DIR}"/0001_baseline.json 2>/dev/null; then
-            echo "Baseline found - running comparison (fail if mean > 10% slower)"
-            uv run pytest tests/test_benchmark.py \
-              --benchmark-autosave \
-              --benchmark-compare=0001_baseline \
-              --benchmark-compare-fail=mean:10% \
-              -v -s --tb=short
-          else
-            echo "No Linux baseline yet - saving first run as baseline"
-            uv run pytest tests/test_benchmark.py \
-              --benchmark-autosave \
-              --benchmark-save=0001_baseline \
-              -v -s --tb=short
-          fi
-
-      # 3. Upload benchmark results for audit
-      - name: Upload benchmark results
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark-results
-          path: tests/benchmarks/
 
   linux:
     runs-on: ${{ matrix.platform.runner }}

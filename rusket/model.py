@@ -88,6 +88,49 @@ class RuleMinerMixin:
             return self._convert_to_orig_type(result_df)  # type: ignore[attr-defined]
         return result_df
 
+    def rules_grouped(
+        self,
+        df_freq: Any,
+        group_col: str,
+        num_itemsets: dict[Any, int] | int | None = None,
+        metric: str = "confidence",
+        min_threshold: float = 0.8,
+    ) -> Any:
+        """Distribute Association Rule Mining across PySpark partitions.
+
+        Parameters
+        ----------
+        df_freq : Any
+            The PySpark ``DataFrame`` containing frequent itemsets (output of ``mine_grouped``).
+        group_col : str
+            The column to group by.
+        num_itemsets : dict[Any, int] | int | None, optional
+            A dictionary mapping group IDs to their total transaction count,
+            or a single integer if all groups have the same number of transactions.
+            If None, attempts to use the total transaction count of the original DataFrame (if known).
+        metric : str, default='confidence'
+            The metric to filter by (e.g. "confidence", "lift").
+        min_threshold : float, default=0.8
+            The minimal threshold for the evaluation metric.
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            A PySpark DataFrame containing association rules for each group.
+        """
+        from .spark import rules_grouped
+
+        if num_itemsets is None:
+            num_itemsets = getattr(self, "_num_itemsets", 0)
+
+        return rules_grouped(
+            df=df_freq,
+            group_col=group_col,
+            num_itemsets=num_itemsets,  # type: ignore[arg-type]
+            metric=metric,
+            min_threshold=min_threshold,
+        )
+
     def recommend_items(self, items: list[Any], n: int = 5) -> list[Any]:
         """Suggest items to add to an active cart using association rules.
 
@@ -387,6 +430,43 @@ class Miner(BaseModel):
         Must be implemented by subclasses.
         """
         pass
+
+    def mine_grouped(self, group_col: str, **kwargs: Any) -> Any:
+        """Distribute Market Basket Analysis across PySpark partitions.
+
+        Parameters
+        ----------
+        group_col : str
+            The column to group by (e.g. ``store_id``).
+        **kwargs
+            Additional arguments such as ``min_support``, ``max_len``, ``use_colnames``.
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            A PySpark DataFrame containing group_col, support, and itemsets.
+        """
+        from .spark import mine_grouped
+
+        min_support = kwargs.get("min_support", getattr(self, "min_support", 0.5))
+        max_len = kwargs.get("max_len", getattr(self, "max_len", None))
+        use_colnames = kwargs.get("use_colnames", getattr(self, "use_colnames", True))
+
+        method = "auto"
+        cls_name = type(self).__name__
+        if cls_name == "FPGrowth":
+            method = "fpgrowth"
+        elif cls_name == "Eclat":
+            method = "eclat"
+
+        return mine_grouped(
+            df=self.data,
+            group_col=group_col,
+            min_support=min_support,
+            max_len=max_len,
+            method=method,
+            use_colnames=use_colnames,
+        )
 
 
 class ImplicitRecommender(BaseModel):
