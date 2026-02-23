@@ -393,7 +393,6 @@ class Miner(BaseModel):
         from ._compat import to_dataframe
         from .transactions import _from_dataframe, _from_list
 
-        data = to_dataframe(data)
         _type = type(data)
         _orig_type = "pandas"
         if _type.__name__ == "DataFrame":
@@ -402,6 +401,8 @@ class Miner(BaseModel):
                 _orig_type = "spark"
             elif mod_name.startswith("polars"):
                 _orig_type = "polars"
+
+        data = to_dataframe(data)
 
         if isinstance(data, (list, tuple)):
             sparse_df = _from_list(data, verbose=verbose)
