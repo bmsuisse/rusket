@@ -1374,6 +1374,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add tabulate to dev dependencies for mkdocs
 - keep _orig_type resolution before to_dataframe data coercion
 - lazy evaluation of num_itemsets to support PySpark dfs
+- preserve spark dataframe column order after inner join in from_transactions
 
 ### 📦 Miscellaneous
 
