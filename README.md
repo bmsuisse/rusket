@@ -134,14 +134,14 @@ suggestions = model.recommend_items(["HDPHONES"], n=3)
 Or use the explicit type variants:
 
 ```python
-from rusket import from_pandas, from_polars
+from rusket import AutoMiner
 
-ohe = from_pandas(orders, transaction_col="order_id", item_col="sku")
-ohe = from_polars(pl_orders, transaction_col="order_id", item_col="sku")
-ohe = from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
+ohe = AutoMiner.from_pandas(orders, transaction_col="order_id", item_col="sku")
+ohe = AutoMiner.from_polars(pl_orders, transaction_col="order_id", item_col="sku")
+ohe = AutoMiner.from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
 ```
 
-> **Spark** is also supported: `from_spark(spark_df)` calls `.toPandas()` internally.
+> **Spark** is also supported: `AutoMiner.from_spark(spark_df)` calls `.toPandas()` internally.
 
 ---
 
@@ -170,12 +170,12 @@ print(rules)
 
 #### When to use which?
 
-You almost always want to use `rusket.mine(method="auto")`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
+You almost always want to use `AutoMiner`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
 
-| Scenario | Algorithm chosen by `method="auto"` |
+| Scenario | Algorithm chosen by `AutoMiner` |
 |---|---|
-| Large SKU catalogue, small basket size (density < 0.15) | `eclat` (bitset/SIMD intersections) |
-| Smaller catalogue, dense baskets (density > 0.15) | `fpgrowth` (FP-tree traversals) |
+| Large SKU catalogue, small basket size (density < 0.15) | `Eclat` (bitset/SIMD intersections) |
+| Smaller catalogue, dense baskets (density > 0.15) | `FPGrowth` (FP-tree traversals) |
 
 ---
 
@@ -485,153 +485,7 @@ items, scores = model.recommend_items(user_id=42, n=10, exclude_seen=True)
 users, scores = model.recommend_users(item_id=99, n=5)
 ```
 
----
 
-### `mine` (functional)
-
-```python
-rusket.mine(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    method: str = "auto",
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Dynamically selects the optimal mining algorithm based on the dataset density heuristically. It's highly recommended to use this instead of `fpgrowth` or `eclat` directly. Equivalent to `AutoMiner(...).mine()`.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` \| `pl.DataFrame` \| `np.ndarray` | One-hot encoded input (bool / 0-1). Dense, sparse, or Polars. |
-| `min_support` | `float` | Minimum support threshold in `(0, 1]`. |
-| `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
-| `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
-| `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
-| `method` | `"auto" \| "fpgrowth" \| "eclat"` | Algorithm to use. "auto" selects Eclat for `<0.15` density distributions. |
-| `verbose` | `int` | Verbosity level. |
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `fpgrowth` (functional)
-
-```python
-rusket.fpgrowth(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Equivalent to `FPGrowth(...).mine()`. See class table above.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` \| `pl.DataFrame` \| `np.ndarray` | One-hot encoded input (bool / 0-1). Dense, sparse, or Polars. |
-| `min_support` | `float` | Minimum support threshold in `(0, 1]`. |
-| `null_values` | `bool` | Allow NaN values in `df` (pandas only). |
-| `use_colnames` | `bool` | Return column names instead of integer indices in itemsets. |
-| `max_len` | `int \| None` | Maximum itemset length. `None` = unlimited. |
-| `verbose` | `int` | Verbosity level. |
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `eclat` (functional)
-
-```python
-rusket.eclat(
-    df,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = False,
-    max_len: int | None = None,
-    verbose: int = 0,
-) -> pd.DataFrame
-```
-
-Equivalent to `Eclat(...).mine()`. Same parameters as `fpgrowth`. Uses vertical bitset representation (Eclat algorithm) instead of FP-Tree.
-
-**Returns** a `pd.DataFrame` with columns `['support', 'itemsets']`.
-
----
-
-### `association_rules` (functional)
-
-```python
-rusket.association_rules(
-    df,
-    num_itemsets: int,
-    metric: str = "confidence",
-    min_threshold: float = 0.8,
-    support_only: bool = False,
-    return_metrics: list[str] = [...],  # all 12 metrics by default
-) -> pd.DataFrame
-```
-
-Alternatively, if you used the OOP API, call `model.association_rules(metric=..., min_threshold=...)` directly — `num_itemsets` is tracked automatically.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `df` | `pd.DataFrame` | Output from `fpgrowth()`. |
-| `num_itemsets` | `int` | Number of transactions in the original dataset (`len(df_original)`). |
-| `metric` | `str` | Metric to filter rules on (see table below). |
-| `min_threshold` | `float` | Minimum value of `metric` to include a rule. |
-| `support_only` | `bool` | Only compute support; fill other columns with `NaN`. |
-| `return_metrics` | `list[str]` | Subset of metrics to include in the result. |
-
-**Returns** a `pd.DataFrame` with columns `antecedents`, `consequents`, plus all requested metric columns.
-
-#### Available Metrics
-
-| Metric | Formula / Description |
-|--------|----------------------|
-| `support` | P(A ∪ B) |
-| `confidence` | P(B \| A) |
-| `lift` | confidence / P(B) |
-| `leverage` | support − P(A)·P(B) |
-| `conviction` | (1 − P(B)) / (1 − confidence) |
-| `zhangs_metric` | Symmetrical correlation measure |
-| `jaccard` | Jaccard similarity between A and B |
-| `certainty` | Certainty factor |
-| `kulczynski` | Average of P(B\|A) and P(A\|B) |
-| `representativity` | Rule coverage across transactions |
-| `antecedent support` | P(A) |
-| `consequent support` | P(B) |
-
----
-
-### `from_transactions` (functional)
-
-```python
-rusket.from_transactions(
-    data,
-    transaction_col: str | None = None,
-    item_col: str | None = None,
-) -> pd.DataFrame
-```
-
-Converts long-format transactional data to a one-hot boolean matrix. Accepts Pandas DataFrames, Polars DataFrames, Spark DataFrames, or `list[list[...]]`.
-
-### `from_pandas` / `from_polars` / `from_spark`
-
-Explicit typed variants of `from_transactions` for specific DataFrame types:
-
-```python
-rusket.from_pandas(df, transaction_col=None, item_col=None) -> pd.DataFrame
-rusket.from_polars(df, transaction_col=None, item_col=None) -> pd.DataFrame
-rusket.from_spark(df, transaction_col=None, item_col=None)  -> pd.DataFrame
-```
-
----
 
 ## 🧠 Advanced Pattern & Recommendation Algorithms
 
@@ -721,8 +575,6 @@ saturation = customer_saturation(
 
 `rusket` natively extracts PrefixSpan sequences from **Pandas, Polars, and PySpark** event logs with zero-copy Arrow mapping:
 
-#### OOP Class API
-
 ```python
 from rusket import PrefixSpan
 
@@ -740,29 +592,14 @@ freq_seqs = model.mine()
 # e.g. [broadband] → [mobile] → [tv_bundle] appears in 312 journeys
 ```
 
-#### Functional API
-
-```python
-from rusket.prefixspan import sequences_from_event_log, prefixspan
-
-sequences, mapping = sequences_from_event_log(
-    df=subscription_events,
-    user_col="customer_id",
-    time_col="subscription_date",
-    item_col="product_id",
-)
-
-freq_seqs = prefixspan(sequences, min_support=50, max_len=4)
-```
-
 
 
 ### 🕸️ Graph Analytics & Embeddings
 
 Integrate natively with the modern GenAI/LLM stack:
 
-- **Vector Export:** Export user/item factors to a Pandas `DataFrame` ready for FAISS/Qdrant using `rusket.export_item_factors`.
-- **Item-to-Item Similarity:** Fast Cosine Similarity on embeddings using `rusket.similar_items(als_model, item_id)`.
+- **Vector Export:** Export user/item factors to a Pandas `DataFrame` ready for FAISS/Qdrant using `model.export_item_factors()`.
+- **Item-to-Item Similarity:** Fast Cosine Similarity on embeddings using `model.similar_items(item_id)`.
 - **Graph Generation:** Automatically convert association rules into a `networkx` directed Graph for community detection using `rusket.viz.to_networkx(rules)`.
 
 ---
