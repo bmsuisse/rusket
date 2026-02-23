@@ -330,6 +330,19 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine sequential patterns using PrefixSpan."
+        },
+        "mine_grouped": {
+          "parameters": {
+            "df": "Any",
+            "group_col": "str",
+            "user_col": "str",
+            "time_col": "str",
+            "item_col": "str",
+            "min_support": "int",
+            "max_len": "int | None"
+          },
+          "returns": "Any",
+          "doc": "Distribute Sequential Pattern Mining (PrefixSpan) across PySpark partitions."
         }
       },
       "doc": "Sequential Pattern Mining (PrefixSpan) model."
@@ -363,6 +376,19 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine high-utility itemsets."
+        },
+        "mine_grouped": {
+          "parameters": {
+            "df": "Any",
+            "group_col": "str",
+            "transaction_col": "str",
+            "item_col": "str",
+            "utility_col": "str",
+            "min_utility": "float",
+            "max_len": "int | None"
+          },
+          "returns": "Any",
+          "doc": "Distribute High-Utility Pattern Mining (HUPM) across PySpark partitions."
         }
       },
       "doc": "High-Utility Pattern Mining (HUPM) model."

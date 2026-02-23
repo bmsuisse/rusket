@@ -1368,6 +1368,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### Test
+
+- extract benchmark and regression tests into a separate workflow
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 🐛 Bug Fixes
 
 - resolve E0432 unresolved import and E0308 type mismatch in FPGrowth and ALS
