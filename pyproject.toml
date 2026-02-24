@@ -95,7 +95,8 @@ benchmark = [
 testpaths = ["tests"]
 filterwarnings = [
     # PySpark internals use copy= which is deprecated in pandas 4.x
-    "ignore::pandas.errors.Pandas4Warning",
+    # Pandas4Warning only exists in pandas>=2.2; use a message-based filter for broader compat
+    "ignore:.*copy.*:DeprecationWarning",
     # int 0/1 matrices are auto-cast to bool in mine_grouped; suppress upstream warning
     "ignore:DataFrames with non-bool types:DeprecationWarning:rusket",
 ]
