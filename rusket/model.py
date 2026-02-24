@@ -48,8 +48,8 @@ class RuleMinerMixin:
         if return_metrics is None:
             return_metrics = _ALL_METRICS
 
-        # self.mine() must be implemented by the subclass
-        df_freq = self.mine()  # type: ignore
+        # self.fit() / self.mine() must be implemented by the subclass
+        df_freq = self.fit().predict()  # type: ignore
 
         is_empty = False
         if df_freq is None:
@@ -452,6 +452,28 @@ class Miner(BaseModel):
         """
         pass
 
+    def fit(self, **kwargs: Any) -> Self:
+        """Sklearn-compatible alias for ``mine()``. Runs the mining algorithm.
+
+        Returns
+        -------
+        self
+        """
+        self._result = self.mine(**kwargs)
+        return self  # type: ignore[return-value]
+
+    def predict(self, **kwargs: Any) -> pd.DataFrame:
+        """Return the last mined result, or run ``fit()`` first.
+
+        Returns
+        -------
+        pd.DataFrame
+            The frequent itemsets / patterns.
+        """
+        if not hasattr(self, '_result') or self._result is None:
+            self.fit(**kwargs)
+        return self._result  # type: ignore[return-value]
+
     def mine_grouped(self, group_col: str, **kwargs: Any) -> Any:
         """Distribute Market Basket Analysis across PySpark partitions.
 
@@ -510,7 +532,10 @@ class ImplicitRecommender(BaseModel):
         verbose: int = 0,
         **kwargs: Any,
     ) -> ImplicitRecommender:
-        """Initialize and fit the model from a long-format DataFrame.
+        """Initialize the model from a long-format DataFrame.
+
+        Prepares the interaction matrix but does **not** fit the model.
+        Call ``.fit()`` explicitly to train.
 
         Parameters
         ----------
@@ -529,7 +554,7 @@ class ImplicitRecommender(BaseModel):
         user_col = kwargs.pop("user_col", transaction_col)
         rating_col = kwargs.pop("rating_col", None)
         model = cls(verbose=bool(verbose), **kwargs)
-        return model._fit_transactions(data, user_col, item_col, rating_col)
+        return model._prepare_transactions(data, user_col, item_col, rating_col)
 
     def fit_transactions(
         self,
@@ -545,14 +570,14 @@ class ImplicitRecommender(BaseModel):
         )
         return self._fit_transactions(data, user_col, item_col, rating_col)
 
-    def _fit_transactions(
+    def _prepare_transactions(
         self,
         data: Any,
         user_col: str | None = None,
         item_col: str | None = None,
         rating_col: str | None = None,
     ) -> ImplicitRecommender:
-        """Fit from a long-format Pandas/Polars/Spark DataFrame."""
+        """Prepare interaction matrix from a long-format DataFrame without fitting."""
         import numpy as np
         import pandas as _pd
         from scipy import sparse as sp
@@ -596,7 +621,19 @@ class ImplicitRecommender(BaseModel):
         self._user_labels = list(user_uniques)
         self._item_labels = [str(c) for c in item_uniques]
         self.item_names = self._item_labels
-        return self.fit(csr)
+        self._prepared_interactions = csr
+        return self
+
+    def _fit_transactions(
+        self,
+        data: Any,
+        user_col: str | None = None,
+        item_col: str | None = None,
+        rating_col: str | None = None,
+    ) -> ImplicitRecommender:
+        """Prepare and fit from a long-format DataFrame (backward compat)."""
+        self._prepare_transactions(data, user_col, item_col, rating_col)
+        return self.fit(self._prepared_interactions)
 
     @abstractmethod
     def fit(self, interactions: Any) -> ImplicitRecommender:
@@ -618,6 +655,29 @@ class ImplicitRecommender(BaseModel):
         Must be implemented by subclasses.
         """
         pass
+
+    def predict(self, user_id: int, item_id: int) -> float:
+        """Predict the score for a user-item pair.
+
+        Parameters
+        ----------
+        user_id : int
+            User index.
+        item_id : int
+            Item index.
+
+        Returns
+        -------
+        float
+            Predicted score.
+        """
+        import numpy as np
+
+        ids, scores = self.recommend_items(user_id, n=self._n_items, exclude_seen=False)  # type: ignore[attr-defined]
+        idx = np.where(ids == item_id)[0]
+        if len(idx) == 0:
+            return 0.0
+        return float(scores[idx[0]])
 
     def recommend_users(self, item_id: int, n: int = 10) -> tuple[Any, Any]:
         """Top-N users for an item.

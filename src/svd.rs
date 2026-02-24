@@ -30,6 +30,72 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
     (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
 }
 
+// ── dot(a, b+c) without allocating a temp vector — SVD++ hot path ─────────
+// Computes Σ a[f] * (b[f] + c[f]) using 8-wide unrolling.
+#[inline(always)]
+unsafe fn dot8_plus(a: *const f32, b: *const f32, c: *const f32, k: usize) -> f32 {
+    let chunks = k / 8;
+    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let mut idx = 0;
+    for _ in 0..chunks {
+        s0 += *a.add(idx)   * (*b.add(idx)   + *c.add(idx));
+        s1 += *a.add(idx+1) * (*b.add(idx+1) + *c.add(idx+1));
+        s2 += *a.add(idx+2) * (*b.add(idx+2) + *c.add(idx+2));
+        s3 += *a.add(idx+3) * (*b.add(idx+3) + *c.add(idx+3));
+        s4 += *a.add(idx+4) * (*b.add(idx+4) + *c.add(idx+4));
+        s5 += *a.add(idx+5) * (*b.add(idx+5) + *c.add(idx+5));
+        s6 += *a.add(idx+6) * (*b.add(idx+6) + *c.add(idx+6));
+        s7 += *a.add(idx+7) * (*b.add(idx+7) + *c.add(idx+7));
+        idx += 8;
+    }
+    while idx < k {
+        s0 += *a.add(idx) * (*b.add(idx) + *c.add(idx));
+        idx += 1;
+    }
+    (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
+}
+
+// ── axpy: dest[f] += alpha * src[f], 8-wide ──────────────────────────────
+#[inline(always)]
+unsafe fn axpy8(alpha: f32, src: *const f32, dest: *mut f32, k: usize) {
+    let chunks = k / 8;
+    let mut idx = 0;
+    for _ in 0..chunks {
+        *dest.add(idx)   += alpha * *src.add(idx);
+        *dest.add(idx+1) += alpha * *src.add(idx+1);
+        *dest.add(idx+2) += alpha * *src.add(idx+2);
+        *dest.add(idx+3) += alpha * *src.add(idx+3);
+        *dest.add(idx+4) += alpha * *src.add(idx+4);
+        *dest.add(idx+5) += alpha * *src.add(idx+5);
+        *dest.add(idx+6) += alpha * *src.add(idx+6);
+        *dest.add(idx+7) += alpha * *src.add(idx+7);
+        idx += 8;
+    }
+    while idx < k {
+        *dest.add(idx) += alpha * *src.add(idx);
+        idx += 1;
+    }
+}
+
+// ── scale: v[f] *= scalar, 8-wide ────────────────────────────────────────
+#[inline(always)]
+unsafe fn scale8(v: *mut f32, scalar: f32, k: usize) {
+    let chunks = k / 8;
+    let mut idx = 0;
+    for _ in 0..chunks {
+        *v.add(idx)   *= scalar; *v.add(idx+1) *= scalar;
+        *v.add(idx+2) *= scalar; *v.add(idx+3) *= scalar;
+        *v.add(idx+4) *= scalar; *v.add(idx+5) *= scalar;
+        *v.add(idx+6) *= scalar; *v.add(idx+7) *= scalar;
+        idx += 8;
+    }
+    while idx < k {
+        *v.add(idx) *= scalar;
+        idx += 1;
+    }
+}
+
 // ── Fast XorShift64 RNG ───────────────────────────────────────────────────
 struct XorShift64 {
     state: u64,
@@ -612,29 +678,44 @@ fn svdpp_train(
 
             // Recompute sum_y when we switch users
             if u != last_user {
-                for f in 0..k {
-                    sum_y[f] = 0.0;
-                }
-                for &j in &user_items[uu] {
-                    for f in 0..k {
-                        sum_y[f] += y_factors[j * k + f];
+                // ── Zero sum_y — 8-wide ───────────────────────────────────
+                let sy_ptr = sum_y.as_mut_ptr();
+                let chunks = k / 8;
+                let mut idx = 0;
+                unsafe {
+                    for _ in 0..chunks {
+                        *sy_ptr.add(idx)   = 0.0; *sy_ptr.add(idx+1) = 0.0;
+                        *sy_ptr.add(idx+2) = 0.0; *sy_ptr.add(idx+3) = 0.0;
+                        *sy_ptr.add(idx+4) = 0.0; *sy_ptr.add(idx+5) = 0.0;
+                        *sy_ptr.add(idx+6) = 0.0; *sy_ptr.add(idx+7) = 0.0;
+                        idx += 8;
                     }
+                    while idx < k { *sy_ptr.add(idx) = 0.0; idx += 1; }
                 }
-                let norm = user_norm[uu];
-                for f in 0..k {
-                    sum_y[f] *= norm;
+
+                // ── Accumulate y_j into sum_y — 8-wide axpy ──────────────
+                unsafe {
+                    for &j in &user_items[uu] {
+                        axpy8(1.0, y_factors.as_ptr().add(j * k), sy_ptr, k);
+                    }
+                    // ── Scale by norm — 8-wide ────────────────────────────
+                    scale8(sy_ptr, user_norm[uu], k);
                 }
                 last_user = u;
             }
 
-            let pu = &user_factors[uu * k..(uu + 1) * k];
-            let qi = &item_factors[ii * k..(ii + 1) * k];
-
-            // p_u_hat = p_u + sum_y
+            // p_u_hat = p_u + sum_y — 8-wide dot without temp allocation
             let pred = global_mean
                 + user_biases[uu]
                 + item_biases[ii]
-                + (0..k).map(|f| qi[f] * (pu[f] + sum_y[f])).sum::<f32>();
+                + unsafe {
+                    dot8_plus(
+                        item_factors.as_ptr().add(ii * k),
+                        user_factors.as_ptr().add(uu * k),
+                        sum_y.as_ptr(),
+                        k,
+                    )
+                };
             let err = r - pred;
             sse += (err as f64) * (err as f64);
 
@@ -642,28 +723,97 @@ fn svdpp_train(
             user_biases[uu] += learning_rate * (err - regularization * user_biases[uu]);
             item_biases[ii] += learning_rate * (err - regularization * item_biases[ii]);
 
-            // Update q_i and p_u
-            for f in 0..k {
-                let pu_f = user_factors[uu * k + f];
-                let qi_f = item_factors[ii * k + f];
-                let sum_y_f = sum_y[f];
-                item_factors[ii * k + f] +=
-                    learning_rate * (err * (pu_f + sum_y_f) - regularization * qi_f);
-                user_factors[uu * k + f] +=
-                    learning_rate * (err * qi_f - regularization * pu_f);
+            // Update q_i and p_u — 8-wide snapshot update
+            unsafe {
+                let pu_ptr = user_factors.as_mut_ptr().add(uu * k);
+                let qi_ptr = item_factors.as_mut_ptr().add(ii * k);
+                let sy_ptr = sum_y.as_ptr();
+                let lr_err = learning_rate * err;
+                let lr_reg = learning_rate * regularization;
+                let chunks = k / 8;
+                let mut idx = 0;
+                for _ in 0..chunks {
+                    // snapshot
+                    let p0 = *pu_ptr.add(idx);   let q0 = *qi_ptr.add(idx);   let sy0 = *sy_ptr.add(idx);
+                    let p1 = *pu_ptr.add(idx+1); let q1 = *qi_ptr.add(idx+1); let sy1 = *sy_ptr.add(idx+1);
+                    let p2 = *pu_ptr.add(idx+2); let q2 = *qi_ptr.add(idx+2); let sy2 = *sy_ptr.add(idx+2);
+                    let p3 = *pu_ptr.add(idx+3); let q3 = *qi_ptr.add(idx+3); let sy3 = *sy_ptr.add(idx+3);
+                    let p4 = *pu_ptr.add(idx+4); let q4 = *qi_ptr.add(idx+4); let sy4 = *sy_ptr.add(idx+4);
+                    let p5 = *pu_ptr.add(idx+5); let q5 = *qi_ptr.add(idx+5); let sy5 = *sy_ptr.add(idx+5);
+                    let p6 = *pu_ptr.add(idx+6); let q6 = *qi_ptr.add(idx+6); let sy6 = *sy_ptr.add(idx+6);
+                    let p7 = *pu_ptr.add(idx+7); let q7 = *qi_ptr.add(idx+7); let sy7 = *sy_ptr.add(idx+7);
+                    *qi_ptr.add(idx)   = q0 + lr_err * (p0 + sy0) - lr_reg * q0;
+                    *qi_ptr.add(idx+1) = q1 + lr_err * (p1 + sy1) - lr_reg * q1;
+                    *qi_ptr.add(idx+2) = q2 + lr_err * (p2 + sy2) - lr_reg * q2;
+                    *qi_ptr.add(idx+3) = q3 + lr_err * (p3 + sy3) - lr_reg * q3;
+                    *qi_ptr.add(idx+4) = q4 + lr_err * (p4 + sy4) - lr_reg * q4;
+                    *qi_ptr.add(idx+5) = q5 + lr_err * (p5 + sy5) - lr_reg * q5;
+                    *qi_ptr.add(idx+6) = q6 + lr_err * (p6 + sy6) - lr_reg * q6;
+                    *qi_ptr.add(idx+7) = q7 + lr_err * (p7 + sy7) - lr_reg * q7;
+                    *pu_ptr.add(idx)   = p0 + lr_err * q0 - lr_reg * p0;
+                    *pu_ptr.add(idx+1) = p1 + lr_err * q1 - lr_reg * p1;
+                    *pu_ptr.add(idx+2) = p2 + lr_err * q2 - lr_reg * p2;
+                    *pu_ptr.add(idx+3) = p3 + lr_err * q3 - lr_reg * p3;
+                    *pu_ptr.add(idx+4) = p4 + lr_err * q4 - lr_reg * p4;
+                    *pu_ptr.add(idx+5) = p5 + lr_err * q5 - lr_reg * p5;
+                    *pu_ptr.add(idx+6) = p6 + lr_err * q6 - lr_reg * p6;
+                    *pu_ptr.add(idx+7) = p7 + lr_err * q7 - lr_reg * p7;
+                    idx += 8;
+                }
+                while idx < k {
+                    let p = *pu_ptr.add(idx); let q = *qi_ptr.add(idx); let sy = *sy_ptr.add(idx);
+                    *qi_ptr.add(idx) = q + lr_err * (p + sy) - lr_reg * q;
+                    *pu_ptr.add(idx) = p + lr_err * q - lr_reg * p;
+                    idx += 1;
+                }
             }
 
-            // Update y_j for all j in N(u)
+            // Update y_j for all j in N(u) — 8-wide
             let norm = user_norm[uu];
             if norm > 0.0 {
-                for &j in &user_items[uu] {
-                    for f in 0..k {
-                        let qi_f = item_factors[ii * k + f];
-                        let y_jf = y_factors[j * k + f];
-                        let delta = learning_rate * (err * qi_f * norm - regularization * y_jf);
-                        y_factors[j * k + f] += delta;
-                        // Update running sum_y
-                        sum_y[f] += delta * norm;
+                let lr_err_norm = learning_rate * err * norm;
+                let lr_reg = learning_rate * regularization;
+                unsafe {
+                    let qi_ptr = item_factors.as_ptr().add(ii * k);
+                    let sy_ptr = sum_y.as_mut_ptr();
+                    for &j in &user_items[uu] {
+                        let yj_ptr = y_factors.as_mut_ptr().add(j * k);
+                        let chunks = k / 8;
+                        let mut idx = 0;
+                        for _ in 0..chunks {
+                            let q0 = *qi_ptr.add(idx);   let yj0 = *yj_ptr.add(idx);
+                            let q1 = *qi_ptr.add(idx+1); let yj1 = *yj_ptr.add(idx+1);
+                            let q2 = *qi_ptr.add(idx+2); let yj2 = *yj_ptr.add(idx+2);
+                            let q3 = *qi_ptr.add(idx+3); let yj3 = *yj_ptr.add(idx+3);
+                            let q4 = *qi_ptr.add(idx+4); let yj4 = *yj_ptr.add(idx+4);
+                            let q5 = *qi_ptr.add(idx+5); let yj5 = *yj_ptr.add(idx+5);
+                            let q6 = *qi_ptr.add(idx+6); let yj6 = *yj_ptr.add(idx+6);
+                            let q7 = *qi_ptr.add(idx+7); let yj7 = *yj_ptr.add(idx+7);
+                            let d0 = lr_err_norm * q0 - lr_reg * yj0;
+                            let d1 = lr_err_norm * q1 - lr_reg * yj1;
+                            let d2 = lr_err_norm * q2 - lr_reg * yj2;
+                            let d3 = lr_err_norm * q3 - lr_reg * yj3;
+                            let d4 = lr_err_norm * q4 - lr_reg * yj4;
+                            let d5 = lr_err_norm * q5 - lr_reg * yj5;
+                            let d6 = lr_err_norm * q6 - lr_reg * yj6;
+                            let d7 = lr_err_norm * q7 - lr_reg * yj7;
+                            *yj_ptr.add(idx)   = yj0 + d0; *sy_ptr.add(idx)   += d0 * norm;
+                            *yj_ptr.add(idx+1) = yj1 + d1; *sy_ptr.add(idx+1) += d1 * norm;
+                            *yj_ptr.add(idx+2) = yj2 + d2; *sy_ptr.add(idx+2) += d2 * norm;
+                            *yj_ptr.add(idx+3) = yj3 + d3; *sy_ptr.add(idx+3) += d3 * norm;
+                            *yj_ptr.add(idx+4) = yj4 + d4; *sy_ptr.add(idx+4) += d4 * norm;
+                            *yj_ptr.add(idx+5) = yj5 + d5; *sy_ptr.add(idx+5) += d5 * norm;
+                            *yj_ptr.add(idx+6) = yj6 + d6; *sy_ptr.add(idx+6) += d6 * norm;
+                            *yj_ptr.add(idx+7) = yj7 + d7; *sy_ptr.add(idx+7) += d7 * norm;
+                            idx += 8;
+                        }
+                        while idx < k {
+                            let q = *qi_ptr.add(idx); let yj = *yj_ptr.add(idx);
+                            let delta = lr_err_norm * q - lr_reg * yj;
+                            *yj_ptr.add(idx) = yj + delta;
+                            *sy_ptr.add(idx) += delta * norm;
+                            idx += 1;
+                        }
                     }
                 }
             }

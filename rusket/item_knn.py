@@ -98,19 +98,24 @@ class ItemKNN(ImplicitRecommender):
     def __repr__(self) -> str:
         return f"ItemKNN(method='{self.method}', k={self.k})"
 
-    def fit(self, interactions: Any) -> ItemKNN:
+    def fit(self, interactions: Any = None) -> ItemKNN:
         """Fit the ItemKNN model.
 
         Parameters
         ----------
-        interactions : scipy.sparse.csr_matrix
+        interactions : scipy.sparse.csr_matrix, optional
             A sparse matrix of shape (n_users, n_items).
+            If None, uses the matrix prepared by ``from_transactions()``.
 
         Returns
         -------
         ItemKNN
             The fitted model.
         """
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
         import numpy as np
         import scipy.sparse as sp
 

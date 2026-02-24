@@ -74,6 +74,11 @@ class LightGCN(ImplicitRecommender):
         self._n_items: int = 0
         self.fitted: bool = False
 
+        # Pending data from from_transactions()
+        self._pending_df: Any = None
+        self._pending_user_col: str | None = None
+        self._pending_item_col: str | None = None
+
     def __repr__(self) -> str:
         return (
             f"LightGCN(factors={self.factors}, k_layers={self.k_layers}, "
@@ -89,7 +94,10 @@ class LightGCN(ImplicitRecommender):
         verbose: int = 0,
         **kwargs: Any,
     ) -> LightGCN:
-        """Initialize and fit the LightGCN model from a long-format DataFrame.
+        """Initialize the LightGCN model from a long-format DataFrame.
+
+        Prepares the data but does **not** fit the model.
+        Call ``.fit()`` explicitly to train.
 
         Parameters
         ----------
@@ -107,26 +115,41 @@ class LightGCN(ImplicitRecommender):
         Returns
         -------
         LightGCN
-            The fitted model.
+            The configured (unfitted) model.
         """
         user_col = kwargs.pop("user_col", transaction_col)
         model = cls(verbose=verbose, **kwargs)
-        model._fit_from_df(data, user_col, item_col)
+        model._pending_df = data
+        model._pending_user_col = user_col
+        model._pending_item_col = item_col
         return model
 
-    def fit(self, interactions: Any) -> LightGCN:
+    def fit(self, interactions: Any = None) -> LightGCN:
         """Fit the model to a user-item interaction matrix.
 
         Parameters
         ----------
-        interactions : scipy.sparse.csr_matrix or numpy.ndarray
+        interactions : scipy.sparse.csr_matrix or numpy.ndarray, optional
             A sparse or dense user-item interaction matrix.
+            If None, uses data prepared by ``from_transactions()``.
 
         Returns
         -------
         LightGCN
             The fitted model.
         """
+        # If from_transactions() was used, fit from the stored DataFrame
+        pending_df = getattr(self, "_pending_df", None)
+        if interactions is None and pending_df is not None:
+            self._fit_from_df(pending_df, self._pending_user_col, self._pending_item_col)
+            self._pending_df = None
+            return self
+
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
+
         if self.fitted:
             raise RuntimeError("Model is already fitted. Create a new instance to refit.")
 

@@ -14,13 +14,13 @@ def recbole_inter() -> pd.DataFrame:
 
 
 def test_recbole_itemknn(recbole_inter: pd.DataFrame) -> None:
-    model = rusket.ItemKNN.from_transactions(recbole_inter, user_col="user_id", item_col="item_id", method="bm25", k=20)
+    model = rusket.ItemKNN.from_transactions(recbole_inter, user_col="user_id", item_col="item_id", method="bm25", k=20).fit()
     ids, scores = model.recommend_items(user_id=1, n=10)
     assert len(ids) > 0
 
 
 def test_recbole_ease(recbole_inter: pd.DataFrame) -> None:
-    model = rusket.EASE.from_transactions(recbole_inter, user_col="user_id", item_col="item_id", l2_reg=100.0)
+    model = rusket.EASE.from_transactions(recbole_inter, user_col="user_id", item_col="item_id", l2_reg=100.0).fit()
     ids, scores = model.recommend_items(user_id=1, n=10)
     assert len(ids) > 0
 
@@ -28,7 +28,7 @@ def test_recbole_ease(recbole_inter: pd.DataFrame) -> None:
 def test_recbole_als(recbole_inter: pd.DataFrame) -> None:
     model = rusket.ALS.from_transactions(
         recbole_inter, user_col="user_id", item_col="item_id", factors=32, iterations=5
-    )
+    ).fit()
     ids, scores = model.recommend_items(user_id=1, n=10)
     assert len(ids) > 0
 
@@ -36,7 +36,7 @@ def test_recbole_als(recbole_inter: pd.DataFrame) -> None:
 def test_recbole_bpr(recbole_inter: pd.DataFrame) -> None:
     model = rusket.BPR.from_transactions(
         recbole_inter, user_col="user_id", item_col="item_id", factors=32, iterations=5
-    )
+    ).fit()
     ids, scores = model.recommend_items(user_id=1, n=10)
     assert len(ids) > 0
 

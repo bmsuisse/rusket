@@ -6,20 +6,20 @@ use crate::fpgrowth::{flatten_results, process_item_counts};
 
 #[derive(Clone)]
 pub(crate) struct BitSet {
-    pub(crate) blocks: Vec<u64>,
+    pub(crate) blocks: Vec<u128>,
 }
 
 impl BitSet {
     pub(crate) fn new(num_bits: usize) -> Self {
-        let num_blocks = num_bits.div_ceil(64);
+        let num_blocks = num_bits.div_ceil(128);
         BitSet {
-            blocks: vec![0; num_blocks],
+            blocks: vec![0u128; num_blocks],
         }
     }
 
     #[inline]
     pub(crate) fn set(&mut self, bit: usize) {
-        self.blocks[bit / 64] |= 1 << (bit % 64);
+        self.blocks[bit / 128] |= 1u128 << (bit % 128);
     }
 
     #[inline]
@@ -37,7 +37,8 @@ impl BitSet {
             let v = self.blocks[i] & other.blocks[i];
             out.blocks[i] = v;
             count += v.count_ones() as u64;
-            let remaining_max = ((n - i - 1) * 64) as u64;
+            // Each remaining u128 block covers 128 transactions (vs 64 before)
+            let remaining_max = ((n - i - 1) * 128) as u64;
             if count + remaining_max < min_count {
                 for j in (i + 1)..n {
                     out.blocks[j] = 0;
@@ -59,7 +60,7 @@ pub(crate) fn eclat_mine(
     let new_len = prefix.len() + 1;
     let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
     let mut scratch = BitSet {
-        blocks: vec![0u64; n_blocks],
+        blocks: vec![0u128; n_blocks],
     };
 
     for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
@@ -82,7 +83,7 @@ pub(crate) fn eclat_mine(
                     if c >= min_count {
                         // Swap scratch with a fresh buffer instead of cloning
                         let mut fresh = BitSet {
-                            blocks: vec![0u64; n_blocks],
+                            blocks: vec![0u128; n_blocks],
                         };
                         std::mem::swap(&mut scratch, &mut fresh);
                         next_active.push((*item_b, fresh));
@@ -169,14 +170,14 @@ pub fn eclat_from_dense(
                 if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
                     let mut scratch = BitSet {
-                        blocks: vec![0u64; n_blocks],
+                        blocks: vec![0u128; n_blocks],
                     };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
                             let mut fresh = BitSet {
-                                blocks: vec![0u64; n_blocks],
+                                blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
                             next_active.push((*item_b, fresh));
@@ -269,14 +270,14 @@ pub fn eclat_from_csr(
                 if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
                     let mut scratch = BitSet {
-                        blocks: vec![0u64; n_blocks],
+                        blocks: vec![0u128; n_blocks],
                     };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
                             let mut fresh = BitSet {
-                                blocks: vec![0u64; n_blocks],
+                                blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
                             next_active.push((*item_b, fresh));
@@ -356,14 +357,14 @@ pub(crate) fn _eclat_mine_csr(
                 if max_len.is_none_or(|ml| ml > 1) {
                     let n_blocks = bs_a.blocks.len();
                     let mut scratch = BitSet {
-                        blocks: vec![0u64; n_blocks],
+                        blocks: vec![0u128; n_blocks],
                     };
                     let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
                     for (item_b, bs_b) in &active_items[i + 1..] {
                         let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                         if c >= min_count {
                             let mut fresh = BitSet {
-                                blocks: vec![0u64; n_blocks],
+                                blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
                             next_active.push((*item_b, fresh));

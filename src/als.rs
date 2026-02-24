@@ -80,12 +80,29 @@ fn solve_one_side_cg(
             }
 
             let apply_a = |v: &[f32], out: &mut [f32]| {
+                // Gram matrix × v, 4-wide unrolled for better autovectorization
+                let k4 = k / 4 * 4;
                 for a in 0..k {
-                    let mut s = 0.0f32;
-                    for bb in 0..k {
-                        s += gram[a * k + bb] * v[bb];
+                    let gram_row = &gram[a * k..];
+                    let mut s0 = 0.0f32;
+                    let mut s1 = 0.0f32;
+                    let mut s2 = 0.0f32;
+                    let mut s3 = 0.0f32;
+                    let mut bb = 0;
+                    while bb < k4 {
+                        unsafe {
+                            s0 += *gram_row.get_unchecked(bb)   * *v.get_unchecked(bb);
+                            s1 += *gram_row.get_unchecked(bb+1) * *v.get_unchecked(bb+1);
+                            s2 += *gram_row.get_unchecked(bb+2) * *v.get_unchecked(bb+2);
+                            s3 += *gram_row.get_unchecked(bb+3) * *v.get_unchecked(bb+3);
+                        }
+                        bb += 4;
                     }
-                    out[a] = s + eff_lambda * v[a];
+                    while bb < k {
+                        unsafe { s0 += *gram_row.get_unchecked(bb) * *v.get_unchecked(bb); }
+                        bb += 1;
+                    }
+                    out[a] = (s0 + s1 + s2 + s3) + eff_lambda * v[a];
                 }
                 for idx in start..end {
                     let i = indices[idx] as usize;

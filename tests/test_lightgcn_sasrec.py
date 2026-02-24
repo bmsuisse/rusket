@@ -47,7 +47,7 @@ class TestLightGCN:
             k_layers=2,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=0, n=3)
         assert len(ids) == 3
         assert len(scores) == 3
@@ -62,7 +62,7 @@ class TestLightGCN:
             factors=8,
             iterations=3,
             seed=1,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=0, n=10)
         assert len(ids) > 0
         # All returned IDs should be valid item IDs (0–5)
@@ -76,7 +76,7 @@ class TestLightGCN:
             factors=8,
             iterations=2,
             seed=0,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=999, n=5)
         assert len(ids) == 0
 
@@ -88,7 +88,7 @@ class TestLightGCN:
             factors=16,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         m2 = rusket.LightGCN.from_transactions(
             interactions_df,
             user_col="user_id",
@@ -96,7 +96,7 @@ class TestLightGCN:
             factors=16,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         ids1, _ = m1.recommend_items(user_id=0, n=5)
         ids2, _ = m2.recommend_items(user_id=0, n=5)
         np.testing.assert_array_equal(ids1, ids2)
@@ -113,7 +113,7 @@ class TestLightGCN:
             factors=8,
             iterations=2,
             seed=0,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=0, n=3)
         assert len(ids) > 0
 
@@ -164,7 +164,7 @@ class TestSASRec:
             factors=8,
             iterations=2,
             seed=0,
-        )
+        ).fit()
         ids, scores = model.recommend_items([1, 2, 3], n=3)
         assert len(ids) > 0
 
