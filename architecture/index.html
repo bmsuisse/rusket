@@ -101,7 +101,8 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="./.." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo_single.svg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -199,7 +200,8 @@
   <label class="md-nav__title" for="__drawer">
     <a href="./.." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
       
-  <img src="../assets/logo_single.svg" alt="logo">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
 
     </a>
     rusket
@@ -1428,7 +1430,7 @@
 <li>For each frequent itemset of length ≥ 2, enumerate all non-empty antecedent / consequent splits.</li>
 <li>Look up antecedent and consequent supports from a pre-built hash map.</li>
 <li>Compute all 12 metrics in a single pass; filter by <code>(metric, min_threshold)</code>.</li>
-<li>Return raw integer index lists to Python; Python maps back to column names / frozensets.</li>
+<li>Return raw integer index lists to Python; Python maps back to column names / tuples.</li>
 </ol>
 <hr />
 <h2 id="building-from-source">Building from source<a class="headerlink" href="#building-from-source" title="Permanent link">&para;</a></h2>
