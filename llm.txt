@@ -1402,9 +1402,18 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - spark PyArrow-native UDFs + SIMD optimizations
 
+### Test
+
+- expand benchmark suite with 4-tier dataset matrix
+
 ### ⚡ Performance
 
 - SIMD-optimise dot products (8-wide), eliminate atomic CAS in LightGCN, remove clone overhead in FIN/ECLAT
+- Hogwild parallel SVD++ (user-grouped rayon par_iter)
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
 
 ### 🔧 Refactoring
 
