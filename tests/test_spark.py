@@ -85,6 +85,7 @@ def test_spark_als(spark_session) -> None:
     model = ALS.from_transactions(
         spark_df, user_col="user_id", item_col="item_id", rating_col="rating", factors=4, iterations=3, seed=42
     )
+    model.fit()
 
     assert model.fitted  # type: ignore
     assert model.user_factors.shape[0] == 3  # type: ignore
