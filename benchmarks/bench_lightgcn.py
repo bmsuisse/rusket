@@ -15,7 +15,7 @@ def run():
 
     # Let's train BPR first for a baseline, then mock LightGCN
     t0 = time.perf_counter()
-    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10).fit()
     t1 = time.perf_counter()
     print(f"[BPR (10 Epo)]   Fit Time: {t1 - t0:.4f}s")
 

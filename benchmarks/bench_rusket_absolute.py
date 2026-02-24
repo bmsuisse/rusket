@@ -16,25 +16,25 @@ def run():
 
     # --- ItemKNN ---
     t0 = time.perf_counter()
-    rusket.ItemKNN.from_transactions(df, "user_id", "item_id", k=100)
+    rusket.ItemKNN.from_transactions(df, "user_id", "item_id", k=100).fit()
     t1 = time.perf_counter()
     print(f"[ItemKNN]        Fit Time: {t1 - t0:.4f}s")
 
     # --- BPR ---
     t0 = time.perf_counter()
-    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10).fit()
     t1 = time.perf_counter()
     print(f"[BPR (10 Epo)]   Fit Time: {t1 - t0:.4f}s")
 
     # --- EASE ---
     t0 = time.perf_counter()
-    rusket.EASE.from_transactions(df, "user_id", "item_id")
+    rusket.EASE.from_transactions(df, "user_id", "item_id").fit()
     t1 = time.perf_counter()
     print(f"[EASE]           Fit Time: {t1 - t0:.4f}s")
 
     # --- ALS ---
     t0 = time.perf_counter()
-    rusket.ALS.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.ALS.from_transactions(df, "user_id", "item_id", iterations=10).fit()
     t1 = time.perf_counter()
     print(f"[ALS (10 Epo)]   Fit Time: {t1 - t0:.4f}s")
 

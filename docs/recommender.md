@@ -54,12 +54,15 @@ purchases = pd.DataFrame({
     "revenue":     [29.99, 49.00, 9.99,  29.99, 15.00, 49.00],
 })
 
-als = ALS(factors=64, iterations=15, alpha=40.0).from_transactions(
+als = ALS.from_transactions(
     purchases,
     user_col="customer_id",
     item_col="sku",
     rating_col="revenue",
-)
+    factors=64,
+    iterations=15,
+    alpha=40.0,
+).fit()
 
 bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
 ```

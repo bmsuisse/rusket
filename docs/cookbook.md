@@ -192,7 +192,7 @@ model = ALS.from_transactions(
     iterations=15,
     alpha=40.0,
     cg_iters=3,
-)
+).fit()
 ```
 
 ### Get personalised recommendations
@@ -270,7 +270,7 @@ model = BPR.from_transactions(
     regularization=0.01,
     iterations=100,
     seed=42,
-)
+).fit()
 
 items, scores = model.recommend_items(user_id=10, n=5)
 ```
@@ -392,7 +392,7 @@ model = ALS.from_transactions(
     rating_col="clicks",
     factors=64,
     iterations=10,
-)
+).fit()
 ```
 
 ---
@@ -410,12 +410,14 @@ spark = SparkSession.builder.getOrCreate()
 purchases = spark.table("bronze_layer.customer_transactions")
 
 # 1. Train the model using the fast Polars bridge
-als = ALS(factors=128, iterations=15).from_transactions(
+als = ALS.from_transactions(
     purchases.toPandas(), # Or pass Polars directly if memory allows
     transaction_col="customer_id",
     item_col="product_id",
     rating_col="sales_amount",
-)
+    factors=128,
+    iterations=15,
+).fit()
 
 # 2. Score ALL users simultaneously across all CPU cores (Rust Rayon)
 #    Returns a fast Polars DataFrame: [user_id, item_id, score]
