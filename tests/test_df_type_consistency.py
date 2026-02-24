@@ -28,14 +28,25 @@ from rusket.mine import AutoMiner
 # ---------------------------------------------------------------------------
 
 _ROWS: list[tuple[str, str]] = [
-    ("t1", "bread"), ("t1", "milk"), ("t1", "butter"),
-    ("t2", "bread"), ("t2", "butter"), ("t2", "milk"),
-    ("t3", "milk"), ("t3", "butter"),
-    ("t4", "bread"), ("t4", "milk"),
-    ("t5", "bread"), ("t5", "butter"),
-    ("t6", "bread"), ("t6", "milk"), ("t6", "butter"),
-    ("t7", "milk"), ("t7", "butter"),
-    ("t8", "bread"), ("t8", "milk"),
+    ("t1", "bread"),
+    ("t1", "milk"),
+    ("t1", "butter"),
+    ("t2", "bread"),
+    ("t2", "butter"),
+    ("t2", "milk"),
+    ("t3", "milk"),
+    ("t3", "butter"),
+    ("t4", "bread"),
+    ("t4", "milk"),
+    ("t5", "bread"),
+    ("t5", "butter"),
+    ("t6", "bread"),
+    ("t6", "milk"),
+    ("t6", "butter"),
+    ("t7", "milk"),
+    ("t7", "butter"),
+    ("t8", "bread"),
+    ("t8", "milk"),
 ]
 _PANDAS_DF = pd.DataFrame(_ROWS, columns=["txn_id", "item"])
 _POLARS_DF = pl.DataFrame({"txn_id": [t for t, _ in _ROWS], "item": [i for _, i in _ROWS]})
@@ -48,9 +59,9 @@ _POLARS_DF = pl.DataFrame({"txn_id": [t for t, _ in _ROWS], "item": [i for _, i 
 _ONEHOT_PD = pd.DataFrame(
     {
         "store_id": ["A", "A", "A", "A", "B", "B", "B", "B"],
-        "bread":    [  1,   1,   0,   1,   1,   1,   1,   0],
-        "butter":   [  1,   0,   1,   1,   1,   1,   0,   0],
-        "milk":     [  1,   1,   1,   0,   1,   1,   1,   1],
+        "bread": [1, 1, 0, 1, 1, 1, 1, 0],
+        "butter": [1, 0, 1, 1, 1, 1, 0, 0],
+        "milk": [1, 1, 1, 0, 1, 1, 1, 1],
     }
 )
 _ONEHOT_PL = pl.from_pandas(_ONEHOT_PD)

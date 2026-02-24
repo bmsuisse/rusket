@@ -32,7 +32,6 @@ from rusket import ALS, SVD
 from rusket.bpr import BPR
 from rusket.eclat import Eclat
 
-
 # ════════════════════════════════════════════════════════════════════════════
 # Fixtures — rating matrices
 # ════════════════════════════════════════════════════════════════════════════
@@ -50,9 +49,7 @@ def _make_implicit(n_users: int, n_items: int, nnz: int, seed: int = 99) -> sp.c
     rng = np.random.default_rng(seed)
     rows = rng.integers(0, n_users, nnz)
     cols = rng.integers(0, n_items, nnz)
-    return sp.csr_matrix(
-        (np.ones(nnz, dtype=np.float32), (rows, cols)), shape=(n_users, n_items)
-    )
+    return sp.csr_matrix((np.ones(nnz, dtype=np.float32), (rows, cols)), shape=(n_users, n_items))
 
 
 def _make_eclat_df(n_rows: int, n_items: int, density: float, seed: int = 7) -> pd.DataFrame:
@@ -142,40 +139,48 @@ def eclat_large_dense() -> pd.DataFrame:
 
 def test_bench_svd_tiny_k32(benchmark, mat_tiny: sp.csr_matrix) -> None:
     """SVD tiny dataset, k=32 — overhead-dominated."""
+
     def _fit() -> SVD:
         m = SVD(factors=32, iterations=10, learning_rate=0.005, regularization=0.02, seed=42)
         m.fit(mat_tiny)
         return m
+
     result = benchmark(_fit)
     assert result._fitted
 
 
 def test_bench_svd_small_k64(benchmark, mat_small: sp.csr_matrix) -> None:
     """SVD 100k ratings, k=64 — primary benchmark."""
+
     def _fit() -> SVD:
         m = SVD(factors=64, iterations=20, learning_rate=0.005, regularization=0.02, seed=42)
         m.fit(mat_small)
         return m
+
     result = benchmark(_fit)
     assert result._fitted
 
 
 def test_bench_svd_small_k128(benchmark, mat_small: sp.csr_matrix) -> None:
     """SVD 100k ratings, k=128 — wider vectors."""
+
     def _fit() -> SVD:
         m = SVD(factors=128, iterations=20, learning_rate=0.005, regularization=0.02, seed=42)
         m.fit(mat_small)
         return m
+
     result = benchmark(_fit)
     assert result._fitted
 
 
 def test_bench_svd_medium_k64(benchmark, mat_medium: sp.csr_matrix) -> None:
     """SVD 1M ratings, k=64 — MovieLens-1M scale."""
+
     def _fit() -> SVD:
         m = SVD(factors=64, iterations=10, learning_rate=0.005, regularization=0.02, seed=42)
         m.fit(mat_medium)
         return m
+
     result = benchmark(_fit)
     assert result._fitted
 
@@ -227,40 +232,48 @@ def test_bench_svdpp_medium_k32(benchmark, mat_medium: sp.csr_matrix) -> None:
 
 def test_bench_bpr_small_k32(benchmark, imp_small: sp.csr_matrix) -> None:
     """BPR 100k interactions, k=32, 20 iters."""
+
     def _fit() -> BPR:
         m = BPR(factors=32, iterations=20, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_bpr_small_k64(benchmark, imp_small: sp.csr_matrix) -> None:
     """BPR 100k interactions, k=64, 20 iters — primary SIMD target."""
+
     def _fit() -> BPR:
         m = BPR(factors=64, iterations=20, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_bpr_small_k128(benchmark, imp_small: sp.csr_matrix) -> None:
     """BPR 100k interactions, k=128, 20 iters."""
+
     def _fit() -> BPR:
         m = BPR(factors=128, iterations=20, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_bpr_medium_k64(benchmark, imp_medium: sp.csr_matrix) -> None:
     """BPR 500k interactions, k=64, 10 iters."""
+
     def _fit() -> BPR:
         m = BPR(factors=64, iterations=10, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(imp_medium)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
@@ -272,53 +285,67 @@ def test_bench_bpr_medium_k64(benchmark, imp_medium: sp.csr_matrix) -> None:
 
 def test_bench_als_small_k32_cg(benchmark, imp_small: sp.csr_matrix) -> None:
     """ALS CG, 100k interactions, k=32, 15 iters, cg_iters=10."""
+
     def _fit() -> ALS:
         m = ALS(factors=32, iterations=15, regularization=0.01, alpha=40.0, cg_iters=10, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_als_small_k64_cg(benchmark, imp_small: sp.csr_matrix) -> None:
     """ALS CG, 100k interactions, k=64, 15 iters — primary SIMD target."""
+
     def _fit() -> ALS:
         m = ALS(factors=64, iterations=15, regularization=0.01, alpha=40.0, cg_iters=10, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_als_small_k128_cg(benchmark, imp_small: sp.csr_matrix) -> None:
     """ALS CG, 100k interactions, k=128, 15 iters — wider gram mat-vec."""
+
     def _fit() -> ALS:
         m = ALS(factors=128, iterations=15, regularization=0.01, alpha=40.0, cg_iters=10, seed=42)
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_als_medium_k64_cg(benchmark, imp_medium: sp.csr_matrix) -> None:
     """ALS CG, 500k interactions, k=64, 10 iters."""
+
     def _fit() -> ALS:
         m = ALS(factors=64, iterations=10, regularization=0.01, alpha=40.0, cg_iters=10, seed=42)
         m.fit(imp_medium)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bench_als_small_k64_cholesky(benchmark, imp_small: sp.csr_matrix) -> None:
     """ALS Cholesky, 100k interactions, k=64 — reference (faer handles this)."""
+
     def _fit() -> ALS:
         m = ALS(
-            factors=64, iterations=15, regularization=0.01,
-            alpha=40.0, use_cholesky=True, seed=42,
+            factors=64,
+            iterations=15,
+            regularization=0.01,
+            alpha=40.0,
+            use_cholesky=True,
+            seed=42,
         )
         m.fit(imp_small)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 

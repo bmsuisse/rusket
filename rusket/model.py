@@ -535,7 +535,9 @@ class Miner(BaseModel):
             frames: list[Any] = []
             for g in df[group_col].unique().to_list():
                 sub_pd = df.filter(_pl.col(group_col) == g).drop(group_col).to_pandas().astype(bool)
-                res_pd = _mine(sub_pd, min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames)
+                res_pd = _mine(
+                    sub_pd, min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames
+                )
                 if len(res_pd) == 0:
                     continue
                 res_pd["itemsets"] = res_pd["itemsets"].apply(
@@ -545,7 +547,13 @@ class Miner(BaseModel):
                 frames.append(res_pd)
 
             if not frames:
-                return _pl.DataFrame({group_col: _pl.Series([], dtype=_pl.Utf8), "support": _pl.Series([], dtype=_pl.Float64), "itemsets": _pl.Series([], dtype=_pl.List(_pl.Utf8))})
+                return _pl.DataFrame(
+                    {
+                        group_col: _pl.Series([], dtype=_pl.Utf8),
+                        "support": _pl.Series([], dtype=_pl.Float64),
+                        "itemsets": _pl.Series([], dtype=_pl.List(_pl.Utf8)),
+                    }
+                )
 
             return _pl.from_pandas(_pd.concat(frames, ignore_index=True)[[group_col, "support", "itemsets"]])
 
@@ -555,7 +563,13 @@ class Miner(BaseModel):
 
         frames_pd: list[_pd.DataFrame] = []
         for g, sub in df.groupby(group_col, sort=False):
-            res = _mine(sub.drop(columns=[group_col]).astype(bool), min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames)
+            res = _mine(
+                sub.drop(columns=[group_col]).astype(bool),
+                min_support=min_support,
+                max_len=max_len,
+                method=method,
+                use_colnames=use_colnames,
+            )
             if len(res) == 0:
                 continue
             res.insert(0, group_col, g)
