@@ -24,9 +24,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import rusket
 from rusket import ALS, BPR
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -91,30 +89,36 @@ def bpr_fitted(ml100k_mat: sparse.csr_matrix) -> BPR:
 
 def test_als_fit_k32(benchmark, ml100k_mat: sparse.csr_matrix) -> None:
     """ALS fit: 32 factors, 15 iterations (ML-100k scale)."""
+
     def _fit() -> ALS:
         m = ALS(factors=32, iterations=15, regularization=0.01, alpha=40.0, seed=42)
         m.fit(ml100k_mat)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_als_fit_k64(benchmark, ml100k_mat: sparse.csr_matrix) -> None:
     """ALS fit: 64 factors, 15 iterations (ML-100k scale)."""
+
     def _fit() -> ALS:
         m = ALS(factors=64, iterations=15, regularization=0.01, alpha=40.0, seed=42)
         m.fit(ml100k_mat)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_als_fit_k128(benchmark, ml100k_mat: sparse.csr_matrix) -> None:
     """ALS fit: 128 factors, 15 iterations."""
+
     def _fit() -> ALS:
         m = ALS(factors=128, iterations=15, regularization=0.01, alpha=40.0, seed=42)
         m.fit(ml100k_mat)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
@@ -151,8 +155,10 @@ def test_als_batch_recommend_small(benchmark, als_fitted: ALS) -> None:
 
     This is the hot path that should benefit most from GEMM.
     """
+
     def _batch() -> object:
         return als_fitted.batch_recommend(n=10, exclude_seen=False, format="pandas")
+
     result = benchmark(_batch)
     assert result is not None
 
@@ -162,8 +168,10 @@ def test_als_batch_recommend_large(benchmark, als_fitted_large: ALS) -> None:
 
     Large-scale scoring — primary candidate for GEMM optimisation.
     """
+
     def _batch() -> object:
         return als_fitted_large.batch_recommend(n=10, exclude_seen=False, format="pandas")
+
     result = benchmark(_batch)
     assert result is not None
 
@@ -175,20 +183,24 @@ def test_als_batch_recommend_large(benchmark, als_fitted_large: ALS) -> None:
 
 def test_bpr_fit_k64(benchmark, ml100k_mat: sparse.csr_matrix) -> None:
     """BPR fit: 64 factors, 10 iterations (ML-100k scale)."""
+
     def _fit() -> BPR:
         m = BPR(factors=64, iterations=10, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(ml100k_mat)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
 
 def test_bpr_fit_k128(benchmark, ml100k_mat: sparse.csr_matrix) -> None:
     """BPR fit: 128 factors, 10 iterations."""
+
     def _fit() -> BPR:
         m = BPR(factors=128, iterations=10, learning_rate=0.01, regularization=0.01, seed=42)
         m.fit(ml100k_mat)
         return m
+
     result = benchmark(_fit)
     assert result.fitted
 
