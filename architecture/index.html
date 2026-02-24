@@ -1248,11 +1248,19 @@
 <tbody>
 <tr>
 <td><code>from_transactions(data, transaction_col, item_col, verbose, **kwargs)</code></td>
-<td>Class method on every class for DataFrame-based init</td>
+<td>Class method on every class. <strong>Does NOT auto-fit.</strong> Call <code>.fit()</code> explicitly on recommenders.</td>
 </tr>
 <tr>
 <td><code>from_pandas()</code>, <code>from_polars()</code>, <code>from_spark()</code></td>
 <td>Aliases delegating to <code>from_transactions()</code></td>
+</tr>
+<tr>
+<td><code>fit(**args)</code></td>
+<td>Sklearn-compatible. Required after <code>from_transactions()</code> for recommenders.</td>
+</tr>
+<tr>
+<td><code>predict(**args)</code></td>
+<td>Sklearn-compatible alias for <code>recommend_items()</code> (recommenders) or <code>mine()</code> (miners).</td>
 </tr>
 <tr>
 <td><code>verbose: int</code></td>
@@ -1264,7 +1272,7 @@
 </tr>
 <tr>
 <td><code>fitted: bool</code></td>
-<td>Attribute set to <code>True</code> after <code>.fit()</code> or <code>.mine()</code></td>
+<td>Attribute set to <code>True</code> after <code>.fit()</code></td>
 </tr>
 <tr>
 <td><code>__repr__</code></td>
@@ -1283,8 +1291,9 @@
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">recs</span>  <span class="o">=</span> <span class="n">miner</span><span class="o">.</span><span class="n">recommend_for_cart</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># → list[Any]</span>
 </span></code></pre></div>
 <h3 id="recommender-interface">Recommender interface<a class="headerlink" href="#recommender-interface" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ALS</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># from_transactions() configures the model but does NOT fit</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ALS</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <table>
 <thead>
@@ -1295,8 +1304,12 @@
 </thead>
 <tbody>
 <tr>
-<td><code>fit(interactions)</code></td>
-<td>All recommenders</td>
+<td><code>fit(interactions=None)</code></td>
+<td>All recommenders — accepts sparse matrix or uses data from <code>from_transactions()</code></td>
+</tr>
+<tr>
+<td><code>predict(user_id, item_id)</code></td>
+<td>SVD (rating prediction); others: alias for <code>recommend_items()</code></td>
 </tr>
 <tr>
 <td><code>recommend_items(user_id, n, exclude_seen)</code></td>
@@ -1318,7 +1331,7 @@
 </table>
 <h3 id="sequential-recommenders-fpmc-sasrec">Sequential recommenders (FPMC, SASRec)<a class="headerlink" href="#sequential-recommenders-fpmc-sasrec" title="Permanent link">&para;</a></h3>
 <p>Work on ordered sequences. SASRec also accepts ad-hoc sequences:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SASRec</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">timestamp_col</span><span class="o">=</span><span class="s2">&quot;ts&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">SASRec</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item&quot;</span><span class="p">,</span> <span class="n">timestamp_col</span><span class="o">=</span><span class="s2">&quot;ts&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">ids</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
