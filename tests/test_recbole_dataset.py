@@ -14,7 +14,9 @@ def recbole_inter() -> pd.DataFrame:
 
 
 def test_recbole_itemknn(recbole_inter: pd.DataFrame) -> None:
-    model = rusket.ItemKNN.from_transactions(recbole_inter, user_col="user_id", item_col="item_id", method="bm25", k=20).fit()
+    model = rusket.ItemKNN.from_transactions(
+        recbole_inter, user_col="user_id", item_col="item_id", method="bm25", k=20
+    ).fit()
     ids, scores = model.recommend_items(user_id=1, n=10)
     assert len(ids) > 0
 

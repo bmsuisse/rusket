@@ -24,10 +24,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import scipy.sparse as sp
+
 from rusket import ALS, SVD
 from rusket.bpr import BPR
 from rusket.eclat import Eclat
-
 
 # ─── Shared fixtures ────────────────────────────────────────────────────────
 

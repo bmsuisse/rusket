@@ -470,7 +470,7 @@ class Miner(BaseModel):
         pd.DataFrame
             The frequent itemsets / patterns.
         """
-        if not hasattr(self, '_result') or self._result is None:
+        if not hasattr(self, "_result") or self._result is None:
             self.fit(**kwargs)
         return self._result  # type: ignore[return-value]
 
