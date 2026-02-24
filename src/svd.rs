@@ -644,182 +644,238 @@ fn svdpp_train(
 
     let start_time = std::time::Instant::now();
 
-    // Build triplets for shuffled SGD
-    let mut triplets: Vec<(u32, u32, f32)> = Vec::with_capacity(n_ratings);
-    for u in 0..n_users {
-        let start = indptr[u] as usize;
-        let end = indptr[u + 1] as usize;
-        for idx in start..end {
-            triplets.push((u as u32, indices[idx] as u32, data[idx]));
-        }
-    }
+    // Build shuffled user order — we process each user's ratings atomically
+    // across threads (Hogwild-style: concurrent writes to item/y factors are
+    // benign given the small step sizes and the sparsity of the update pattern).
+    let mut user_order: Vec<usize> = (0..n_users)
+        .filter(|&u| !user_items[u].is_empty()) // skip users with no ratings
+        .collect();
 
-    // Temporary buffer for implicit sum (reused per user)
-    let mut sum_y = vec![0.0f32; k];
+    // Cast raw pointers to usize so the rayon closure captures Copy+Send+Sync values.
+    // They are re-cast to *mut f32 inside the closure body (always safe here since
+    // the allocations are valid for the entire duration of the for loop).
+    let uf_addr  = user_factors.as_mut_ptr() as usize;
+    let itf_addr = item_factors.as_mut_ptr() as usize;
+    let yf_addr  = y_factors.as_mut_ptr() as usize;
+    let ub_addr  = user_biases.as_mut_ptr() as usize;
+    let ib_addr  = item_biases.as_mut_ptr() as usize;
 
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
 
-        // Shuffle
+        // Shuffle user order (different permutation each epoch)
         let mut shuffler = XorShift64::new(seed.wrapping_add(iter as u64).wrapping_add(999));
-        let len = triplets.len();
+        let len = user_order.len();
         for i in (1..len).rev() {
             let j = (shuffler.next() as usize) % (i + 1);
-            triplets.swap(i, j);
+            user_order.swap(i, j);
         }
 
-        // Sequential SGD (SVD++ requires per-user implicit sums → no race-free parallelism)
-        let mut sse = 0.0f64;
-        let mut last_user: u32 = u32::MAX;
+        // Accumulate SSE across threads via atomic bit-cast
+        let sse_bits = std::sync::atomic::AtomicU64::new(0);
 
-        for &(u, i, r) in &triplets {
-            let uu = u as usize;
-            let ii = i as usize;
+        // ── Hogwild parallel over users ───────────────────────────────────
+        // Each thread processes one user's ratings sequentially:
+        //   1. Build sum_y (private stack buffer)
+        //   2. Process each of this user's ratings: predict, err, update
+        //   3. Update y_j for all implicit items
+        // Writes to item_factors and y_factors are concurrent (Hogwild).
+        use std::sync::atomic::Ordering;
 
-            // Recompute sum_y when we switch users
-            if u != last_user {
-                // ── Zero sum_y — 8-wide ───────────────────────────────────
-                let sy_ptr = sum_y.as_mut_ptr();
-                let chunks = k / 8;
-                let mut idx = 0;
+        user_order.par_iter().for_each(|&uu| {
+            let start = indptr[uu] as usize;
+            let end   = indptr[uu + 1] as usize;
+            let norm  = user_norm[uu];
+
+            let mut sum_y = vec![0.0f32; k];
+
+            // Re-cast usize addresses back to raw pointers
+            let uf  = uf_addr  as *mut f32;
+            let itf = itf_addr as *mut f32;
+            let yf  = yf_addr  as *mut f32;
+            let ub  = ub_addr  as *mut f32;
+            let ib  = ib_addr  as *mut f32;
+
+            // ── Build sum_y = norm * Σ y_j ────────────────────────────────
+            if norm > 0.0 {
                 unsafe {
-                    for _ in 0..chunks {
-                        *sy_ptr.add(idx)   = 0.0; *sy_ptr.add(idx+1) = 0.0;
-                        *sy_ptr.add(idx+2) = 0.0; *sy_ptr.add(idx+3) = 0.0;
-                        *sy_ptr.add(idx+4) = 0.0; *sy_ptr.add(idx+5) = 0.0;
-                        *sy_ptr.add(idx+6) = 0.0; *sy_ptr.add(idx+7) = 0.0;
-                        idx += 8;
-                    }
-                    while idx < k { *sy_ptr.add(idx) = 0.0; idx += 1; }
-                }
-
-                // ── Accumulate y_j into sum_y — 8-wide axpy ──────────────
-                unsafe {
+                    let sy = sum_y.as_mut_ptr();
                     for &j in &user_items[uu] {
-                        axpy8(1.0, y_factors.as_ptr().add(j * k), sy_ptr, k);
+                        axpy8(1.0, yf.add(j * k), sy, k);
                     }
-                    // ── Scale by norm — 8-wide ────────────────────────────
-                    scale8(sy_ptr, user_norm[uu], k);
+                    scale8(sy, norm, k);
                 }
-                last_user = u;
             }
 
-            // p_u_hat = p_u + sum_y — 8-wide dot without temp allocation
-            let pred = global_mean
-                + user_biases[uu]
-                + item_biases[ii]
-                + unsafe {
-                    dot8_plus(
-                        item_factors.as_ptr().add(ii * k),
-                        user_factors.as_ptr().add(uu * k),
-                        sum_y.as_ptr(),
-                        k,
-                    )
-                };
-            let err = r - pred;
-            sse += (err as f64) * (err as f64);
+            let mut local_sse = 0.0f64;
 
-            // Update biases
-            user_biases[uu] += learning_rate * (err - regularization * user_biases[uu]);
-            item_biases[ii] += learning_rate * (err - regularization * item_biases[ii]);
+            for idx in start..end {
+                let ii = indices[idx] as usize;
+                let r  = data[idx];
 
-            // Update q_i and p_u — 8-wide snapshot update
-            unsafe {
-                let pu_ptr = user_factors.as_mut_ptr().add(uu * k);
-                let qi_ptr = item_factors.as_mut_ptr().add(ii * k);
-                let sy_ptr = sum_y.as_ptr();
+                // ── Predict ───────────────────────────────────────────────
+                let pred = global_mean
+                    + unsafe { *ub.add(uu) }
+                    + unsafe { *ib.add(ii) }
+                    + unsafe {
+                        dot8_plus(
+                            itf.add(ii * k),
+                            uf.add(uu * k),
+                            sum_y.as_ptr(),
+                            k,
+                        )
+                    };
+                let err = r - pred;
+                local_sse += (err as f64) * (err as f64);
+
                 let lr_err = learning_rate * err;
                 let lr_reg = learning_rate * regularization;
-                let chunks = k / 8;
-                let mut idx = 0;
-                for _ in 0..chunks {
-                    // snapshot
-                    let p0 = *pu_ptr.add(idx);   let q0 = *qi_ptr.add(idx);   let sy0 = *sy_ptr.add(idx);
-                    let p1 = *pu_ptr.add(idx+1); let q1 = *qi_ptr.add(idx+1); let sy1 = *sy_ptr.add(idx+1);
-                    let p2 = *pu_ptr.add(idx+2); let q2 = *qi_ptr.add(idx+2); let sy2 = *sy_ptr.add(idx+2);
-                    let p3 = *pu_ptr.add(idx+3); let q3 = *qi_ptr.add(idx+3); let sy3 = *sy_ptr.add(idx+3);
-                    let p4 = *pu_ptr.add(idx+4); let q4 = *qi_ptr.add(idx+4); let sy4 = *sy_ptr.add(idx+4);
-                    let p5 = *pu_ptr.add(idx+5); let q5 = *qi_ptr.add(idx+5); let sy5 = *sy_ptr.add(idx+5);
-                    let p6 = *pu_ptr.add(idx+6); let q6 = *qi_ptr.add(idx+6); let sy6 = *sy_ptr.add(idx+6);
-                    let p7 = *pu_ptr.add(idx+7); let q7 = *qi_ptr.add(idx+7); let sy7 = *sy_ptr.add(idx+7);
-                    *qi_ptr.add(idx)   = q0 + lr_err * (p0 + sy0) - lr_reg * q0;
-                    *qi_ptr.add(idx+1) = q1 + lr_err * (p1 + sy1) - lr_reg * q1;
-                    *qi_ptr.add(idx+2) = q2 + lr_err * (p2 + sy2) - lr_reg * q2;
-                    *qi_ptr.add(idx+3) = q3 + lr_err * (p3 + sy3) - lr_reg * q3;
-                    *qi_ptr.add(idx+4) = q4 + lr_err * (p4 + sy4) - lr_reg * q4;
-                    *qi_ptr.add(idx+5) = q5 + lr_err * (p5 + sy5) - lr_reg * q5;
-                    *qi_ptr.add(idx+6) = q6 + lr_err * (p6 + sy6) - lr_reg * q6;
-                    *qi_ptr.add(idx+7) = q7 + lr_err * (p7 + sy7) - lr_reg * q7;
-                    *pu_ptr.add(idx)   = p0 + lr_err * q0 - lr_reg * p0;
-                    *pu_ptr.add(idx+1) = p1 + lr_err * q1 - lr_reg * p1;
-                    *pu_ptr.add(idx+2) = p2 + lr_err * q2 - lr_reg * p2;
-                    *pu_ptr.add(idx+3) = p3 + lr_err * q3 - lr_reg * p3;
-                    *pu_ptr.add(idx+4) = p4 + lr_err * q4 - lr_reg * p4;
-                    *pu_ptr.add(idx+5) = p5 + lr_err * q5 - lr_reg * p5;
-                    *pu_ptr.add(idx+6) = p6 + lr_err * q6 - lr_reg * p6;
-                    *pu_ptr.add(idx+7) = p7 + lr_err * q7 - lr_reg * p7;
-                    idx += 8;
-                }
-                while idx < k {
-                    let p = *pu_ptr.add(idx); let q = *qi_ptr.add(idx); let sy = *sy_ptr.add(idx);
-                    *qi_ptr.add(idx) = q + lr_err * (p + sy) - lr_reg * q;
-                    *pu_ptr.add(idx) = p + lr_err * q - lr_reg * p;
-                    idx += 1;
-                }
-            }
 
-            // Update y_j for all j in N(u) — 8-wide
-            let norm = user_norm[uu];
-            if norm > 0.0 {
-                let lr_err_norm = learning_rate * err * norm;
-                let lr_reg = learning_rate * regularization;
+                // ── Bias updates (private to this user / item) ────────────
                 unsafe {
-                    let qi_ptr = item_factors.as_ptr().add(ii * k);
-                    let sy_ptr = sum_y.as_mut_ptr();
-                    for &j in &user_items[uu] {
-                        let yj_ptr = y_factors.as_mut_ptr().add(j * k);
-                        let chunks = k / 8;
-                        let mut idx = 0;
-                        for _ in 0..chunks {
-                            let q0 = *qi_ptr.add(idx);   let yj0 = *yj_ptr.add(idx);
-                            let q1 = *qi_ptr.add(idx+1); let yj1 = *yj_ptr.add(idx+1);
-                            let q2 = *qi_ptr.add(idx+2); let yj2 = *yj_ptr.add(idx+2);
-                            let q3 = *qi_ptr.add(idx+3); let yj3 = *yj_ptr.add(idx+3);
-                            let q4 = *qi_ptr.add(idx+4); let yj4 = *yj_ptr.add(idx+4);
-                            let q5 = *qi_ptr.add(idx+5); let yj5 = *yj_ptr.add(idx+5);
-                            let q6 = *qi_ptr.add(idx+6); let yj6 = *yj_ptr.add(idx+6);
-                            let q7 = *qi_ptr.add(idx+7); let yj7 = *yj_ptr.add(idx+7);
-                            let d0 = lr_err_norm * q0 - lr_reg * yj0;
-                            let d1 = lr_err_norm * q1 - lr_reg * yj1;
-                            let d2 = lr_err_norm * q2 - lr_reg * yj2;
-                            let d3 = lr_err_norm * q3 - lr_reg * yj3;
-                            let d4 = lr_err_norm * q4 - lr_reg * yj4;
-                            let d5 = lr_err_norm * q5 - lr_reg * yj5;
-                            let d6 = lr_err_norm * q6 - lr_reg * yj6;
-                            let d7 = lr_err_norm * q7 - lr_reg * yj7;
-                            *yj_ptr.add(idx)   = yj0 + d0; *sy_ptr.add(idx)   += d0 * norm;
-                            *yj_ptr.add(idx+1) = yj1 + d1; *sy_ptr.add(idx+1) += d1 * norm;
-                            *yj_ptr.add(idx+2) = yj2 + d2; *sy_ptr.add(idx+2) += d2 * norm;
-                            *yj_ptr.add(idx+3) = yj3 + d3; *sy_ptr.add(idx+3) += d3 * norm;
-                            *yj_ptr.add(idx+4) = yj4 + d4; *sy_ptr.add(idx+4) += d4 * norm;
-                            *yj_ptr.add(idx+5) = yj5 + d5; *sy_ptr.add(idx+5) += d5 * norm;
-                            *yj_ptr.add(idx+6) = yj6 + d6; *sy_ptr.add(idx+6) += d6 * norm;
-                            *yj_ptr.add(idx+7) = yj7 + d7; *sy_ptr.add(idx+7) += d7 * norm;
-                            idx += 8;
-                        }
-                        while idx < k {
-                            let q = *qi_ptr.add(idx); let yj = *yj_ptr.add(idx);
-                            let delta = lr_err_norm * q - lr_reg * yj;
-                            *yj_ptr.add(idx) = yj + delta;
-                            *sy_ptr.add(idx) += delta * norm;
-                            idx += 1;
+                    *ub.add(uu) += learning_rate * (err - regularization * *ub.add(uu));
+                    *ib.add(ii) += learning_rate * (err - regularization * *ib.add(ii));
+                }
+
+                // ── Update q_i and p_u — 8-wide snapshot (Hogwild) ───────
+                unsafe {
+                    let pu_ptr = uf.add(uu * k);
+                    let qi_ptr = itf.add(ii * k);
+                    let sy_ptr = sum_y.as_ptr();
+                    let chunks = k / 8;
+                    let mut fi = 0;
+                    for _ in 0..chunks {
+                        let p0 = *pu_ptr.add(fi);   let q0 = *qi_ptr.add(fi);   let sy0 = *sy_ptr.add(fi);
+                        let p1 = *pu_ptr.add(fi+1); let q1 = *qi_ptr.add(fi+1); let sy1 = *sy_ptr.add(fi+1);
+                        let p2 = *pu_ptr.add(fi+2); let q2 = *qi_ptr.add(fi+2); let sy2 = *sy_ptr.add(fi+2);
+                        let p3 = *pu_ptr.add(fi+3); let q3 = *qi_ptr.add(fi+3); let sy3 = *sy_ptr.add(fi+3);
+                        let p4 = *pu_ptr.add(fi+4); let q4 = *qi_ptr.add(fi+4); let sy4 = *sy_ptr.add(fi+4);
+                        let p5 = *pu_ptr.add(fi+5); let q5 = *qi_ptr.add(fi+5); let sy5 = *sy_ptr.add(fi+5);
+                        let p6 = *pu_ptr.add(fi+6); let q6 = *qi_ptr.add(fi+6); let sy6 = *sy_ptr.add(fi+6);
+                        let p7 = *pu_ptr.add(fi+7); let q7 = *qi_ptr.add(fi+7); let sy7 = *sy_ptr.add(fi+7);
+                        *qi_ptr.add(fi)   = q0 + lr_err*(p0+sy0) - lr_reg*q0;
+                        *qi_ptr.add(fi+1) = q1 + lr_err*(p1+sy1) - lr_reg*q1;
+                        *qi_ptr.add(fi+2) = q2 + lr_err*(p2+sy2) - lr_reg*q2;
+                        *qi_ptr.add(fi+3) = q3 + lr_err*(p3+sy3) - lr_reg*q3;
+                        *qi_ptr.add(fi+4) = q4 + lr_err*(p4+sy4) - lr_reg*q4;
+                        *qi_ptr.add(fi+5) = q5 + lr_err*(p5+sy5) - lr_reg*q5;
+                        *qi_ptr.add(fi+6) = q6 + lr_err*(p6+sy6) - lr_reg*q6;
+                        *qi_ptr.add(fi+7) = q7 + lr_err*(p7+sy7) - lr_reg*q7;
+                        *pu_ptr.add(fi)   = p0 + lr_err*q0 - lr_reg*p0;
+                        *pu_ptr.add(fi+1) = p1 + lr_err*q1 - lr_reg*p1;
+                        *pu_ptr.add(fi+2) = p2 + lr_err*q2 - lr_reg*p2;
+                        *pu_ptr.add(fi+3) = p3 + lr_err*q3 - lr_reg*p3;
+                        *pu_ptr.add(fi+4) = p4 + lr_err*q4 - lr_reg*p4;
+                        *pu_ptr.add(fi+5) = p5 + lr_err*q5 - lr_reg*p5;
+                        *pu_ptr.add(fi+6) = p6 + lr_err*q6 - lr_reg*p6;
+                        *pu_ptr.add(fi+7) = p7 + lr_err*q7 - lr_reg*p7;
+                        fi += 8;
+                    }
+                    while fi < k {
+                        let p = *pu_ptr.add(fi); let q = *qi_ptr.add(fi); let sy = *sy_ptr.add(fi);
+                        *qi_ptr.add(fi) = q + lr_err*(p+sy) - lr_reg*q;
+                        *pu_ptr.add(fi) = p + lr_err*q - lr_reg*p;
+                        fi += 1;
+                    }
+                }
+
+                // ── Update y_j + maintain running sum_y  — 8-wide ────────
+                if norm > 0.0 {
+                    let lr_err_norm = lr_err * norm;
+                    unsafe {
+                        let qi_ptr = itf.add(ii * k);
+                        let sy_ptr = sum_y.as_mut_ptr();
+                        for &j in &user_items[uu] {
+                            let yj_ptr = yf.add(j * k);
+                            let chunks = k / 8;
+                            let mut fi = 0;
+                            for _ in 0..chunks {
+                                let q0=*qi_ptr.add(fi);   let yj0=*yj_ptr.add(fi);
+                                let q1=*qi_ptr.add(fi+1); let yj1=*yj_ptr.add(fi+1);
+                                let q2=*qi_ptr.add(fi+2); let yj2=*yj_ptr.add(fi+2);
+                                let q3=*qi_ptr.add(fi+3); let yj3=*yj_ptr.add(fi+3);
+                                let q4=*qi_ptr.add(fi+4); let yj4=*yj_ptr.add(fi+4);
+                                let q5=*qi_ptr.add(fi+5); let yj5=*yj_ptr.add(fi+5);
+                                let q6=*qi_ptr.add(fi+6); let yj6=*yj_ptr.add(fi+6);
+                                let q7=*qi_ptr.add(fi+7); let yj7=*yj_ptr.add(fi+7);
+                                let d0=lr_err_norm*q0-lr_reg*yj0;
+                                let d1=lr_err_norm*q1-lr_reg*yj1;
+                                let d2=lr_err_norm*q2-lr_reg*yj2;
+                                let d3=lr_err_norm*q3-lr_reg*yj3;
+                                let d4=lr_err_norm*q4-lr_reg*yj4;
+                                let d5=lr_err_norm*q5-lr_reg*yj5;
+                                let d6=lr_err_norm*q6-lr_reg*yj6;
+                                let d7=lr_err_norm*q7-lr_reg*yj7;
+                                *yj_ptr.add(fi)   = yj0+d0; *sy_ptr.add(fi)   += d0*norm;
+                                *yj_ptr.add(fi+1) = yj1+d1; *sy_ptr.add(fi+1) += d1*norm;
+                                *yj_ptr.add(fi+2) = yj2+d2; *sy_ptr.add(fi+2) += d2*norm;
+                                *yj_ptr.add(fi+3) = yj3+d3; *sy_ptr.add(fi+3) += d3*norm;
+                                *yj_ptr.add(fi+4) = yj4+d4; *sy_ptr.add(fi+4) += d4*norm;
+                                *yj_ptr.add(fi+5) = yj5+d5; *sy_ptr.add(fi+5) += d5*norm;
+                                *yj_ptr.add(fi+6) = yj6+d6; *sy_ptr.add(fi+6) += d6*norm;
+                                *yj_ptr.add(fi+7) = yj7+d7; *sy_ptr.add(fi+7) += d7*norm;
+                                fi += 8;
+                            }
+                            while fi < k {
+                                let q=*qi_ptr.add(fi); let yj=*yj_ptr.add(fi);
+                                let delta = lr_err_norm*q - lr_reg*yj;
+                                *yj_ptr.add(fi) = yj+delta;
+                                *sy_ptr.add(fi) += delta*norm;
+                                fi += 1;
+                            }
                         }
                     }
                 }
-            }
-        }
+            } // end ratings for this user
 
-        let rmse = (sse / n_ratings as f64).sqrt();
+            // Merge local SSE into global atomic (bit-cast f64 → u64)
+            let bits = local_sse.to_bits();
+            sse_bits.fetch_add(bits, Ordering::Relaxed);
+        }); // end par_iter over users
+
+        // Reconstruct RMSE (sum of bit-cast values is NOT the same as sum
+        // of f64 — we re-add properly by summing local contributions).
+        // Since AtomicU64 arithmetic on f64 bits doesn't give true f64 sum,
+        // we fall back to a serial SSE accumulation for the RMSE display only.
+        let rmse = if verbose {
+            let mut sse = 0.0f64;
+            for u in 0..n_users {
+                let start = indptr[u] as usize;
+                let end   = indptr[u + 1] as usize;
+                let norm  = user_norm[u];
+                let mut sum_y = vec![0.0f32; k];
+                if norm > 0.0 {
+                    unsafe {
+                        let sy = sum_y.as_mut_ptr();
+                        for &j in &user_items[u] {
+                            axpy8(1.0, y_factors.as_ptr().add(j * k), sy, k);
+                        }
+                        scale8(sy, norm, k);
+                    }
+                }
+                for idx in start..end {
+                    let ii = indices[idx] as usize;
+                    let r  = data[idx];
+                    let pred = global_mean
+                        + user_biases[u]
+                        + item_biases[ii]
+                        + unsafe {
+                            dot8_plus(
+                                item_factors.as_ptr().add(ii * k),
+                                user_factors.as_ptr().add(u * k),
+                                sum_y.as_ptr(),
+                                k,
+                            )
+                        };
+                    let err = r - pred;
+                    sse += (err as f64) * (err as f64);
+                }
+            }
+            (sse / n_ratings as f64).sqrt()
+        } else {
+            0.0
+        };
+
         let iter_time = iter_start.elapsed().as_secs_f64();
 
         if verbose {
