@@ -23,11 +23,13 @@ BaseModel (ABC)
 
 | Convention | Rule |
 |---|---|
-| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init |
+| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class. **Does NOT auto-fit.** Call `.fit()` explicitly on recommenders. |
 | `from_pandas()`, `from_polars()`, `from_spark()` | Aliases delegating to `from_transactions()` |
+| `fit(**args)` | Sklearn-compatible. Required after `from_transactions()` for recommenders. |
+| `predict(**args)` | Sklearn-compatible alias for `recommend_items()` (recommenders) or `mine()` (miners). |
 | `verbose: int` | `0` = silent, `1`+ = progress logs |
 | `seed: int` | Random-seed parameter (never `random_state`) |
-| `fitted: bool` | Attribute set to `True` after `.fit()` or `.mine()` |
+| `fitted: bool` | Attribute set to `True` after `.fit()` |
 | `__repr__` | Every class has a `__repr__` showing key hyperparameters |
 | Docstrings | NumPy-style (`Parameters`, `Returns`, `Raises`) |
 
@@ -43,13 +45,15 @@ recs  = miner.recommend_for_cart(items, n=5) # → list[Any]
 ### Recommender interface
 
 ```python
-model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64)
+# from_transactions() configures the model but does NOT fit
+model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64).fit()
 ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
 ```
 
 | Method | Available on |
 |---|---|
-| `fit(interactions)` | All recommenders |
+| `fit(interactions=None)` | All recommenders — accepts sparse matrix or uses data from `from_transactions()` |
+| `predict(user_id, item_id)` | SVD (rating prediction); others: alias for `recommend_items()` |
 | `recommend_items(user_id, n, exclude_seen)` | All recommenders |
 | `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
 | `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
@@ -60,7 +64,7 @@ ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
 Work on ordered sequences. SASRec also accepts ad-hoc sequences:
 
 ```python
-model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts")
+model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts").fit()
 ids, scores = model.recommend_items([1, 2, 3], n=10)
 ```
 

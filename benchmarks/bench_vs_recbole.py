@@ -100,7 +100,7 @@ def run_rusket_benchmark():
     print("\n[ItemKNN]")
     rec_time = run_recbole_benchmark("ItemKNN", {"epochs": 1, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.ItemKNN.from_transactions(df, "user_id", "item_id", k=100)
+    rusket.ItemKNN.from_transactions(df, "user_id", "item_id", k=100).fit()
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
@@ -110,7 +110,7 @@ def run_rusket_benchmark():
     print("\n[BPR (10 epochs)]")
     rec_time = run_recbole_benchmark("BPR", {"epochs": 10, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.BPR.from_transactions(df, "user_id", "item_id", iterations=10).fit()
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
@@ -120,7 +120,7 @@ def run_rusket_benchmark():
     print("\n[EASE]")
     rec_time = run_recbole_benchmark("EASE", {"epochs": 1, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.EASE.from_transactions(df, "user_id", "item_id")
+    rusket.EASE.from_transactions(df, "user_id", "item_id").fit()
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")
@@ -130,7 +130,7 @@ def run_rusket_benchmark():
     print("\n[LightGCN (10 epochs)]")
     rec_time = run_recbole_benchmark("LightGCN", {"epochs": 10, "state": "INFO", "data_path": "data/"})
     t0 = time.perf_counter()
-    rusket.LightGCN.from_transactions(df, "user_id", "item_id", iterations=10)
+    rusket.LightGCN.from_transactions(df, "user_id", "item_id", iterations=10).fit()
     rus_time = time.perf_counter() - t0
 
     print(f"RecBole Fit Time: {rec_time:.4f}s")

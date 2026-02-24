@@ -1916,19 +1916,23 @@ BaseModel (ABC)
 
 | Convention | Rule |
 |---|---|
-| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init |
+| `from_transactions(data, transaction_col, item_col, verbose, **kwargs)` | Class method on every class for DataFrame-based init. **Does NOT auto-fit — call `.fit()` explicitly.** |
 | `from_pandas()`, `from_polars()`, `from_spark()` | Aliases delegating to `from_transactions()` |
+| `fit(**args)` | Sklearn-compatible. Required after `from_transactions()` for recommenders. Miners also have `fit()` as an alias for `mine()`. |
+| `predict(**args)` | Sklearn-compatible alias. Recommenders: alias for `recommend_items()`. Miners: alias for `mine()`. |
 | `verbose: int` | `0` = silent, `1`+ = progress logs |
 | `seed: int` | Random-seed parameter (never `random_state`) |
-| `fitted: bool` | Attribute set to `True` after `.fit()` or `.mine()` |
+| `fitted: bool` | Attribute set to `True` after `.fit()` |
 | `__repr__` | Every class has a `__repr__` showing key hyperparameters |
 | Docstrings | NumPy-style (`Parameters`, `Returns`, `Raises`) |
 
 ### Miner interface
 
 ```python
+# from_transactions() configures but does NOT fit
 miner = FPGrowth.from_transactions(df, transaction_col="tid", item_col="item")
-freq  = miner.mine()                        # → pd.DataFrame (support, itemsets)
+freq  = miner.mine()                         # → pd.DataFrame (support, itemsets)
+freq  = miner.fit().predict()                # sklearn-compatible equivalent
 rules = miner.association_rules()            # → pd.DataFrame (metrics)
 recs  = miner.recommend_for_cart(items, n=5) # → list[Any]
 ```
@@ -1936,13 +1940,19 @@ recs  = miner.recommend_for_cart(items, n=5) # → list[Any]
 ### Recommender interface
 
 ```python
-model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64)
+# BREAKING: from_transactions() no longer auto-fits. Always call .fit().
+model = ALS.from_transactions(df, user_col="user", item_col="item", factors=64).fit()
 ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
+
+# Alternatively: construct + fit with a sparse CSR matrix
+model = ALS(factors=64, iterations=15)
+model.fit(user_item_csr)
 ```
 
 | Method | Available on |
 |---|---|
-| `fit(interactions)` | All recommenders |
+| `fit(interactions=None)` | All recommenders — accepts sparse matrix or uses data from `from_transactions()` |
+| `predict(user_id, item_id)` | SVD (explicit rating); others: alias for `recommend_items()` |
 | `recommend_items(user_id, n, exclude_seen)` | All recommenders |
 | `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
 | `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
@@ -1953,7 +1963,8 @@ ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
 Work on ordered sequences. SASRec also accepts ad-hoc sequences:
 
 ```python
-model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts")
+# from_transactions() stores sequences but does NOT fit
+model = SASRec.from_transactions(df, user_col="user", item_col="item", timestamp_col="ts").fit()
 ids, scores = model.recommend_items([1, 2, 3], n=10)
 ```
 

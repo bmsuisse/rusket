@@ -37,7 +37,7 @@ It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE) and
 | **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, EASE, FP-Growth, Eclat, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
 | **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ | ✅ (ALS only) |
 | **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
-| **OOP class API** | ✅ `ALS.from_transactions(df)` | ✅ | ✅ | ✅ |
+| **OOP class API** | ✅ `ALS.from_transactions(df).fit()` | ✅ | ✅ | ✅ |
 | **Pandas / Polars / Spark** | ✅ / ✅ / ✅ | ✅ / ❌ / ❌ | ❌ / ❌ / ❌ | ❌ / ❌ / ✅ |
 | **Parallel execution** | ✅ Rayon work-stealing | ✅ TF/PyTorch threads | ✅ OpenMP | ✅ Spark Cluster |
 | **Memory** | Low (native Rust buffers) | High (TF/PyTorch graphs) | Low (C++ arrays) | High (JVM overhead) |
@@ -124,7 +124,7 @@ model = AutoMiner.from_transactions(
     min_support=0.3,
 )
 
-freq  = model.mine(use_colnames=True)
+freq  = model.mine(use_colnames=True)              # Miner classes: mine() never auto-fits
 rules = model.association_rules(metric="confidence", min_threshold=0.6)
 
 # Which accessories should be suggested when headphones are in the cart?
@@ -420,11 +420,11 @@ from rusket.spark import recommend_batches
 from rusket import ALS
 
 # 1. Train an ALS model locally (or load a pre-trained one)
-als = ALS(factors=64, iterations=15).from_transactions(
+als = ALS.from_transactions(
     events_pd,
     user_col="user_id",
     item_col="item_id",
-)
+).fit()  # ← always call .fit() after from_transactions()
 
 # 2. Scale-out scoring: one recommendation row per user
 user_df = spark.read.parquet("s3://data/users/").select("user_id")
@@ -479,16 +479,25 @@ rules  = model.association_rules(metric="lift")    # pd.DataFrame [antecedents, 
 recs   = model.recommend_items(["bread", "milk"])  # list of suggested items
 ```
 
-`ImplicitRecommender` subclasses (`ALS`, `BPR`) expose:
+`ImplicitRecommender` subclasses (`ALS`, `BPR`, `SVD`, `LightGCN`, `ItemKNN`, `EASE`) follow the **scikit-learn** `fit()`/`predict()` pattern:
 
 ```python
-model = ALS(factors=64, iterations=15).fit(user_item_csr)
-# — or directly from an event log —
-model = ALS(factors=64).from_transactions(df, user_col="user_id", item_col="item_id")
+# Option A — construct then fit with a sparse matrix
+model = ALS(factors=64, iterations=15)
+model.fit(user_item_csr)
 
+# Option B — from event log, then explicit .fit()
+model = ALS(factors=64).from_transactions(
+    df, user_col="user_id", item_col="item_id"
+).fit()  # ← .fit() is always required
+
+# Predict / recommend
 items, scores = model.recommend_items(user_id=42, n=10, exclude_seen=True)
 users, scores = model.recommend_users(item_id=99, n=5)
 ```
+
+> **Breaking change vs older versions:** `from_transactions()` no longer auto-fits.
+> Always chain `.fit()` after it.
 
 
 
@@ -513,7 +522,7 @@ plays = pd.DataFrame({
 
 als = ALS(factors=64, iterations=15, alpha=40.0).from_transactions(
     plays, user_col="user_id", item_col="track_id", rating_col="plays"
-)
+).fit()  # ← always call .fit() after from_transactions()
 
 # Top-10 tracks for user 101, excluding already-played tracks
 tracks, scores = als.recommend_items(user_id=101, n=10, exclude_seen=True)

@@ -81,28 +81,36 @@ fn solve_one_side_cg(
 
             let apply_a = |v: &[f32], out: &mut [f32]| {
                 // Gram matrix × v, 4-wide unrolled for better autovectorization
-                let k4 = k / 4 * 4;
+                let k8 = k / 8 * 8;
                 for a in 0..k {
                     let gram_row = &gram[a * k..];
                     let mut s0 = 0.0f32;
                     let mut s1 = 0.0f32;
                     let mut s2 = 0.0f32;
                     let mut s3 = 0.0f32;
+                    let mut s4 = 0.0f32;
+                    let mut s5 = 0.0f32;
+                    let mut s6 = 0.0f32;
+                    let mut s7 = 0.0f32;
                     let mut bb = 0;
-                    while bb < k4 {
+                    while bb < k8 {
                         unsafe {
                             s0 += *gram_row.get_unchecked(bb)   * *v.get_unchecked(bb);
                             s1 += *gram_row.get_unchecked(bb+1) * *v.get_unchecked(bb+1);
                             s2 += *gram_row.get_unchecked(bb+2) * *v.get_unchecked(bb+2);
                             s3 += *gram_row.get_unchecked(bb+3) * *v.get_unchecked(bb+3);
+                            s4 += *gram_row.get_unchecked(bb+4) * *v.get_unchecked(bb+4);
+                            s5 += *gram_row.get_unchecked(bb+5) * *v.get_unchecked(bb+5);
+                            s6 += *gram_row.get_unchecked(bb+6) * *v.get_unchecked(bb+6);
+                            s7 += *gram_row.get_unchecked(bb+7) * *v.get_unchecked(bb+7);
                         }
-                        bb += 4;
+                        bb += 8;
                     }
                     while bb < k {
                         unsafe { s0 += *gram_row.get_unchecked(bb) * *v.get_unchecked(bb); }
                         bb += 1;
                     }
-                    out[a] = (s0 + s1 + s2 + s3) + eff_lambda * v[a];
+                    out[a] = (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7) + eff_lambda * v[a];
                 }
                 for idx in start..end {
                     let i = indices[idx] as usize;
@@ -500,11 +508,23 @@ fn top_n_items(
     use ahash::AHashSet;
     let u = &uf[uid * k..(uid + 1) * k];
     let excluded: AHashSet<i32> = exc[exc_start..exc_end].iter().copied().collect();
-    let mut scored: Vec<(f32, i32)> = (0..n_items as i32)
-        .filter(|i| !excluded.contains(i))
-        .map(|i| {
-            let y = &itf[(i as usize) * k..(i as usize + 1) * k];
-            (dot_f32(u, y), i)
+
+    let mut scores = vec![0.0f32; n_items];
+    faer::linalg::matmul::matmul(
+        faer::MatMut::from_column_major_slice_mut(&mut scores, n_items, 1).as_mut(),
+        faer::Accum::Replace,
+        MatRef::from_row_major_slice(itf, n_items, k),
+        MatRef::from_column_major_slice(u, k, 1),
+        1.0f32,
+        faer::Par::Seq,
+    );
+
+    let mut scored: Vec<(f32, i32)> = scores
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, sc)| {
+            let item_id = i as i32;
+            if excluded.contains(&item_id) { None } else { Some((sc, item_id)) }
         })
         .collect();
     let take = n.min(scored.len());
@@ -531,11 +551,21 @@ fn top_n_users(
     n: usize,
 ) -> (Vec<i32>, Vec<f32>) {
     let y = &itf[iid * k..(iid + 1) * k];
-    let mut scored: Vec<(f32, i32)> = (0..n_users as i32)
-        .map(|u| {
-            let x = &uf[(u as usize) * k..(u as usize + 1) * k];
-            (dot_f32(x, y), u)
-        })
+
+    let mut scores = vec![0.0f32; n_users];
+    faer::linalg::matmul::matmul(
+        faer::MatMut::from_column_major_slice_mut(&mut scores, n_users, 1).as_mut(),
+        faer::Accum::Replace,
+        MatRef::from_row_major_slice(uf, n_users, k),
+        MatRef::from_column_major_slice(y, k, 1),
+        1.0f32,
+        faer::Par::Seq,
+    );
+
+    let mut scored: Vec<(f32, i32)> = scores
+        .into_iter()
+        .enumerate()
+        .map(|(u, sc)| (sc, u as i32))
         .collect();
     let take = n.min(scored.len());
     if take == 0 {

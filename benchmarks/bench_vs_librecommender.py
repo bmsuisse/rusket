@@ -302,7 +302,7 @@ def run_benchmark():
     # ── ItemKNN ──────────────────────────────────────────────────────────
     print("\n  [ItemKNN]")
     t0 = time.perf_counter()
-    model = rusket.ItemKNN.from_transactions(train_df, "user_id", "item_id", k=100)
+    model = rusket.ItemKNN.from_transactions(train_df, "user_id", "item_id", k=100).fit()
     t = time.perf_counter() - t0
     ndcg = evaluate_ndcg(model, test_df)
     print(f"    rusket ItemKNN:      {t:.3f}s  NDCG@10={ndcg:.4f}")
@@ -360,7 +360,7 @@ def run_benchmark():
     # ── EASE ─────────────────────────────────────────────────────────────
     print("\n  [EASE]")
     t0 = time.perf_counter()
-    model = rusket.EASE.from_transactions(train_df, "user_id", "item_id")
+    model = rusket.EASE.from_transactions(train_df, "user_id", "item_id").fit()
     t = time.perf_counter() - t0
     ndcg = evaluate_ndcg(model, test_df)
     print(f"    rusket EASE:         {t:.3f}s  NDCG@10={ndcg:.4f}")

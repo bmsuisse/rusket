@@ -169,7 +169,7 @@ def main() -> None:
         iterations=15,
         alpha=40.0,
         verbose=True,
-    )
+    ).fit()
 
     # Recommend for user 0
     user_id = 0
@@ -212,7 +212,7 @@ def main() -> None:
         factors=64,
         iterations=50,
         verbose=True,
-    )
+    ).fit()
     bpr_ids, bpr_scores = bpr.recommend_items(user_id=user_id, n=5)
     print(f"\nTop-5 BPR recommendations for user {user_id}:")
     for iid, sc in zip(bpr_ids, bpr_scores):
