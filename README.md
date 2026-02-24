@@ -615,13 +615,17 @@ Integrate natively with the modern GenAI/LLM stack:
 
 ### Scale Benchmarks (1M → 200M rows)
 
-| Scale | `from_transactions` → fpgrowth | Direct CSR → Rust | **Speedup** |
+> **What's measured:** `from_transactions()` converts long-format `(txn_id, item_id)` rows into a sparse OHE matrix. `fpgrowth()` then mines that matrix. Both steps have the same Rust mining cost — the only difference at large scale is whether you pay the conversion cost upfront.
+
+| Scale | `from_transactions` (conversion) | `fpgrowth` (mining) | **Total** |
 |---|:---:|:---:|:---:|
-| 1M rows | 5.0s | **0.1s** | **50×** |
-| 10M rows | 24.4s | **1.2s** | **20×** |
-| 50M rows | 63.1s | **4.0s** | **15×** |
-| 100M rows (20M txns × 200k items) | 134.2s | **10.1s** | **13×** |
-| **200M rows** (40M txns × 200k items) | 246.8s | **17.6s** | **14×** |
+| 1M rows | 4.9s | **0.1s** | **5.0s** |
+| 10M rows | 23.2s | **1.2s** | **24.4s** |
+| 50M rows | 59.1s | **4.0s** | **63.1s** |
+| 100M rows (20M txns × 200k items) | 124.1s | **10.1s** | **134.2s** |
+| **200M rows** (40M txns × 200k items) | 229.2s | **17.6s** | **246.8s** |
+
+The mining step is fast — the bottleneck at scale is the long-format → sparse-matrix conversion. If your pipeline already produces a CSR/sparse matrix (e.g., from a Parquet/warehouse export), you skip the conversion entirely and only pay the mining cost.
 
 #### Power-user path: Direct CSR → Rust
 
@@ -640,7 +644,7 @@ freq = AutoMiner(csr, item_names=item_names).mine(
 )
 ```
 
-> At 100M rows, the mining step takes **1.3 seconds** — the bottleneck is entirely the CSR build.
+> At 100M rows, the mining step itself takes **10.1 seconds**. Building the CSR directly skips the `from_transactions` conversion cost (~124s) but does not change the mining time.
 
 ### Real-World Datasets
 

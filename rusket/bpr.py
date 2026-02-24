@@ -63,8 +63,13 @@ class BPR(ImplicitRecommender):
             f"regularization={self.regularization}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any) -> BPR:
+    def fit(self, interactions: Any = None) -> BPR:
         """Fit the BPR model to the user-item interaction matrix.
+
+        Parameters
+        ----------
+        interactions : sparse matrix or numpy array, optional
+            If None, uses the matrix prepared by ``from_transactions()``.
 
         Raises
         ------
@@ -73,6 +78,10 @@ class BPR(ImplicitRecommender):
         TypeError
             If the input matrix is not a recognizable sparse matrix or numpy array.
         """
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
         import numpy as np
         from scipy import sparse as sp
 

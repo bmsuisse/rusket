@@ -130,7 +130,7 @@ class TestSVDFromTransactions:
         )
         model = SVD.from_transactions(
             df, user_col="user", item_col="item", rating_col="rating", factors=16, iterations=5
-        )
+        ).fit()
         assert model._fitted
         items, scores = model.recommend_items(0, n=3)
         assert len(items) == 3

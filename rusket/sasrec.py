@@ -67,6 +67,7 @@ class SASRec(SequentialRecommender):
         self._user_sequences: dict[int, list[int]] = {}
         self._n_items: int = 0
         self.fitted: bool = False
+        self._pending_sequences: list[list[int]] | None = None
 
     def __repr__(self) -> str:
         return (
@@ -74,19 +75,25 @@ class SASRec(SequentialRecommender):
             f"max_seq={self.max_seq}, iterations={self.iterations})"
         )
 
-    def fit(self, sequences: list[list[int]]) -> SASRec:
+    def fit(self, sequences: list[list[int]] | None = None) -> SASRec:
         """Train SASRec on integer-encoded sequences (0-indexed item IDs).
 
         Parameters
         ----------
-        sequences : list of list of int
+        sequences : list of list of int, optional
             List of per-user interaction histories (item IDs).
+            If None, uses data prepared by ``from_transactions()``.
 
         Returns
         -------
         SASRec
             The fitted model.
         """
+        if sequences is None:
+            sequences = getattr(self, "_pending_sequences", None)
+            if sequences is None:
+                raise ValueError("No sequences provided. Pass sequences or use from_transactions() first.")
+
         if self.fitted:
             raise RuntimeError("Model is already fitted.")
 
@@ -121,7 +128,10 @@ class SASRec(SequentialRecommender):
         verbose: int = 0,
         **kwargs: Any,
     ) -> SASRec:
-        """Train SASRec from a transactions DataFrame.
+        """Prepare SASRec from a transactions DataFrame.
+
+        Prepares sequences but does **not** fit the model.
+        Call ``.fit()`` explicitly to train.
 
         Parameters
         ----------
@@ -140,7 +150,7 @@ class SASRec(SequentialRecommender):
         Returns
         -------
         SASRec
-            The fitted model.
+            The configured (unfitted) model.
         """
         user_col = kwargs.pop("user_col", transaction_col)
         timestamp_col = kwargs.pop("timestamp_col", None)
@@ -169,7 +179,7 @@ class SASRec(SequentialRecommender):
         for u, it in zip(users, items, strict=False):
             sequences.setdefault(u, []).append(model._item_map[it])
 
-        model.fit(list(sequences.values()))
+        model._pending_sequences = list(sequences.values())
         return model
 
     def recommend_items(

@@ -52,7 +52,7 @@ pub(crate) fn lcm_mine(
     for i in (tail_idx + 1)..active_items.len() {
         let (item_i, bs_i) = &active_items[i];
         let mut t_new = BitSet {
-            blocks: vec![0u64; n_blocks],
+            blocks: vec![0u128; n_blocks],
         };
         let c = prefix_bs.intersect_count_into(bs_i, &mut t_new, min_count);
         
@@ -108,10 +108,11 @@ fn mine_itemsets_lcm(
     let active_items_arc = Arc::new(active_items);
 
     // Root transaction set contains all transactions (all 1s)
-    let n_blocks = n_rows.div_ceil(64);
-    let mut root_blocks = vec![u64::MAX; n_blocks];
-    if n_rows % 64 != 0 {
-        root_blocks[n_blocks - 1] = (1 << (n_rows % 64)) - 1;
+    // BitSet now uses u128 blocks (128 transactions per block)
+    let n_blocks = n_rows.div_ceil(128);
+    let mut root_blocks = vec![u128::MAX; n_blocks];
+    if n_rows % 128 != 0 {
+        root_blocks[n_blocks - 1] = (1u128 << (n_rows % 128)) - 1;
     }
     let root_bs = BitSet { blocks: root_blocks };
 

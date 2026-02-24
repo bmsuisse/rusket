@@ -91,32 +91,21 @@ def mine_grouped(
     # 2. Define the grouped arrow execution function
     def _mine_group(table: pa.Table) -> pa.Table:
         """Runs within each Spark Task (Node) on an Arrow Table."""
-        import polars as pl
-
         # Extract the group identity (safe to grab from row 0)
         group_id = str(table.column(group_col)[0].as_py())
 
-        # Convert the Arrow Table to Polars for zero-copy
-        pl_df = pl.from_arrow(table)
+        # Drop the group column using native PyArrow — input is Arrow, stay in Arrow
+        col_idx = table.schema.get_field_index(group_col)
+        matrix_pd = table.remove_column(col_idx).to_pandas()
 
-        if not isinstance(pl_df, pl.DataFrame):
-            pl_df = pl.DataFrame(pl_df)
-
-        # Drop the group column so we only pass the OHE matrix into Rust
-        pl_matrix = pl_df.drop(group_col)
-
-        # Call Rusket C-Extensions directly on the Arrow Buffers!
-        # This will return a Pandas DataFrame
+        # Call Rusket C-Extensions via the pandas matrix
         result_pd = mine(
-            pl_matrix,
+            matrix_pd,
             min_support=min_support,
             max_len=max_len,
             method=method,
             use_colnames=True,
         )
-
-        if isinstance(result_pd, pl.DataFrame):
-            result_pd = result_pd.to_pandas()
 
         # If no itemsets were found
         if len(result_pd) == 0:
@@ -135,7 +124,7 @@ def mine_grouped(
         result_pd.insert(0, group_col, group_id)
 
         # Yield back as pyarrow table, ensuring we cast to the exact expected schema
-        # PySpark expects `string` and not `large_string` which Polars/Pandas might create
+        # PySpark expects `string` and not `large_string` which pandas might create
         out_table = pa.Table.from_pandas(result_pd)
         expected_schema = pa.schema(
             [
@@ -219,19 +208,16 @@ def prefixspan_grouped(
     )
 
     def _prefixspan_group(table: pa.Table) -> pa.Table:
-        import polars as pl
-
         from rusket.prefixspan import PrefixSpan
 
         group_id = str(table.column(group_col)[0].as_py())
 
-        pl_df = pl.from_arrow(table)
-        if not isinstance(pl_df, pl.DataFrame):
-            pl_df = pl.DataFrame(pl_df)
+        # Stay in PyArrow for manipulation — input is Arrow, convert to pandas for the algorithm
+        input_pd = table.to_pandas()
 
         try:
             model = PrefixSpan.from_transactions(
-                data=pl_df,
+                data=input_pd,
                 user_col=user_col,
                 time_col=time_col,
                 item_col=item_col,
@@ -239,9 +225,6 @@ def prefixspan_grouped(
                 max_len=max_len,
             )
             result_pd = model.mine()
-
-            if isinstance(result_pd, pl.DataFrame):
-                result_pd = result_pd.to_pandas()
 
             # Ensure items in the sequences are cast to string for the array<string> schema
             if not result_pd.empty:
@@ -355,19 +338,16 @@ def hupm_grouped(
     )
 
     def _hupm_group(table: pa.Table) -> pa.Table:
-        import polars as pl
-
         from rusket.hupm import HUPM
 
         group_id = str(table.column(group_col)[0].as_py())
 
-        pl_df = pl.from_arrow(table)
-        if not isinstance(pl_df, pl.DataFrame):
-            pl_df = pl.DataFrame(pl_df)
+        # Stay in PyArrow for manipulation — input is Arrow, convert to pandas for the algorithm
+        input_pd = table.to_pandas()
 
         try:
             model = HUPM.from_transactions(
-                data=pl_df,
+                data=input_pd,
                 transaction_col=transaction_col,
                 item_col=item_col,
                 utility_col=utility_col,
@@ -375,9 +355,6 @@ def hupm_grouped(
                 max_len=max_len,
             )
             result_pd = model.mine()
-
-            if isinstance(result_pd, pl.DataFrame):
-                result_pd = result_pd.to_pandas()
 
             # Ensure items in the sequences are cast to int64 for the array<long> schema
             if not result_pd.empty:
@@ -500,8 +477,6 @@ def rules_grouped(
     schema = T.StructType(schema_fields)
 
     def _rules_group(table: pa.Table) -> pa.Table:
-        import polars as pl
-
         from rusket.association_rules import association_rules
 
         group_id = str(table.column(group_col)[0].as_py())
@@ -515,8 +490,8 @@ def rules_grouped(
         if num_tx is None:
             num_tx = 0
 
-        pl_df = pl.from_arrow(table)
-        pdf = pl_df.to_pandas() if isinstance(pl_df, pl.DataFrame) else pd.DataFrame(pl_df)
+        # Input is Arrow — convert directly to pandas, no Polars hop needed
+        pdf = table.to_pandas()
 
         try:
             res_df = association_rules(
@@ -725,15 +700,12 @@ def als_grouped(
     )
 
     def _als_group(table: pa.Table) -> pa.Table:
-        import polars as pl
-
         from rusket.als import ALS
 
         group_id = str(table.column(group_col)[0].as_py())
 
-        pl_df = pl.from_arrow(table)
-        if not isinstance(pl_df, pl.DataFrame):
-            pl_df = pl.DataFrame(pl_df)
+        # Input is Arrow — convert directly to pandas for the algorithm
+        input_pd = table.to_pandas()
 
         try:
             import warnings
@@ -748,7 +720,7 @@ def als_grouped(
             )
             # Use fit_transactions to fit mapping dictionaries and model
             model.fit_transactions(
-                data=pl_df,
+                data=input_pd,
                 user_col=user_col,
                 item_col=item_col,
                 rating_col=rating_col,

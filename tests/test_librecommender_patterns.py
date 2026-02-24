@@ -194,7 +194,7 @@ class TestFromTransactions:
             item_col="item",
             factors=16,
             iterations=2,
-        )
+        ).fit()
         assert model.fitted
         items, _ = model.recommend_items(0, n=3)
         assert len(items) == 3
@@ -206,7 +206,7 @@ class TestFromTransactions:
             item_col="item",
             factors=16,
             iterations=2,
-        )
+        ).fit()
         assert model.fitted
 
     def test_svd_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
@@ -217,7 +217,7 @@ class TestFromTransactions:
             rating_col="rating",
             factors=16,
             iterations=2,
-        )
+        ).fit()
         assert model.fitted
         pred = model.predict(0, 0)
         assert isinstance(pred, float)
@@ -228,7 +228,7 @@ class TestFromTransactions:
             transaction_col="user",
             item_col="item",
             k=10,
-        )
+        ).fit()
         assert model.fitted
 
     def test_ease_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
@@ -236,7 +236,7 @@ class TestFromTransactions:
             synthetic_df,
             transaction_col="user",
             item_col="item",
-        )
+        ).fit()
         assert model.fitted
 
     def test_lightgcn_from_transactions(self, synthetic_df: pd.DataFrame) -> None:
@@ -246,7 +246,7 @@ class TestFromTransactions:
             item_col="item",
             factors=16,
             iterations=2,
-        )
+        ).fit()
         assert model.fitted
 
 

@@ -65,5 +65,9 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(svd::svd_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(svd::svd_recommend_users, m)?)?;
     m.add_function(wrap_pyfunction!(svd::svd_recommend_all, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svdpp_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svdpp_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svdpp_recommend_users, m)?)?;
+    m.add_function(wrap_pyfunction!(svd::svdpp_recommend_all, m)?)?;
     Ok(())
 }

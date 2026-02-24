@@ -62,6 +62,7 @@ class FPMC(SequentialRecommender):
         self._user_seen_items: dict[int, np.ndarray] = {}
 
         self.fitted: bool = False
+        self._pending_sequences: list[list[int]] | None = None
 
     def __repr__(self) -> str:
         return (
@@ -69,17 +70,22 @@ class FPMC(SequentialRecommender):
             f"regularization={self.regularization}, iterations={self.iterations})"
         )
 
-    def fit(self, sequences: list[list[int]], n_items: int | None = None) -> FPMC:
+    def fit(self, sequences: list[list[int]] | None = None, n_items: int | None = None) -> FPMC:
         """Fit the FPMC model to a list of sequential interactions.
 
         Parameters
         ----------
-        sequences : list of list of int
+        sequences : list of list of int, optional
             List of item sequences, where each sequence belongs to a unique user.
             Users are assigned IDs from 0 to len(sequences)-1.
+            If None, uses data prepared by ``from_transactions()``.
         n_items : int | None
             Maximum number of items. If None, it is inferred from data.
         """
+        if sequences is None:
+            sequences = getattr(self, "_pending_sequences", None)
+            if sequences is None:
+                raise ValueError("No sequences provided. Pass sequences or use from_transactions() first.")
         import numpy as np
 
         if self.fitted:

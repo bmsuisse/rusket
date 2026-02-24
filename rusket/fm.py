@@ -168,3 +168,7 @@ class FM(BaseModel):
     def _check_fitted(self) -> None:
         if not self.fitted:
             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")
+
+    def predict(self, X: Any) -> Any:
+        """Alias for :meth:`predict_proba`."""
+        return self.predict_proba(X)

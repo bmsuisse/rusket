@@ -283,7 +283,7 @@ class TestOnlineRetailALS:
             factors=32,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         n_users = online_retail_df["Customer_ID"].nunique()
         n_items = online_retail_df["Description"].nunique()
         assert model.user_factors.shape == (n_users, 32)  # type: ignore
@@ -302,7 +302,7 @@ class TestOnlineRetailALS:
             factors=32,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         # Use user 0 (internal index)
         ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
         assert len(ids) >= 1
@@ -322,7 +322,7 @@ class TestOnlineRetailALS:
             factors=32,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         item_ids, sim_scores = rusket.similar_items(model, item_id=0, n=5)
         assert len(item_ids) >= 1
         assert (sim_scores <= 1.0).all()
@@ -343,7 +343,7 @@ class TestOnlineRetailALS:
             factors=32,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         df_factors = rusket.export_item_factors(model, include_labels=True)
         _check_df(df_factors, ["item_id", "vector"])
         assert len(df_factors) == model.item_factors.shape[0]
@@ -371,7 +371,7 @@ class TestOnlineRetailEASE:
             user_col="Customer_ID",
             item_col="Description",
             regularization=100.0,
-        )
+        ).fit()
         n_items = online_retail_df["Description"].nunique()
         assert model.item_weights.shape == (n_items, n_items)  # type: ignore
         assert np.isfinite(model.item_weights).all()  # type: ignore
@@ -385,7 +385,7 @@ class TestOnlineRetailEASE:
             user_col="Customer_ID",
             item_col="Description",
             regularization=100.0,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
         assert len(ids) >= 1
         assert len(scores) == len(ids)
@@ -401,7 +401,7 @@ class TestOnlineRetailEASE:
             user_col="Customer_ID",
             item_col="Description",
             regularization=100.0,
-        )
+        ).fit()
         # Using item weights as item representations
         item_ids, sim_scores = rusket.similar_items(model, item_id=0, n=5)
         assert len(item_ids) >= 1
@@ -430,7 +430,7 @@ class TestOnlineRetailItemKNN:
             item_col="Description",
             method="bm25",
             k=20,
-        )
+        ).fit()
         assert model.w_indptr is not None  # type: ignore
         assert model.w_indices is not None  # type: ignore
         assert model.w_data is not None  # type: ignore
@@ -448,7 +448,7 @@ class TestOnlineRetailItemKNN:
             item_col="Description",
             method="bm25",
             k=20,
-        )
+        ).fit()
         ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
         assert len(ids) >= 1
         assert len(scores) == len(ids)
@@ -479,7 +479,7 @@ class TestInstacartALS:
             factors=64,
             iterations=10,
             seed=42,
-        )
+        ).fit()
         assert np.isfinite(model.user_factors).all()  # type: ignore
         assert np.isfinite(model.item_factors).all()
 
@@ -496,7 +496,7 @@ class TestInstacartALS:
             factors=32,
             iterations=20,
             seed=42,
-        )
+        ).fit()
         assert np.isfinite(model.user_factors).all()  # type: ignore
         assert np.isfinite(model.item_factors).all()
 
@@ -511,7 +511,7 @@ class TestInstacartALS:
             factors=32,
             iterations=5,
             seed=42,
-        )
+        ).fit()
         user_histories = instacart_df.groupby("user_id")["product_id"].apply(list).tolist()
         n_users = min(100, len(user_histories))
         target_items = list(range(min(20, model.item_factors.shape[0])))

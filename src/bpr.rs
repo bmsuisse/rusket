@@ -30,6 +30,63 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
     (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
 }
 
+// ── 8-wide BPR factor update: xu, xi, xj snapshot then apply ─────────────
+// xu += lr * (deriv*(xi-xj) - reg*xu)
+// xi += lr * (deriv*xu       - reg*xi)
+// xj += lr * (-deriv*xu      - reg*xj)
+#[inline(always)]
+unsafe fn bpr_update_factors(
+    xu: *mut f32, xi: *mut f32, xj: *mut f32,
+    k: usize, lr: f32, deriv: f32, reg: f32,
+) {
+    let lr_d = lr * deriv;
+    let lr_r = lr * reg;
+    let chunks = k / 8;
+    let mut idx = 0;
+    for _ in 0..chunks {
+        let u0 = *xu.add(idx);   let i0 = *xi.add(idx);   let j0 = *xj.add(idx);
+        let u1 = *xu.add(idx+1); let i1 = *xi.add(idx+1); let j1 = *xj.add(idx+1);
+        let u2 = *xu.add(idx+2); let i2 = *xi.add(idx+2); let j2 = *xj.add(idx+2);
+        let u3 = *xu.add(idx+3); let i3 = *xi.add(idx+3); let j3 = *xj.add(idx+3);
+        let u4 = *xu.add(idx+4); let i4 = *xi.add(idx+4); let j4 = *xj.add(idx+4);
+        let u5 = *xu.add(idx+5); let i5 = *xi.add(idx+5); let j5 = *xj.add(idx+5);
+        let u6 = *xu.add(idx+6); let i6 = *xi.add(idx+6); let j6 = *xj.add(idx+6);
+        let u7 = *xu.add(idx+7); let i7 = *xi.add(idx+7); let j7 = *xj.add(idx+7);
+        *xu.add(idx)   = u0 + lr_d*(i0-j0) - lr_r*u0;
+        *xu.add(idx+1) = u1 + lr_d*(i1-j1) - lr_r*u1;
+        *xu.add(idx+2) = u2 + lr_d*(i2-j2) - lr_r*u2;
+        *xu.add(idx+3) = u3 + lr_d*(i3-j3) - lr_r*u3;
+        *xu.add(idx+4) = u4 + lr_d*(i4-j4) - lr_r*u4;
+        *xu.add(idx+5) = u5 + lr_d*(i5-j5) - lr_r*u5;
+        *xu.add(idx+6) = u6 + lr_d*(i6-j6) - lr_r*u6;
+        *xu.add(idx+7) = u7 + lr_d*(i7-j7) - lr_r*u7;
+        *xi.add(idx)   = i0 + lr_d*u0 - lr_r*i0;
+        *xi.add(idx+1) = i1 + lr_d*u1 - lr_r*i1;
+        *xi.add(idx+2) = i2 + lr_d*u2 - lr_r*i2;
+        *xi.add(idx+3) = i3 + lr_d*u3 - lr_r*i3;
+        *xi.add(idx+4) = i4 + lr_d*u4 - lr_r*i4;
+        *xi.add(idx+5) = i5 + lr_d*u5 - lr_r*i5;
+        *xi.add(idx+6) = i6 + lr_d*u6 - lr_r*i6;
+        *xi.add(idx+7) = i7 + lr_d*u7 - lr_r*i7;
+        *xj.add(idx)   = j0 - lr_d*u0 - lr_r*j0;
+        *xj.add(idx+1) = j1 - lr_d*u1 - lr_r*j1;
+        *xj.add(idx+2) = j2 - lr_d*u2 - lr_r*j2;
+        *xj.add(idx+3) = j3 - lr_d*u3 - lr_r*j3;
+        *xj.add(idx+4) = j4 - lr_d*u4 - lr_r*j4;
+        *xj.add(idx+5) = j5 - lr_d*u5 - lr_r*j5;
+        *xj.add(idx+6) = j6 - lr_d*u6 - lr_r*j6;
+        *xj.add(idx+7) = j7 - lr_d*u7 - lr_r*j7;
+        idx += 8;
+    }
+    while idx < k {
+        let u = *xu.add(idx); let i = *xi.add(idx); let j = *xj.add(idx);
+        *xu.add(idx) = u + lr_d*(i-j) - lr_r*u;
+        *xi.add(idx) = i + lr_d*u     - lr_r*i;
+        *xj.add(idx) = j - lr_d*u     - lr_r*j;
+        idx += 1;
+    }
+}
+
 struct XorShift64 {
     state: u64,
 }
@@ -180,15 +237,8 @@ fn bpr_train(
                     let sig = sigmoid(diff);
                     let deriv = 1.0 - sig;
 
-                    for f in 0..k {
-                        let w_u = xu[f];
-                        let w_i = xi[f];
-                        let w_j = xj[f];
-
-                        xu[f] += learning_rate * (deriv * (w_i - w_j) - regularization * w_u);
-                        xi[f] += learning_rate * (deriv * w_u - regularization * w_i);
-                        xj[f] += learning_rate * (-deriv * w_u - regularization * w_j);
-                    }
+                    // 8-wide snapshot triad update for xu, xi, xj
+                    bpr_update_factors(u_ptr, i_ptr, j_ptr, k, learning_rate, deriv, regularization);
                 }
             }
         });

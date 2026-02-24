@@ -131,7 +131,7 @@ def test_fit_transactions_pandas() -> None:
             "item": ["a", "b", "c", "b", "c", "a", "c", "d"],
         }
     )
-    model = rusket.ALS.from_transactions(df, user_col="user", item_col="item", factors=4, iterations=5, seed=42)
+    model = rusket.ALS.from_transactions(df, user_col="user", item_col="item", factors=4, iterations=5, seed=42).fit()
     assert model.user_factors.shape == (3, 4)  # type: ignore
     assert model.item_factors.shape == (4, 4)
 
@@ -140,7 +140,7 @@ def test_fit_transactions_polars() -> None:
     import polars as pl
 
     df = pl.DataFrame({"user_id": [0, 0, 1, 1, 2, 2], "product": ["x", "y", "y", "z", "x", "z"]})
-    model = rusket.ALS.from_transactions(df, factors=4, iterations=5, seed=42)
+    model = rusket.ALS.from_transactions(df, factors=4, iterations=5, seed=42).fit()
     assert model.user_factors.shape == (3, 4)  # type: ignore
 
 
@@ -154,7 +154,7 @@ def test_fit_transactions_with_ratings() -> None:
             "rating": [5.0, 3.0, 4.0, 1.0, 2.0],
         }
     )
-    model = rusket.ALS.from_transactions(df, rating_col="rating", factors=4, iterations=5, seed=42)
+    model = rusket.ALS.from_transactions(df, rating_col="rating", factors=4, iterations=5, seed=42).fit()
     assert model.user_factors.shape == (3, 4)  # type: ignore
 
 

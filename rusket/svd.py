@@ -60,18 +60,23 @@ class SVD(ImplicitRecommender):
             f"reg={self.regularization}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any) -> SVD:
+    def fit(self, interactions: Any = None) -> SVD:
         """Fit the model to the user-item interaction matrix.
 
         Parameters
         ----------
-        interactions : scipy.sparse matrix, np.ndarray, pd.DataFrame, or polars DataFrame
+        interactions : scipy.sparse matrix, np.ndarray, pd.DataFrame, or polars DataFrame, optional
             User-item interaction matrix with explicit ratings.
+            If None, uses the matrix prepared by ``from_transactions()``.
 
         Returns
         -------
         self
         """
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
         if self._fitted:
             raise RuntimeError("SVD model is already fitted. Create a new instance to refit.")
 

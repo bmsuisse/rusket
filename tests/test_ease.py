@@ -52,7 +52,7 @@ def test_ease_from_transactions() -> None:
         item_col="item",
         rating_col="rating",
         regularization=100.0,
-    )
+    ).fit()
 
     assert model.fitted  # type: ignore
     assert model._n_users == 3  # type: ignore

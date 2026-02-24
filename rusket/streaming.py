@@ -196,6 +196,28 @@ class FPMiner:
         self._inner.reset()
         self._n_rows = 0
 
+    def fit(self, **kwargs: Any) -> FPMiner:
+        """Sklearn-compatible alias for ``mine()``. Runs the mining algorithm.
+
+        Returns
+        -------
+        self
+        """
+        self._result = self.mine(**kwargs)
+        return self
+
+    def predict(self, **kwargs: Any) -> pd.DataFrame:
+        """Return the last mined result, or run ``fit()`` first.
+
+        Returns
+        -------
+        pd.DataFrame
+            The frequent itemsets.
+        """
+        if not hasattr(self, '_result') or self._result is None:
+            self.fit(**kwargs)
+        return self._result  # type: ignore[return-value]
+
 
 def mine_duckdb(
     con: Any,

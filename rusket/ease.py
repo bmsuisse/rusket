@@ -48,8 +48,18 @@ class EASE(ImplicitRecommender):
     def __repr__(self) -> str:
         return f"EASE(regularization={self.regularization})"
 
-    def fit(self, interactions: Any) -> EASE:
-        """Fit the model to the user-item interaction matrix."""
+    def fit(self, interactions: Any = None) -> EASE:
+        """Fit the model to the user-item interaction matrix.
+
+        Parameters
+        ----------
+        interactions : sparse matrix or numpy array, optional
+            If None, uses the matrix prepared by ``from_transactions()``.
+        """
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
         import numpy as np
         from scipy import sparse as sp
 
