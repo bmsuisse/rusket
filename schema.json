@@ -422,6 +422,13 @@
           "returns": "FPMiner",
           "doc": "Feed a chunk of (transaction_id, item_id) pairs."
         },
+        "fit": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "FPMiner",
+          "doc": "Sklearn-compatible alias for ``mine()``. Runs the mining algorithm."
+        },
         "mine": {
           "parameters": {
             "min_support": "float",
@@ -433,6 +440,13 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine frequent itemsets from all accumulated transactions."
+        },
+        "predict": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Return the last mined result, or run ``fit()`` first."
         },
         "reset": {
           "parameters": {},

@@ -589,6 +589,24 @@ FPMiner.add_chunk(txn_ids: 'np.ndarray', item_ids: 'np.ndarray') -> 'FPMiner'
 
 ---
 
+#### `FPMiner.fit`
+
+Sklearn-compatible alias for ``mine()``. Runs the mining algorithm.
+
+```python
+from rusket.streaming import FPMiner.fit
+
+FPMiner.fit(**kwargs: 'Any') -> 'FPMiner'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| self |  |  |
+
+---
+
 #### `FPMiner.mine`
 
 Mine frequent itemsets from all accumulated transactions.
@@ -615,6 +633,24 @@ FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colna
 | Name | Type | Description |
 | --- | --- | --- |
 | pd.DataFrame |  | Columns ``support`` and ``itemsets``. |
+
+---
+
+#### `FPMiner.predict`
+
+Return the last mined result, or run ``fit()`` first.
+
+```python
+from rusket.streaming import FPMiner.predict
+
+FPMiner.predict(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | The frequent itemsets. |
 
 ---
 
@@ -744,8 +780,14 @@ Fit the model to the user-item interaction matrix.
 ```python
 from rusket.als import ALS.fit
 
-ALS.fit(interactions: 'Any') -> 'ALS'
+ALS.fit(interactions: 'Any' = None) -> 'ALS'
 ```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
 
 **Raises**
 
@@ -813,8 +855,14 @@ Fit the BPR model to the user-item interaction matrix.
 ```python
 from rusket.bpr import BPR.fit
 
-BPR.fit(interactions: 'Any') -> 'BPR'
+BPR.fit(interactions: 'Any' = None) -> 'BPR'
 ```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
 
 **Raises**
 
@@ -1349,6 +1397,26 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### Merge
+
+- spark PyArrow-native UDFs + SIMD optimizations
+
+### ⚡ Performance
+
+- SIMD-optimise dot products (8-wide), eliminate atomic CAS in LightGCN, remove clone overhead in FIN/ECLAT
+
+### 🔧 Refactoring
+
+- use PyArrow natively in applyInArrow UDFs, drop Polars hop
+
+### 🚀 Features
+
+- SIMD optimizations for SVD++, BPR, Eclat, ALS-CG hot paths
+
+### 🐛 Bug Fixes
+
+- replace deprecated recommend_items with recommend_for_cart in tests
 
 ### 📦 Miscellaneous
 
