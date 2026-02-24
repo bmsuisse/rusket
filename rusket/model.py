@@ -475,7 +475,10 @@ class Miner(BaseModel):
         return self._result  # type: ignore[return-value]
 
     def mine_grouped(self, group_col: str, **kwargs: Any) -> Any:
-        """Distribute Market Basket Analysis across PySpark partitions.
+        """Mine frequent itemsets independently for every group in a DataFrame.
+
+        Works with **Pandas**, **Polars**, and **PySpark** DataFrames.
+        The output type always matches the input type.
 
         Parameters
         ----------
@@ -486,10 +489,11 @@ class Miner(BaseModel):
 
         Returns
         -------
-        pyspark.sql.DataFrame
-            A PySpark DataFrame containing group_col, support, and itemsets.
+        pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
+            A DataFrame containing ``group_col``, ``support``, and ``itemsets``.
+            The type mirrors the input ``data`` type.
         """
-        from .spark import mine_grouped
+        import pandas as _pd
 
         min_support = kwargs.get("min_support", getattr(self, "min_support", 0.5))
         max_len = kwargs.get("max_len", getattr(self, "max_len", None))
@@ -502,14 +506,82 @@ class Miner(BaseModel):
         elif cls_name == "Eclat":
             method = "eclat"
 
-        return mine_grouped(
-            df=self.data,
-            group_col=group_col,
-            min_support=min_support,
-            max_len=max_len,
-            method=method,
-            use_colnames=use_colnames,
-        )
+        df = self.data
+
+        # ── Spark path ────────────────────────────────────────────────────────
+        if getattr(type(df), "__module__", "").startswith("pyspark"):
+            from .spark import mine_grouped as _spark_mine_grouped
+
+            return _spark_mine_grouped(
+                df=df,
+                group_col=group_col,
+                min_support=min_support,
+                max_len=max_len,
+                method=method,
+                use_colnames=use_colnames,
+            )
+
+        from .mine import mine as _mine
+
+        # ── Polars path ───────────────────────────────────────────────────────
+        try:
+            import polars as _pl
+
+            is_polars = isinstance(df, _pl.DataFrame)
+        except ImportError:
+            is_polars = False
+
+        if is_polars:
+            frames: list[Any] = []
+            for g in df[group_col].unique().to_list():
+                sub_pd = df.filter(_pl.col(group_col) == g).drop(group_col).to_pandas().astype(bool)
+                res_pd = _mine(sub_pd, min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames)
+                if len(res_pd) == 0:
+                    continue
+                res_pd["itemsets"] = res_pd["itemsets"].apply(
+                    lambda x: list(x) if isinstance(x, (frozenset, set)) else x
+                )
+                res_pd.insert(0, group_col, g)
+                frames.append(res_pd)
+
+            if not frames:
+                return _pl.DataFrame({group_col: _pl.Series([], dtype=_pl.Utf8), "support": _pl.Series([], dtype=_pl.Float64), "itemsets": _pl.Series([], dtype=_pl.List(_pl.Utf8))})
+
+            return _pl.from_pandas(_pd.concat(frames, ignore_index=True)[[group_col, "support", "itemsets"]])
+
+        # ── Pandas path ───────────────────────────────────────────────────────
+        if not isinstance(df, _pd.DataFrame):
+            raise TypeError(f"mine_grouped requires a Pandas, Polars, or PySpark DataFrame; got {type(df)}")
+
+        frames_pd: list[_pd.DataFrame] = []
+        for g, sub in df.groupby(group_col, sort=False):
+            res = _mine(sub.drop(columns=[group_col]).astype(bool), min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames)
+            if len(res) == 0:
+                continue
+            res.insert(0, group_col, g)
+            frames_pd.append(res)
+
+        if not frames_pd:
+            return _pd.DataFrame(columns=[group_col, "support", "itemsets"])
+
+        return _pd.concat(frames_pd, ignore_index=True)
+
+    def fit_grouped(self, group_col: str, **kwargs: Any) -> Any:
+        """Sklearn-style alias for :meth:`mine_grouped`. Caches the result.
+
+        Parameters
+        ----------
+        group_col : str
+            The column to group by.
+        **kwargs
+            Forwarded to :meth:`mine_grouped`.
+
+        Returns
+        -------
+        self
+        """
+        self._grouped_result = self.mine_grouped(group_col, **kwargs)
+        return self
 
 
 class ImplicitRecommender(BaseModel):

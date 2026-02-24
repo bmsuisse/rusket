@@ -93,6 +93,12 @@ benchmark = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # PySpark internals use copy= which is deprecated in pandas 4.x
+    "ignore::pandas.errors.Pandas4Warning",
+    # int 0/1 matrices are auto-cast to bool in mine_grouped; suppress upstream warning
+    "ignore:DataFrames with non-bool types:DeprecationWarning:rusket",
+]
 
 [tool.pytest-benchmark]
 storage = "file://tests/benchmarks"
