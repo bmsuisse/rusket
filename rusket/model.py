@@ -202,9 +202,9 @@ class RuleMinerMixin:
                 pass
 
         cart_set = set(items)
-        valid_rules = rules_df[
-            rules_df["antecedents"].apply(lambda ant: set(ant).issubset(cart_set))
-        ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
+        valid_rules = rules_df[rules_df["antecedents"].apply(lambda ant: set(ant).issubset(cart_set))].sort_values(
+            by=["lift", "confidence"], ascending=False
+        )  # type: ignore
 
         if valid_rules.empty:
             return []

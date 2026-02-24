@@ -152,13 +152,13 @@ def test_kulczynski() -> None:
 
 def test_tuple_selection() -> None:
     res_df = association_rules(df_freq_items, len(df))
-    sel = res_df[res_df["consequents"] == tuple((3, 5))]
+    sel = res_df[res_df["consequents"] == (3, 5)]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["consequents"] == tuple((5, 3))]
+    sel = res_df[res_df["consequents"] == (5, 3)]
     assert sel.shape[0] == 1
     sel = res_df[res_df["consequents"] == {3, 5}]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["antecedents"] == tuple((8, 3))]
+    sel = res_df[res_df["antecedents"] == (8, 3)]
     assert sel.shape[0] == 1
 
 

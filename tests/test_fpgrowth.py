@@ -155,9 +155,9 @@ def test_spark_mllib_fpgrowth_string() -> None:
     assert len(res) == 18
 
     freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
-    assert freq_dict[tuple(["z"])] == 5
-    assert freq_dict[tuple(["x"])] == 4
-    assert freq_dict[tuple(["t", "x", "y", "z"])] == 3
+    assert freq_dict[("z",)] == 5
+    assert freq_dict[("x",)] == 4
+    assert freq_dict[("t", "x", "y", "z")] == 3
 
     # min_support = 0.3 -> 54 itemsets
     res2 = fpgrowth(df, min_support=0.3, use_colnames=True)
@@ -191,15 +191,15 @@ def test_spark_mllib_fpgrowth_int() -> None:
     freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
     # Column names stay as their original type (int here), so keys are int
     expected = {
-        tuple([1]): 6,
-        tuple([2]): 5,
-        tuple([3]): 5,
-        tuple([4]): 4,
-        tuple([1, 2]): 4,
-        tuple([1, 3]): 5,
-        tuple([2, 3]): 4,
-        tuple([2, 4]): 4,
-        tuple([1, 2, 3]): 4,
+        (1,): 6,
+        (2,): 5,
+        (3,): 5,
+        (4,): 4,
+        (1, 2): 4,
+        (1, 3): 5,
+        (2, 3): 4,
+        (2, 4): 4,
+        (1, 2, 3): 4,
     }
     assert freq_dict == expected
 
@@ -273,12 +273,12 @@ def test_electronics_dataset_use_colnames_true() -> None:
     found = _itemsets_as_tuples(res)
 
     # laptop and phone both appear 4/6 = 0.667 and always together
-    assert tuple(["laptop"]) in found
-    assert tuple(["phone"]) in found
-    assert tuple(["laptop", "phone"]) in found
+    assert ("laptop",) in found
+    assert ("phone",) in found
+    assert ("laptop", "phone") in found
 
     # headphones only appears 2/6 = 0.333 -> below 0.5
-    assert tuple(["headphones"]) not in found
+    assert ("headphones",) not in found
 
     # No cross-contamination: no "bread" or "butter" should ever appear
     all_items = {item for fs in found for item in fs}
@@ -309,20 +309,20 @@ def test_colors_dataset_use_colnames_false() -> None:
     idx_sets = _itemsets_as_tuples(res_idx)
 
     # green (col 1) appears 8/10 = 0.8 -> should be frequent
-    assert tuple(["green"]) in named_sets
-    assert tuple([1]) in idx_sets
+    assert ("green",) in named_sets
+    assert (1,) in idx_sets
 
     # blue (col 2) appears 7/10 = 0.7 -> frequent
-    assert tuple(["blue"]) in named_sets
-    assert tuple([2]) in idx_sets
+    assert ("blue",) in named_sets
+    assert (2,) in idx_sets
 
     # red (col 0) appears 3/10 = 0.3 -> not frequent at 0.5
-    assert tuple(["red"]) not in named_sets
-    assert tuple([0]) not in idx_sets
+    assert ("red",) not in named_sets
+    assert (0,) not in idx_sets
 
     # yellow (col 3) appears 2/10 = 0.2 -> not frequent
-    assert tuple(["yellow"]) not in named_sets
-    assert tuple([3]) not in idx_sets
+    assert ("yellow",) not in named_sets
+    assert (3,) not in idx_sets
 
 
 def test_sports_dataset_content_correctness() -> None:
@@ -343,7 +343,7 @@ def test_sports_dataset_content_correctness() -> None:
     found = _itemsets_as_tuples(res)
 
     # soccer + basketball must co-occur
-    assert tuple(["soccer", "basketball"]) in found
+    assert ("soccer", "basketball") in found
 
     # swimming and cycling should NOT appear at all (< 0.5 support)
     all_items = {item for fs in found for item in fs}
@@ -351,7 +351,7 @@ def test_sports_dataset_content_correctness() -> None:
     assert "cycling" not in all_items
 
     # soccer + tennis co-occur only 2/10 = 0.2 -> should NOT be a pair
-    assert tuple(["soccer", "tennis"]) not in found
+    assert ("soccer", "tennis") not in found
 
 
 def test_disjoint_groups_no_cross_contamination() -> None:
@@ -371,20 +371,20 @@ def test_disjoint_groups_no_cross_contamination() -> None:
     found = _itemsets_as_tuples(res)
 
     # Each singleton should appear (5/10 = 0.5)
-    assert tuple(["alpha"]) in found
-    assert tuple(["beta"]) in found
-    assert tuple(["gamma"]) in found
-    assert tuple(["delta"]) in found
+    assert ("alpha",) in found
+    assert ("beta",) in found
+    assert ("gamma",) in found
+    assert ("delta",) in found
 
     # Within-group pairs should appear
-    assert tuple(["alpha", "beta"]) in found
-    assert tuple(["gamma", "delta"]) in found
+    assert ("alpha", "beta") in found
+    assert ("gamma", "delta") in found
 
     # Cross-group pairs must NOT appear (0/10 co-occurrence)
-    assert tuple(["alpha", "gamma"]) not in found
-    assert tuple(["alpha", "delta"]) not in found
-    assert tuple(["beta", "gamma"]) not in found
-    assert tuple(["beta", "delta"]) not in found
+    assert ("alpha", "gamma") not in found
+    assert ("alpha", "delta") not in found
+    assert ("beta", "gamma") not in found
+    assert ("beta", "delta") not in found
 
 
 def test_single_item_only_transactions() -> None:
@@ -405,7 +405,7 @@ def test_single_item_only_transactions() -> None:
     # Each item appears exactly once -> support = 0.2
     assert len(found) == 5
     for item in ["cat", "dog", "bird", "fish", "snake"]:
-        assert tuple([item]) in found
+        assert (item,) in found
 
     # No pairs should exist
     multi_item = [fs for fs in found if len(fs) > 1]
@@ -468,15 +468,15 @@ def test_varying_data_produces_different_results() -> None:
     sets_b = set(_itemsets_as_tuples(res_b))
 
     # Dataset A should have P, Q, {P,Q} — no R
-    assert tuple(["P"]) in sets_a
-    assert tuple(["Q"]) in sets_a
-    assert tuple(["P", "Q"]) in sets_a
-    assert tuple(["R"]) not in sets_a
+    assert ("P",) in sets_a
+    assert ("Q",) in sets_a
+    assert ("P", "Q") in sets_a
+    assert ("R",) not in sets_a
 
     # Dataset B should have R only — no P, Q
-    assert tuple(["R"]) in sets_b
-    assert tuple(["P"]) not in sets_b
-    assert tuple(["Q"]) not in sets_b
+    assert ("R",) in sets_b
+    assert ("P",) not in sets_b
+    assert ("Q",) not in sets_b
 
     # The two results must be completely different
     assert sets_a != sets_b

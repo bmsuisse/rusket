@@ -292,12 +292,12 @@ class FPTestEx2All(FPTestEx2):
         res_df = self.fpalgo(self.df, min_support=0.001, use_colnames=True)
         expect = pd.DataFrame(
             [
-                [0.25, tuple(["a"])],
-                [0.25, tuple(["b"])],
-                [0.25, tuple(["c"])],
-                [0.25, tuple(["d"])],
-                [0.25, tuple(["e"])],
-                [0.25, tuple(["c", "d"])],
+                [0.25, ("a",)],
+                [0.25, ("b",)],
+                [0.25, ("c",)],
+                [0.25, ("d",)],
+                [0.25, ("e",)],
+                [0.25, ("c", "d")],
             ],
             columns=["support", "itemsets"],
         )
