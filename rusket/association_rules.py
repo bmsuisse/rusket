@@ -113,11 +113,11 @@ def association_rules(
         return pd.DataFrame(columns=pd.Index(["antecedents", "consequents"] + list(return_metrics)))
 
     if has_string_labels:
-        ant_fs = [frozenset(idx_to_label[i] for i in a) for a in antecedents_raw]
-        con_fs = [frozenset(idx_to_label[i] for i in c) for c in consequents_raw]
+        ant_fs = [tuple(idx_to_label[i] for i in a) for a in antecedents_raw]
+        con_fs = [tuple(idx_to_label[i] for i in c) for c in consequents_raw]
     else:
-        ant_fs = [frozenset(a) for a in antecedents_raw]
-        con_fs = [frozenset(c) for c in consequents_raw]
+        ant_fs = [tuple(a) for a in antecedents_raw]
+        con_fs = [tuple(c) for c in consequents_raw]
 
     result = pd.DataFrame({"antecedents": ant_fs, "consequents": con_fs})
     for col_name, col_vals in zip(return_metrics, metric_cols, strict=False):

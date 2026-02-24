@@ -57,9 +57,9 @@ def test_default() -> None:
 def test_datatypes() -> None:
     res_df = association_rules(df_freq_items, len(df))
     for i in res_df["antecedents"]:
-        assert isinstance(i, frozenset)
+        assert isinstance(i, tuple)
     for i in res_df["consequents"]:
-        assert isinstance(i, frozenset)
+        assert isinstance(i, tuple)
 
 
 def test_no_support_col() -> None:
@@ -150,15 +150,15 @@ def test_kulczynski() -> None:
     assert res_df.shape[0] == 16
 
 
-def test_frozenset_selection() -> None:
+def test_tuple_selection() -> None:
     res_df = association_rules(df_freq_items, len(df))
-    sel = res_df[res_df["consequents"] == frozenset((3, 5))]
+    sel = res_df[res_df["consequents"] == tuple((3, 5))]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["consequents"] == frozenset((5, 3))]
+    sel = res_df[res_df["consequents"] == tuple((5, 3))]
     assert sel.shape[0] == 1
     sel = res_df[res_df["consequents"] == {3, 5}]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["antecedents"] == frozenset((8, 3))]
+    sel = res_df[res_df["antecedents"] == tuple((8, 3))]
     assert sel.shape[0] == 1
 
 

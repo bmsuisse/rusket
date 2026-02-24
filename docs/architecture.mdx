@@ -87,7 +87,7 @@ Rule generation is vectorised in Rust:
 1. For each frequent itemset of length ≥ 2, enumerate all non-empty antecedent / consequent splits.
 2. Look up antecedent and consequent supports from a pre-built hash map.
 3. Compute all 12 metrics in a single pass; filter by `(metric, min_threshold)`.
-4. Return raw integer index lists to Python; Python maps back to column names / frozensets.
+4. Return raw integer index lists to Python; Python maps back to column names / tuples.
 
 ---
 

@@ -201,9 +201,9 @@ class RuleMinerMixin:
             except Exception:
                 pass
 
-        cart_set = frozenset(items)
+        cart_set = set(items)
         valid_rules = rules_df[
-            rules_df["antecedents"].apply(lambda ant: frozenset(ant).issubset(cart_set))
+            rules_df["antecedents"].apply(lambda ant: set(ant).issubset(cart_set))
         ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
 
         if valid_rules.empty:
@@ -349,10 +349,10 @@ class Miner(BaseModel):
         if self._orig_df_type == "polars":
             import polars as pl
 
-            # Convert frozensets to lists for pyarrow compatibility
+            # Convert tuples to lists for pyarrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (frozenset, set)) else x)
+                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x)
 
             return pl.from_pandas(df)
         elif self._orig_df_type == "spark":
@@ -360,10 +360,10 @@ class Miner(BaseModel):
             try:
                 from pyspark.sql import SparkSession
 
-                # Convert frozensets to lists for Spark schema compatibility
+                # Convert tuples to lists for Spark schema compatibility
                 for col in ["antecedents", "consequents", "itemsets"]:
                     if col in df.columns:
-                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (frozenset, set)) else x)
+                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x)
 
                 spark = SparkSession.getActiveSession()
                 if spark is not None:
@@ -541,7 +541,7 @@ class Miner(BaseModel):
                 if len(res_pd) == 0:
                     continue
                 res_pd["itemsets"] = res_pd["itemsets"].apply(
-                    lambda x: list(x) if isinstance(x, (frozenset, set)) else x
+                    lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x
                 )
                 res_pd.insert(0, group_col, g)
                 frames.append(res_pd)

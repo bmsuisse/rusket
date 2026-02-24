@@ -180,7 +180,7 @@ class FPTestEx1:
         self.df = pd.DataFrame(self.one_ary, columns=self.cols).astype(bool)
         self.fpalgo = fpalgo
 
-    def test_frozenset_selection(self) -> None:
+    def test_tuple_selection(self) -> None:
         res_df = self.fpalgo(self.df, use_colnames=True)
         assert res_df.values.shape == self.fpalgo(self.df).values.shape
 
@@ -292,12 +292,12 @@ class FPTestEx2All(FPTestEx2):
         res_df = self.fpalgo(self.df, min_support=0.001, use_colnames=True)
         expect = pd.DataFrame(
             [
-                [0.25, frozenset(["a"])],
-                [0.25, frozenset(["b"])],
-                [0.25, frozenset(["c"])],
-                [0.25, frozenset(["d"])],
-                [0.25, frozenset(["e"])],
-                [0.25, frozenset(["c", "d"])],
+                [0.25, tuple(["a"])],
+                [0.25, tuple(["b"])],
+                [0.25, tuple(["c"])],
+                [0.25, tuple(["d"])],
+                [0.25, tuple(["e"])],
+                [0.25, tuple(["c", "d"])],
             ],
             columns=["support", "itemsets"],
         )

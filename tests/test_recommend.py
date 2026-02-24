@@ -43,8 +43,8 @@ def test_recommender_recommend_for_user():
 def test_recommender_recommend_for_cart():
     rules_df = pd.DataFrame(
         {
-            "antecedents": [frozenset([0]), frozenset([0, 1]), frozenset([2])],
-            "consequents": [frozenset([1]), frozenset([2, 3]), frozenset([0])],
+            "antecedents": [tuple([0]), tuple([0, 1]), tuple([2])],
+            "consequents": [tuple([1]), tuple([2, 3]), tuple([0])],
             "lift": [2.0, 5.0, 1.5],
             "confidence": [0.8, 0.9, 0.5],
         }

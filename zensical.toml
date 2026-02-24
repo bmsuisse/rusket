@@ -33,7 +33,6 @@ nav = [
 url = "https://github.com/bmsuisse/rusket"
 
 [project.theme]
-logo = "assets/logo_single.svg"
 favicon = "assets/logo_single.svg"
 
 [project.theme.font]
@@ -41,7 +40,7 @@ text = "Inter"
 code = "JetBrains Mono"
 
 [project.theme.icon]
-
+logo = "lucide/shopping-basket"
 [[project.theme.palette]]
 scheme = "default"
 primary = "deep-orange"

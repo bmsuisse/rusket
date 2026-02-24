@@ -187,9 +187,9 @@ class TestOnlineRetailBasketAnalysis:
         ).mine()
 
         # Compare singleton support values (most stable across implementations)
-        def _singleton_support(df: pd.DataFrame) -> dict[frozenset, float]:  # type: ignore[name-defined]
+        def _singleton_support(df: pd.DataFrame) -> dict[tuple, float]:  # type: ignore[name-defined]
             return {
-                frozenset(row["itemsets"]): round(row["support"], 4)  # type: ignore
+                tuple(row["itemsets"]): round(row["support"], 4)  # type: ignore
                 for _, row in df.iterrows()
                 if len(row["itemsets"]) == 1
             }

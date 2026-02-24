@@ -164,8 +164,8 @@ for label, n_rows, n_cols, min_sup in SIZES:
 
         # ── Output correctness check ─────────────────────────────────────
         our_result = fpgrowth(df, min_support=min_sup, use_colnames=True)
-        our_sets = {(round(irow.support, 6), frozenset(irow.itemsets)) for irow in our_result.itertuples()}  # type: ignore[union-attr]
-        mlx_sets = {(round(irow.support, 6), frozenset(irow.itemsets)) for irow in mlx_result.itertuples()}  # type: ignore[union-attr]
+        our_sets = {(round(irow.support, 6), tuple(irow.itemsets)) for irow in our_result.itertuples()}  # type: ignore[union-attr]
+        mlx_sets = {(round(irow.support, 6), tuple(irow.itemsets)) for irow in mlx_result.itertuples()}  # type: ignore[union-attr]
         match = our_sets == mlx_sets
         sym_diff = our_sets.symmetric_difference(mlx_sets)
         if match:

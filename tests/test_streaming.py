@@ -15,26 +15,26 @@ pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 # ---------------------------------------------------------------------------
 
 
-def _to_sorted_frozensets(df: pd.DataFrame) -> set[tuple[float, frozenset]]:
-    """Convert output DataFrame to a comparable set of (support, frozenset) tuples."""
+def _to_sorted_tuples(df: pd.DataFrame) -> set[tuple[float, tuple]]:
+    """Convert output DataFrame to a comparable set of (support, tuple) tuples."""
     result = set()
     for _, row in df.iterrows():
         items = row["itemsets"]
-        # Handle both ArrowDtype list and frozenset representations
-        if hasattr(items, "__iter__") and not isinstance(items, (str, frozenset)):
-            items = frozenset(str(x) for x in items)
-        elif isinstance(items, frozenset):
-            items = frozenset(str(x) for x in items)
+        # Handle both ArrowDtype list and tuple representations
+        if hasattr(items, "__iter__") and not isinstance(items, (str, tuple)):
+            items = tuple(str(x) for x in items)
+        elif isinstance(items, tuple):
+            items = tuple(str(x) for x in items)
         else:
-            items = frozenset({str(items)})
+            items = tuple({str(items)})
         result.add((round(float(row["support"]), 6), items))  # type: ignore
     return result
 
 
 def _cmp(a: pd.DataFrame, b: pd.DataFrame) -> None:
     """Assert that two result DataFrames contain the same itemsets and supports."""
-    sa = _to_sorted_frozensets(a)
-    sb = _to_sorted_frozensets(b)
+    sa = _to_sorted_tuples(a)
+    sb = _to_sorted_tuples(b)
     assert sa == sb, f"FPMiner and fpgrowth results differ.\nOnly in FPMiner:  {sa - sb}\nOnly in fpgrowth: {sb - sa}"
 
 
@@ -286,9 +286,9 @@ class TestFPMinerResultValidation:
             pytest.skip("No itemsets found")
 
         # Build support lookup
-        support_map: dict[frozenset, float] = {}
+        support_map: dict[tuple, float] = {}
         for _, row in result.iterrows():
-            items = frozenset(int(x) for x in row["itemsets"])
+            items = tuple(int(x) for x in row["itemsets"])
             support_map[items] = float(row["support"])  # type: ignore
 
         # Check: for every 2+ itemset, all subsets must have >= support

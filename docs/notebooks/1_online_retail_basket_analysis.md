@@ -316,64 +316,64 @@ print(f"Generated {len(rules):,} rules in {time.time() - t0:.5f}s")
   <tbody>
     <tr>
       <th>0</th>
-      <td>frozenset({Gel_Pen, Espresso_Beans})</td>
-      <td>frozenset({Notebook, Travel_Mug})</td>
+      <td>(Gel_Pen, Espresso_Beans,)</td>
+      <td>(Notebook, Travel_Mug,)</td>
       <td>0.051</td>
       <td>0.588</td>
       <td>6.670</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>frozenset({Notebook, Travel_Mug})</td>
-      <td>frozenset({Gel_Pen, Espresso_Beans})</td>
+      <td>(Notebook, Travel_Mug,)</td>
+      <td>(Gel_Pen, Espresso_Beans,)</td>
       <td>0.051</td>
       <td>0.583</td>
       <td>6.670</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>frozenset({Notebook, Espresso_Beans})</td>
-      <td>frozenset({Gel_Pen, Travel_Mug})</td>
+      <td>(Notebook, Espresso_Beans,)</td>
+      <td>(Gel_Pen, Travel_Mug,)</td>
       <td>0.051</td>
       <td>0.586</td>
       <td>6.570</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>frozenset({Gel_Pen, Travel_Mug})</td>
-      <td>frozenset({Notebook, Espresso_Beans})</td>
+      <td>(Gel_Pen, Travel_Mug,)</td>
+      <td>(Notebook, Espresso_Beans,)</td>
       <td>0.051</td>
       <td>0.576</td>
       <td>6.570</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>frozenset({Milk_Frother, Gel_Pen})</td>
-      <td>frozenset({Highlighter, Travel_Mug})</td>
+      <td>(Milk_Frother, Gel_Pen,)</td>
+      <td>(Highlighter, Travel_Mug,)</td>
       <td>0.050</td>
       <td>0.571</td>
       <td>6.560</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>frozenset({Highlighter, Travel_Mug})</td>
-      <td>frozenset({Milk_Frother, Gel_Pen})</td>
+      <td>(Highlighter, Travel_Mug,)</td>
+      <td>(Milk_Frother, Gel_Pen,)</td>
       <td>0.050</td>
       <td>0.580</td>
       <td>6.560</td>
     </tr>
     <tr>
       <th>6</th>
-      <td>frozenset({Milk_Frother, Gel_Pen})</td>
-      <td>frozenset({Notebook, Travel_Mug})</td>
+      <td>(Milk_Frother, Gel_Pen,)</td>
+      <td>(Notebook, Travel_Mug,)</td>
       <td>0.050</td>
       <td>0.571</td>
       <td>6.480</td>
     </tr>
     <tr>
       <th>7</th>
-      <td>frozenset({Notebook, Travel_Mug})</td>
-      <td>frozenset({Milk_Frother, Gel_Pen})</td>
+      <td>(Notebook, Travel_Mug,)</td>
+      <td>(Milk_Frother, Gel_Pen,)</td>
       <td>0.050</td>
       <td>0.573</td>
       <td>6.480</td>
@@ -433,16 +433,16 @@ print(f"Found {len(substitutes)} cannibalizing product pair(s).")
   <tbody>
     <tr>
       <th>0</th>
-      <td>frozenset({Cola_B})</td>
-      <td>frozenset({Cola_A})</td>
+      <td>(Cola_B,)</td>
+      <td>(Cola_A,)</td>
       <td>0.061</td>
       <td>0.290</td>
       <td>0.762</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>frozenset({Cola_A})</td>
-      <td>frozenset({Cola_B})</td>
+      <td>(Cola_A,)</td>
+      <td>(Cola_B,)</td>
       <td>0.061</td>
       <td>0.162</td>
       <td>0.762</td>

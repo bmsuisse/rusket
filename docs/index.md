@@ -65,8 +65,8 @@ print(rules[["antecedents", "consequents", "confidence", "lift"]]
 
 | antecedents           | consequents           |   confidence |   lift |
 |:----------------------|:----------------------|-------------:|-------:|
-| frozenset({'coffee'}) | frozenset({'eggs'})   |         1    |    1.5 |
-| frozenset({'eggs'})   | frozenset({'coffee'}) |         0.75 |    1.5 |
+| ('coffee',) | ('eggs',)   |         1    |    1.5 |
+| ('eggs',)   | ('coffee',) |         0.75 |    1.5 |
 <!-- /output -->
 
 ---
