@@ -148,9 +148,9 @@ class Recommender:
         if self.rules_df.empty:
             return []
 
-        cart_set = tuple(cart_items)
+        cart_set = set(cart_items)
         valid_rules = self.rules_df[
-            self.rules_df["antecedents"].apply(lambda ant: tuple(ant).issubset(cart_set))
+            self.rules_df["antecedents"].apply(lambda ant: set(ant).issubset(cart_set))
         ].sort_values(by=["lift", "confidence"], ascending=False)  # type: ignore
 
         if valid_rules.empty:

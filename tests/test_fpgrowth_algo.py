@@ -183,7 +183,7 @@ def test_spark_mllib_fpgrowth_string() -> None:
     res = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res) == 18
 
-    freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
+    freq_dict = {tuple(sorted(row["itemsets"])): row["support"] * len(df) for _, row in res.iterrows()}
     assert freq_dict[("z",)] == 5
     assert freq_dict[("x",)] == 4
     assert freq_dict[("t", "x", "y", "z")] == 3
@@ -217,7 +217,7 @@ def test_spark_mllib_fpgrowth_int() -> None:
     # min_support = 0.5 -> 9 itemsets
     res3 = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res3) == 9
-    freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
+    freq_dict = {tuple(sorted(row["itemsets"])): row["support"] * len(df) for _, row in res3.iterrows()}
     # Column names stay as their original type (int here), so keys are int
     expected = {
         (1,): 6,

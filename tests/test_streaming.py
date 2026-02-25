@@ -16,15 +16,15 @@ pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 
 
 def _to_sorted_tuples(df: pd.DataFrame) -> set[tuple[float, tuple]]:
-    """Convert output DataFrame to a comparable set of (support, tuple) tuples."""
+    """Convert output DataFrame to a comparable set of (support, sorted-tuple) pairs."""
     result = set()
     for _, row in df.iterrows():
         items = row["itemsets"]
         # Handle both ArrowDtype list and tuple representations
         if hasattr(items, "__iter__") and not isinstance(items, (str, tuple)):
-            items = tuple(str(x) for x in items)
+            items = tuple(sorted(str(x) for x in items))
         elif isinstance(items, tuple):
-            items = tuple(str(x) for x in items)
+            items = tuple(sorted(str(x) for x in items))
         else:
             items = tuple({str(items)})
         result.add((round(float(row["support"]), 6), items))  # type: ignore
@@ -285,10 +285,10 @@ class TestFPMinerResultValidation:
         if len(result) == 0:
             pytest.skip("No itemsets found")
 
-        # Build support lookup
-        support_map: dict[tuple, float] = {}
+        # Build support lookup (frozenset keys to allow set subtraction)
+        support_map: dict[frozenset, float] = {}
         for _, row in result.iterrows():
-            items = tuple(int(x) for x in row["itemsets"])
+            items = frozenset(int(x) for x in row["itemsets"])
             support_map[items] = float(row["support"])  # type: ignore
 
         # Check: for every 2+ itemset, all subsets must have >= support

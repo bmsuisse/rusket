@@ -24,6 +24,8 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: regression-v2
       - uses: astral-sh/setup-uv@v7
       - uses: actions/setup-python@v6
         with:

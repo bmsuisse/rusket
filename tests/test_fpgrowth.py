@@ -154,7 +154,7 @@ def test_spark_mllib_fpgrowth_string() -> None:
     res = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res) == 18
 
-    freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res.iterrows()}
+    freq_dict = {tuple(sorted(row["itemsets"])): row["support"] * len(df) for _, row in res.iterrows()}
     assert freq_dict[("z",)] == 5
     assert freq_dict[("x",)] == 4
     assert freq_dict[("t", "x", "y", "z")] == 3
@@ -188,7 +188,7 @@ def test_spark_mllib_fpgrowth_int() -> None:
     # min_support = 0.5 -> 9 itemsets
     res3 = fpgrowth(df, min_support=0.5, use_colnames=True)
     assert len(res3) == 9
-    freq_dict = {tuple(row["itemsets"]): row["support"] * len(df) for _, row in res3.iterrows()}
+    freq_dict = {tuple(sorted(row["itemsets"])): row["support"] * len(df) for _, row in res3.iterrows()}
     # Column names stay as their original type (int here), so keys are int
     expected = {
         (1,): 6,
@@ -253,8 +253,8 @@ def test_rust_fpgrowth_compat() -> None:
 
 
 def _itemsets_as_tuples(res_df: pd.DataFrame) -> list[tuple]:
-    """Convert result itemsets column to a list of tuples for easy comparison."""
-    return [tuple(row) for row in res_df["itemsets"]]
+    """Convert result itemsets column to a list of sorted tuples for easy comparison."""
+    return [tuple(sorted(row)) for row in res_df["itemsets"]]
 
 
 def test_electronics_dataset_use_colnames_true() -> None:
@@ -275,7 +275,7 @@ def test_electronics_dataset_use_colnames_true() -> None:
     # laptop and phone both appear 4/6 = 0.667 and always together
     assert ("laptop",) in found
     assert ("phone",) in found
-    assert ("laptop", "phone") in found
+    assert ("laptop", "phone") in found  # sorted order
 
     # headphones only appears 2/6 = 0.333 -> below 0.5
     assert ("headphones",) not in found
@@ -342,8 +342,8 @@ def test_sports_dataset_content_correctness() -> None:
     res = fpgrowth(df, min_support=0.5, use_colnames=True)
     found = _itemsets_as_tuples(res)
 
-    # soccer + basketball must co-occur
-    assert ("soccer", "basketball") in found
+    # soccer + basketball must co-occur (sorted order: basketball < soccer)
+    assert ("basketball", "soccer") in found
 
     # swimming and cycling should NOT appear at all (< 0.5 support)
     all_items = {item for fs in found for item in fs}
@@ -352,6 +352,7 @@ def test_sports_dataset_content_correctness() -> None:
 
     # soccer + tennis co-occur only 2/10 = 0.2 -> should NOT be a pair
     assert ("soccer", "tennis") not in found
+    assert ("tennis", "soccer") not in found
 
 
 def test_disjoint_groups_no_cross_contamination() -> None:
@@ -376,9 +377,9 @@ def test_disjoint_groups_no_cross_contamination() -> None:
     assert ("gamma",) in found
     assert ("delta",) in found
 
-    # Within-group pairs should appear
+    # Within-group pairs should appear (sorted order)
     assert ("alpha", "beta") in found
-    assert ("gamma", "delta") in found
+    assert ("delta", "gamma") in found
 
     # Cross-group pairs must NOT appear (0/10 co-occurrence)
     assert ("alpha", "gamma") not in found
@@ -470,7 +471,7 @@ def test_varying_data_produces_different_results() -> None:
     # Dataset A should have P, Q, {P,Q} — no R
     assert ("P",) in sets_a
     assert ("Q",) in sets_a
-    assert ("P", "Q") in sets_a
+    assert ("P", "Q") in sets_a  # sorted order
     assert ("R",) not in sets_a
 
     # Dataset B should have R only — no P, Q
