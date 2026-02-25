@@ -612,11 +612,16 @@ def recommend_batches(
         ]
     )
 
+    # Broadcast the recommender instead of relying on RDD closure serialization
+    sc = df.sparkSession.sparkContext
+    b_recommender = sc.broadcast(recommender)
+
     def _recommend_row(row):
         # row is a pyspark.sql.Row
         df_single = pd.DataFrame([row.asDict()])
         try:
-            res = recommender.predict_next_chunk(df_single, user_col=user_col, k=k)
+            rec = b_recommender.value
+            res = rec.predict_next_chunk(df_single, user_col=user_col, k=k)
             u_id = str(res.iloc[0][user_col])
 
             # Ensure native Python integers for Spark ArrayType
