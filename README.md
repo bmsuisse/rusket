@@ -34,7 +34,7 @@
 
 **Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket` and go. The entire engine is compiled Rust, distributed as a single ~3 MB wheel.
 
-It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE) and Pattern Mining (FP-Growth, Eclat, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
+It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE), Sequential Recommendation (FPMC, SASRec), Context-aware Prediction (FM), and Pattern Mining (FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
@@ -45,7 +45,7 @@ It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE) and
 | **Core language** | Rust (PyO3) | TF + PyTorch + Cython | Cython / C++ | Scala / Java (JVM) |
 | **Runtime deps** | **0** | TF + PyTorch + gensim (~2 GB) | OpenBLAS / MKL | JVM + Spark |
 | **Install size** | ~3 MB | ~2 GB | ~50 MB | ~300 MB |
-| **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, EASE, FP-Growth, Eclat, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, EASE, FM, FPMC, SASRec, FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
 | **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ | ✅ (ALS only) |
 | **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
 | **OOP class API** | ✅ `ALS.from_transactions(df).fit()` | ✅ | ✅ | ✅ |
@@ -460,6 +460,8 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 | `FPGrowth` | `Miner`, `RuleMinerMixin` | FP-Tree parallel mining |
 | `Eclat` | `Miner`, `RuleMinerMixin` | Vertical bitset mining |
 | `AutoMiner` | `Miner`, `RuleMinerMixin` | Auto-selects FP-Growth or Eclat |
+| `FIN` | `Miner`, `RuleMinerMixin` | FP-tree Node-list intersection mining |
+| `LCM` | `Miner`, `RuleMinerMixin` | Linear-time Closed itemset Mining |
 | `HUPM` | `Miner` | High-Utility Pattern Mining (EFIM) |
 | `PrefixSpan` | `Miner` | Sequential pattern mining |
 | `ALS` | `ImplicitRecommender` | Alternating Least Squares CF |
@@ -468,6 +470,9 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 | `LightGCN` | `ImplicitRecommender` | Graph Convolutional CF |
 | `ItemKNN` | `ImplicitRecommender` | Item-based k-NN CF |
 | `EASE` | `ImplicitRecommender` | Embarrassingly Shallow Autoencoders |
+| `FM` | `BaseModel` | Factorization Machines (CTR prediction) |
+| `FPMC` | `SequentialRecommender` | Factorizing Personalized Markov Chains |
+| `SASRec` | `SequentialRecommender` | Self-Attentive Sequential Recommendation |
 
 All classes share the following data-ingestion class methods inherited from `BaseModel`:
 
@@ -490,7 +495,8 @@ rules  = model.association_rules(metric="lift")    # pd.DataFrame [antecedents, 
 recs   = model.recommend_items(["bread", "milk"])  # list of suggested items
 ```
 
-`ImplicitRecommender` subclasses (`ALS`, `BPR`, `SVD`, `LightGCN`, `ItemKNN`, `EASE`) follow the **scikit-learn** `fit()`/`predict()` pattern:
+`ImplicitRecommender` subclasses (`ALS`, `BPR`, `SVD`, `LightGCN`, `ItemKNN`, `EASE`) follow the **scikit-learn** `fit()`/`predict()` pattern.
+`SequentialRecommender` subclasses (`FPMC`, `SASRec`) use `from_transactions(..., time_col=...).fit()` for sequential next-item prediction:
 
 ```python
 # Option A — construct then fit with a sparse matrix

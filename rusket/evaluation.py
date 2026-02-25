@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     pass
@@ -14,8 +14,8 @@ MetricName = Literal["ndcg", "hr", "precision", "recall"]
 
 
 def evaluate(
-    model,
-    test_interactions,
+    model: Any,
+    test_interactions: Any,
     k: int = 10,
     metrics: list[MetricName] | None = None,
 ) -> dict[str, float]:
@@ -65,54 +65,49 @@ def evaluate(
         items = interactions[:, 1]
 
     # Group test items by user
-    # Note: A real world implementation can be optimized further in rust.
-    # For now we use python dict to aggregate by user, which is fast enough for test lists.
     user_test_items: dict[int, list[int]] = {}
     for u, i in zip(users, items, strict=False):
-        if u not in user_test_items:
-            user_test_items[u] = []
-        user_test_items[u].append(i)
+        user_test_items.setdefault(u, []).append(i)
 
-    unique_users = np.array(list(user_test_items.keys()), dtype=np.int32)
+    unique_users = list(user_test_items.keys())
 
-    predictions: dict[int, list[int]] = {u: [] for u in unique_users}
-
-    if hasattr(model, "recommend_items"):
-        for u in unique_users:
-            try:
-                r_items, r_scores = model.recommend_items(u, n=k, exclude_seen=True)
-                predictions[u] = r_items.tolist()
-            except Exception as e:
-                warnings.warn(
-                    f"Failed to use recommend_items for user {u}: {e}. Falling back to 0.0 metrics.", stacklevel=2
-                )
-                res: dict[str, float] = dict.fromkeys(metrics, 0.0)
-                return res
-    else:
-        # Try a slower fallback (can be implemented later)
+    if not hasattr(model, "recommend_items"):
         raise TypeError("Model must support `recommend_items(user_id, n, exclude_seen)`.")
 
-    results: dict[str, float] = dict.fromkeys(metrics, 0.0)
-    n_users = len(unique_users)
+    # Batch: collect predictions for all users first
+    all_actual: list[list[int]] = []
+    all_pred: list[list[int]] = []
 
-    if n_users == 0:
-        return results
-
-    # Compute metrics calling rust backend per user
     for u in unique_users:
-        actual = user_test_items[u]
-        pred = predictions[u]
+        try:
+            r_items, _r_scores = model.recommend_items(u, n=k, exclude_seen=True)
+            all_pred.append(r_items.tolist())
+            all_actual.append(user_test_items[u])
+        except Exception as e:
+            warnings.warn(
+                f"Failed to use recommend_items for user {u}: {e}. Falling back to 0.0 metrics.", stacklevel=2
+            )
+            return dict.fromkeys(metrics, 0.0)
 
-        if "ndcg" in metrics:
-            results["ndcg"] += _rusket.ndcg_at_k(actual, pred, k)  # type: ignore
-        if "hr" in metrics:
-            results["hr"] += _rusket.hit_rate_at_k(actual, pred, k)  # type: ignore
-        if "precision" in metrics:
-            results["precision"] += _rusket.precision_at_k(actual, pred, k)  # type: ignore
-        if "recall" in metrics:
-            results["recall"] += _rusket.recall_at_k(actual, pred, k)  # type: ignore
+    n_users = len(all_actual)
+    if n_users == 0:
+        return dict.fromkeys(metrics, 0.0)
 
-    for metric in metrics:
-        results[metric] /= n_users
+    # Batch-compute metrics via Rust backend, one call per metric
+    results: dict[str, float] = {}
+    metric_fns: dict[str, Any] = {
+        "ndcg": _rusket.ndcg_at_k,
+        "hr": _rusket.hit_rate_at_k,
+        "precision": _rusket.precision_at_k,
+        "recall": _rusket.recall_at_k,
+    }
+
+    for m in metrics:
+        fn = metric_fns.get(m)
+        if fn is None:
+            results[m] = 0.0
+            continue
+        total = sum(fn(actual, pred, k) for actual, pred in zip(all_actual, all_pred, strict=False))  # type: ignore
+        results[m] = total / n_users
 
     return results

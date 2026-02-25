@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -293,6 +294,99 @@ class BaseModel(ABC):
     ) -> Self:
         """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
         return cls.from_transactions(df, transaction_col=transaction_col, item_col=item_col, **kwargs)
+
+    @classmethod
+    def from_arrow(
+        cls,
+        table: Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        **kwargs: Any,
+    ) -> Self:
+        """Shorthand for ``from_transactions(table, transaction_col, item_col)``.
+
+        Parameters
+        ----------
+        table : pyarrow.Table
+            An Arrow table with transaction and item columns.
+        transaction_col : str, optional
+            Name of the transaction ID column.
+        item_col : str, optional
+            Name of the item column.
+        **kwargs
+            Extra arguments forwarded to ``from_transactions``.
+        """
+        return cls.from_transactions(table, transaction_col=transaction_col, item_col=item_col, **kwargs)
+
+    def save(self, path: str | Path) -> None:
+        """Save the model to disk using pickle.
+
+        Parameters
+        ----------
+        path : str or Path
+            File path to write the model to (e.g. ``"model.pkl"``).
+        """
+        import pickle
+
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "__rusket_version__": 1,
+            "class": type(self).__name__,
+            "module": type(self).__module__,
+            "state": self.__dict__,
+        }
+        with open(path, "wb") as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def load(cls, path: str | Path) -> Self:
+        """Load a previously saved model from disk.
+
+        Parameters
+        ----------
+        path : str or Path
+            File path to load from.
+
+        Returns
+        -------
+        Self
+            The restored model.
+
+        Raises
+        ------
+        TypeError
+            If the file contains a different model class.
+        """
+        import pickle
+
+        path = Path(path)
+        with open(path, "rb") as f:
+            payload = pickle.load(f)  # noqa: S301
+
+        if isinstance(payload, dict) and "__rusket_version__" in payload:
+            saved_cls_name = payload.get("class", "")
+            state = payload["state"]
+        else:
+            # Legacy: plain pickled object
+            if isinstance(payload, cls):
+                return payload  # type: ignore[return-value]
+            raise TypeError(f"Expected {cls.__name__}, got {type(payload).__name__}")
+
+        # Construct an empty instance and restore state
+        instance = cls.__new__(cls)  # type: ignore[arg-type]
+        instance.__dict__.update(state)
+
+        if saved_cls_name != cls.__name__:
+            import warnings
+
+            warnings.warn(
+                f"Model was saved as {saved_cls_name} but loaded as {cls.__name__}. "
+                "This may cause unexpected behaviour.",
+                stacklevel=2,
+            )
+
+        return instance  # type: ignore[return-value]
 
 
 class Miner(BaseModel):
