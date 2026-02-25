@@ -1398,6 +1398,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- update README and docs/index.md
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 🚀 Features
 
 - Add first-class `pyarrow.Table` support for data processing and model results, leveraging zero-copy conversions and introducing `from_arrow`.
