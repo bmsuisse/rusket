@@ -617,6 +617,8 @@ def recommend_batches(
     b_recommender = sc.broadcast(recommender)
 
     def _recommend_row(row):
+        import numpy as np
+
         # row is a pyspark.sql.Row
         df_single = pd.DataFrame([row.asDict()])
         try:
