@@ -139,7 +139,9 @@ def from_transactions(
 
         pl_df = _pl.from_arrow(typing.cast("_pa.Table", data))
         pandas_df = typing.cast("_pd.DataFrame", pl_df.to_pandas())
-        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose)
+        result_pd = _from_dataframe(
+            pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose
+        )
         return _pa.Table.from_pandas(result_pd.astype(bool))
 
     # --- Spark Detection MUST happen before coercion to Polars in to_dataframe() ---
