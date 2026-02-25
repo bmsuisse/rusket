@@ -62,7 +62,7 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: py${{ matrix.python-version }}
+          key: py${{ matrix.python-version }}-v2
 
       - name: Cargo check
         run: cargo check --all-targets
