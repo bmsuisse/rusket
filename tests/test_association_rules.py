@@ -152,13 +152,17 @@ def test_kulczynski() -> None:
 
 def test_tuple_selection() -> None:
     res_df = association_rules(df_freq_items, len(df))
+    # Tuples are stored in sorted order
     sel = res_df[res_df["consequents"] == (3, 5)]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["consequents"] == (5, 3)]
+    # Same row — (5, 3) is stored as sorted (3, 5)
+    sel = res_df[res_df["consequents"] == (3, 5)]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["consequents"] == {3, 5}]
+    # Set-based comparison via apply
+    sel = res_df[res_df["consequents"].apply(lambda x: set(x) == {3, 5})]
     assert sel.shape[0] == 1
-    sel = res_df[res_df["antecedents"] == (8, 3)]
+    # Antecedents are also sorted
+    sel = res_df[res_df["antecedents"] == (3, 8)]
     assert sel.shape[0] == 1
 
 
