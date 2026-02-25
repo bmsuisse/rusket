@@ -23,7 +23,7 @@
 |---|---|
 | ⚡ **Blazing fast** | All algorithms run in compiled Rust (via PyO3) with multi-threaded Rayon parallelism and SIMD-accelerated kernels. ALS is **3×**, BPR **20×** faster than Python alternatives. |
 | 📦 **Zero dependencies** | No TensorFlow, no PyTorch, no JVM. A single ~3 MB wheel is all you need — `pip install rusket` and go. |
-| 🧑‍💻 **Easy to use** | A clean OOP API (`ALS.from_transactions(df).fit()`) plus functional helpers, compatible with both beginner one-liners and power-user pipelines. |
+| 🧑‍💻 **Easy to use** | Common cases are one-liners: `model.recommend_items(user_id)`, `model.recommend_users(item_id)`, `model.export_item_factors()` for vector/embedding export. No boilerplate. |
 | 🏗️ **Modern data stack** | Native Pandas, Polars, and Apache Spark support with zero-copy Arrow transfers. Works seamlessly with Delta Lake, Databricks, Snowflake, and any dbt/Parquet pipeline. |
 
 ---
