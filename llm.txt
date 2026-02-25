@@ -1400,11 +1400,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### 📦 Miscellaneous
 
-- update README and docs/index.md
-
-### 📦 Miscellaneous
-
 - auto-format code with Ruff [skip ci]
+- update README and docs/index.md
 
 ### 🚀 Features
 
