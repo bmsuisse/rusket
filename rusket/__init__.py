@@ -25,6 +25,7 @@ from .similarity import similar_items
 from .streaming import FPMiner, mine_duckdb, mine_spark
 from .svd import SVD
 from .transactions import (
+    from_arrow,
     from_pandas,
     from_polars,
     from_spark,
@@ -49,6 +50,7 @@ __all__ = [
     "from_pandas",
     "from_polars",
     "from_spark",
+    "from_arrow",
     "FPMiner",
     "BaseModel",
     "ALS",

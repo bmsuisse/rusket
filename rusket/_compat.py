@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     import polars as pl
+    import pyarrow as pa
     from pyspark.sql import DataFrame as SparkDataFrame
 
     #: Union of all supported dense/tabular input types.
@@ -16,15 +17,22 @@ if TYPE_CHECKING:
     #: * ``polars.DataFrame``
     #: * ``numpy.ndarray`` – 2-D boolean / 0-1 matrix
     #: * ``pyspark.sql.DataFrame`` – converted to Polars via Arrow zero-copy
-    DataFrame = Union[pd.DataFrame, pl.DataFrame, np.ndarray, SparkDataFrame]  # noqa: UP007
+    #: * ``pyarrow.Table`` – converted to Polars via zero-copy
+    DataFrame = Union[pd.DataFrame, pl.DataFrame, np.ndarray, SparkDataFrame, pa.Table]  # noqa: UP007
 
 
 def to_dataframe(data: Any) -> Any:
-    """Coerce a Spark DataFrame to a zero-copy Polars DataFrame via PyArrow; return everything else unchanged."""
-    mod = getattr(data, "__module__", "") or ""
+    """Coerce Spark/PyArrow inputs to a zero-copy Polars DataFrame; return everything else unchanged."""
+    mod = getattr(type(data), "__module__", "") or ""
+
+    # PyArrow Table → Polars (zero-copy via Arrow memory)
+    if type(data).__name__ == "Table" and mod.startswith("pyarrow"):
+        import polars as pl
+
+        return pl.from_arrow(data)
 
     # We want Spark DataFrames to stay in Arrow memory, saving GC pauses
-    if mod.startswith("pyspark"):
+    if type(data).__name__ == "DataFrame" and mod.startswith("pyspark"):
         import polars as pl
         import pyarrow as pa
 

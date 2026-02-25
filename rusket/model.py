@@ -332,7 +332,9 @@ class Miner(BaseModel):
         # Store the original dataframe type to convert outputs back
         _type = type(self.data)
         self._orig_df_type: str = "pandas"
-        if _type.__name__ == "DataFrame":
+        if _type.__name__ == "Table" and getattr(_type, "__module__", "").startswith("pyarrow"):
+            self._orig_df_type = "pyarrow"
+        elif _type.__name__ == "DataFrame":
             mod_name = getattr(_type, "__module__", "")
             if mod_name.startswith("pyspark"):
                 self._orig_df_type = "spark"
@@ -346,7 +348,15 @@ class Miner(BaseModel):
         if df is None or not isinstance(df, pd.DataFrame):
             return df
 
-        if self._orig_df_type == "polars":
+        if self._orig_df_type == "pyarrow":
+            import pyarrow as pa
+
+            # Convert tuples to lists for Arrow compatibility
+            for col in ["antecedents", "consequents", "itemsets"]:
+                if col in df.columns:
+                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
+            return pa.Table.from_pandas(df)
+        elif self._orig_df_type == "polars":
             import polars as pl
 
             # Convert tuples to lists for pyarrow compatibility
@@ -415,7 +425,9 @@ class Miner(BaseModel):
 
         _type = type(data)
         _orig_type = "pandas"
-        if _type.__name__ == "DataFrame":
+        if _type.__name__ == "Table" and getattr(_type, "__module__", "").startswith("pyarrow"):
+            _orig_type = "pyarrow"
+        elif _type.__name__ == "DataFrame":
             mod_name = getattr(_type, "__module__", "")
             if mod_name.startswith("pyspark"):
                 _orig_type = "spark"

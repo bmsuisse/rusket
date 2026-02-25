@@ -17,6 +17,17 @@
 
 ---
 
+## 🎯 Goals
+
+| Goal | Details |
+|---|---|
+| ⚡ **Blazing fast** | All algorithms run in compiled Rust (via PyO3) with multi-threaded Rayon parallelism and SIMD-accelerated kernels. ALS is **3×**, BPR **20×** faster than Python alternatives. |
+| 📦 **Zero dependencies** | No TensorFlow, no PyTorch, no JVM. A single ~3 MB wheel is all you need — `pip install rusket` and go. |
+| 🧑‍💻 **Easy to use** | A clean OOP API (`ALS.from_transactions(df).fit()`) plus functional helpers, compatible with both beginner one-liners and power-user pipelines. |
+| 🏗️ **Modern data stack** | Native Pandas, Polars, and Apache Spark support with zero-copy Arrow transfers. Works seamlessly with Delta Lake, Databricks, Snowflake, and any dbt/Parquet pipeline. |
+
+---
+
 > **⚠️ Note:** `rusket` is currently under heavy construction. The API will probably change in upcoming versions.
 
 **rusket** is a modern, Rust-powered library for Market Basket Analysis and Recommender Engines. It delivers significant speed-ups and lower memory usage compared to traditional Python implementations, while natively supporting Pandas, Polars, and Spark out of the box.

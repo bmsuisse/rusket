@@ -25,6 +25,15 @@ The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and a
 | Sparse pandas DataFrame | `fpgrowth_from_csr` | Raw CSR arrays — zero-copy |
 | Polars DataFrame | `fpgrowth_from_dense` | Arrow-backed `numpy` buffer |
 
+## 🎯 Goals
+
+| Goal | Details |
+|---|---|
+| ⚡ **Blazing fast** | Compiled Rust with Rayon multi-threading and SIMD kernels. ALS is **3×**, BPR **20×** faster than Python equivalents. |
+| 📦 **Zero dependencies** | No TensorFlow, no PyTorch, no JVM — just `pip install rusket` and go. A single ~3 MB wheel. |
+| 🧑‍💻 **Easy to use** | Clean OOP API (`ALS.from_transactions(df).fit()`) and functional helpers that work from a one-liner to production pipelines. |
+| 🏗️ **Modern data stack** | Native Pandas, Polars, and Apache Spark support with zero-copy Arrow. Works with Delta Lake, Databricks, Snowflake, and dbt/Parquet pipelines out of the box. |
+
 ## Why rusket?
 
 **Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket`. The entire engine is compiled Rust (~3 MB wheel).

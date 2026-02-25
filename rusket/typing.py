@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     import numpy as np
     import pandas as pd
     import polars as pl
+    import pyarrow as pa
 
     try:
         import pyspark.sql
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     except ImportError:
         _SparkDataFrame = Any
 
-    DataFrameType = pd.DataFrame | pl.DataFrame | _SparkDataFrame
+    DataFrameType = pd.DataFrame | pl.DataFrame | pa.Table | _SparkDataFrame
 else:
     DataFrameType = Any
 

@@ -10,6 +10,7 @@ from ._compat import to_dataframe
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+    import pyarrow as pa
     from pyspark.sql import DataFrame as SparkDataFrame
 
     from ._compat import DataFrame
@@ -47,6 +48,16 @@ def from_transactions(
     min_item_count: int = 1,
     verbose: int = 0,
 ) -> SparkDataFrame: ...
+
+
+@overload
+def from_transactions(
+    data: pa.Table,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pa.Table: ...
 
 
 @overload
@@ -115,9 +126,24 @@ def from_transactions(
     >>> ohe = rusket.from_transactions(df)
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
-    # --- Spark Detection MUST happen before coercion to Polars in to_dataframe() ---
+    # --- PyArrow Table — zero-copy round-trip ---
     _type = type(data)
-    _is_spark = _type.__name__ == "DataFrame" and getattr(_type, "__module__", "").startswith("pyspark")
+    _type_name = _type.__name__
+    _mod = getattr(_type, "__module__", "") or ""
+    _is_arrow = _type_name == "Table" and _mod.startswith("pyarrow")
+
+    if _is_arrow:
+        import pandas as _pd
+        import polars as _pl
+        import pyarrow as _pa
+
+        pl_df = _pl.from_arrow(typing.cast("_pa.Table", data))
+        pandas_df = typing.cast("_pd.DataFrame", pl_df.to_pandas())
+        result_pd = _from_dataframe(pandas_df, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose)
+        return _pa.Table.from_pandas(result_pd.astype(bool))
+
+    # --- Spark Detection MUST happen before coercion to Polars in to_dataframe() ---
+    _is_spark = _type_name == "DataFrame" and _mod.startswith("pyspark")
 
     if _is_spark:
         if min_item_count > 1:
@@ -167,7 +193,7 @@ def from_transactions(
     if isinstance(data, _pd.DataFrame):
         return _from_dataframe(data, transaction_col, item_col, min_item_count=min_item_count, verbose=verbose)
 
-    raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
+    raise TypeError(f"Expected a Pandas/Polars/Spark/PyArrow DataFrame or list of lists, got {type(data)}")
 
 
 def from_pandas(
@@ -205,6 +231,46 @@ def from_spark(
 ) -> SparkDataFrame:
     """Shorthand for ``from_transactions(df, transaction_col, item_col)``."""
     return from_transactions(df, transaction_col=transaction_col, item_col=item_col, min_item_count=min_item_count)
+
+
+def from_arrow(
+    table: pa.Table,
+    transaction_col: str | None = None,
+    item_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pa.Table:
+    """Convert a PyArrow Table in long format to a one-hot boolean PyArrow Table.
+
+    This is a zero-copy-friendly shorthand for ``from_transactions(table, ...)``.  The
+    input table must have at least two columns: one for the transaction identifier and
+    one for the item.  The returned table has boolean columns (one per unique item).
+
+    Parameters
+    ----------
+    table
+        A ``pyarrow.Table`` with at least two columns (transaction id + item).
+    transaction_col
+        Name of the transaction-id column. Defaults to the first column.
+    item_col
+        Name of the item column. Defaults to the second column.
+    min_item_count
+        Minimum occurrences for an item to be included. Default is 1.
+    verbose
+        Verbosity level.
+
+    Returns
+    -------
+    pyarrow.Table
+        A boolean Table ready for :func:`rusket.fpgrowth` / :func:`rusket.eclat`.
+    """
+    return from_transactions(
+        table,
+        transaction_col=transaction_col,
+        item_col=item_col,
+        min_item_count=min_item_count,
+        verbose=verbose,
+    )
 
 
 def _from_list(
