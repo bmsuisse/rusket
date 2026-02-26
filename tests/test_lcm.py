@@ -113,7 +113,7 @@ def test_lcm_closedness_property() -> None:
 
     itemsets = list(result["itemsets"])
     supports = list(result["support"])
-    itemset_support = {tuple(sorted(x)): s for x, s in zip(itemsets, supports)}
+    itemset_support = {tuple(sorted(x)): s for x, s in zip(itemsets, supports, strict=True)}
 
     # For each itemset, check that no proper superset has the same support
     for iset, sup in itemset_support.items():
