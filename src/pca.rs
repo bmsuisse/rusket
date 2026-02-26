@@ -2,42 +2,67 @@ use numpy::{IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, P
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
+#[cfg(target_os = "macos")]
 extern crate accelerate_src;
 
-/// Row-major SGEMM via Apple Accelerate (AMX coprocessor).
-/// C = alpha * op(A) * op(B) + beta * C
+/// Cross-platform GEMM: C = alpha * op(A) * op(B) + beta * C (row-major).
+/// Uses Apple Accelerate (AMX) on macOS, faer::matmul elsewhere.
 #[inline]
-fn sgemm_rowmajor(
-    trans_a: cblas::Transpose,
-    trans_b: cblas::Transpose,
-    m: usize,       // rows of op(A) and C
-    n: usize,       // cols of op(B) and C
-    k: usize,       // cols of op(A) = rows of op(B)
+fn gemm(
+    trans_a: bool,
+    trans_b: bool,
+    m: usize,
+    n: usize,
+    k: usize,
     alpha: f32,
     a: &[f32],
-    lda: usize,     // leading dimension of A
+    lda: usize,
     b: &[f32],
-    ldb: usize,     // leading dimension of B
+    ldb: usize,
     beta: f32,
     c: &mut [f32],
-    ldc: usize,     // leading dimension of C
+    ldc: usize,
 ) {
-    unsafe {
-        cblas::sgemm(
-            cblas::Layout::RowMajor,
-            trans_a,
-            trans_b,
-            m as i32,
-            n as i32,
-            k as i32,
+    #[cfg(target_os = "macos")]
+    {
+        let ta = if trans_a { cblas::Transpose::Ordinary } else { cblas::Transpose::None };
+        let tb = if trans_b { cblas::Transpose::Ordinary } else { cblas::Transpose::None };
+        unsafe {
+            cblas::sgemm(
+                cblas::Layout::RowMajor,
+                ta, tb,
+                m as i32, n as i32, k as i32,
+                alpha, a, lda as i32, b, ldb as i32,
+                beta, c, ldc as i32,
+            );
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Dimensions for faer: A is (rows_a, cols_a), B is (rows_b, cols_b)
+        let (rows_a, cols_a) = if trans_a { (k, m) } else { (m, k) };
+        let (rows_b, cols_b) = if trans_b { (n, k) } else { (k, n) };
+        let a_mat = faer::mat::MatRef::from_row_major_slice(a, rows_a, cols_a);
+        let b_mat = faer::mat::MatRef::from_row_major_slice(b, rows_b, cols_b);
+        let a_ref = if trans_a { a_mat.transpose() } else { a_mat };
+        let b_ref = if trans_b { b_mat.transpose() } else { b_mat };
+
+        // Apply beta scaling
+        if beta == 0.0 {
+            c.iter_mut().for_each(|v| *v = 0.0);
+        } else if beta != 1.0 {
+            c.iter_mut().for_each(|v| *v *= beta);
+        }
+
+        let mut c_mat = faer::mat::MatMut::from_row_major_slice_mut(c, m, n);
+        faer::linalg::matmul::matmul(
+            c_mat.as_mut(),
+            faer::Accum::Add,
+            a_ref,
+            b_ref,
             alpha,
-            a,
-            lda as i32,
-            b,
-            ldb as i32,
-            beta,
-            c,
-            ldc as i32,
+            faer::Par::rayon(0),
         );
     }
 }
@@ -191,10 +216,9 @@ pub fn pca_fit<'py>(
         
         let mut y_mat_data = vec![0.0f32; n_samples * k_extra];
         
-        // Y = X * Omega via Apple Accelerate
-        sgemm_rowmajor(
-            cblas::Transpose::None,
-            cblas::Transpose::None,
+        // Y = X * Omega via BLAS
+        gemm(
+            false, false,
             n_samples, k_extra, n_features,
             1.0, data_slice, n_features,
             &omega, k_extra,
@@ -221,9 +245,8 @@ pub fn pca_fit<'py>(
         for _power_iter in 0..n_iter {
             // Step A: Z = X^T * Y  (n_features x k_extra)
             let mut z_data = vec![0.0f32; n_features * k_extra];
-            sgemm_rowmajor(
-                cblas::Transpose::Ordinary,
-                cblas::Transpose::None,
+            gemm(
+                true, false,
                 n_features, k_extra, n_samples,
                 1.0, data_slice, n_features,
                 &y_mat_data, k_extra,
@@ -243,9 +266,8 @@ pub fn pca_fit<'py>(
             }
 
             // Step B: Y = X * Z  (n_samples x k_extra)
-            sgemm_rowmajor(
-                cblas::Transpose::None,
-                cblas::Transpose::None,
+            gemm(
+                false, false,
                 n_samples, k_extra, n_features,
                 1.0, data_slice, n_features,
                 &z_data, k_extra,
@@ -274,11 +296,10 @@ pub fn pca_fit<'py>(
         // So: M = Y^T (X-mu) is (k_extra x n_features), then B = S^{-1} V^T M
         // And Y^T Y is tiny (k_extra x k_extra), so its SVD is essentially free.
         
-        // Step 1: M = Y^T * X  (k_extra x n_features) via cblas
+        // Step 1: M = Y^T * X  (k_extra x n_features)
         let mut m_data = vec![0.0f32; k_extra * n_features];
-        sgemm_rowmajor(
-            cblas::Transpose::Ordinary,
-            cblas::Transpose::None,
+        gemm(
+            true, false,
             k_extra, n_features, n_samples,
             1.0, &y_mat_data, k_extra,
             data_slice, n_features,
@@ -298,11 +319,10 @@ pub fn pca_fit<'py>(
             }
         }
         
-        // Step 2: G = Y^T * Y  (k_extra x k_extra) via cblas
+        // Step 2: G = Y^T * Y  (k_extra x k_extra)
         let mut g_data = vec![0.0f32; k_extra * k_extra];
-        sgemm_rowmajor(
-            cblas::Transpose::Ordinary,
-            cblas::Transpose::None,
+        gemm(
+            true, false,
             k_extra, k_extra, n_samples,
             1.0, &y_mat_data, k_extra,
             &y_mat_data, k_extra,
@@ -458,11 +478,10 @@ pub fn pca_transform<'py>(
         pyo3::exceptions::PyValueError::new_err("Components array must be C-contiguous.")
     })?;
 
-    // Result = X * components^T via Apple Accelerate AMX
+    // Result = X * components^T
     let mut result = vec![0.0f32; n_samples * n_components];
-    sgemm_rowmajor(
-        cblas::Transpose::None,
-        cblas::Transpose::Ordinary,
+    gemm(
+        false, true,
         n_samples, n_components, n_features,
         1.0, data_s, n_features,
         comp_s, n_features,
