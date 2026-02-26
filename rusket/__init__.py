@@ -18,6 +18,7 @@ from .lightgcn import LightGCN
 from .mine import AutoMiner, mine
 from .model import BaseModel
 from .model_selection import leave_one_out_split, train_test_split
+from .pca import PCA, pca, pca2, pca3
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
 from .recommend import NextBestAction, Recommender, score_potential
 from .sasrec import SASRec
@@ -79,4 +80,8 @@ __all__ = [
     "evaluate",
     "train_test_split",
     "leave_one_out_split",
+    "PCA",
+    "pca",
+    "pca2",
+    "pca3",
 ]

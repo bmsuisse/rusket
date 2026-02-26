@@ -21,6 +21,7 @@ mod fm;
 mod lightgcn;
 mod metrics;
 mod model_selection;
+mod pca;
 mod sasrec;
 mod svd;
 
@@ -69,5 +70,7 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(svd::svdpp_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(svd::svdpp_recommend_users, m)?)?;
     m.add_function(wrap_pyfunction!(svd::svdpp_recommend_all, m)?)?;
+    m.add_function(wrap_pyfunction!(pca::pca_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(pca::pca_transform, m)?)?;
     Ok(())
 }

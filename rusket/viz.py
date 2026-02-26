@@ -102,6 +102,8 @@ def to_networkx(
 def compute_pca_3d(data: np.ndarray) -> np.ndarray:
     """Compute 3D PCA coordinates for the given data.
 
+    Uses the Rust-backed PCA implementation for performance.
+
     Parameters
     ----------
     data : np.ndarray
@@ -112,11 +114,9 @@ def compute_pca_3d(data: np.ndarray) -> np.ndarray:
     np.ndarray
         3D projection of shape (n_samples, 3).
     """
-    import numpy as np
+    from .pca import pca3
 
-    data_centered = data - np.mean(data, axis=0)
-    _, _, Vt = np.linalg.svd(data_centered, full_matrices=False)
-    return np.dot(data_centered, Vt[:3].T)
+    return pca3(data)
 
 
 def visualize_latent_space(
@@ -198,5 +198,105 @@ def visualize_latent_space(
             "zaxis": {"showticklabels": False, "title": ""},
         },
     )
+
+    return fig
+
+
+def plot_pca(
+    data: np.ndarray,
+    labels: list[str] | None = None,
+    title: str | None = None,
+    marker_size: int = 4,
+    opacity: float = 0.8,
+    template: str = "plotly_dark",
+) -> Any:
+    """Create an interactive 2D or 3D scatter plot of PCA-projected data.
+
+    Automatically detects whether to produce a 2D or 3D plot based on the
+    number of columns in ``data``.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Projected coordinates of shape ``(n_samples, 2)`` or ``(n_samples, 3)``.
+        Typically the output of :func:`rusket.pca2` or :func:`rusket.pca3`.
+    labels : list[str], optional
+        Hover labels, one per sample.
+    title : str, optional
+        Plot title. Defaults to ``"PCA 2D"`` or ``"PCA 3D"``.
+    marker_size : int, default=4
+        Marker size.
+    opacity : float, default=0.8
+        Marker opacity.
+    template : str, default="plotly_dark"
+        Plotly template name.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        A Plotly figure object.  Call ``.show()`` to display it or
+        ``.write_html()`` to save.
+
+    Raises
+    ------
+    ImportError
+        If ``plotly`` is not installed.
+    ValueError
+        If ``data`` does not have 2 or 3 columns.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import rusket
+    >>> X = np.random.default_rng(0).standard_normal((200, 50)).astype("float32")
+    >>> coords = rusket.pca3(X)
+    >>> fig = rusket.viz.plot_pca(coords, title="My embedding")
+    """
+    try:
+        import plotly.express as px  # type: ignore
+    except ImportError as err:
+        raise ImportError(
+            "The 'plotly' library is required to use `plot_pca()`. "
+            "Install it via `pip install plotly` or `uv add plotly`."
+        ) from err
+
+    import pandas as pd
+
+    data = np.asarray(data)
+    n_cols = data.shape[1] if data.ndim == 2 else 0
+
+    if n_cols == 2:
+        df = pd.DataFrame({"PC1": data[:, 0], "PC2": data[:, 1]})
+        if labels is not None:
+            df["label"] = labels
+        fig = px.scatter(
+            df,
+            x="PC1",
+            y="PC2",
+            hover_data=["label"] if labels is not None else None,
+            template=template,
+            title=title or "PCA 2D",
+        )
+    elif n_cols == 3:
+        df = pd.DataFrame({"PC1": data[:, 0], "PC2": data[:, 1], "PC3": data[:, 2]})
+        if labels is not None:
+            df["label"] = labels
+        fig = px.scatter_3d(
+            df,
+            x="PC1",
+            y="PC2",
+            z="PC3",
+            hover_data=["label"] if labels is not None else None,
+            template=template,
+            title=title or "PCA 3D",
+        )
+    else:
+        raise ValueError(
+            f"plot_pca expects data with 2 or 3 columns, got {n_cols}. "
+            "Pass the output of rusket.pca2() or rusket.pca3()."
+        )
+
+    fig.update_traces(marker={"size": marker_size, "opacity": opacity})
+    fig.update_layout(margin={"l": 20, "r": 20, "b": 20, "t": 40})
 
     return fig

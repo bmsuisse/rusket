@@ -221,3 +221,18 @@ def train_test_split(ids: list[int], test_size: float) -> tuple[list[int], list[
 def leave_one_out(
     user_ids: list[int], item_ids: list[int], timestamps: list[float] | None
 ) -> tuple[list[int], list[int]]: ...
+def pca_fit(
+    data: npt.NDArray[np.float32],
+    n_components: int,
+) -> tuple[
+    npt.NDArray[np.float32],  # components (n_components, n_features)
+    npt.NDArray[np.float32],  # explained_variance (n_components,)
+    npt.NDArray[np.float32],  # explained_variance_ratio (n_components,)
+    npt.NDArray[np.float32],  # singular_values (n_components,)
+    npt.NDArray[np.float32],  # mean (n_features,)
+]: ...
+def pca_transform(
+    data: npt.NDArray[np.float32],
+    mean: npt.NDArray[np.float32],
+    components: npt.NDArray[np.float32],
+) -> npt.NDArray[np.float32]: ...
