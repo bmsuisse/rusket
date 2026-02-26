@@ -170,3 +170,9 @@ class FPMC(SequentialRecommender):
     def _check_fitted(self) -> None:
         if not self.fitted:
             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")
+
+    @property
+    def item_factors(self) -> Any:
+        """Item factor matrix (n_items, factors). Returns V_iu (MF item embeddings)."""
+        self._check_fitted()
+        return self._viu

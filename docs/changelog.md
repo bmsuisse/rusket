@@ -9,6 +9,81 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - auto-format code with Ruff [skip ci]
 
+### 🚀 Features
+
+- add save/load, from_arrow, expand tests, update README for all 15 algorithms
+- Add Rust-backed PCA implementation with a scikit-learn compatible Python API.
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- update README and docs/index.md
+
+### 🚀 Features
+
+- Add first-class `pyarrow.Table` support for data processing and model results, leveraging zero-copy conversions and introducing `from_arrow`.
+
+### Merge
+
+- spark PyArrow-native UDFs + SIMD optimizations
+
+### Test
+
+- expand benchmark suite with 4-tier dataset matrix
+
+### ⚡ Performance
+
+- SIMD-optimise dot products (8-wide), eliminate atomic CAS in LightGCN, remove clone overhead in FIN/ECLAT
+- Hogwild parallel SVD++ (user-grouped rayon par_iter)
+- optimize scoring with SIMD GEMM and enable native CPU target
+
+### 🐛 Bug Fixes
+
+- call .fit() in test_spark_als after from_transactions() API refactor
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+
+### 🔧 Refactoring
+
+- use PyArrow natively in applyInArrow UDFs, drop Polars hop
+
+### 🚀 Features
+
+- SIMD optimizations for SVD++, BPR, Eclat, ALS-CG hot paths
+
+### 🐛 Bug Fixes
+
+- replace deprecated recommend_items with recommend_for_cart in tests
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- add Kosarak regression test, Rust unit tests for association_rules, and benchmark vs arm-rs
+- Introduce SVD model, standardize `verbose` and `seed` parameters, and optimize imports across modules.
+- Refactor benchmarks, add new comparison benchmarks, enhance SVD API with type hints and `fitted` property, and expand documentation and test coverage.
+- add SVD model, LibRecommender benchmarks, zero-dep messaging
+
+### 🐛 Bug Fixes
+
+- als_model references in Recommender docs and test setups
+- add tabulate to dev dependencies for mkdocs
+- keep _orig_type resolution before to_dataframe data coercion
+- lazy evaluation of num_itemsets to support PySpark dfs
+- preserve spark dataframe column order after inner join in from_transactions
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- bump version to 0.1.46
+
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]

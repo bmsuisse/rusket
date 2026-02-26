@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import typing
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from . import _rusket as _rust  # type: ignore
 from .model import ImplicitRecommender
@@ -47,6 +50,19 @@ class ALS(ImplicitRecommender):
 
         Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix
         (~57 MB per copy at 25M ratings, k=64).
+
+    Examples
+    --------
+    Fold in a new user without retraining the entire model matrix:
+
+    >>> import rusket
+    >>> import numpy as np
+    >>> from scipy.sparse import csr_matrix
+    >>> # Fit model on some data
+    >>> model = rusket.ALS(factors=8).fit(csr_matrix(np.random.randint(0, 2, size=(10, 20))))
+    >>> # New user interacts with items 3, 5, and 12
+    >>> latent_factors = model.recalculate_user([3, 5, 12])
+    >>> # `latent_factors` is a 1D array of length `factors=8`
     """
 
     def __init__(
@@ -157,6 +173,53 @@ class ALS(ImplicitRecommender):
         self._fit_indices = indices
         self.fitted = True
         return self
+
+    def recalculate_user(self, user_items: Any) -> np.ndarray:
+        """Calculate the latent factors for a new or existing user given their interacted items.
+
+        Parameters
+        ----------
+        user_items : list of int or 1D array-like
+            The item indices the user has interacted with. If the model was fitted
+            using a DataFrame with item names, these should be the mapped item indices
+            from 0 to n_items - 1.
+
+            Note: Confidence values for interactions are currently treated as 1.
+
+        Returns
+        -------
+        ndarray
+            A 1D numpy array of shape (factors,) containing the user's latent factors.
+
+        Raises
+        ------
+        RuntimeError
+            If the model is not fitted.
+        ValueError
+            If any item index is out of bounds.
+        """
+        import numpy as np
+
+        self._check_fitted()
+
+        # Validate indices
+        indices = np.asarray(user_items, dtype=np.int32)
+        if len(indices) > 0:
+            if indices.min() < 0 or indices.max() >= self._n_items:
+                raise ValueError(f"Item indices must be between 0 and {self._n_items - 1}")
+
+        # We assume all interactions have a value of 1.0 for now
+        data = np.ones_like(indices, dtype=np.float32)
+
+        return _rust.als_recalculate_user(
+            self._item_factors,
+            indices,
+            data,
+            self.regularization,
+            self.alpha,
+            self.cg_iters,
+            self.use_cholesky,
+        )
 
     def recommend_items(
         self,

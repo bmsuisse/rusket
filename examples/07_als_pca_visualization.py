@@ -5,7 +5,7 @@ Visualizing Latent Spaces (PCA) with ALS
 This example demonstrates how to:
 1. Load the Online Retail dataset using `pandas`.
 2. Train a `rusket.ALS` collaborative filtering model.
-3. Extract `item_factors` and perform L2 normalization and PCA using pure `numpy`.
+3. Extract `item_factors` and perform L2 normalization and PCA using `rusket.pca3`.
 4. Visualize the 3D space using `plotly`.
 
 No external dependencies like `scikit-learn` or `PySpark` are required!
@@ -39,25 +39,6 @@ def download_online_retail(data_dir: Path) -> pd.DataFrame:
     df = df[df["Quantity"] > 0]
     return df
 
-
-def compute_pca_3d(data: np.ndarray) -> np.ndarray:
-    """Computes a 3D PCA projection using Singular Value Decomposition."""
-    print("Computing SVD... ", end="")
-    # Mean centering
-    data_centered = data - np.mean(data, axis=0)
-
-    # Singular Value Decomposition
-    # Vt contains the principal components
-    U, S, Vt = np.linalg.svd(data_centered, full_matrices=False)
-
-    # Extract the top 3 principal components
-    components = Vt[:3]
-
-    print("Done.")
-    # Project data onto the components
-    return np.dot(data_centered, components.T)
-
-
 def main():
     # 1. Load the data
     data_dir = Path(__file__).parent.parent / "benchdata"
@@ -80,8 +61,9 @@ def main():
     item_factors_norm = item_factors / np.clip(item_norms, a_min=1e-10, a_max=None)
 
     # 4. PCA Reduction
-    print("Computing 3D PCA mapping...")
-    item_pca = compute_pca_3d(item_factors_norm)
+    print("Computing 3D PCA mapping with Rust backend...")
+    import rusket
+    item_pca = rusket.pca3(item_factors_norm)
 
     # 5. Build DataFrame for Plotly
     df_viz = pd.DataFrame(

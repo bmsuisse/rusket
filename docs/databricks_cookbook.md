@@ -60,14 +60,24 @@ user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_laye
 item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
 ```
 
-## 4. Dimensionality Reduction & Visualization
+We can map our embeddings down to 3D and visualize them using Principal Component Analysis (PCA). `rusket` features a highly optimized Rust-backed `PCA` implementation.
 
-We can map our embeddings down to 3D and visualize them using Principal Component Analysis (PCA).
+You can use the fluent API to instantly project and visualize the latent space interactively:
 
 ```python
-# rusket has a built-in visualization utility utilizing sklearn PCA and Plotly
-fig = als.visualize_factors(labels=False)
+# Fluent API for instant 3D interactive visualization
+fig = als.pca(n_components=3).plot(title="Latent Item Space")
 fig.show()
+```
+
+If you need the principal components for downstream tasks or explicit ML pipelines, you can use the scikit-learn compatible object directly instead:
+
+```python
+# Object-oriented API for downstream machine learning tasks
+pca_model = rusket.PCA(n_components=10)
+reduced_embeddings = pca_model.fit_transform(als.item_embeddings)
+
+print(pca_model.explained_variance_ratio_)
 ```
 
 ## 5. High-Speed Batch Scoring

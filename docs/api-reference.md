@@ -579,6 +579,24 @@ FPMiner.add_chunk(txn_ids: 'np.ndarray', item_ids: 'np.ndarray') -> 'FPMiner'
 
 ---
 
+#### `FPMiner.fit`
+
+Sklearn-compatible alias for ``mine()``. Runs the mining algorithm.
+
+```python
+from rusket.streaming import FPMiner.fit
+
+FPMiner.fit(**kwargs: 'Any') -> 'FPMiner'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| self |  |  |
+
+---
+
 #### `FPMiner.mine`
 
 Mine frequent itemsets from all accumulated transactions.
@@ -605,6 +623,24 @@ FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colna
 | Name | Type | Description |
 | --- | --- | --- |
 | pd.DataFrame |  | Columns ``support`` and ``itemsets``. |
+
+---
+
+#### `FPMiner.predict`
+
+Return the last mined result, or run ``fit()`` first.
+
+```python
+from rusket.streaming import FPMiner.predict
+
+FPMiner.predict(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pd.DataFrame |  | The frequent itemsets. |
 
 ---
 
@@ -654,31 +690,13 @@ RuleMinerMixin.association_rules(metric: 'str' = 'confidence', min_threshold: 'f
 
 ### `RuleMinerMixin.recommend_items`
 
-Suggest items to add to an active cart using association rules.
+Deprecated: use :meth:`recommend_for_cart` instead.
 
 ```python
 from rusket.model import RuleMinerMixin.recommend_items
 
 RuleMinerMixin.recommend_items(items: 'list[Any]', n: 'int' = 5) -> 'list[Any]'
 ```
-
-**Parameters**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| items | list[Any] | The items currently in the cart or basket. |
-| n | int, default=5 | The maximum number of items to recommend. |
-
-**Returns**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| list[Any] |  | List of recommended items, ordered by lift and then confidence. |
-
-> **Notes**
-> Rules are computed once and cached with the key ``(metric="lift",
-min_threshold=1.0)``.  Call :meth:`_invalidate_rules_cache` to force
-a re-computation after re-mining.
 
 ---
 
@@ -703,7 +721,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'bool' = False, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -718,6 +736,21 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | cg_iters | int | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``).  Reduce to 3 for very large datasets. |
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
+
+**Examples**
+
+```python
+Fold in a new user without retraining the entire model matrix:
+
+>>> import rusket
+>>> import numpy as np
+>>> from scipy.sparse import csr_matrix
+>>> # Fit model on some data
+>>> model = rusket.ALS(factors=8).fit(csr_matrix(np.random.randint(0, 2, size=(10, 20))))
+>>> # New user interacts with items 3, 5, and 12
+>>> latent_factors = model.recalculate_user([3, 5, 12])
+>>> # `latent_factors` is a 1D array of length `factors=8`
+```
 
 #### `ALS.batch_recommend`
 
@@ -752,8 +785,14 @@ Fit the model to the user-item interaction matrix.
 ```python
 from rusket.als import ALS.fit
 
-ALS.fit(interactions: 'Any') -> 'ALS'
+ALS.fit(interactions: 'Any' = None) -> 'ALS'
 ```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
 
 **Raises**
 
@@ -761,6 +800,37 @@ ALS.fit(interactions: 'Any') -> 'ALS'
 | --- | --- |
 | RuntimeError |  | If the model is already fitted. Create a new instance to refit. |
 | TypeError |  | If the input matrix is not a recognizable sparse matrix or numpy array. |
+
+---
+
+#### `ALS.recalculate_user`
+
+Calculate the latent factors for a new or existing user given their interacted items.
+
+```python
+from rusket.als import ALS.recalculate_user
+
+ALS.recalculate_user(user_items: 'Any') -> 'np.ndarray'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_items | list of int or 1D array-like | The item indices the user has interacted with. If the model was fitted using a DataFrame with item names, these should be the mapped item indices from 0 to n_items - 1.  Note: Confidence values for interactions are currently treated as 1. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| ndarray |  | A 1D numpy array of shape (factors,) containing the user's latent factors. |
+
+**Raises**
+
+| Exception | Condition |
+| --- | --- |
+| RuntimeError |  | If the model is not fitted. |
+| ValueError |  | If any item index is out of bounds. |
 
 ---
 
@@ -801,7 +871,7 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 ```python
 from rusket.bpr import BPR
 
-BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'bool' = False, **kwargs: 'Any') -> 'None'
+BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -821,8 +891,14 @@ Fit the BPR model to the user-item interaction matrix.
 ```python
 from rusket.bpr import BPR.fit
 
-BPR.fit(interactions: 'Any') -> 'BPR'
+BPR.fit(interactions: 'Any' = None) -> 'BPR'
 ```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
 
 **Raises**
 
@@ -842,6 +918,88 @@ from rusket.bpr import BPR.recommend_items
 
 BPR.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
+
+---
+
+---
+
+### `FM`
+
+Factorization Machines (FM) context-aware model for predictive tasks (e.g. CTR).
+
+This model supports binary classification tasks using Log Loss (Binary Cross Entropy).
+Inputs should be formatted as a scipy sparse CSR matrix where features are binary (0/1).
+Each row is a sample consisting of User, Item, and Context features.
+
+```python
+from rusket.fm import FM
+
+FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors for the cross terms (default: 8). |
+| learning_rate | float | SGD learning rate (default: 0.05). |
+| regularization | float | L2 regularization weight (default: 0.01). |
+| iterations | int | Number of training epochs (default: 100). |
+| seed | int | Random seed for SGD sampling (default: 42). |
+| verbose | bool | Whether to print training progress (default: False). |
+
+#### `FM.fit`
+
+Fit the FM model to Context-aware Data.
+
+```python
+from rusket.fm import FM.fit
+
+FM.fit(X: 'Any', y: 'Any') -> 'FM'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| X | scipy.sparse.csr_matrix or numpy array | Sparse binary feature matrix of shape (n_samples, n_features). Each row represents a single interaction with all its context features. |
+| y | numpy.ndarray | Binary target labels (0.0 or 1.0) of shape (n_samples,). |
+
+---
+
+#### `FM.predict`
+
+Alias for :meth:`predict_proba`.
+
+```python
+from rusket.fm import FM.predict
+
+FM.predict(X: 'Any') -> 'Any'
+```
+
+---
+
+#### `FM.predict_proba`
+
+Predict the probability (CTR) of interactions.
+
+```python
+from rusket.fm import FM.predict_proba
+
+FM.predict_proba(X: 'Any') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| X | scipy.sparse.csr_matrix or numpy array | Sparse binary feature matrix of shape (n_samples, n_features). |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| numpy.ndarray |  | Predicted probabilities of shape (n_samples,). |
 
 ---
 
@@ -987,7 +1145,7 @@ and all other item vectors in the ``item_factors`` matrix.
 ```python
 from rusket.similarity import similar_items
 
-similar_items(model: rusket.typing.SupportsItemFactors, item_id: int, n: int = 5) -> tuple[numpy.ndarray, numpy.ndarray]
+similar_items(model: 'SupportsItemFactors', item_id: 'int', n: 'int' = 5) -> 'tuple[np.ndarray, np.ndarray]'
 ```
 
 **Parameters**
@@ -1071,7 +1229,7 @@ Retrieval-Augmented Generation (RAG) and semantic search.
 ```python
 from rusket.export import export_item_factors
 
-export_item_factors(model: rusket.typing.SupportsItemFactors, include_labels: bool = True, normalize: bool = False, format: str = 'pandas') -> Any
+export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True, normalize: 'bool' = False, format: 'str' = 'pandas') -> 'Any'
 ```
 
 **Parameters**

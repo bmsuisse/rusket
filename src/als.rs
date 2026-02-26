@@ -679,6 +679,40 @@ pub fn als_recommend_users<'py>(
 }
 
 #[pyfunction]
+#[pyo3(signature = (item_factors, indices, data, regularization, alpha, cg_iters=10, use_cholesky=false))]
+pub fn als_recalculate_user<'py>(
+    py: Python<'py>,
+    item_factors: PyReadonlyArray2<f32>,
+    indices: PyReadonlyArray1<i32>,
+    data: PyReadonlyArray1<f32>,
+    regularization: f32,
+    alpha: f32,
+    cg_iters: usize,
+    use_cholesky: bool,
+) -> PyResult<Bound<'py, PyArray1<f32>>> {
+    let itf = item_factors.as_slice()?;
+    let ix = indices.as_slice()?;
+    let id = data.as_slice()?;
+
+    let k = item_factors.shape()[1];
+    let n_items = item_factors.shape()[0];
+
+    // Single user indptr
+    let indptr = [0i64, ix.len() as i64];
+
+    let user_factors = py.detach(|| {
+        let gram = gramian(itf, n_items, k);
+        if use_cholesky {
+            solve_one_side_cholesky(&indptr, ix, id, itf, &gram, 1, k, regularization, alpha)
+        } else {
+            solve_one_side_cg(&indptr, ix, id, itf, &gram, 1, k, regularization, alpha, cg_iters)
+        }
+    });
+
+    Ok(PyArray1::from_vec(py, user_factors))
+}
+
+#[pyfunction]
 #[pyo3(signature = (user_factors, item_factors, n, exclude_indptr, exclude_indices))]
 pub fn als_recommend_all<'py>(
     py: Python<'py>,

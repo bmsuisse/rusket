@@ -370,3 +370,46 @@ def test_als_normalization() -> None:
     df_norm = model.export_factors(format="pandas", normalize=True)
     lengths = df_norm["vector"].apply(lambda v: np.linalg.norm(v)).values
     np.testing.assert_allclose(lengths, np.ones(20), rtol=1e-5)
+
+
+def test_recalculate_user_basic() -> None:
+    model = rusket.ALS(factors=8, regularization=0.1, iterations=15, seed=42)
+    model.fit(get_checker_board(20))
+
+    # Recalculate factors for user 0
+    # User 0 engaged with items 0, 2, 4, 6...
+    user_0_items = [i for i in range(20) if i % 2 == 0]
+
+    new_factors = model.recalculate_user(user_0_items)
+    assert new_factors.shape == (8,)
+
+    # The new factors should be somewhat close to original user 0 factors
+    # Exact match depends on CG convergence vs full ALS fixed-point
+    cosine_sim = np.dot(new_factors, model.user_factors[0]) / (
+        np.linalg.norm(new_factors) * np.linalg.norm(model.user_factors[0])
+    )
+    assert cosine_sim > 0.9
+
+
+def test_recalculate_user_not_fitted() -> None:
+    model = rusket.ALS(factors=8)
+    with pytest.raises(RuntimeError):
+        model.recalculate_user([1, 2, 3])
+
+
+def test_recalculate_user_out_of_bounds() -> None:
+    model = rusket.ALS(factors=8, iterations=5)
+    model.fit(get_checker_board(10))
+    with pytest.raises(ValueError):
+        model.recalculate_user([10])
+    with pytest.raises(ValueError):
+        model.recalculate_user([-1])
+
+
+def test_recalculate_empty_user() -> None:
+    model = rusket.ALS(factors=8, iterations=5)
+    model.fit(get_checker_board(10))
+    factors = model.recalculate_user([])
+    assert factors.shape == (8,)
+    # Factors should be a zero vector for a user with no interactions
+    np.testing.assert_allclose(factors, np.zeros(8), atol=1e-5)

@@ -55,8 +55,9 @@ class PCA:
     0.4...
     """
 
-    def __init__(self, n_components: int = 2) -> None:
+    def __init__(self, n_components: int = 2, svd_solver: str = "auto") -> None:
         self.n_components = n_components
+        self.svd_solver = svd_solver
         self._components: npt.NDArray[np.float32] | None = None
         self._explained_variance: npt.NDArray[np.float32] | None = None
         self._explained_variance_ratio: npt.NDArray[np.float32] | None = None
@@ -82,7 +83,7 @@ class PCA:
         self
         """
         X = self._validate(X)
-        comp, ev, evr, sv, mean = _rust.pca_fit(X, self.n_components)
+        comp, ev, evr, sv, mean = _rust.pca_fit(X, self.n_components, self.svd_solver)
         self._components = comp
         self._explained_variance = ev
         self._explained_variance_ratio = evr
@@ -106,7 +107,7 @@ class PCA:
         """
         self._check_fitted()
         X = self._validate(X)
-        result: npt.NDArray[np.float32] = _rust.pca_transform(X, self._mean, self._components)
+        result: npt.NDArray[np.float32] = _rust.pca_transform(X, self.mean_, self.components_)
         return result
 
     # ── Fit + transform ────────────────────────────────────────────────
@@ -181,48 +182,69 @@ class PCA:
         return arr
 
 
+# ── Fluent Visualization API ───────────────────────────────────────────
+
+
+class ProjectedSpace:
+    """A latent space projection created via PCA, supporting fluent visualization.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        The projected coordinates.
+    labels : list[Any] | None
+        Optional labels corresponding to each point.
+    """
+
+    def __init__(self, data: npt.NDArray[np.float32], labels: list[Any] | None = None) -> None:
+        self.data = np.asarray(data)
+        self.labels = [str(lbl) for lbl in labels] if labels is not None else None
+        self.n_components = self.data.shape[1] if self.data.ndim == 2 else 0
+
+    def __getattr__(self, name: str) -> Any:
+        # Proxy attributes like `.shape` directly to the underlying np.ndarray
+        return getattr(self.data, name)  # type: ignore[misc]
+
+    def plot(self, title: str | None = None, **kwargs: Any) -> Any:
+        """Create an interactive Scatter plot using Plotly.
+
+        Parameters
+        ----------
+        title : str, optional
+            Plot title.
+        **kwargs : Any
+            Additional arguments forwarded to `viz.plot_pca` (e.g. `marker_size`, `opacity`).
+
+        Returns
+        -------
+        plotly.graph_objects.Figure
+        """
+        from .viz import plot_pca
+
+        return plot_pca(self.data, labels=self.labels, title=title, **kwargs)
+
+
 # ── Convenience functions ──────────────────────────────────────────────
 
 
-def pca(data: npt.NDArray[Any], n_components: int = 2) -> npt.NDArray[np.float32]:
-    """One-shot PCA: fit and transform in a single call.
+def pca(x: npt.NDArray[Any], n_components: int = 2, svd_solver: str = "auto") -> ProjectedSpace:
+    """Project data into `n_components` dimensions using PCA.
 
     Parameters
     ----------
-    data : array-like of shape (n_samples, n_features)
-    n_components : int
-        Number of principal components.
-
-    Returns
-    -------
-    ndarray of shape (n_samples, n_components)
+    x : array-like of shape (n_samples, n_features)
+    n_components : int, default=2
+    svd_solver : {"auto", "exact", "randomized"}, default="auto"
     """
-    return PCA(n_components=n_components).fit_transform(data)
+    model = PCA(n_components, svd_solver=svd_solver).fit(x)
+    return ProjectedSpace(model.transform(x))
 
 
-def pca2(data: npt.NDArray[Any]) -> npt.NDArray[np.float32]:
-    """One-shot PCA to 2 dimensions.
-
-    Parameters
-    ----------
-    data : array-like of shape (n_samples, n_features)
-
-    Returns
-    -------
-    ndarray of shape (n_samples, 2)
-    """
-    return pca(data, n_components=2)
+def pca2(x: npt.NDArray[Any], svd_solver: str = "auto") -> ProjectedSpace:
+    """Project data into exactly 2 dimensions using PCA."""
+    return pca(x, n_components=2, svd_solver=svd_solver)
 
 
-def pca3(data: npt.NDArray[Any]) -> npt.NDArray[np.float32]:
-    """One-shot PCA to 3 dimensions.
-
-    Parameters
-    ----------
-    data : array-like of shape (n_samples, n_features)
-
-    Returns
-    -------
-    ndarray of shape (n_samples, 3)
-    """
-    return pca(data, n_components=3)
+def pca3(x: npt.NDArray[Any], svd_solver: str = "auto") -> ProjectedSpace:
+    """Project data into exactly 3 dimensions using PCA."""
+    return pca(x, n_components=3, svd_solver=svd_solver)

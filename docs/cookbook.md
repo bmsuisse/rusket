@@ -492,7 +492,87 @@ table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 ## 16. Visualizing Latent Spaces (PCA)
 
 ```python
-# Built-in 3D PCA visualization
-fig = model.visualize_factors()
+# Built-in 3D PCA visualization via fluent API
+fig = model.fit().pca(n_components=3).plot(title="Latent Item Space")
 fig.show()
 ```
+
+---
+
+## 17. Dealing with Cold Starts
+
+The **"cold start" problem** is one of the most common challenges in building recommender systems. It occurs when a system cannot draw accurate inferences because it hasn't yet gathered enough data about a user or an item.
+
+Here is how `rusket` addresses the three main types of cold starts:
+
+### 1. Handling User Cold Starts (The "Folding In" Strategy)
+
+If you have an existing ALS model and a new user signs up and clicks on a few items, you don't need to retrain the entire matrix. You can instantly "fold in" their early interactions (e.g. from an onboarding flow) to compute their latent factors on the fly:
+
+```python
+import rusket
+
+# Assume model is already fitted on millions of users
+model = rusket.ALS(factors=64).fit(X)
+
+# A new user views items [3, 105, 992]
+new_user_items = [3, 105, 992]
+
+# Instantly compute their 64-dimensional latent factor vector
+user_factors = model.recalculate_user(new_user_items)
+
+# You can now multiply this vector against model.item_factors to score all items
+scores = model.item_factors.dot(user_factors)
+top_items = scores.argsort()[::-1][:10]
+```
+
+### 2. Handling System Cold Starts (Knowledge & Context-Aware)
+
+If you want to recommend items to a user based purely on their demographics or context *before* they even make a single click, you should use **Factorization Machines (`rusket.FM`)**.
+
+FM allows you to use a sparse feature matrix (one-hot encoded categories, ages, locations, time of day) instead of just user and item IDs. By learning the pairwise interactions between these features, FM can recommend items based entirely on metadata.
+
+```python
+import rusket
+from scipy.sparse import csr_matrix
+import numpy as np
+
+# Format: [User=Alice, Item=Laptop, Age=25-34, Category=Electronics]
+# 1 represents the presence of that categorical feature
+X = csr_matrix([
+    [1, 1, 1, 1], # Alice bought Laptop
+    [0, 1, 0, 1]  # Bob did not buy Laptop
+], dtype=np.float32)
+
+y = np.array([1.0, 0.0])
+
+model = rusket.FM(factors=8, iterations=100)
+model.fit(X, y)
+
+# Predict CTR for a new user based on demographics
+# X_new = [User=Charlie, Item=Laptop, Age=25-34, Category=Electronics]
+X_new = csr_matrix([[0, 1, 1, 1]], dtype=np.float32)
+
+ctr_prob = model.predict_proba(X_new)
+```
+
+Alternatively, `rusket`'s Association Rule mining (`FPGrowth`, `Eclat`) can act as a knowledge-based fallback. `Recommender.recommend_for_cart()` uses explicit `IF (A) THEN (B)` rules to suggest items without relying on converged user factors.
+
+### 3. Handling Item Cold Starts (Content-Based Hybrid)
+
+When a new product is added to the catalog and no one has interacted with it yet, `rusket.Recommender` can fall back to semantic similarity.
+
+By providing an `item_embeddings` matrix (e.g., dense vectors generated from OpenAI based on product descriptions), the `Recommender` intelligently blends behavioral CF scores with semantic similarity:
+
+```python
+from rusket import Recommender
+
+# Set alpha=0.0 for pure Content-Based semantic recommender, or alpha=0.5 for Hybrid
+rec = Recommender(
+    model=als_model, 
+    item_embeddings=llm_text_embeddings
+)
+
+items, scores = rec.recommend_for_user(user_id=123, alpha=0.5)
+```
+

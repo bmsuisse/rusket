@@ -203,7 +203,7 @@ def visualize_latent_space(
 
 
 def plot_pca(
-    data: np.ndarray,
+    data: Any,
     labels: list[str] | None = None,
     title: str | None = None,
     marker_size: int = 4,
@@ -217,9 +217,9 @@ def plot_pca(
 
     Parameters
     ----------
-    data : np.ndarray
-        Projected coordinates of shape ``(n_samples, 2)`` or ``(n_samples, 3)``.
-        Typically the output of :func:`rusket.pca2` or :func:`rusket.pca3`.
+    data : np.ndarray or ProjectedSpace
+        Projected coordinates of shape ``(n_samples, 2)`` or ``(n_samples, 3)``,
+        or a `ProjectedSpace` object returned by `pca()`.
     labels : list[str], optional
         Hover labels, one per sample.
     title : str, optional
@@ -260,8 +260,11 @@ def plot_pca(
             "Install it via `pip install plotly` or `uv add plotly`."
         ) from err
 
+    import numpy as np
     import pandas as pd
 
+    if hasattr(data, "data"):
+        data = data.data
     data = np.asarray(data)
     n_cols = data.shape[1] if data.ndim == 2 else 0
 

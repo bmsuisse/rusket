@@ -7,7 +7,6 @@ import pytest
 
 import rusket
 
-
 # ── Fixtures ───────────────────────────────────────────────────────────────
 
 RNG = np.random.default_rng(42)
@@ -163,7 +162,7 @@ def test_not_fitted_raises() -> None:
 
 def test_matches_sklearn() -> None:
     """Compare explained variance ratios against scikit-learn PCA."""
-    sklearn = pytest.importorskip("sklearn")
+    pytest.importorskip("sklearn")
     from sklearn.decomposition import PCA as SkPCA
 
     n_comp = 5
@@ -200,7 +199,7 @@ def test_matches_sklearn() -> None:
 
 def test_plot_pca_2d() -> None:
     """plot_pca should return a plotly Figure for 2D data."""
-    plotly = pytest.importorskip("plotly")
+    pytest.importorskip("plotly")
     import plotly.graph_objects as go
 
     coords = rusket.pca2(X_SMALL)
@@ -210,7 +209,7 @@ def test_plot_pca_2d() -> None:
 
 def test_plot_pca_3d() -> None:
     """plot_pca should return a plotly Figure for 3D data."""
-    plotly = pytest.importorskip("plotly")
+    pytest.importorskip("plotly")
     import plotly.graph_objects as go
 
     coords = rusket.pca3(X_SMALL)

@@ -1,6 +1,6 @@
 [package]
 name = "rusket"
-version = "0.1.49"
+version = "0.1.50"
 edition = "2021"
 license = "MIT"
 exclude = [
@@ -41,6 +41,8 @@ mimalloc = { version = "0.1", default-features = false }
 tempfile = "3.10"
 faer = "0.21.2"
 rand = "0.10.0"
+cblas = "0.4"
+accelerate-src = "0.3"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

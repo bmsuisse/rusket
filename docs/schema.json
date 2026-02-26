@@ -187,11 +187,11 @@
     },
     "similar_items": {
       "parameters": {
-        "model": "<class 'rusket.SupportsItemFactors'>",
-        "item_id": "<class 'int'>",
-        "n": "<class 'int'>"
+        "model": "SupportsItemFactors",
+        "item_id": "int",
+        "n": "int"
       },
-      "returns": "tuple[numpy.ndarray, numpy.ndarray]",
+      "returns": "tuple[np.ndarray, np.ndarray]",
       "doc": "Find the most similar items to a given item ID based on latent factors."
     },
     "find_substitutes": {
@@ -214,10 +214,10 @@
     },
     "export_item_factors": {
       "parameters": {
-        "model": "<class 'rusket.SupportsItemFactors'>",
-        "include_labels": "<class 'bool'>",
-        "normalize": "<class 'bool'>",
-        "format": "<class 'str'>"
+        "model": "SupportsItemFactors",
+        "include_labels": "bool",
+        "normalize": "bool",
+        "format": "str"
       },
       "returns": "Any",
       "doc": "Exports latent item factors as a DataFrame for Vector DBs."
@@ -422,6 +422,13 @@
           "returns": "FPMiner",
           "doc": "Feed a chunk of (transaction_id, item_id) pairs."
         },
+        "fit": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "FPMiner",
+          "doc": "Sklearn-compatible alias for ``mine()``. Runs the mining algorithm."
+        },
         "mine": {
           "parameters": {
             "min_support": "float",
@@ -433,6 +440,13 @@
           },
           "returns": "pd.DataFrame",
           "doc": "Mine frequent itemsets from all accumulated transactions."
+        },
+        "predict": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Return the last mined result, or run ``fit()`` first."
         },
         "reset": {
           "parameters": {},
@@ -451,7 +465,7 @@
             "alpha": "float",
             "iterations": "int",
             "seed": "int",
-            "verbose": "bool",
+            "verbose": "int",
             "cg_iters": "int",
             "use_cholesky": "bool",
             "anderson_m": "int",
@@ -475,6 +489,13 @@
           },
           "returns": "ALS",
           "doc": "Fit the model to the user-item interaction matrix."
+        },
+        "recalculate_user": {
+          "parameters": {
+            "user_items": "Any"
+          },
+          "returns": "np.ndarray",
+          "doc": "Calculate the latent factors for a new or existing user given their interacted items."
         },
         "recommend_items": {
           "parameters": {
@@ -505,7 +526,7 @@
             "regularization": "float",
             "iterations": "int",
             "seed": "int",
-            "verbose": "bool",
+            "verbose": "int",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -529,6 +550,54 @@
         }
       },
       "doc": "Bayesian Personalized Ranking (BPR) model for implicit feedback."
+    },
+    "FM": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "learning_rate": "float",
+            "regularization": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "X": "Any",
+            "y": "Any"
+          },
+          "returns": "FM",
+          "doc": "Fit the FM model to Context-aware Data."
+        },
+        "from_transactions": {
+          "parameters": {
+            "args": "Any",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the model from a long-format DataFrame or sequences."
+        },
+        "predict": {
+          "parameters": {
+            "X": "Any"
+          },
+          "returns": "Any",
+          "doc": "Alias for :meth:`predict_proba`."
+        },
+        "predict_proba": {
+          "parameters": {
+            "X": "Any"
+          },
+          "returns": "Any",
+          "doc": "Predict the probability (CTR) of interactions."
+        }
+      },
+      "doc": "Factorization Machines (FM) context-aware model for predictive tasks (e.g. CTR)."
     },
     "Recommender": {
       "methods": {

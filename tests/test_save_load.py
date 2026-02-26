@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from rusket import ALS, BPR, EASE, FPMC, SVD, AutoMiner, Eclat, FPGrowth
+from rusket import ALS, SVD, Eclat, FPGrowth
 
 
 @pytest.fixture
