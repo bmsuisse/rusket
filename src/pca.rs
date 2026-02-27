@@ -67,6 +67,30 @@ fn gemm(
     }
 }
 
+/// Deterministic sign flip for SVD components (matches scikit-learn / Spark).
+///
+/// For each component (row), finds the element with the largest absolute value.
+/// If that element is negative, flips the entire row.
+#[inline]
+fn svd_flip(components: &mut [f32], n_features: usize) {
+    let k = components.len() / n_features;
+    for comp in 0..k {
+        let row = &components[comp * n_features..(comp + 1) * n_features];
+        let max_idx = row
+            .iter()
+            .enumerate()
+            .max_by(|(_, a), (_, b)| a.abs().partial_cmp(&b.abs()).unwrap())
+            .map(|(i, _)| i)
+            .unwrap_or(0);
+        if row[max_idx] < 0.0 {
+            let row_mut = &mut components[comp * n_features..(comp + 1) * n_features];
+            for v in row_mut.iter_mut() {
+                *v = -*v;
+            }
+        }
+    }
+}
+
 /// Fit PCA on the input data matrix.
 ///
 /// 1. Computes per-feature means and centers the data (parallel).
@@ -188,6 +212,7 @@ pub fn pca_fit<'py>(
                 comps[comp * n_features + feat] = v_cov[(feat, comp)];
             }
         }
+        svd_flip(&mut comps, n_features);
 
         let mut svs = Vec::with_capacity(min_dim);
         for i in 0..min_dim {
@@ -366,6 +391,7 @@ pub fn pca_fit<'py>(
                 comps[comp * n_features + feat] = v[(feat, comp)];
             }
         }
+        svd_flip(&mut comps, n_features);
         
         let mut svs = Vec::with_capacity(min_dim);
         for i in 0..k_extra.min(min_dim) {
@@ -393,6 +419,7 @@ pub fn pca_fit<'py>(
                 comps[comp * n_features + feat] = v[(feat, comp)];
             }
         }
+        svd_flip(&mut comps, n_features);
 
         let mut svs = Vec::with_capacity(min_dim);
         for i in 0..min_dim {

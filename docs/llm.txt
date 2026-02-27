@@ -1528,12 +1528,25 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### 📦 Miscellaneous
 
+- bump to v0.1.53, drop 3.13t from CI
+
+### 🐛 Bug Fixes
+
+- add strict=True to zip() in test_lcm.py (ruff B905)
+
+### 🐛 Bug Fixes
+
+- make BLAS backend cross-platform (Accelerate on macOS, faer on Linux)
+
+### 📦 Miscellaneous
+
 - auto-format code with Ruff [skip ci]
 
 ### 🚀 Features
 
 - add save/load, from_arrow, expand tests, update README for all 15 algorithms
 - Add Rust-backed PCA implementation with a scikit-learn compatible Python API.
+- PCA with Apple Accelerate BLAS + Gram matrix trick
 
 ### 📦 Miscellaneous
 

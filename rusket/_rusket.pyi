@@ -224,6 +224,7 @@ def leave_one_out(
 def pca_fit(
     data: npt.NDArray[np.float32],
     n_components: int,
+    svd_solver: str,
 ) -> tuple[
     npt.NDArray[np.float32],  # components (n_components, n_features)
     npt.NDArray[np.float32],  # explained_variance (n_components,)

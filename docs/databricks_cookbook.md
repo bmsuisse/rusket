@@ -80,6 +80,8 @@ reduced_embeddings = pca_model.fit_transform(als.item_embeddings)
 print(pca_model.explained_variance_ratio_)
 ```
 
+> **Spark MLlib Compatibility:** `rusket.PCA` applies the same deterministic sign-flip convention as Spark MLlib and scikit-learn. For each principal component, the element with the largest absolute value is always positive, so results are directly comparable between frameworks (no mirrored axes).
+
 ## 5. High-Speed Batch Scoring
 
 We usually want to assign cross-sell scores to all users. Instead of a slow loop, `batch_recommend` accelerates this seamlessly across all cores using Rust.

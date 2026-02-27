@@ -72,10 +72,10 @@ print(rules[["antecedents", "consequents", "confidence", "lift"]]
 
 <!-- output -->
 
-| antecedents           | consequents           |   confidence |   lift |
-|:----------------------|:----------------------|-------------:|-------:|
-| ('coffee',) | ('eggs',)   |         1    |    1.5 |
-| ('eggs',)   | ('coffee',) |         0.75 |    1.5 |
+| antecedents   | consequents   |   confidence |   lift |
+|:--------------|:--------------|-------------:|-------:|
+| ('coffee',)   | ('eggs',)     |         1    |    1.5 |
+| ('eggs',)     | ('coffee',)   |         0.75 |    1.5 |
 <!-- /output -->
 
 ---
