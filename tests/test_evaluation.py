@@ -73,15 +73,15 @@ def test_evaluate_with_label_mapping():
     rng = np.random.default_rng(42)
     n = 1000
     # Use non-zero-based IDs to simulate real-world scenario
-    df = pd.DataFrame({
-        "user_id": rng.integers(1000, 1050, n),
-        "item_id": rng.integers(5000, 5030, n),
-        "rating": rng.uniform(0.1, 5.0, n).astype(np.float32),
-    })
-
-    train_df, test_df = train_test_split(
-        df, user_col="user_id", item_col="item_id", test_size=0.2
+    df = pd.DataFrame(
+        {
+            "user_id": rng.integers(1000, 1050, n),
+            "item_id": rng.integers(5000, 5030, n),
+            "rating": rng.uniform(0.1, 5.0, n).astype(np.float32),
+        }
     )
+
+    train_df, test_df = train_test_split(df, user_col="user_id", item_col="item_id", test_size=0.2)
 
     model = ALS.from_transactions(
         train_df,
@@ -94,9 +94,7 @@ def test_evaluate_with_label_mapping():
     ).fit()
 
     # Build test data with the *original* labels (not 0-based)
-    eval_df = test_df.rename(
-        columns={"user_id": "user", "item_id": "item"}
-    )[["user", "item"]]
+    eval_df = test_df.rename(columns={"user_id": "user", "item_id": "item"})[["user", "item"]]
 
     metrics = evaluate(model, eval_df, k=10)
     for name, val in metrics.items():
@@ -109,10 +107,12 @@ def test_evaluate_with_unknown_users():
     """evaluate() should gracefully skip unknown users and warn."""
     rng = np.random.default_rng(42)
     n = 300
-    df = pd.DataFrame({
-        "user_id": rng.integers(100, 130, n),
-        "item_id": rng.integers(200, 220, n),
-    })
+    df = pd.DataFrame(
+        {
+            "user_id": rng.integers(100, 130, n),
+            "item_id": rng.integers(200, 220, n),
+        }
+    )
 
     model = ALS.from_transactions(
         df,
@@ -124,10 +124,12 @@ def test_evaluate_with_unknown_users():
     ).fit()
 
     # Test data includes users NOT in the model
-    test_df = pd.DataFrame({
-        "user": [100, 100, 999, 999],  # 999 is unknown
-        "item": [200, 201, 200, 201],
-    })
+    test_df = pd.DataFrame(
+        {
+            "user": [100, 100, 999, 999],  # 999 is unknown
+            "item": [200, 201, 200, 201],
+        }
+    )
 
     with pytest.warns(UserWarning, match="unknown user labels"):
         metrics = evaluate(model, test_df, k=5)
@@ -157,9 +159,7 @@ def test_evaluate_with_large_realistic_ids():
         rows.append({"user_id": int(u), "part_id": int(i), "label": float(rng.uniform(0.1, 5.0))})
     df = pd.DataFrame(rows).drop_duplicates(subset=["user_id", "part_id"]).reset_index(drop=True)
 
-    train_df, test_df = train_test_split(
-        df, user_col="user_id", item_col="part_id", test_size=0.2
-    )
+    train_df, test_df = train_test_split(df, user_col="user_id", item_col="part_id", test_size=0.2)
     model = ALS.from_transactions(
         train_df,
         user_col="user_id",
@@ -175,6 +175,4 @@ def test_evaluate_with_large_realistic_ids():
 
     for name, val in metrics.items():
         assert 0.0 <= val <= 1.0, f"Metric {name}={val} out of range"
-    assert any(v > 0.0 for v in metrics.values()), (
-        f"All metrics zero — label-to-index mapping broken: {metrics}"
-    )
+    assert any(v > 0.0 for v in metrics.values()), f"All metrics zero — label-to-index mapping broken: {metrics}"
