@@ -490,6 +490,13 @@
           "returns": "ALS",
           "doc": "Fit the model to the user-item interaction matrix."
         },
+        "recalculate_user": {
+          "parameters": {
+            "user_items": "Any"
+          },
+          "returns": "np.ndarray",
+          "doc": "Calculate the latent factors for a new or existing user given their interacted items."
+        },
         "recommend_items": {
           "parameters": {
             "user_id": "int",
@@ -543,6 +550,54 @@
         }
       },
       "doc": "Bayesian Personalized Ranking (BPR) model for implicit feedback."
+    },
+    "FM": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "learning_rate": "float",
+            "regularization": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "X": "Any",
+            "y": "Any"
+          },
+          "returns": "FM",
+          "doc": "Fit the FM model to Context-aware Data."
+        },
+        "from_transactions": {
+          "parameters": {
+            "args": "Any",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the model from a long-format DataFrame or sequences."
+        },
+        "predict": {
+          "parameters": {
+            "X": "Any"
+          },
+          "returns": "Any",
+          "doc": "Alias for :meth:`predict_proba`."
+        },
+        "predict_proba": {
+          "parameters": {
+            "X": "Any"
+          },
+          "returns": "Any",
+          "doc": "Predict the probability (CTR) of interactions."
+        }
+      },
+      "doc": "Factorization Machines (FM) context-aware model for predictive tasks (e.g. CTR)."
     },
     "Recommender": {
       "methods": {

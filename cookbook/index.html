@@ -873,6 +873,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#17-dealing-with-cold-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Dealing with Cold Starts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="17. Dealing with Cold Starts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-handling-user-cold-starts-the-folding-in-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Handling User Cold Starts (The "Folding In" Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-handling-system-cold-starts-knowledge-context-aware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Handling System Cold Starts (Knowledge &amp; Context-Aware)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-handling-item-cold-starts-content-based-hybrid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Handling Item Cold Starts (Content-Based Hybrid)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1743,6 +1793,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#17-dealing-with-cold-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        17. Dealing with Cold Starts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="17. Dealing with Cold Starts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-handling-user-cold-starts-the-folding-in-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Handling User Cold Starts (The "Folding In" Strategy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-handling-system-cold-starts-knowledge-context-aware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Handling System Cold Starts (Knowledge &amp; Context-Aware)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-handling-item-cold-starts-content-based-hybrid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Handling Item Cold Starts (Content-Based Hybrid)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2210,9 +2310,69 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-visualizing-latent-spaces-pca">16. Visualizing Latent Spaces (PCA)<a class="headerlink" href="#16-visualizing-latent-spaces-pca" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Built-in 3D PCA visualization</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">visualize_factors</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Built-in 3D PCA visualization via fluent API</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span><span class="o">.</span><span class="n">pca</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Latent Item Space&quot;</span><span class="p">)</span>
 </span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<hr />
+<h2 id="17-dealing-with-cold-starts">17. Dealing with Cold Starts<a class="headerlink" href="#17-dealing-with-cold-starts" title="Permanent link">&para;</a></h2>
+<p>The <strong>"cold start" problem</strong> is one of the most common challenges in building recommender systems. It occurs when a system cannot draw accurate inferences because it hasn't yet gathered enough data about a user or an item.</p>
+<p>Here is how <code>rusket</code> addresses the three main types of cold starts:</p>
+<h3 id="1-handling-user-cold-starts-the-folding-in-strategy">1. Handling User Cold Starts (The "Folding In" Strategy)<a class="headerlink" href="#1-handling-user-cold-starts-the-folding-in-strategy" title="Permanent link">&para;</a></h3>
+<p>If you have an existing ALS model and a new user signs up and clicks on a few items, you don't need to retrain the entire matrix. You can instantly "fold in" their early interactions (e.g. from an onboarding flow) to compute their latent factors on the fly:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="c1"># Assume model is already fitted on millions of users</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="n">model</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="c1"># A new user views items [3, 105, 992]</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="n">new_user_items</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">105</span><span class="p">,</span> <span class="mi">992</span><span class="p">]</span>
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="c1"># Instantly compute their 64-dimensional latent factor vector</span>
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="n">user_factors</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">recalculate_user</span><span class="p">(</span><span class="n">new_user_items</span><span class="p">)</span>
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="c1"># You can now multiply this vector against model.item_factors to score all items</span>
+</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="n">scores</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">item_factors</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">user_factors</span><span class="p">)</span>
+</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="n">top_items</span> <span class="o">=</span> <span class="n">scores</span><span class="o">.</span><span class="n">argsort</span><span class="p">()[::</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">10</span><span class="p">]</span>
+</span></code></pre></div>
+<h3 id="2-handling-system-cold-starts-knowledge-context-aware">2. Handling System Cold Starts (Knowledge &amp; Context-Aware)<a class="headerlink" href="#2-handling-system-cold-starts-knowledge-context-aware" title="Permanent link">&para;</a></h3>
+<p>If you want to recommend items to a user based purely on their demographics or context <em>before</em> they even make a single click, you should use <strong>Factorization Machines (<code>rusket.FM</code>)</strong>.</p>
+<p>FM allows you to use a sparse feature matrix (one-hot encoded categories, ages, locations, time of day) instead of just user and item IDs. By learning the pairwise interactions between these features, FM can recommend items based entirely on metadata.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scipy.sparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">csr_matrix</span>
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="c1"># Format: [User=Alice, Item=Laptop, Age=25-34, Category=Electronics]</span>
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="c1"># 1 represents the presence of that categorical feature</span>
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="n">X</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">([</span>
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="c1"># Alice bought Laptop</span>
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Bob did not buy Laptop</span>
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a><span class="n">model</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">FM</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>
+</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a><span class="c1"># Predict CTR for a new user based on demographics</span>
+</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a><span class="c1"># X_new = [User=Charlie, Item=Laptop, Age=25-34, Category=Electronics]</span>
+</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a><span class="n">X_new</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>
+</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a><span class="n">ctr_prob</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_new</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Alternatively, <code>rusket</code>'s Association Rule mining (<code>FPGrowth</code>, <code>Eclat</code>) can act as a knowledge-based fallback. <code>Recommender.recommend_for_cart()</code> uses explicit <code>IF (A) THEN (B)</code> rules to suggest items without relying on converged user factors.</p>
+<h3 id="3-handling-item-cold-starts-content-based-hybrid">3. Handling Item Cold Starts (Content-Based Hybrid)<a class="headerlink" href="#3-handling-item-cold-starts-content-based-hybrid" title="Permanent link">&para;</a></h3>
+<p>When a new product is added to the catalog and no one has interacted with it yet, <code>rusket.Recommender</code> can fall back to semantic similarity.</p>
+<p>By providing an <code>item_embeddings</code> matrix (e.g., dense vectors generated from OpenAI based on product descriptions), the <code>Recommender</code> intelligently blends behavioral CF scores with semantic similarity:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">Recommender</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># Set alpha=0.0 for pure Content-Based semantic recommender, or alpha=0.5 for Hybrid</span>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="n">rec</span> <span class="o">=</span> <span class="n">Recommender</span><span class="p">(</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>    <span class="n">model</span><span class="o">=</span><span class="n">als_model</span><span class="p">,</span> 
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>    <span class="n">item_embeddings</span><span class="o">=</span><span class="n">llm_text_embeddings</span>
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="p">)</span>
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">recommend_for_user</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">123</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </span></code></pre></div>
 
 
