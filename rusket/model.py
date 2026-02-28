@@ -811,7 +811,7 @@ class ImplicitRecommender(BaseModel):
             shape=(n_users, n_items),
         )
         self._user_labels = list(user_uniques)
-        self._item_labels = [str(c) for c in item_uniques]
+        self._item_labels = list(item_uniques)
         self.item_names = self._item_labels
         self._prepared_interactions = csr
         return self
