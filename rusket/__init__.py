@@ -3,6 +3,7 @@ from .als import ALS
 from .analytics import customer_saturation, find_substitutes
 from .association_rules import association_rules
 from .bpr import BPR
+from .content_based import ContentBased
 from .ease import EASE
 from .eclat import Eclat, eclat
 from .evaluation import evaluate
@@ -12,13 +13,17 @@ from .fm import FM
 from .fpgrowth import FPGrowth, fpgrowth
 from .fpmc import FPMC
 from .hupm import HUPM, hupm, mine_hupm
+from .hybrid import HybridRecommender
 from .item_knn import ItemKNN
 from .lcm import LCM
 from .lightgcn import LightGCN
 from .mine import AutoMiner, mine
 from .model import BaseModel
 from .model_selection import leave_one_out_split, train_test_split
+from .nmf import NMF
 from .pca import PCA, pca, pca2, pca3
+from .pipeline import Pipeline
+from .popularity import PopularityRecommender
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
 from .recommend import NextBestAction, Recommender, score_potential
 from .sasrec import SASRec
@@ -84,4 +89,9 @@ __all__ = [
     "pca",
     "pca2",
     "pca3",
+    "PopularityRecommender",
+    "ContentBased",
+    "HybridRecommender",
+    "NMF",
+    "Pipeline",
 ]
