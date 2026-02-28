@@ -142,9 +142,7 @@ class Pipeline:
 
         # ── Stage 3: Filter ────────────────────────────────────────────────
         if self.filter_fn is not None:
-            candidate_ids, candidate_scores = self._filter(
-                candidate_ids, candidate_scores
-            )
+            candidate_ids, candidate_scores = self._filter(candidate_ids, candidate_scores)
             if len(candidate_ids) == 0:
                 return np.array([], dtype=np.int64), np.array([], dtype=np.float64)
 
@@ -213,14 +211,14 @@ class Pipeline:
         # ── Python fallback ────────────────────────────────────────────────
         records: list[dict[str, Any]] = []
         for uid in user_ids:
-            ids, scores = self.recommend(
-                uid, n=n, exclude_seen=exclude_seen, retrieve_k=retrieve_k
+            ids, scores = self.recommend(uid, n=n, exclude_seen=exclude_seen, retrieve_k=retrieve_k)
+            records.append(
+                {
+                    "user_id": uid,
+                    "item_ids": ids.tolist(),
+                    "scores": scores.tolist(),
+                }
             )
-            records.append({
-                "user_id": uid,
-                "item_ids": ids.tolist(),
-                "scores": scores.tolist(),
-            })
 
         return self._format_batch_result(records, format)
 
@@ -321,6 +319,7 @@ class Pipeline:
 
             # Build per-user dict
             from collections import defaultdict
+
             user_results: dict[int, tuple[list[int], list[float]]] = defaultdict(lambda: ([], []))
             for i in range(len(all_uids)):
                 uid = int(all_uids[i])
@@ -333,11 +332,13 @@ class Pipeline:
                 item_ids, scores = user_results.get(int(uid), ([], []))
                 if self.filter_fn is not None and item_ids:
                     item_ids, scores = self.filter_fn(item_ids, scores)
-                records.append({
-                    "user_id": uid,
-                    "item_ids": list(item_ids),
-                    "scores": list(scores),
-                })
+                records.append(
+                    {
+                        "user_id": uid,
+                        "item_ids": list(item_ids),
+                        "scores": list(scores),
+                    }
+                )
 
             return records
 
@@ -352,11 +353,12 @@ class Pipeline:
 
         if format == "polars":
             import polars as pl
+
             return pl.DataFrame(records)
 
         import pandas as pd
-        return pd.DataFrame(records)
 
+        return pd.DataFrame(records)
 
     # ── Internal stages ────────────────────────────────────────────────────
 
@@ -374,9 +376,7 @@ class Pipeline:
 
         for model in self.retrievers:
             try:
-                ids, scores = model.recommend_items(
-                    user_id=user_id, n=k, exclude_seen=exclude_seen
-                )
+                ids, scores = model.recommend_items(user_id=user_id, n=k, exclude_seen=exclude_seen)
             except Exception:
                 continue
 
@@ -447,9 +447,5 @@ class Pipeline:
         if self.filter_fn is None:
             return candidate_ids, candidate_scores
 
-        filtered_ids, filtered_scores = self.filter_fn(
-            candidate_ids.tolist(), [float(s) for s in candidate_scores]
-        )
-        return np.array(filtered_ids, dtype=np.int64), np.array(
-            filtered_scores, dtype=np.float64
-        )
+        filtered_ids, filtered_scores = self.filter_fn(candidate_ids.tolist(), [float(s) for s in candidate_scores])
+        return np.array(filtered_ids, dtype=np.int64), np.array(filtered_scores, dtype=np.float64)

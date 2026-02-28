@@ -124,9 +124,15 @@ impl FPTree {
 
     pub fn conditional_tree(&self, item: u32, minsup: u64) -> FPTree {
         let node_indices = &self.item_nodes[item as usize];
-        let mut counts = vec![0u64; item as usize];
+        let item_usize = item as usize;
+        let mut counts = vec![0u64; item_usize];
 
-        let mut branches: Vec<(Vec<u32>, u64)> = Vec::with_capacity(node_indices.len());
+        // Flat buffer: store all branch items contiguously to avoid per-branch clones
+        let mut branch_items: Vec<u32> = Vec::with_capacity(node_indices.len() * 8);
+        let mut branch_offsets: Vec<u32> = Vec::with_capacity(node_indices.len() + 1);
+        let mut branch_counts: Vec<u64> = Vec::with_capacity(node_indices.len());
+        branch_offsets.push(0);
+
         let mut branch_buf = Vec::with_capacity(32);
         for &ni in node_indices {
             branch_buf.clear();
@@ -140,7 +146,9 @@ impl FPTree {
             for &i in &branch_buf {
                 counts[i as usize] += node_count;
             }
-            branches.push((branch_buf.clone(), node_count));
+            branch_items.extend_from_slice(&branch_buf);
+            branch_offsets.push(branch_items.len() as u32);
+            branch_counts.push(node_count);
         }
 
         let mut valid_items: Vec<(u32, u64)> = counts
@@ -151,7 +159,7 @@ impl FPTree {
             .collect();
         valid_items.sort_unstable_by(|a, b| b.1.cmp(&a.1));
 
-        let mut old_to_new = vec![u32::MAX; item as usize];
+        let mut old_to_new = vec![u32::MAX; item_usize];
         let mut new_original_items = Vec::with_capacity(valid_items.len());
         for (new_id, &(old_id, _)) in valid_items.iter().enumerate() {
             old_to_new[old_id as usize] = new_id as u32;
@@ -159,15 +167,17 @@ impl FPTree {
         }
 
         let mut cond_tree = FPTree::new(valid_items.len(), new_original_items);
-        cond_tree.cond_items = self.cond_items.clone();
-        cond_tree
-            .cond_items
-            .push(self.original_items[item as usize]);
+        let mut cond_items = Vec::with_capacity(self.cond_items.len() + 1);
+        cond_items.extend_from_slice(&self.cond_items);
+        cond_items.push(self.original_items[item_usize]);
+        cond_tree.cond_items = cond_items;
 
         let mut filtered = Vec::with_capacity(32);
-        for (branch, branch_count) in branches {
+        for b in 0..branch_counts.len() {
+            let start = branch_offsets[b] as usize;
+            let end = branch_offsets[b + 1] as usize;
             filtered.clear();
-            for i in branch {
+            for &i in &branch_items[start..end] {
                 let new_id = old_to_new[i as usize];
                 if new_id != u32::MAX {
                     filtered.push(new_id);
@@ -177,7 +187,7 @@ impl FPTree {
                 continue;
             }
             filtered.sort_unstable();
-            cond_tree.insert_itemset(&filtered, branch_count);
+            cond_tree.insert_itemset(&filtered, branch_counts[b]);
         }
         cond_tree
     }

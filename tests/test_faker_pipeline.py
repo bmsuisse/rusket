@@ -45,16 +45,20 @@ def interactions_500x1000() -> pd.DataFrame:
 
 @pytest.fixture(scope="module")
 def als_model(interactions_500x1000: pd.DataFrame) -> ALS:
-    return ALS(factors=32, iterations=5, seed=42).from_transactions(
-        interactions_500x1000, user_col="user_id", item_col="item_id"
-    ).fit()
+    return (
+        ALS(factors=32, iterations=5, seed=42)
+        .from_transactions(interactions_500x1000, user_col="user_id", item_col="item_id")
+        .fit()
+    )
 
 
 @pytest.fixture(scope="module")
 def bpr_model(interactions_500x1000: pd.DataFrame) -> BPR:
-    return BPR(factors=32, iterations=50, seed=42).from_transactions(
-        interactions_500x1000, user_col="user_id", item_col="item_id"
-    ).fit()
+    return (
+        BPR(factors=32, iterations=50, seed=42)
+        .from_transactions(interactions_500x1000, user_col="user_id", item_col="item_id")
+        .fit()
+    )
 
 
 class TestFakerPipelineIntegration:
@@ -112,9 +116,7 @@ class TestFakerPipelineIntegration:
         assert len(result) == 500
         assert elapsed < 5.0, f"Batch + rerank took {elapsed:.2f}s (expected < 5s)"
 
-    def test_batch_multi_retriever_with_filter(
-        self, als_model: ALS, bpr_model: BPR
-    ) -> None:
+    def test_batch_multi_retriever_with_filter(self, als_model: ALS, bpr_model: BPR) -> None:
         """Multi-retriever + filter batch at 500 users."""
         blocked = {0, 1, 2, 3, 4}
         pipe = Pipeline(
@@ -146,9 +148,9 @@ class TestLargeScale:
     @pytest.fixture(scope="class")
     def large_als(self) -> ALS:
         df = _generate_interactions(2000, 5000, 30, seed=99)
-        return ALS(factors=64, iterations=5, seed=99).from_transactions(
-            df, user_col="user_id", item_col="item_id"
-        ).fit()
+        return (
+            ALS(factors=64, iterations=5, seed=99).from_transactions(df, user_col="user_id", item_col="item_id").fit()
+        )
 
     def test_large_batch(self, large_als: ALS) -> None:
         """2000 users × 5000 items batch should complete in < 10s."""

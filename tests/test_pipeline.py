@@ -170,7 +170,9 @@ class TestRerank:
 
         # Reranker prioritises item 2 for user 0 (score 1.0 vs original 0.5)
         # So item ordering should differ
-        assert not np.array_equal(items_no_rerank, items_with_rerank) or True  # may coincide, but test structure is valid
+        assert (
+            not np.array_equal(items_no_rerank, items_with_rerank) or True
+        )  # may coincide, but test structure is valid
 
     def test_rerank_scores_from_reranker(self, als_a: ALS, reranker: ALS) -> None:
         """With reranker, scores should come from the reranker's dot products."""
