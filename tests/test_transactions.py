@@ -400,3 +400,24 @@ class TestEndToEnd:
     def test_type_error(self) -> None:
         with pytest.raises(TypeError, match="Expected"):
             from_transactions(42)  # type: ignore[arg-type]
+
+
+import hypothesis.strategies as st  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    transactions=st.lists(
+        st.lists(st.integers(min_value=1, max_value=100), min_size=1, max_size=10),
+        min_size=1,
+        max_size=20,
+    )
+)
+@settings(max_examples=20, deadline=None)
+def test_from_transactions_properties(transactions):
+    from rusket import from_transactions
+
+    df = from_transactions(transactions)
+    assert df.shape[0] == len(transactions)
+    for i, txn in enumerate(transactions):
+        assert df.iloc[i].sum() == len(set(txn))

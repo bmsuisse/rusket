@@ -583,6 +583,40 @@ add_ons = rec.recommend_for_cart(["USB_DAC", "AUX_CABLE"], n=3)
 batch_df = rec.predict_next_chunk(user_history_df, user_col="customer_id", k=5)
 ```
 
+### 🎯 Multi-Stage Recommendation Pipeline
+
+For production systems requiring advanced retrieval and ranking, use the `Pipeline` class. This mirrors the "retrieve → rerank → filter" paradigm used by Twitter/X and modern ML stacks.
+
+It chains multiple models together:
+1. **Retrieve:** Candidate generation
+2. **Rerank:** Re-score candidates using a heavier scoring function
+3. **Filter:** Apply business rules (e.g. exclude out-of-stock items, diversify)
+
+```python
+from rusket import ALS, BPR, Pipeline
+
+# 1. Train multiple base models
+als = ALS(factors=64).fit(interactions)
+bpr = BPR(factors=128).fit(interactions)
+
+# 2. Compose the Pipeline (Retrieve from ALS, rerank with deeper BPR vectors)
+pipeline = Pipeline(
+    retrieve=[als, bpr],
+    merge_strategy="max",  # how to combine candidate scores
+    rerank=bpr,
+)
+
+# Recommend for a user
+items, scores = pipeline.recommend(user_id=42, n=10, exclude_seen=True)
+
+# Blazing-fast Batch Scoring utilizing Rust inner loops
+batch_recs = pipeline.recommend_batch(
+    user_ids=[1, 2, 3],
+    n=10,
+    format="polars"  # Returns a native Polars DataFrame instantly
+)
+```
+
 ### 🔍 Analytics Helpers
 
 ```python

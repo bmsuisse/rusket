@@ -332,3 +332,29 @@ def test_mlxtend_port_example() -> None:
     assert "consequents" in rules.columns
     assert "lift" in rules.columns
     assert (rules["lift"] >= 1.0).all()
+
+
+import hypothesis.strategies as st  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    matrix=st.lists(
+        st.lists(st.booleans(), min_size=5, max_size=5),
+        min_size=10,
+        max_size=20,
+    )
+)
+@settings(max_examples=20, deadline=None)
+def test_association_rules_properties(matrix):
+    import pandas as pd
+
+    from rusket import association_rules, fpgrowth
+
+    df_test = pd.DataFrame(matrix, columns=["A", "B", "C", "D", "E"])
+    freq = fpgrowth(df_test, min_support=0.1, use_colnames=True)
+    if len(freq) > 0:
+        rules = association_rules(freq, num_itemsets=len(df_test), min_threshold=0.0)
+        if not rules.empty:
+            assert (rules["confidence"] <= 1.000001).all()
+            assert (rules["support"] >= 0.099999).all()

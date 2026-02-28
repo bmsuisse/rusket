@@ -5,6 +5,60 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🐛 Bug Fixes
+
+- remove .cargo/config.toml from repo (caused SIGILL in CI)
+
+### Bench
+
+- add pytest-benchmark suite for Pipeline API
+
+### ⚡ Performance
+
+- BLAS-accelerated pipeline batch scoring (faer matmul)
+- optimize FPGrowth tree building — flat branch buffer, skip HashMap dedup, direct CSR insert
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- bump version to 0.1.59 for Pipeline API release
+
+### 🚀 Features
+
+- add multi-stage Pipeline API (retrieve → rerank → filter)
+
+### 🐛 Bug Fixes
+
+- preserve original types for _item_labels instead of forcing str()
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### ⚡ Performance
+
+- 2x faster Cholesky + 1.7x faster CG solver
+
+### 🐛 Bug Fixes
+
+- add missing svd_solver param to pca_fit type stub
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🐛 Bug Fixes
+
+- evaluate() label-to-index mapping for real-world IDs
+
+### 🚀 Features
+
+- deterministic SVD sign-flip for PCA (matches Spark MLlib / scikit-learn)
+
 ### 📦 Miscellaneous
 
 - bump to v0.1.53, drop 3.13t from CI

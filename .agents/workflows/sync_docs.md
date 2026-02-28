@@ -29,14 +29,14 @@ uv run python scripts/gen_llm_txt.py
 uv run python scripts/eval_doc_snippets.py
 ```
 
-5. Verify the MkDocs build passes without errors:
+5. Verify the zensical build passes without errors:
 ```
-uv run mkdocs build --strict
+uv run zensical build
 ```
 
 6. (Optional) Preview locally:
 ```
-uv run mkdocs serve
+uv run zensical serve
 ```
 
 If step 5 fails, check the output for broken links or malformed markdown.

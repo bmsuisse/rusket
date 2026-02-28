@@ -296,6 +296,13 @@ def build_api_reference() -> str:
         ("from_pandas", rusket.from_pandas),
         ("from_polars", rusket.from_polars),
         ("from_spark", rusket.from_spark),
+        ("from_arrow", rusket.from_arrow),
+        ("evaluate", rusket.evaluate),
+        ("train_test_split", rusket.train_test_split),
+        ("leave_one_out_split", rusket.leave_one_out_split),
+        ("pca", rusket.pca),
+        ("pca2", rusket.pca2),
+        ("pca3", rusket.pca3),
     ]
     for sym_name, obj in func_symbols:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
@@ -319,6 +326,8 @@ def build_api_reference() -> str:
         ("PrefixSpan", rusket.PrefixSpan),
         ("HUPM", rusket.HUPM),
         ("FPMiner", rusket.FPMiner),
+        ("FIN", rusket.FIN),
+        ("LCM", rusket.LCM),
     ]
     for sym_name, obj in oop_mining_symbols:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
@@ -354,6 +363,16 @@ def build_api_reference() -> str:
         ("FM", rusket.FM),
         ("Recommender", rusket.Recommender),
         ("NextBestAction", rusket.NextBestAction),
+        ("EASE", rusket.EASE),
+        ("ItemKNN", rusket.ItemKNN),
+        ("FPMC", rusket.FPMC),
+        ("SVD", rusket.SVD),
+        ("LightGCN", rusket.LightGCN),
+        ("SASRec", rusket.SASRec),
+        ("PopularityRecommender", rusket.PopularityRecommender),
+        ("ContentBased", rusket.ContentBased),
+        ("HybridRecommender", rusket.HybridRecommender),
+        ("NMF", rusket.NMF),
     ]
     for sym_name, obj in rec_symbols:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
@@ -370,6 +389,8 @@ def build_api_reference() -> str:
         ("find_substitutes", rusket.find_substitutes),
         ("customer_saturation", rusket.customer_saturation),
         ("export_item_factors", rusket.export_item_factors),
+        ("PCA", rusket.PCA),
+        ("Pipeline", rusket.Pipeline),
     ]
     for sym_name, obj in util_symbols:
         output_lines.append(_format_symbol(sym_name, obj, level=3))
@@ -453,14 +474,17 @@ def build_api_schema() -> str:
         "mine", "fpgrowth", "eclat", "association_rules", "prefixspan", "hupm",
         "sequences_from_event_log", "mine_hupm", "mine_duckdb", "mine_spark",
         "from_transactions", "from_transactions_csr", "from_pandas", "from_polars", "from_spark",
-        "score_potential", "similar_items", "find_substitutes", "customer_saturation", "export_item_factors"
+        "score_potential", "similar_items", "find_substitutes", "customer_saturation", "export_item_factors",
+        "from_arrow", "evaluate", "train_test_split", "leave_one_out_split", "pca", "pca2", "pca3"
     ]
     for fn in func_names:
         schema["functions"][fn] = _serialize_func(getattr(rusket, fn))
         
     class_names = [
         "FPGrowth", "Eclat", "AutoMiner", "PrefixSpan", "HUPM", "FPMiner",
-        "ALS", "BPR", "FM", "Recommender", "NextBestAction"
+        "ALS", "BPR", "FM", "Recommender", "NextBestAction",
+        "FIN", "LCM", "EASE", "ItemKNN", "FPMC", "SVD", "LightGCN", "SASRec",
+        "PopularityRecommender", "ContentBased", "HybridRecommender", "NMF", "PCA", "Pipeline"
     ]
     for cn in class_names:
         schema["classes"][cn] = _serialize_class(getattr(rusket, cn))

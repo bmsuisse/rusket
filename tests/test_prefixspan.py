@@ -84,3 +84,26 @@ def test_sequences_from_event_log_polars():
     assert len(seqs[1]) == 7
 
     assert len(mapping) == 3
+
+
+import hypothesis.strategies as st  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    sequences=st.lists(
+        st.lists(st.integers(min_value=1, max_value=100), min_size=1, max_size=10),
+        min_size=1,
+        max_size=20,
+    ),
+    min_support=st.integers(min_value=1, max_value=20),
+)
+@settings(max_examples=50, deadline=None)
+def test_prefixspan_invariants(sequences, min_support):
+    from rusket.prefixspan import PrefixSpan
+
+    df = PrefixSpan(sequences, min_support=min_support).mine()
+
+    if not df.empty:
+        assert (df["support"] >= min_support).all()
+        assert (df["support"] <= len(sequences)).all()

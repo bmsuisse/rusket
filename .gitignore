@@ -77,3 +77,6 @@ warnings_*
 # Specific script ignores
 test_colnames.py
 .cargo/config.toml
+
+# Hypothesis
+.hypothesis/

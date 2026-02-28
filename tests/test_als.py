@@ -413,3 +413,32 @@ def test_recalculate_empty_user() -> None:
     assert factors.shape == (8,)
     # Factors should be a zero vector for a user with no interactions
     np.testing.assert_allclose(factors, np.zeros(8), atol=1e-5)
+
+
+import hypothesis.strategies as st  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    rows=st.lists(st.integers(min_value=0, max_value=9), min_size=1, max_size=50),
+    cols=st.lists(st.integers(min_value=0, max_value=9), min_size=1, max_size=50),
+)
+@settings(max_examples=20, deadline=None)
+def test_als_properties(rows, cols):
+    from rusket import ALS
+
+    if len(rows) != len(cols):
+        min_len = min(len(rows), len(cols))
+        rows = rows[:min_len]
+        cols = cols[:min_len]
+
+    data = np.ones(len(rows), dtype=np.float32)
+    mat = sparse.coo_matrix((data, (rows, cols)), shape=(10, 10)).tocsr()
+
+    model = ALS(factors=4, iterations=5, seed=42)
+    model.fit(mat)
+
+    assert model.user_factors.shape == (10, 4)
+    assert model.item_factors.shape == (10, 4)
+    assert np.isfinite(model.user_factors).all()
+    assert np.isfinite(model.item_factors).all()

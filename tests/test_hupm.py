@@ -101,3 +101,40 @@ def test_mine_hupm_polars():
 
     ac_row = df[df["itemset_set"] == {1, 3}].iloc[0]
     assert ac_row["utility"] == 12.0
+
+
+import hypothesis.strategies as st  # noqa: E402
+import pandas as pd  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    transactions_with_utils=st.lists(
+        st.dictionaries(
+            keys=st.integers(min_value=1, max_value=50),
+            values=st.floats(min_value=0.1, max_value=100.0, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=10,
+        ),
+        min_size=1,
+        max_size=20,
+    ),
+    min_utility=st.floats(min_value=0.1, max_value=200.0, allow_nan=False, allow_infinity=False),
+)
+@settings(max_examples=50, deadline=None)
+def test_hupm_invariants(transactions_with_utils, min_utility):
+    from rusket.hupm import HUPM
+
+    data = []
+    for tx_id, item_util_map in enumerate(transactions_with_utils):
+        for item, util in item_util_map.items():
+            data.append({"txn": tx_id, "item": item, "util": util})
+
+    df_raw = pd.DataFrame(data)
+
+    df = HUPM.from_transactions(
+        df_raw, transaction_col="txn", item_col="item", utility_col="util", min_utility=min_utility
+    ).mine()
+
+    if not df.empty:
+        assert (df["utility"] >= (min_utility - 1e-5)).all()

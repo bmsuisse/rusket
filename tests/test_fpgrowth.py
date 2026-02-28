@@ -482,3 +482,27 @@ def test_varying_data_produces_different_results() -> None:
     # The two results must be completely different
     assert sets_a != sets_b
     assert sets_a.isdisjoint(sets_b)
+
+
+import hypothesis.strategies as st  # noqa: E402
+from hypothesis import given, settings  # noqa: E402
+
+
+@given(
+    matrix=st.lists(
+        st.lists(st.booleans(), min_size=5, max_size=5),
+        min_size=5,
+        max_size=20,
+    ),
+    min_support=st.floats(min_value=0.1, max_value=0.9),
+)
+@settings(max_examples=20, deadline=None)
+def test_fpgrowth_properties(matrix, min_support):
+    import pandas as pd
+
+    from rusket import fpgrowth
+
+    df_test = pd.DataFrame(matrix, columns=["A", "B", "C", "D", "E"])
+    freq = fpgrowth(df_test, min_support=min_support, use_colnames=True)
+    if not freq.empty:
+        assert (freq["support"] >= min_support - 1e-5).all()

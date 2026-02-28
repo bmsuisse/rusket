@@ -17,6 +17,7 @@ nav = [
       { "E-Commerce Lifecycle Mining" = "notebooks/3_ecommerce_lifecycle_mining.md" },
     ]},
     { "Recommender Workflows" = "recommender.md" },
+    { "Pipeline API" = "pipeline.md" },
     { "Streaming & Big Data" = "streaming.md" },
     { "PySpark Integration" = "spark.md" },
     { "Polars Support" = "polars.md" },

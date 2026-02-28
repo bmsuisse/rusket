@@ -38,6 +38,7 @@ from .transactions import (
     from_transactions,
     from_transactions_csr,
 )
+from .viz import to_networkx, to_networkxr
 
 __all__ = [
     "fpgrowth",
@@ -94,4 +95,6 @@ __all__ = [
     "HybridRecommender",
     "NMF",
     "Pipeline",
+    "to_networkx",
+    "to_networkxr",
 ]
