@@ -369,14 +369,9 @@ fn mine_itemsets(
     min_count: u64,
     max_len: Option<usize>,
 ) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
-    use ahash::AHashMap;
-    let mut basket_counts: AHashMap<Vec<u32>, u64> = AHashMap::with_capacity(itemsets.len());
-    for basket in itemsets {
-        *basket_counts.entry(basket).or_insert(0) += 1;
-    }
     let mut tree = FPTree::new(frequent_len, original_items);
-    for (basket, count) in basket_counts {
-        tree.insert_itemset(&basket, count);
+    for basket in &itemsets {
+        tree.insert_itemset(basket, 1);
     }
     let mut results = FlatResults::new();
     fpg_step(&tree, min_count, max_len, &mut results);
@@ -509,36 +504,31 @@ pub(crate) fn _mine_csr(
             None => return Ok((vec![], vec![], vec![])),
         };
 
-    let itemsets: Vec<Vec<u32>> = (0..n_rows)
-        .into_par_iter()
-        .filter_map(|row| {
-            let start = indptr[row] as usize;
-            let end = indptr[row + 1] as usize;
-            let mut items: Vec<u32> = indices[start..end]
-                .iter()
-                .filter_map(|&col| {
-                    if (col as usize) < n_cols {
-                        let l = global_to_local[col as usize];
-                        if l != u32::MAX {
-                            Some(l)
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            if items.is_empty() {
-                return None;
+    // Build FPTree directly from CSR without intermediate Vec<Vec<u32>>
+    let mut tree = FPTree::new(frequent_len, original_items);
+    let mut items: Vec<u32> = Vec::with_capacity(64);
+    for row in 0..n_rows {
+        let start = indptr[row] as usize;
+        let end = indptr[row + 1] as usize;
+        items.clear();
+        for &col in &indices[start..end] {
+            if (col as usize) < n_cols {
+                let l = global_to_local[col as usize];
+                if l != u32::MAX {
+                    items.push(l);
+                }
             }
-            items.sort_unstable();
-            Some(items)
-        })
-        .collect();
+        }
+        if items.is_empty() {
+            continue;
+        }
+        items.sort_unstable();
+        tree.insert_itemset(&items, 1);
+    }
 
-    let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
-    Ok(results)
+    let mut results = FlatResults::new();
+    fpg_step(&tree, min_count, max_len, &mut results);
+    Ok(results.into_tuple())
 }
 
 #[pyfunction]
