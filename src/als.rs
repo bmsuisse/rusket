@@ -1,5 +1,4 @@
-use faer::linalg::solvers::Solve;
-use faer::{linalg::matmul::matmul, Accum, MatRef, Par, Side};
+use faer::{linalg::matmul::matmul, Accum, MatMut, MatRef, Par};
 use numpy::{
     IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
     PyUntypedArrayMethods,
@@ -8,16 +7,59 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 
-// SIMD optimized dot using standard library zip iterators for optimal autovectorization
+// ── SIMD‑friendly primitives ───────────────────────────────────────
+// 8‑wide manual unroll – LLVM maps these to NEON/AVX without needing
+// architecture‑specific intrinsics, and it's faster than the plain
+// iterator chain because we guarantee no loop‑carried dependency.
 #[inline(always)]
 fn dot_f32(a: &[f32], b: &[f32]) -> f32 {
-    a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
+    let n = a.len();
+    let n8 = n / 8 * 8;
+    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
+    let mut i = 0;
+    while i < n8 {
+        unsafe {
+            s0 += *a.get_unchecked(i)     * *b.get_unchecked(i);
+            s1 += *a.get_unchecked(i + 1) * *b.get_unchecked(i + 1);
+            s2 += *a.get_unchecked(i + 2) * *b.get_unchecked(i + 2);
+            s3 += *a.get_unchecked(i + 3) * *b.get_unchecked(i + 3);
+            s4 += *a.get_unchecked(i + 4) * *b.get_unchecked(i + 4);
+            s5 += *a.get_unchecked(i + 5) * *b.get_unchecked(i + 5);
+            s6 += *a.get_unchecked(i + 6) * *b.get_unchecked(i + 6);
+            s7 += *a.get_unchecked(i + 7) * *b.get_unchecked(i + 7);
+        }
+        i += 8;
+    }
+    while i < n {
+        unsafe { s0 += *a.get_unchecked(i) * *b.get_unchecked(i); }
+        i += 1;
+    }
+    (s0 + s1) + (s2 + s3) + (s4 + s5) + (s6 + s7)
 }
 
-// SIMD optimized axpy using standard library zip iterators
 #[inline(always)]
 fn axpy_f32(alpha: f32, x: &[f32], y: &mut [f32]) {
-    y.iter_mut().zip(x.iter()).for_each(|(yi, &xi)| *yi += alpha * xi);
+    let n = x.len();
+    let n8 = n / 8 * 8;
+    let mut i = 0;
+    while i < n8 {
+        unsafe {
+            *y.get_unchecked_mut(i)     += alpha * *x.get_unchecked(i);
+            *y.get_unchecked_mut(i + 1) += alpha * *x.get_unchecked(i + 1);
+            *y.get_unchecked_mut(i + 2) += alpha * *x.get_unchecked(i + 2);
+            *y.get_unchecked_mut(i + 3) += alpha * *x.get_unchecked(i + 3);
+            *y.get_unchecked_mut(i + 4) += alpha * *x.get_unchecked(i + 4);
+            *y.get_unchecked_mut(i + 5) += alpha * *x.get_unchecked(i + 5);
+            *y.get_unchecked_mut(i + 6) += alpha * *x.get_unchecked(i + 6);
+            *y.get_unchecked_mut(i + 7) += alpha * *x.get_unchecked(i + 7);
+        }
+        i += 8;
+    }
+    while i < n {
+        unsafe { *y.get_unchecked_mut(i) += alpha * *x.get_unchecked(i); }
+        i += 1;
+    }
 }
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
@@ -37,8 +79,11 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
 }
 
 thread_local! {
-    static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
-        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
+    // CG scratch: b, r, p, ap, yi_dense (item matrix), w_vec (weights), tmp
+    static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>,
+                             Vec<f32>, Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new(),
+                              Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_cg(
@@ -59,28 +104,40 @@ fn solve_one_side_cg(
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
         let end = indptr[u + 1] as usize;
+        let nnz_u = end - start;
 
         SCRATCH.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut b, ref mut r, ref mut p, ref mut ap) = *borrow;
-            b.clear();
-            b.resize(k, 0.0);
-            r.clear();
-            r.resize(k, 0.0);
-            p.clear();
-            p.resize(k, 0.0);
-            ap.clear();
-            ap.resize(k, 0.0);
+            let (ref mut b, ref mut r, ref mut p, ref mut ap,
+                 ref mut yi_dense, ref mut w_vec, ref mut tmp) = *borrow;
+            b.clear(); b.resize(k, 0.0);
+            r.clear(); r.resize(k, 0.0);
+            p.clear(); p.resize(k, 0.0);
+            ap.clear(); ap.resize(k, 0.0);
 
-            for idx in start..end {
+            // Pre-collect interacted item vectors + weights
+            yi_dense.clear();
+            yi_dense.resize(nnz_u * k, 0.0);
+            w_vec.clear();
+            w_vec.resize(nnz_u, 0.0);
+            tmp.clear();
+            tmp.resize(nnz_u, 0.0);
+
+            for (local, idx) in (start..end).enumerate() {
                 let i = indices[idx] as usize;
                 let c = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
                 axpy_f32(c, yi, b);
+
+                // Copy yi into dense matrix and store weight
+                yi_dense[local * k..(local + 1) * k].copy_from_slice(yi);
+                w_vec[local] = alpha * data[idx]; // = c - 1
             }
 
-            let apply_a = |v: &[f32], out: &mut [f32]| {
-                // Gram matrix × v, 4-wide unrolled for better autovectorization
+            // apply_a: computes out = (Gram + lambda*I + Y^T diag(w) Y) * v
+            // using batch BLAS for the Y^T diag(w) Y * v part
+            let mut apply_a = |v: &[f32], out: &mut [f32]| {
+                // Part 1: Gram × v (8-wide unrolled)
                 let k8 = k / 8 * 8;
                 for a in 0..k {
                     let gram_row = &gram[a * k..];
@@ -112,11 +169,23 @@ fn solve_one_side_cg(
                     }
                     out[a] = (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7) + eff_lambda * v[a];
                 }
-                for idx in start..end {
-                    let i = indices[idx] as usize;
-                    let yi = &other[i * k..(i + 1) * k];
-                    let w = alpha * data[idx] * dot_f32(yi, v);
-                    axpy_f32(w, yi, out);
+
+                // Part 2: Y^T diag(w) Y * v  via two BLAS passes
+                // tmp[i] = w[i] * dot(yi, v) — scalar pass
+                if nnz_u > 0 {
+                    for i in 0..nnz_u {
+                        let yi = &yi_dense[i * k..(i + 1) * k];
+                        tmp[i] = w_vec[i] * dot_f32(yi, v);
+                    }
+                    // out += Y^T * tmp  — single gemv (k × nnz_u) × (nnz_u × 1)
+                    let y_mat = MatRef::from_row_major_slice(
+                        &yi_dense[..nnz_u * k], nnz_u, k,
+                    );
+                    let t_mat = MatRef::from_column_major_slice(
+                        &tmp[..nnz_u], nnz_u, 1,
+                    );
+                    let mut o_mat = MatMut::from_column_major_slice_mut(out, k, 1);
+                    matmul(o_mat.as_mut(), Accum::Add, y_mat.transpose(), t_mat, 1.0f32, Par::Seq);
                 }
             };
 
@@ -156,19 +225,21 @@ fn solve_one_side_cg(
     out
 }
 
+
+use faer::linalg::solvers::Solve;
+
 fn cholesky_solve_inplace(a: &mut [f32], b: &mut [f32], k: usize) {
     let a_mat = faer::MatMut::from_row_major_slice_mut(a, k, k);
     let mut b_mat = faer::MatMut::from_column_major_slice_mut(b, k, 1);
 
-    if let Ok(llt) = a_mat.as_ref().llt(Side::Lower) {
-        let x = llt.solve(b_mat.as_ref());
-        b_mat.copy_from(x.as_ref());
+    if let Ok(llt) = a_mat.as_ref().llt(faer::Side::Lower) {
+        llt.solve_in_place(b_mat.as_mut());
     }
 }
 
 thread_local! {
-    static SCRATCH_CHOL: RefCell<(Vec<f32>, Vec<f32>)> =
-        const { RefCell::new((Vec::new(), Vec::new())) };
+    static SCRATCH_CHOL: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_cholesky(
@@ -188,10 +259,17 @@ fn solve_one_side_cholesky(
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
         let end = indptr[u + 1] as usize;
+        let nnz_u = end - start;
+
+        if nnz_u == 0 {
+            return;
+        }
 
         SCRATCH_CHOL.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut a_buf, ref mut b_buf) = *borrow;
+            let (ref mut a_buf, ref mut b_buf, ref mut yi_buf, ref mut w_buf) = *borrow;
+
+            // --- Build A = Gram + lambda*I + sum_i w_i * y_i * y_i^T ---
             a_buf.clear();
             a_buf.extend_from_slice(gram);
             b_buf.clear();
@@ -201,22 +279,45 @@ fn solve_one_side_cholesky(
                 a_buf[j * k + j] += eff_lambda;
             }
 
-            for idx in start..end {
+            // Collect item vectors and weights for batch rank-1 update
+            yi_buf.clear();
+            yi_buf.resize(nnz_u * k, 0.0);
+            w_buf.clear();
+            w_buf.resize(nnz_u, 0.0);
+
+            for (local, idx) in (start..end).enumerate() {
                 let i = indices[idx] as usize;
                 let ci = 1.0 + alpha * data[idx];
                 let yi = &other[i * k..(i + 1) * k];
 
+                // b += ci * yi
                 axpy_f32(ci, yi, b_buf);
 
-                let w = ci - 1.0;
-                for r in 0..k {
-                    axpy_f32(w * yi[r], yi, &mut a_buf[r * k..(r + 1) * k]);
+                // Store sqrt(w) * yi for batch syrk
+                let w = ci - 1.0; // = alpha * data[idx]
+                if w > 0.0 {
+                    let sw = w.sqrt();
+                    let dest = &mut yi_buf[local * k..(local + 1) * k];
+                    for f in 0..k {
+                        dest[f] = sw * yi[f];
+                    }
+                    w_buf[local] = 1.0; // marker: has weight
+                } else {
+                    w_buf[local] = 0.0;
                 }
             }
 
             if b_buf.iter().all(|&v| v == 0.0) {
                 return;
             }
+
+            // Batch rank-1 updates via syrk:  A += W^T * W  where W rows = sqrt(w_i)*y_i
+            // This is a single BLAS call instead of nnz_u individual rank-1 updates.
+            // Build W matrix with only non-zero weight rows
+            let w_mat = MatRef::from_row_major_slice(&yi_buf[..nnz_u * k], nnz_u, k);
+            let w_mat_t = w_mat.transpose();
+            let mut a_mat = faer::MatMut::from_row_major_slice_mut(a_buf, k, k);
+            matmul(a_mat.as_mut(), Accum::Add, w_mat_t, w_mat, 1.0f32, Par::Seq);
 
             cholesky_solve_inplace(a_buf, b_buf, k);
             xu.copy_from_slice(b_buf);
@@ -225,6 +326,7 @@ fn solve_one_side_cholesky(
 
     out
 }
+
 
 fn csr_transpose(
     indptr: &[i64],
