@@ -14,7 +14,6 @@ from faker import Faker
 import rusket
 from rusket import association_rules, fpgrowth, from_transactions
 
-
 # ---------------------------------------------------------------------------
 # Helpers — Faker-powered dataset generators
 # ---------------------------------------------------------------------------
