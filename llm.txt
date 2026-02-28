@@ -1526,6 +1526,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🐛 Bug Fixes
+
+- preserve original types for _item_labels instead of forcing str()
+
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
