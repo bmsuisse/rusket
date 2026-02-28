@@ -1526,6 +1526,26 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### ⚡ Performance
+
+- 2x faster Cholesky + 1.7x faster CG solver
+
+### 🐛 Bug Fixes
+
+- add missing svd_solver param to pca_fit type stub
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🐛 Bug Fixes
+
+- evaluate() label-to-index mapping for real-world IDs
+
 ### 🚀 Features
 
 - deterministic SVD sign-flip for PCA (matches Spark MLlib / scikit-learn)
