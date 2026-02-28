@@ -221,6 +221,73 @@
       },
       "returns": "Any",
       "doc": "Exports latent item factors as a DataFrame for Vector DBs."
+    },
+    "from_arrow": {
+      "parameters": {
+        "table": "pa.Table",
+        "transaction_col": "str | None",
+        "item_col": "str | None",
+        "min_item_count": "int",
+        "verbose": "int"
+      },
+      "returns": "pa.Table",
+      "doc": "Convert a PyArrow Table in long format to a one-hot boolean PyArrow Table."
+    },
+    "evaluate": {
+      "parameters": {
+        "model": "Any",
+        "test_interactions": "Any",
+        "k": "int",
+        "metrics": "list[MetricName] | None"
+      },
+      "returns": "dict[str, float]",
+      "doc": "Evaluate a trained recommendation model on a test set."
+    },
+    "train_test_split": {
+      "parameters": {
+        "df": "Any",
+        "user_col": "str",
+        "item_col": "str",
+        "test_size": "float",
+        "random_state": "int | None"
+      },
+      "returns": "Any",
+      "doc": "Split interactions into random train and test sets."
+    },
+    "leave_one_out_split": {
+      "parameters": {
+        "df": "Any",
+        "user_col": "str",
+        "item_col": "str",
+        "timestamp_col": "str | None"
+      },
+      "returns": "Any",
+      "doc": "Leave exactly one interaction per user for the test set."
+    },
+    "pca": {
+      "parameters": {
+        "x": "npt.NDArray[Any]",
+        "n_components": "int",
+        "svd_solver": "str"
+      },
+      "returns": "ProjectedSpace",
+      "doc": "Project data into `n_components` dimensions using PCA."
+    },
+    "pca2": {
+      "parameters": {
+        "x": "npt.NDArray[Any]",
+        "svd_solver": "str"
+      },
+      "returns": "ProjectedSpace",
+      "doc": "Project data into exactly 2 dimensions using PCA."
+    },
+    "pca3": {
+      "parameters": {
+        "x": "npt.NDArray[Any]",
+        "svd_solver": "str"
+      },
+      "returns": "ProjectedSpace",
+      "doc": "Project data into exactly 3 dimensions using PCA."
     }
   },
   "classes": {
@@ -680,6 +747,514 @@
         }
       },
       "doc": "Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules."
+    },
+    "FIN": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the FIN miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the FIN algorithm on the stored data."
+        }
+      },
+      "doc": "FIN (Fast Itemset per Nodeset) frequent itemset miner."
+    },
+    "LCM": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the LCM miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the LCM algorithm on the stored data to find closed itemsets."
+        }
+      },
+      "doc": "LCM (Linear Closed Itemset Miner) frequent itemset miner."
+    },
+    "EASE": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "regularization": "float",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "EASE",
+          "doc": "Fit the model to the user-item interaction matrix."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N items for a user. Set exclude_seen=False to include already-seen items."
+        }
+      },
+      "doc": "Embarrassingly Shallow Autoencoders for Sparse Data (EASE)."
+    },
+    "ItemKNN": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "method": "Literal['bm25', 'tfidf', 'cosine', 'count']",
+            "k": "int",
+            "bm25_k1": "float",
+            "bm25_b": "float",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "ItemKNN",
+          "doc": "Fit the ItemKNN model."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N items for a user."
+        }
+      },
+      "doc": "Ultra-fast Sparse Item-Item K-Nearest Neighbors Recommender."
+    },
+    "FPMC": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "learning_rate": "float",
+            "regularization": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "sequences": "list[list[int]] | None",
+            "n_items": "int | None"
+          },
+          "returns": "FPMC",
+          "doc": "Fit the FPMC model to a list of sequential interactions."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N sequential items for a user."
+        }
+      },
+      "doc": "Factorizing Personalized Markov Chains (FPMC) model for sequential recommendation."
+    },
+    "SVD": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "learning_rate": "float",
+            "regularization": "float",
+            "iterations": "int",
+            "seed": "int",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "batch_recommend": {
+          "parameters": {
+            "n": "int",
+            "exclude_seen": "bool",
+            "format": "str"
+          },
+          "returns": "Any",
+          "doc": "Top-N items for all users efficiently computed in parallel."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "SVD",
+          "doc": "Fit the model to the user-item interaction matrix."
+        },
+        "predict": {
+          "parameters": {
+            "user_id": "int",
+            "item_id": "int"
+          },
+          "returns": "float",
+          "doc": "Predict the rating for a user-item pair."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N items for a user."
+        },
+        "recommend_users": {
+          "parameters": {
+            "item_id": "int",
+            "n": "int"
+          },
+          "returns": "tuple[Any, Any]",
+          "doc": "Top-N users for an item."
+        }
+      },
+      "doc": "Funk SVD collaborative filtering model."
+    },
+    "LightGCN": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "k_layers": "int",
+            "learning_rate": "float",
+            "lambda_": "float",
+            "iterations": "int",
+            "seed": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "LightGCN",
+          "doc": "Fit the model to a user-item interaction matrix."
+        },
+        "from_transactions": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | Any",
+            "transaction_col": "str | None",
+            "item_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "LightGCN",
+          "doc": "Initialize the LightGCN model from a long-format DataFrame."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Top-N items for a user."
+        }
+      },
+      "doc": "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation."
+    },
+    "SASRec": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "n_layers": "int",
+            "max_seq": "int",
+            "learning_rate": "float",
+            "lambda_": "float",
+            "iterations": "int",
+            "seed": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "sequences": "list[list[int]] | None"
+          },
+          "returns": "SASRec",
+          "doc": "Train SASRec on integer-encoded sequences (0-indexed item IDs)."
+        },
+        "from_transactions": {
+          "parameters": {
+            "data": "Any",
+            "transaction_col": "str | None",
+            "item_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "SASRec",
+          "doc": "Prepare SASRec from a transactions DataFrame."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int | list[int]",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Top-N items for a user or an ad-hoc sequence."
+        }
+      },
+      "doc": "SASRec \u2013 Self-Attentive Sequential Recommendation."
+    },
+    "PopularityRecommender": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "PopularityRecommender",
+          "doc": "Fit the model by counting interactions per item."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Return the *n* most popular items for a user."
+        }
+      },
+      "doc": "Recommend items by global popularity (interaction count)."
+    },
+    "ContentBased": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "max_features": "int",
+            "ngram_range": "tuple[int, int]",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {},
+          "returns": "ContentBased",
+          "doc": "Compute TF-IDF vectors and the pairwise cosine similarity matrix."
+        },
+        "from_dataframe": {
+          "parameters": {
+            "df": "Any",
+            "item_col": "str",
+            "text_col": "str",
+            "kwargs": "Any"
+          },
+          "returns": "ContentBased",
+          "doc": "Build a content-based recommender from item metadata."
+        },
+        "from_transactions": {
+          "parameters": {
+            "data": "Any",
+            "transaction_col": "str | None",
+            "item_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "ContentBased",
+          "doc": "Not applicable for content-based filtering."
+        },
+        "recommend_similar": {
+          "parameters": {
+            "item": "Any",
+            "n": "int"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Find the *n* most similar items to a given item."
+        }
+      },
+      "doc": "Content-based recommender using TF-IDF vectorization and cosine similarity."
+    },
+    "HybridRecommender": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "models_and_weights": "list[tuple[Any, float]]"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {},
+          "returns": "HybridRecommender",
+          "doc": "No-op \u2014 constituent models must be pre-fitted."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Blend recommendations from all constituent models."
+        }
+      },
+      "doc": "Weighted ensemble of multiple recommendation models."
+    },
+    "NMF": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "factors": "int",
+            "iterations": "int",
+            "regularization": "float",
+            "seed": "int",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "interactions": "Any"
+          },
+          "returns": "NMF",
+          "doc": "Fit via multiplicative update rules."
+        },
+        "recommend_items": {
+          "parameters": {
+            "user_id": "int",
+            "n": "int",
+            "exclude_seen": "bool"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Top-N items for a user via W @ H^T."
+        }
+      },
+      "doc": "Non-negative Matrix Factorization for collaborative filtering."
+    },
+    "PCA": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "n_components": "int",
+            "svd_solver": "str"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "fit": {
+          "parameters": {
+            "X": "npt.NDArray[Any]"
+          },
+          "returns": "PCA",
+          "doc": "Fit PCA on the data matrix ``X``."
+        },
+        "fit_transform": {
+          "parameters": {
+            "X": "npt.NDArray[Any]"
+          },
+          "returns": "npt.NDArray[np.float32]",
+          "doc": "Fit the model with ``X`` and apply dimensionality reduction."
+        },
+        "transform": {
+          "parameters": {
+            "X": "npt.NDArray[Any]"
+          },
+          "returns": "npt.NDArray[np.float32]",
+          "doc": "Apply dimensionality reduction to ``X``."
+        }
+      },
+      "doc": "Principal Component Analysis (PCA)."
+    },
+    "Pipeline": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "retrieve": "Any | list[Any] | None",
+            "rerank": "Any | None",
+            "filter": "Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None",
+            "merge_strategy": "Literal['max', 'mean', 'sum']"
+          },
+          "returns": "None",
+          "doc": "Initialize self.  See help(type(self)) for accurate signature."
+        },
+        "recommend": {
+          "parameters": {
+            "user_id": "int | Any",
+            "n": "int",
+            "exclude_seen": "bool",
+            "retrieve_k": "int | None"
+          },
+          "returns": "tuple[np.ndarray, np.ndarray]",
+          "doc": "Run the full pipeline for a single user."
+        },
+        "recommend_batch": {
+          "parameters": {
+            "user_ids": "list[int | Any] | np.ndarray | None",
+            "n": "int",
+            "exclude_seen": "bool",
+            "retrieve_k": "int | None",
+            "format": "str"
+          },
+          "returns": "Any",
+          "doc": "Batch recommendations for multiple users."
+        }
+      },
+      "doc": "Multi-stage recommendation pipeline."
     }
   },
   "spark": {

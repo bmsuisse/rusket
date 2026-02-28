@@ -347,6 +347,176 @@ from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col:
 
 ---
 
+### `from_arrow`
+
+Convert a PyArrow Table in long format to a one-hot boolean PyArrow Table.
+
+This is a zero-copy-friendly shorthand for ``from_transactions(table, ...)``.  The
+input table must have at least two columns: one for the transaction identifier and
+one for the item.  The returned table has boolean columns (one per unique item).
+
+```python
+from rusket.transactions import from_arrow
+
+from_arrow(table: 'pa.Table', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pa.Table'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| table |  | A ``pyarrow.Table`` with at least two columns (transaction id + item). |
+| transaction_col |  | Name of the transaction-id column. Defaults to the first column. |
+| item_col |  | Name of the item column. Defaults to the second column. |
+| min_item_count |  | Minimum occurrences for an item to be included. Default is 1. |
+| verbose |  | Verbosity level. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pyarrow.Table |  | A boolean Table ready for :func:`rusket.fpgrowth` / :func:`rusket.eclat`. |
+
+---
+
+### `evaluate`
+
+Evaluate a trained recommendation model on a test set.
+
+Compute metrics like NDCG@k, Hit Rate@k, Precision@k, and Recall@k using
+fast natively-backed Rust evaluation loops.
+
+When a model has ``_user_labels`` / ``_item_labels`` (set by
+``from_transactions()``), the test IDs are automatically mapped to
+internal 0-based indices so that ``recommend_items()`` receives valid
+indices and the recommended item indices can be compared with the
+ground truth.
+
+```python
+from rusket.evaluation import evaluate
+
+evaluate(model: 'Any', test_interactions: 'Any', k: 'int' = 10, metrics: 'list[MetricName] | None' = None) -> 'dict[str, float]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| model | Any | A trained recommendation model supporting ``recommend_items(user_id, k, exclude_seen)``. |
+| test_interactions | np.ndarray or pd.DataFrame | Ground truth test interactions. Must either have columns "user" and "item", or be a 2D array format. |
+| k | int, default=10 | The cutoff rank for evaluation. |
+| metrics | list of str, optional | Metrics to compute. Default: ["ndcg", "hr", "precision", "recall"]. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| dict[str, float] |  | Dictionary of averaged metric values. |
+
+---
+
+### `train_test_split`
+
+Split interactions into random train and test sets.
+
+```python
+from rusket.model_selection import train_test_split
+
+train_test_split(df, user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None)
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df | pd.DataFrame | The interaction dataframe. |
+| user_col | str | Name of the user column. |
+| item_col | str | Name of the item column. |
+| test_size | float, default=0.2 | Percentage of data to put in the test set. |
+| random_state | int, optional | Set random seed (currently not used by Rust backend, but reserved for future). |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[pd.DataFrame, pd.DataFrame] |  | train_df, test_df |
+
+---
+
+### `leave_one_out_split`
+
+Leave exactly one interaction per user for the test set.
+
+If a timestamp column is provided, the latest interaction is left out.
+If no timestamp is provided, a random interaction is chosen.
+
+```python
+from rusket.model_selection import leave_one_out_split
+
+leave_one_out_split(df, user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None)
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| df | pd.DataFrame | The interaction dataframe. |
+| user_col | str | Name of the user column (must be numeric encoded to i32 ideally, or pandas int). |
+| item_col | str | Name of the item column. |
+| timestamp_col | str, optional | Name of the timestamp or ordering column. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[pd.DataFrame, pd.DataFrame] |  | train_df, test_df |
+
+---
+
+### `pca`
+
+Project data into `n_components` dimensions using PCA.
+
+```python
+from rusket.pca import pca
+
+pca(x: 'npt.NDArray[Any]', n_components: 'int' = 2, svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| x | array-like of shape (n_samples, n_features) |  |
+| n_components | int, default=2 |  |
+| svd_solver | {"auto", "exact", "randomized"}, default="auto" |  |
+
+---
+
+### `pca2`
+
+Project data into exactly 2 dimensions using PCA.
+
+```python
+from rusket.pca import pca2
+
+pca2(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
+```
+
+---
+
+### `pca3`
+
+Project data into exactly 3 dimensions using PCA.
+
+```python
+from rusket.pca import pca3
+
+pca3(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
+```
+
+---
+
 ## OOP Mining API
 
 All mining classes share a common `Miner.from_transactions()` / `.mine()` interface. `FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` also inherit `RuleMinerMixin` which adds `.association_rules()` and `.recommend_items()` helpers.
@@ -663,6 +833,72 @@ from rusket.streaming import FPMiner.reset
 
 FPMiner.reset() -> 'None'
 ```
+
+---
+
+---
+
+### `FIN`
+
+FIN (Fast Itemset per Nodeset) frequent itemset miner.
+
+This class wraps the fast core Rust FIN implementation.
+
+```python
+from rusket.fin import FIN
+
+FIN(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `FIN.mine`
+
+Execute the FIN algorithm on the stored data.
+
+```python
+from rusket.fin import FIN.mine
+
+FIN.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
+
+---
+
+---
+
+### `LCM`
+
+LCM (Linear Closed Itemset Miner) frequent itemset miner.
+
+This class wraps the fast core Rust LCM implementation using Prefix-Preserving Closure Extension.
+It produces only *closed* frequent itemsets, offering massive memory savings
+and faster execution out-of-the-box compared to classic algorithms on dense datasets.
+
+```python
+from rusket.lcm import LCM
+
+LCM(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `LCM.mine`
+
+Execute the LCM algorithm on the stored data to find closed itemsets.
+
+```python
+from rusket.lcm import LCM.mine
+
+LCM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
 
 ---
 
@@ -1129,6 +1365,756 @@ NextBestAction.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' =
 
 ---
 
+### `EASE`
+
+Embarrassingly Shallow Autoencoders for Sparse Data (EASE).
+
+An implicit collaborative filtering algorithm that computes a closed-form
+item-item similarity matrix by solving a ridge regression problem. EASE
+often achieves state-of-the-art recommendation quality and very fast
+inference, particularly on datasets with strong item-item correlations.
+
+```python
+from rusket.ease import EASE
+
+EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| regularization | float | L2 regularization weight (lambda). Higher values encourage smaller weights and reduce overfitting. Default is 500.0. |
+
+#### `EASE.fit`
+
+Fit the model to the user-item interaction matrix.
+
+```python
+from rusket.ease import EASE.fit
+
+EASE.fit(interactions: 'Any' = None) -> 'EASE'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
+
+---
+
+#### `EASE.recommend_items`
+
+Top-N items for a user. Set exclude_seen=False to include already-seen items.
+
+```python
+from rusket.ease import EASE.recommend_items
+
+EASE.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
+
+---
+
+---
+
+### `ItemKNN`
+
+Ultra-fast Sparse Item-Item K-Nearest Neighbors Recommender.
+
+Computes an item-item similarity matrix and only retains the top-K neighbors
+per item. Similarity methods include BM25, TF-IDF, Cosine, or unweighted Count.
+
+```python
+from rusket.item_knn import ItemKNN
+
+ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, **kwargs: 'Any')
+```
+
+#### `ItemKNN.fit`
+
+Fit the ItemKNN model.
+
+```python
+from rusket.item_knn import ItemKNN.fit
+
+ItemKNN.fit(interactions: 'Any' = None) -> 'ItemKNN'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | scipy.sparse.csr_matrix, optional | A sparse matrix of shape (n_users, n_items). If None, uses the matrix prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| ItemKNN |  | The fitted model. |
+
+---
+
+#### `ItemKNN.recommend_items`
+
+Top-N items for a user.
+
+```python
+from rusket.item_knn import ItemKNN.recommend_items
+
+ItemKNN.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | The user ID to generate recommendations for. |
+| n | int, default=10 | Number of items to return. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` sorted by descending score. |
+
+---
+
+---
+
+### `FPMC`
+
+Factorizing Personalized Markov Chains (FPMC) model for sequential recommendation.
+
+FPMC combines Matrix Factorization (modeling user preferences) and Markov Chains
+(modeling sequential transitions between items). It is highly effective for tasks
+where both personal taste and sequential behavior matter (e.g., next-basket delivery).
+
+```python
+from rusket.fpmc import FPMC
+
+FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors (default: 64). |
+| learning_rate | float | SGD learning rate (default: 0.05). |
+| regularization | float | L2 regularization weight (default: 0.01). |
+| iterations | int | Number of passes over the transitions (default: 150). |
+| seed | int | Random seed for sampling (default: 42). |
+| verbose | bool | Whether to print training progress (default: False). |
+
+#### `FPMC.fit`
+
+Fit the FPMC model to a list of sequential interactions.
+
+```python
+from rusket.fpmc import FPMC.fit
+
+FPMC.fit(sequences: 'list[list[int]] | None' = None, n_items: 'int | None' = None) -> 'FPMC'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| sequences | list of list of int, optional | List of item sequences, where each sequence belongs to a unique user. Users are assigned IDs from 0 to len(sequences)-1. If None, uses data prepared by ``from_transactions()``. |
+| n_items | int \| None | Maximum number of items. If None, it is inferred from data. |
+
+---
+
+#### `FPMC.recommend_items`
+
+Top-N sequential items for a user.
+
+```python
+from rusket.fpmc import FPMC.recommend_items
+
+FPMC.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
+
+---
+
+---
+
+### `SVD`
+
+Funk SVD collaborative filtering model.
+
+Biased matrix factorization trained with SGD:
+    r̂_ui = μ + b_u + b_i + p_u · q_i
+
+```python
+from rusket.svd import SVD
+
+SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors. |
+| learning_rate | float | SGD learning rate. |
+| regularization | float | L2 regularisation weight. |
+| iterations | int | Number of SGD epochs. |
+| seed | int | Random seed for reproducibility. |
+| verbose | int | Verbosity level (0 = silent, 1+ = progress). |
+
+#### `SVD.batch_recommend`
+
+Top-N items for all users efficiently computed in parallel.
+
+```python
+from rusket.svd import SVD.batch_recommend
+
+SVD.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| n | int | Number of items per user. |
+| exclude_seen | bool | Whether to filter already-seen items. |
+| format | str | Output format: "polars" or "pandas". |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DataFrame |  | A DataFrame with columns ``user_id``, ``item_id``, and ``score``. |
+
+---
+
+#### `SVD.fit`
+
+Fit the model to the user-item interaction matrix.
+
+```python
+from rusket.svd import SVD.fit
+
+SVD.fit(interactions: 'Any' = None) -> 'SVD'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | scipy.sparse matrix, np.ndarray, pd.DataFrame, or polars DataFrame, optional | User-item interaction matrix with explicit ratings. If None, uses the matrix prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| self |  |  |
+
+---
+
+#### `SVD.predict`
+
+Predict the rating for a user-item pair.
+
+```python
+from rusket.svd import SVD.predict
+
+SVD.predict(user_id: 'int', item_id: 'int') -> 'float'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | User index. |
+| item_id | int | Item index. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| float |  | Predicted rating. |
+
+---
+
+#### `SVD.recommend_items`
+
+Top-N items for a user.
+
+```python
+from rusket.svd import SVD.recommend_items
+
+SVD.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | User index. |
+| n | int | Number of items to recommend. |
+| exclude_seen | bool | Whether to filter already-seen items. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | (item_ids, scores) |
+
+---
+
+#### `SVD.recommend_users`
+
+Top-N users for an item.
+
+```python
+from rusket.svd import SVD.recommend_users
+
+SVD.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
+```
+
+---
+
+---
+
+### `LightGCN`
+
+LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation.
+
+A state-of-the-art collaborative filtering model that propagates embeddings
+over the user–item bipartite graph without non-linear transformations.
+
+Typical training time on ml-100k: < 0.5s/epoch.
+
+```python
+from rusket.lightgcn import LightGCN
+
+LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Embedding dimensionality (latent factors). |
+| k_layers | int | Number of graph-propagation layers (1–4). |
+| learning_rate | float | Adam learning rate. |
+| lambda\_ | float | L2 regularization coefficient. |
+| iterations | int | Number of training epochs. |
+| seed | int or None | Seed for reproducible training. |
+| verbose | int | Print training progress. |
+
+#### `LightGCN.fit`
+
+Fit the model to a user-item interaction matrix.
+
+```python
+from rusket.lightgcn import LightGCN.fit
+
+LightGCN.fit(interactions: 'Any' = None) -> 'LightGCN'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | scipy.sparse.csr_matrix or numpy.ndarray, optional | A sparse or dense user-item interaction matrix. If None, uses data prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| LightGCN |  | The fitted model. |
+
+---
+
+#### `LightGCN.recommend_items`
+
+Top-N items for a user.
+
+```python
+from rusket.lightgcn import LightGCN.recommend_items
+
+LightGCN.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | Original user ID (before encoding). |
+| n | int, default=10 | Number of recommendations. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` sorted by descending score. |
+
+---
+
+---
+
+### `SASRec`
+
+SASRec – Self-Attentive Sequential Recommendation.
+
+Applies a causal Transformer to user interaction sequences to predict
+the next item. Significantly outperforms Markov-chain methods like FPMC
+on long sequences.
+
+```python
+from rusket.sasrec import SASRec
+
+SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Embedding dimensionality. |
+| n_layers | int | Number of Transformer blocks. |
+| max_seq | int | Maximum input sequence length (older items are dropped). |
+| learning_rate | float | SGD learning rate (decays during training). |
+| lambda\_ | float | L2 regularization. |
+| iterations | int | Number of training epochs. |
+| seed | int or None | Seed for reproducibility. |
+| verbose | int | Print epoch progress. |
+
+#### `SASRec.fit`
+
+Train SASRec on integer-encoded sequences (0-indexed item IDs).
+
+```python
+from rusket.sasrec import SASRec.fit
+
+SASRec.fit(sequences: 'list[list[int]] | None' = None) -> 'SASRec'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| sequences | list of list of int, optional | List of per-user interaction histories (item IDs). If None, uses data prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| SASRec |  | The fitted model. |
+
+---
+
+#### `SASRec.recommend_items`
+
+Top-N items for a user or an ad-hoc sequence.
+
+```python
+from rusket.sasrec import SASRec.recommend_items
+
+SASRec.recommend_items(user_id: 'int | list[int]', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int or list[int] | The ID of the user (implicitly 0 to len(sequences)-1 from fit), or a list of items representing an ad-hoc sequence. |
+| n | int, default=10 | Number of recommendations. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` sorted by descending score. |
+
+---
+
+---
+
+### `PopularityRecommender`
+
+Recommend items by global popularity (interaction count).
+
+A non-personalised baseline that ranks every item by the total number
+of interactions it received.  Useful as a sanity-check baseline when
+evaluating more sophisticated models.
+
+```python
+from rusket.popularity import PopularityRecommender
+
+PopularityRecommender(verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| verbose | int, default=0 | Verbosity level. |
+
+#### `PopularityRecommender.fit`
+
+Fit the model by counting interactions per item.
+
+```python
+from rusket.popularity import PopularityRecommender.fit
+
+PopularityRecommender.fit(interactions: 'Any' = None) -> 'PopularityRecommender'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | User-item interaction matrix.  If *None*, uses the matrix prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| PopularityRecommender |  | The fitted model. |
+
+---
+
+#### `PopularityRecommender.recommend_items`
+
+Return the *n* most popular items for a user.
+
+```python
+from rusket.popularity import PopularityRecommender.recommend_items
+
+PopularityRecommender.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | Internal user index. |
+| n | int, default=10 | Number of items to return. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` sorted by descending popularity. |
+
+---
+
+---
+
+### `ContentBased`
+
+Content-based recommender using TF-IDF vectorization and cosine similarity.
+
+Recommends items similar to a given item based on textual features
+(descriptions, tags, genres, etc.).
+
+```python
+from rusket.content_based import ContentBased
+
+ContentBased(max_features: 'int' = 5000, ngram_range: 'tuple[int, int]' = (1, 2), **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| max_features | int, default=5000 | Maximum number of TF-IDF features to extract. |
+| ngram_range | tuple[int, int], default=(1, 2) | Range of n-grams for TF-IDF vectorisation. |
+
+#### `ContentBased.fit`
+
+Compute TF-IDF vectors and the pairwise cosine similarity matrix.
+
+```python
+from rusket.content_based import ContentBased.fit
+
+ContentBased.fit() -> 'ContentBased'
+```
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| ContentBased |  | The fitted model. |
+
+---
+
+#### `ContentBased.recommend_similar`
+
+Find the *n* most similar items to a given item.
+
+```python
+from rusket.content_based import ContentBased.recommend_similar
+
+ContentBased.recommend_similar(item: 'Any', n: 'int' = 10) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| item | Any | Item ID (as it appeared in ``item_col`` of the source DataFrame). |
+| n | int, default=10 | Number of similar items to return. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, similarity_scores)`` sorted by descending similarity. |
+
+---
+
+---
+
+### `HybridRecommender`
+
+Weighted ensemble of multiple recommendation models.
+
+Blends the output of several pre-fitted models by combining their
+``recommend_items`` scores with configurable weights.
+
+```python
+from rusket.hybrid import HybridRecommender
+
+HybridRecommender(models_and_weights: 'list[tuple[Any, float]]') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| models_and_weights | list[tuple[Any, float]] | List of ``(model, weight)`` pairs.  Each model must implement ``recommend_items(user_id, n, exclude_seen) -> (ids, scores)``. |
+
+#### `HybridRecommender.fit`
+
+No-op — constituent models must be pre-fitted.
+
+```python
+from rusket.hybrid import HybridRecommender.fit
+
+HybridRecommender.fit() -> 'HybridRecommender'
+```
+
+---
+
+#### `HybridRecommender.recommend_items`
+
+Blend recommendations from all constituent models.
+
+For each model, requests a large candidate set (``n * 3``), maps item
+scores into a shared score vector, applies the weight, and returns the
+top-*n* from the blended result.
+
+```python
+from rusket.hybrid import HybridRecommender.recommend_items
+
+HybridRecommender.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | Internal user index. |
+| n | int, default=10 | Number of items to return. |
+| exclude_seen | bool, default=True | Whether to exclude items already seen. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, blended_scores)`` sorted by descending score. |
+
+---
+
+---
+
+### `NMF`
+
+Non-negative Matrix Factorization for collaborative filtering.
+
+Decomposes the user-item interaction matrix **R** into two non-negative
+matrices **W** (users × factors) and **H** (factors × items) such that
+``R ≈ W @ H``.  The multiplicative update rules guarantee non-negativity
+without a projection step.
+
+```python
+from rusket.nmf import NMF
+
+NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int, default=64 | Number of latent factors. |
+| iterations | int, default=100 | Number of multiplicative update iterations. |
+| regularization | float, default=0.01 | L2 regularisation penalty applied to both W and H. |
+| seed | int, default=42 | Random seed for initialisation. |
+| verbose | int, default=0 | Verbosity level. |
+
+#### `NMF.fit`
+
+Fit via multiplicative update rules.
+
+```python
+from rusket.nmf import NMF.fit
+
+NMF.fit(interactions: 'Any' = None) -> 'NMF'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| interactions | sparse matrix or numpy array, optional | User-item interaction matrix.  If *None*, uses the matrix prepared by ``from_transactions()``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NMF |  | The fitted model. |
+
+---
+
+#### `NMF.recommend_items`
+
+Top-N items for a user via W @ H^T.
+
+```python
+from rusket.nmf import NMF.recommend_items
+
+NMF.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int | Internal user index. |
+| n | int, default=10 | Number of items to return. |
+| exclude_seen | bool, default=True | Whether to exclude already-seen items. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` sorted by descending score. |
+
+---
+
+---
+
 ## Analytics & Utilities
 
 ### `score_potential`
@@ -1265,6 +2251,220 @@ export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True,
 >>> # Ingest into FAISS / Pinecone / Qdrant
 >>> vectors = np.stack(df["vector"].values)
 ```
+
+---
+
+### `PCA`
+
+Principal Component Analysis (PCA).
+
+Linear dimensionality reduction using Singular Value Decomposition
+of the centred data, computed entirely in Rust via the ``faer`` crate.
+
+```python
+from rusket.pca import PCA
+
+PCA(n_components: 'int' = 2, svd_solver: 'str' = 'auto') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| n_components | int | Number of principal components to keep. |
+| Attributes (available after ``fit()``) |  |  |
+| ---------- |  |  |
+| components_ | np.ndarray | Principal axes in feature space, shape ``(n_components, n_features)``. |
+| explained_variance_ | np.ndarray | Variance explained per component (uses ``n - 1`` degrees of freedom). |
+| explained_variance_ratio_ | np.ndarray | Fraction of total variance explained per component. |
+| singular_values_ | np.ndarray | Singular values corresponding to each component. |
+| mean_ | np.ndarray | Per-feature empirical mean estimated from the training data. |
+| n_components_ | int | Number of components that were actually fitted (may be less than requested if ``n_components > min(n_samples, n_features)``). |
+
+**Examples**
+
+```python
+>>> import numpy as np
+>>> import rusket
+>>> X = np.random.default_rng(42).standard_normal((100, 10)).astype(np.float32)
+>>> pca = rusket.PCA(n_components=3)
+>>> pca.fit(X)
+PCA(n_components=3)
+>>> pca.transform(X).shape
+(100, 3)
+>>> pca.explained_variance_ratio_.sum()  # close to fraction of total
+0.4...
+```
+
+#### `PCA.fit`
+
+Fit PCA on the data matrix ``X``.
+
+```python
+from rusket.pca import PCA.fit
+
+PCA.fit(X: 'npt.NDArray[Any]') -> 'PCA'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| X | array-like of shape (n_samples, n_features) | Training data. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| self |  |  |
+
+---
+
+#### `PCA.fit_transform`
+
+Fit the model with ``X`` and apply dimensionality reduction.
+
+```python
+from rusket.pca import PCA.fit_transform
+
+PCA.fit_transform(X: 'npt.NDArray[Any]') -> 'npt.NDArray[np.float32]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| X | array-like of shape (n_samples, n_features) |  |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| X_new | ndarray of shape (n_samples, n_components) |  |
+
+---
+
+#### `PCA.transform`
+
+Apply dimensionality reduction to ``X``.
+
+```python
+from rusket.pca import PCA.transform
+
+PCA.transform(X: 'npt.NDArray[Any]') -> 'npt.NDArray[np.float32]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| X | array-like of shape (n_samples, n_features) |  |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| X_new | ndarray of shape (n_samples, n_components) |  |
+
+---
+
+---
+
+### `Pipeline`
+
+Multi-stage recommendation pipeline.
+
+Composes multiple recommendation models into a **retrieve → rerank → filter**
+funnel, following the architecture used by production recommendation systems
+at Twitter/X, YouTube, and Spotify.
+
+```python
+from rusket.pipeline import Pipeline
+
+Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None, filter: 'Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None' = None, merge_strategy: "Literal['max', 'mean', 'sum']" = 'max') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| retrieve | list or single model | One or more ``ImplicitRecommender`` instances used for candidate generation.  Each model's ``recommend_items()`` is called and results are merged. |
+| rerank | model, optional | An ``ImplicitRecommender`` used to re-score the merged candidate set. Typically a heavier model (e.g. BPR or LightGCN) that produces higher-quality rankings on a smaller candidate pool. |
+| filter | callable, optional | A function ``(item_ids, scores) -> (filtered_ids, filtered_scores)`` applied after re-ranking.  Use for block lists, category restrictions, recency filters, NSFW removal, etc. |
+| merge_strategy | {'max', 'mean', 'sum'}, default='max' | How to combine scores when multiple retrievers return the same item. |
+
+**Examples**
+
+```python
+>>> pipeline = Pipeline(
+...     retrieve=[als, item_knn],
+...     rerank=bpr,
+...     filter=lambda ids, sc: (
+...         [i for i in ids if i not in blocked_set],
+...         [s for i, s in zip(ids, sc) if i not in blocked_set],
+...     ),
+... )
+>>> items, scores = pipeline.recommend(user_id=42, n=10)
+```
+
+#### `Pipeline.recommend`
+
+Run the full pipeline for a single user.
+
+```python
+from rusket.pipeline import Pipeline.recommend
+
+Pipeline.recommend(user_id: 'int | Any', n: 'int' = 10, exclude_seen: 'bool' = True, retrieve_k: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_id | int or any | The user to generate recommendations for. |
+| n | int, default=10 | Number of final items to return. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+| retrieve_k | int, optional | Number of candidates per retriever.  Defaults to ``n * 10`` to produce a wide candidate pool for re-ranking. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| tuple[np.ndarray, np.ndarray] |  | ``(item_ids, scores)`` arrays, sorted by descending score. |
+
+---
+
+#### `Pipeline.recommend_batch`
+
+Batch recommendations for multiple users.
+
+Uses the **Rust-accelerated** fast path when all models expose
+``user_factors`` / ``item_factors`` and share the same user indexing.
+Falls back to the Python per-user loop otherwise.
+
+```python
+from rusket.pipeline import Pipeline.recommend_batch
+
+Pipeline.recommend_batch(user_ids: 'list[int | Any] | np.ndarray | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True, retrieve_k: 'int | None' = None, format: 'str' = 'pandas') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_ids | list or array, optional | Users to score.  If None, uses all users from the first retriever. |
+| n | int, default=10 | Items per user. |
+| exclude_seen | bool, default=True | Whether to exclude items users have already interacted with. |
+| retrieve_k | int, optional | Candidates per retriever (default: ``n * 10``). |
+| format | str, default='pandas' | Output format: ``'pandas'``, ``'polars'``, or ``'records'``. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| DataFrame or list of dicts |  | Columns: ``user_id``, ``item_ids``, ``scores``. |
+
+---
 
 ---
 
@@ -1525,6 +2725,41 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- resolve lock conflicts, yolo merge, release v0.1.62
+
+### 🚀 Features
+
+- Introduce FIN and LCM frequent itemset miners, EASE recommender, PCA, model selection utilities, and NetworkX visualization integrations.
+
+### 🐛 Bug Fixes
+
+- remove .cargo/config.toml from repo (caused SIGILL in CI)
+
+### Bench
+
+- add pytest-benchmark suite for Pipeline API
+
+### ⚡ Performance
+
+- BLAS-accelerated pipeline batch scoring (faer matmul)
+- optimize FPGrowth tree building — flat branch buffer, skip HashMap dedup, direct CSR insert
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- bump version to 0.1.59 for Pipeline API release
+
+### 🚀 Features
+
+- add multi-stage Pipeline API (retrieve → rerank → filter)
 
 ### 🐛 Bug Fixes
 

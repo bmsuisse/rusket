@@ -10,30 +10,36 @@
       
       
       
+        <link rel="canonical" href="https://bmsuisse.github.io/rusket/pipeline/">
       
+      
+        <link rel="prev" href="../recommender/">
+      
+      
+        <link rel="next" href="../streaming/">
       
       
         
       
       
-      <link rel="icon" href="/rusket/assets/logo_single.svg">
+      <link rel="icon" href="../assets/logo_single.svg">
       <meta name="generator" content="zensical-0.0.23">
     
     
       
-        <title>rusket</title>
+        <title>Pipeline Architecture - rusket</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="/rusket/assets/stylesheets/modern/main.1e989742.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e989742.min.css">
       
         
           
         
-        <link rel="stylesheet" href="/rusket/assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -52,7 +58,7 @@
       
     
     
-    <script>__md_scope=new URL("/rusket",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -76,6 +82,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#pipeline-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -88,7 +99,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/rusket/" title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
@@ -108,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Pipeline Architecture
             
           </span>
         </div>
@@ -187,7 +198,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/rusket/" title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
@@ -252,7 +263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/" class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
@@ -280,7 +291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -312,18 +323,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -344,7 +357,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -362,7 +375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/api-reference/" class="md-nav__link">
+      <a href="../api-reference/" class="md-nav__link">
         
   
   
@@ -390,7 +403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/cookbook/" class="md-nav__link">
+      <a href="../cookbook/" class="md-nav__link">
         
   
   
@@ -465,7 +478,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
+      <a href="../notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
         
   
   
@@ -493,7 +506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/2_movielens_recommendations/" class="md-nav__link">
+      <a href="../notebooks/2_movielens_recommendations/" class="md-nav__link">
         
   
   
@@ -521,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
+      <a href="../notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
         
   
   
@@ -557,7 +570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/recommender/" class="md-nav__link">
+      <a href="../recommender/" class="md-nav__link">
         
   
   
@@ -582,10 +595,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/rusket/pipeline/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -601,6 +641,60 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-retrieve-rerank-filter-funnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Retrieve → Rerank → Filter Funnel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-prediction-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Prediction Optimizations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -613,7 +707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/streaming/" class="md-nav__link">
+      <a href="../streaming/" class="md-nav__link">
         
   
   
@@ -641,7 +735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/spark/" class="md-nav__link">
+      <a href="../spark/" class="md-nav__link">
         
   
   
@@ -669,7 +763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/polars/" class="md-nav__link">
+      <a href="../polars/" class="md-nav__link">
         
   
   
@@ -697,7 +791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/benchmarks/" class="md-nav__link">
+      <a href="../benchmarks/" class="md-nav__link">
         
   
   
@@ -725,7 +819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/1b-challenge/" class="md-nav__link">
+      <a href="../1b-challenge/" class="md-nav__link">
         
   
   
@@ -753,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -835,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -881,6 +975,49 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-retrieve-rerank-filter-funnel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Retrieve → Rerank → Filter Funnel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch-prediction-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Prediction Optimizations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -893,8 +1030,83 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+<h1 id="pipeline-architecture">Pipeline Architecture<a class="headerlink" href="#pipeline-architecture" title="Permanent link">&para;</a></h1>
+<p>For production systems requiring advanced retrieval and ranking, <strong>rusket</strong> provides the <code>Pipeline</code> class. This mirrors the "retrieve → rerank → filter" paradigm used by Twitter/X and modern ML stacks. </p>
+<p>The <code>Pipeline</code> allows you to effortlessly combine the strengths of different memory-based and latent-factor models, optionally re-scoring their candidates with a slower, heavier model (like Factorization Machines) before applying final business logic filters.</p>
+<hr />
+<h2 id="the-retrieve-rerank-filter-funnel">The Retrieve → Rerank → Filter Funnel<a class="headerlink" href="#the-retrieve-rerank-filter-funnel" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">BPR</span><span class="p">,</span> <span class="n">Pipeline</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Train multiple base models</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">64</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">bpr</span> <span class="o">=</span> <span class="n">BPR</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Compose the Pipeline</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">retrieve</span><span class="o">=</span><span class="p">[</span><span class="n">als</span><span class="p">,</span> <span class="n">bpr</span><span class="p">],</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">merge_strategy</span><span class="o">=</span><span class="s2">&quot;max&quot;</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">rerank</span><span class="o">=</span><span class="n">bpr</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
+</span></code></pre></div>
+<ol>
+<li><strong>Retrieve</strong>: You can pass one or multiple trained recommenders to the <code>retrieve</code> parameter. E.g. retrieving candidates from an <code>ALS</code> collaborative filter and an <code>ItemKNN</code> model.</li>
+<li><strong>Merge Strategy</strong>: When passing multiple retrievers, the <code>merge_strategy</code> determines how scores are grouped if a candidate item is generated by more than one retriever. Options:</li>
+<li><code>"max"</code>: take the highest score</li>
+<li><code>"sum"</code>: sum up the scores</li>
+<li><code>"mean"</code>: take the average</li>
+<li><strong>Rerank (optional)</strong>: You can provide a secondary model to re-score the generated candidates. Rerankers are usually slower to run on the entire catalogue, so they use the narrowed down candidate space.</li>
+<li><strong>Filter (optional)</strong>: Define Python functions to mathematically apply rules (e.g. inventory control, blacklisting).</li>
+</ol>
+<hr />
+<h2 id="batch-prediction-optimizations">Batch Prediction Optimizations<a class="headerlink" href="#batch-prediction-optimizations" title="Permanent link">&para;</a></h2>
+<p>The Pipeline uses the same heavily optimized <strong>Rust-accelerated fast paths</strong> as standard <code>rusket</code> models whenever possible.
+If all configured models expose <code>user_factors</code> and <code>item_factors</code> (such as <code>ALS</code> and <code>BPR</code>) and share identical user mappings, <code>.recommend_batch()</code> skips Python loops entirely.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Blazing-fast Batch Scoring utilizing Rust inner loops</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">batch_recs</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">recommend_batch</span><span class="p">(</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">user_ids</span><span class="o">=</span><span class="p">[</span><span class="mi">1001</span><span class="p">,</span> <span class="mi">1002</span><span class="p">,</span> <span class="mi">1003</span><span class="p">],</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;polars&quot;</span>  <span class="c1"># Avoid pandas memory bloat</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
+</span></code></pre></div>
+<blockquote>
+<p><strong>Performance Note</strong>: If any of your configured models inside the <code>Pipeline</code> do not support the Rust-batch path (e.g., Python-level custom classes or ItemKNN without factor graphs), <code>rusket</code> safely falls back to a multi-threaded Python loop.</p>
+</blockquote>
+<hr />
+<h2 id="custom-filtering">Custom Filtering<a class="headerlink" href="#custom-filtering" title="Permanent link">&para;</a></h2>
+<p>You can supply custom python callbacks to the <code>filter</code> argument. This function accepts candidate IDs and their scores, returning filtered arrays.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">exclude_premium_skus</span><span class="p">(</span><span class="n">candidate_ids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">candidate_scores</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove items representing premium-tier items for basic-tier users.&quot;&quot;&quot;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">candidate_ids</span><span class="p">,</span> <span class="p">[</span><span class="mi">99</span><span class="p">,</span> <span class="mi">104</span><span class="p">,</span> <span class="mi">255</span><span class="p">])</span>  <span class="c1"># SKUs to exclude</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">return</span> <span class="n">candidate_ids</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">candidate_scores</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Create pipeline with an ad-hoc custom filter</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">retrieve</span><span class="o">=</span><span class="p">[</span><span class="n">als</span><span class="p">],</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="nb">filter</span><span class="o">=</span><span class="n">exclude_premium_skus</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">recs</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">recommend</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># returned candidates are guaranteed to be filtered over the mask.</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -959,10 +1171,10 @@
       
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"/rusket","features":[],"search":"/rusket/assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":[],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="/rusket/assets/javascripts/bundle.5fcf0de6.min.js"></script>
+      <script src="../assets/javascripts/bundle.5fcf0de6.min.js"></script>
       
     
   </body>
