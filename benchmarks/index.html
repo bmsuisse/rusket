@@ -953,6 +953,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#recommender-benchmarks-vs-librecommender" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommender Benchmarks vs LibRecommender
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1317,6 +1328,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#recommender-benchmarks-vs-librecommender" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommender Benchmarks vs LibRecommender
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1478,8 +1500,8 @@ All timings are single-run wall-clock measurements. Your results may vary depend
 <h2 id="the-auto-routine-algorithm">The "Auto" Routine Algorithm<a class="headerlink" href="#the-auto-routine-algorithm" title="Permanent link">&para;</a></h2>
 <p><code>rusket.mine(method="auto")</code> dynamically selects the algorithm that performs best based on the dataset density (Borgelt 2003 heuristic).</p>
 <ul>
-<li><strong>Density &gt; 0.15 (Dense)</strong>: Automatically routes to <strong>FP-Growth</strong>.</li>
-<li><strong>Density &lt; 0.15 (Sparse)</strong>: Automatically routes to <strong>Eclat</strong>. On sparse data (like retail baskets), traversing an enormous tree is memory-intensive. Eclat directly uses hardware SIMD array-intersections (<code>popcnt</code>) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).</li>
+<li><strong>FP-Growth</strong>: Excellent for dense data.</li>
+<li><strong>Eclat</strong>: Excellent for sparse data (like retail baskets). Eclat directly uses hardware SIMD array-intersections (<code>popcnt</code>) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).</li>
 </ul>
 <hr />
 <h2 id="real-world-datasets">Real-World Datasets<a class="headerlink" href="#real-world-datasets" title="Permanent link">&para;</a></h2>
@@ -1521,14 +1543,14 @@ All timings are single-run wall-clock measurements. Your results may vary depend
 <h2 id="the-power-user-pipeline">The Power-User Pipeline<a class="headerlink" href="#the-power-user-pipeline" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">sparse</span> <span class="k">as</span> <span class="n">sp</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoMiner</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPGrowth</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">csr</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">txn_ids</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="n">txn_ids</span><span class="p">,</span> <span class="n">item_ids</span><span class="p">)),</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_transactions</span><span class="p">,</span> <span class="n">n_items</span><span class="p">),</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">AutoMiner</span><span class="p">(</span><span class="n">csr</span><span class="p">)</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">item_names</span><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">FPGrowth</span><span class="p">(</span><span class="n">csr</span><span class="p">)</span><span class="o">.</span><span class="n">mine</span><span class="p">(</span><span class="n">min_support</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column_names</span><span class="o">=</span><span class="n">item_names</span><span class="p">)</span>
 </span></code></pre></div>
 <p>At 100M rows, the mining step takes <strong>1.2 seconds</strong> (not a typo).</p>
 <hr />
@@ -1580,6 +1602,59 @@ All timings are single-run wall-clock measurements. Your results may vary depend
 <tr>
 <td><strong><code>pd.factorize</code></strong></td>
 <td>O(n) integer encoding, faster than <code>pd.Categorical</code> at scale</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommender-benchmarks-vs-librecommender">Recommender Benchmarks vs LibRecommender<a class="headerlink" href="#recommender-benchmarks-vs-librecommender" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Measured with <code>pytest-benchmark</code></strong> (5 rounds, warmed up, GC disabled). MovieLens 100k dataset (943 users, 1,682 items, 100k ratings). Only <code>model.fit()</code> is timed — no startup or data loading overhead.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th style="text-align: center;">rusket</th>
+<th style="text-align: center;">LibRecommender</th>
+<th style="text-align: center;"><strong>Speedup</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ALS (Cholesky)</strong> (64 factors, 15 epochs)</td>
+<td style="text-align: center;"><strong>427 ms</strong></td>
+<td style="text-align: center;">1,324 ms</td>
+<td style="text-align: center;"><strong>3.1×</strong></td>
+</tr>
+<tr>
+<td><strong>ALS (eALS)</strong> (64 factors, 15 epochs)</td>
+<td style="text-align: center;"><strong>360 ms</strong></td>
+<td style="text-align: center;"><em>N/A</em></td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>BPR</strong> (64 factors, 10 epochs)</td>
+<td style="text-align: center;"><strong>33 ms</strong></td>
+<td style="text-align: center;">681 ms</td>
+<td style="text-align: center;"><strong>20.4×</strong></td>
+</tr>
+<tr>
+<td><strong>ItemKNN</strong> (k=100)</td>
+<td style="text-align: center;"><strong>55 ms</strong></td>
+<td style="text-align: center;">287 ms</td>
+<td style="text-align: center;"><strong>5.2×</strong></td>
+</tr>
+<tr>
+<td><strong>SVD</strong> (64 factors, 20 epochs)</td>
+<td style="text-align: center;"><strong>55 ms</strong></td>
+<td style="text-align: center;">❌ TF-only (broken)</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>EASE</strong></td>
+<td style="text-align: center;"><strong>71 ms</strong></td>
+<td style="text-align: center;"><em>N/A</em></td>
+<td style="text-align: center;">—</td>
 </tr>
 </tbody>
 </table>

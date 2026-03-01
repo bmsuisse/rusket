@@ -1261,7 +1261,7 @@
 <p>rusket has two class families: <strong>Miners</strong> (frequent pattern discovery) and <strong>Recommenders</strong> (collaborative filtering). All share common API patterns.</p>
 <h3 id="base-classes">Base classes<a class="headerlink" href="#base-classes" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BaseModel (ABC)
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── Miner ─── FPGrowth, Eclat, FIN, LCM, FPGrowth (+ RuleMinerMixin)
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│             PrefixSpan, HUPM (specialized miners)
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── SequentialRecommender ─── FPMC, SASRec

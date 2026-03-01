@@ -803,10 +803,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fpgrowth-eclat-autominer" class="md-nav__link">
+  <a href="#fpgrowth-eclat-fpgrowth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FPGrowth / Eclat / AutoMiner
+        FPGrowth / Eclat / FPGrowth
       
     </span>
   </a>
@@ -1751,10 +1751,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fpgrowth-eclat-autominer" class="md-nav__link">
+  <a href="#fpgrowth-eclat-fpgrowth" class="md-nav__link">
     <span class="md-ellipsis">
       
-        FPGrowth / Eclat / AutoMiner
+        FPGrowth / Eclat / FPGrowth
       
     </span>
   </a>
@@ -1895,7 +1895,7 @@
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPGrowth</span><span class="p">,</span> <span class="n">Eclat</span><span class="p">,</span> <span class="n">AutoMiner</span><span class="p">,</span> <span class="n">association_rules</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPGrowth</span><span class="p">,</span> <span class="n">Eclat</span><span class="p">,</span> <span class="n">FPGrowth</span><span class="p">,</span> <span class="n">association_rules</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span><span class="p">,</span> <span class="n">BPR</span><span class="p">,</span> <span class="n">PrefixSpan</span><span class="p">,</span> <span class="n">HUPM</span><span class="p">,</span> <span class="n">Recommender</span>
 </span></code></pre></div>
 <hr />
@@ -1981,7 +1981,7 @@
 <tbody>
 <tr>
 <td>Dense dataset, few items</td>
-<td><code>AutoMiner</code></td>
+<td><code>FPGrowth</code></td>
 </tr>
 <tr>
 <td>Sparse dataset, many items, low support</td>
@@ -2174,11 +2174,11 @@
 <h2 id="9-native-polars-integration">9. Native Polars Integration<a class="headerlink" href="#9-native-polars-integration" title="Permanent link">&para;</a></h2>
 <p>All miners accept Polars DataFrames directly — no conversion needed:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoMiner</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPGrowth</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
 </span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">df_pl</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;transactions.parquet&quot;</span><span class="p">)</span>
 </span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">AutoMiner</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="n">freq</span> <span class="o">=</span> <span class="n">FPGrowth</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
 </span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="n">df_pl</span><span class="p">,</span>
 </span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="n">transaction_col</span><span class="o">=</span><span class="s2">&quot;order_id&quot;</span><span class="p">,</span>
 </span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;product_id&quot;</span><span class="p">,</span>
@@ -2251,7 +2251,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-tuning-guide">12. Tuning Guide<a class="headerlink" href="#12-tuning-guide" title="Permanent link">&para;</a></h2>
-<h3 id="fpgrowth-eclat-autominer">FPGrowth / Eclat / AutoMiner<a class="headerlink" href="#fpgrowth-eclat-autominer" title="Permanent link">&para;</a></h3>
+<h3 id="fpgrowth-eclat-fpgrowth">FPGrowth / Eclat / FPGrowth<a class="headerlink" href="#fpgrowth-eclat-fpgrowth" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>

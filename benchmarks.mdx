@@ -70,8 +70,8 @@ Comparing the `FPMiner` streaming accumulator against `mlxtend`'s standard panda
 
 `rusket.mine(method="auto")` dynamically selects the algorithm that performs best based on the dataset density (Borgelt 2003 heuristic).
 
-- **Density > 0.15 (Dense)**: Automatically routes to **FP-Growth**. Tree-traversal performs exceptionally well when most transactions contain a massive overlap of identical items.
-- **Density < 0.15 (Sparse)**: Automatically routes to **Eclat**. On sparse data (like retail baskets), traversing an enormous tree is memory-intensive. Eclat directly uses hardware SIMD array-intersections (`popcnt`) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).
+- **FP-Growth**: Excellent for dense data. Tree-traversal performs exceptionally well when most transactions contain a massive overlap of identical items.
+- **Eclat**: Excellent for sparse data (like retail baskets). Eclat directly uses hardware SIMD array-intersections (`popcnt`) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).
 
 ---
 
@@ -97,7 +97,7 @@ For maximum performance at 100M+ scale, skip pandas entirely:
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # Your data: integer arrays of (txn_id, item_id)
 txn_ids = np.array([...], dtype=np.int64)  # transaction IDs
@@ -110,7 +110,7 @@ csr = sp.csr_matrix(
 )
 
 # Mine directly from CSR — no pandas overhead
-freq = AutoMiner(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
+freq = FPGrowth(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
 ```
 
 At 100M rows, the mining step takes **1.2 seconds** (not a typo).
