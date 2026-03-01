@@ -2727,6 +2727,18 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### 🚀 Features
 
+- Rust-native parallel cross-validation + Optuna Bayesian HPO
+
+### 🚀 Features
+
+- add cross_validate grid-search for ALS/eALS hyperparameter tuning, bump to 0.1.67
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
 - add eALS wrapper class, document eALS, fix networkxr pyright, bump to 0.1.66
 
 ### 🔧 Refactoring
