@@ -443,7 +443,15 @@ def _cross_validate_python(
     verbose: bool,
     seed: int,
 ) -> CrossValidationResult:
-    """Pure-Python fallback cross-validation for non-ALS models."""
+    """Pure-Python cross-validation for non-ALS models (parallelized via threads).
+
+    All rusket models release the GIL during ``.fit()``, so
+    ``ThreadPoolExecutor`` gives true parallelism without needing
+    model-specific Rust CV code.
+    """
+    import os
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     import numpy as np
 
     from .evaluation import MetricName, evaluate
@@ -456,21 +464,20 @@ def _cross_validate_python(
     rng.shuffle(indices)
     folds: list[np.ndarray] = np.array_split(indices, n_folds)  # type: ignore[assignment]
 
-    all_results: list[dict[str, Any]] = []
-    best_mean = -1.0
-    best_params: dict[str, Any] = {}
+    # --- Pre-build fold DataFrames (shared across configs) ---
+    fold_data: list[tuple[Any, Any]] = []
+    for fi in range(n_folds):
+        test_idx = folds[fi]
+        train_idx = np.concatenate([folds[j] for j in range(n_folds) if j != fi])
+        train_df = df.iloc[train_idx].reset_index(drop=True)
+        test_df = df.iloc[test_idx].reset_index(drop=True)
+        fold_data.append((train_df, test_df))
 
-    for ci, params in enumerate(param_combinations, 1):
+    def _eval_one_config(ci_params: tuple[int, dict[str, Any]]) -> dict[str, Any]:
+        ci, params = ci_params
         fold_scores: list[dict[str, float]] = []
 
-        for fi in range(n_folds):
-            test_idx = folds[fi]
-            train_idx = np.concatenate([folds[j] for j in range(n_folds) if j != fi])
-
-            train_df = df.iloc[train_idx].reset_index(drop=True)
-            test_df = df.iloc[test_idx].reset_index(drop=True)
-
-            # Build & fit model
+        for fi, (train_df, test_df) in enumerate(fold_data):
             from_kw: dict[str, Any] = {
                 "user_col": user_col,
                 "item_col": item_col,
@@ -482,7 +489,6 @@ def _cross_validate_python(
 
             model = model_class.from_transactions(train_df, **from_kw).fit()
 
-            # Evaluate
             eval_df = test_df.rename(columns={user_col: "user", item_col: "item"})
             scores = evaluate(model, eval_df, k=k, metrics=cast(list["MetricName"], metrics))
             fold_scores.append(scores)
@@ -490,23 +496,38 @@ def _cross_validate_python(
             if verbose:
                 primary = scores.get(metric, 0.0)
                 params_str = " ".join(f"{k_}={v}" for k_, v in params.items()) if params else "(defaults)"
-                print(f"  [{ci}/{n_configs}] {params_str}  fold {fi + 1}/{n_folds}  {metric}@{k}={primary:.4f}")
+                print(f"  [{ci + 1}/{n_configs}] {params_str}  fold {fi + 1}/{n_folds}  {metric}@{k}={primary:.4f}")
 
             del model
 
-        # Aggregate across folds
         result_entry: dict[str, Any] = {"params": params, "fold_scores": fold_scores}
         for m in metrics:
             vals = [fs.get(m, 0.0) for fs in fold_scores]
             result_entry[f"mean_{m}"] = float(np.mean(vals))
             result_entry[f"std_{m}"] = float(np.std(vals))
+        return result_entry
 
-        all_results.append(result_entry)
+    # --- Run configs in parallel (threads work because .fit() releases the GIL) ---
+    max_workers = min(n_configs, os.cpu_count() or 4)
+    all_results: list[dict[str, Any]] = [{}] * n_configs  # pre-allocate order
 
-        mean_primary = result_entry[f"mean_{metric}"]
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(_eval_one_config, (ci, params)): ci
+            for ci, params in enumerate(param_combinations)
+        }
+        for future in as_completed(futures):
+            ci = futures[future]
+            all_results[ci] = future.result()
+
+    # --- Find best ---
+    best_mean = -1.0
+    best_params: dict[str, Any] = {}
+    for entry in all_results:
+        mean_primary = entry[f"mean_{metric}"]
         if mean_primary > best_mean:
             best_mean = mean_primary
-            best_params = params
+            best_params = entry["params"]
 
     if verbose:
         print(f"\n  Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
