@@ -2733,6 +2733,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - parallelize Python CV path with ThreadPoolExecutor
 - generic Rust rayon-parallel CV for all factor models
+- Rust CV for BPR/SVD/LightGCN, MLflow nested runs fix, bump v0.1.70
 
 ### 📦 Miscellaneous
 
