@@ -602,3 +602,94 @@ rec = Recommender(
 items, scores = rec.recommend_for_user(user_id=123, alpha=0.5)
 ```
 
+---
+
+## 18. Hyperparameter Tuning with Optuna + MLflow
+
+`rusket` ships built-in Bayesian hyperparameter optimisation via [Optuna](https://optuna.org). Use `optuna_optimize` to intelligently search the hyperparameter space — much more efficient than grid search.
+
+### Basic usage
+
+```python
+import rusket
+
+result = rusket.optuna_optimize(
+    rusket.ALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    n_trials=50,
+    metric="ndcg",
+    k=10,
+)
+
+print(f"Best score: {result.best_score:.4f}")
+print(f"Best params: {result.best_params}")
+```
+
+### Custom search space
+
+```python
+from rusket import OptunaSearchSpace, optuna_optimize, eALS
+
+result = optuna_optimize(
+    eALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    search_space=[
+        OptunaSearchSpace.int("factors", 16, 256, log=True),
+        OptunaSearchSpace.float("alpha", 1.0, 100.0, log=True),
+        OptunaSearchSpace.float("regularization", 1e-4, 1.0, log=True),
+        OptunaSearchSpace.int("iterations", 5, 30),
+    ],
+    n_trials=100,
+    n_folds=3,
+    metric="precision",
+    refit_best=True,
+)
+
+# result.best_model is already fitted on the full dataset
+items, scores = result.best_model.recommend_items(user_id=42, n=10)
+```
+
+### MLflow experiment tracking
+
+Log every trial's parameters and metrics to MLflow automatically:
+
+```bash
+pip install mlflow optuna-integration
+```
+
+```python
+import mlflow
+import rusket
+
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("als-tuning")
+
+result = rusket.optuna_optimize(
+    rusket.ALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    n_trials=50,
+    metric="ndcg",
+    mlflow_tracking=True,  # ← logs every trial to MLflow
+)
+```
+
+### Custom callbacks
+
+Pass any Optuna-compatible callback to `study.optimize()`:
+
+```python
+result = rusket.optuna_optimize(
+    rusket.ALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    n_trials=50,
+    callbacks=[my_custom_callback],
+)
+```

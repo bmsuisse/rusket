@@ -34,7 +34,7 @@
 
 **Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket` and go. The entire engine is compiled Rust, distributed as a single ~3 MB wheel.
 
-It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE), Sequential Recommendation (FPMC, SASRec), Context-aware Prediction (FM), and Pattern Mining (FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
+It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE), Sequential Recommendation (FPMC, SASRec), Context-aware Prediction (FM), Pattern Mining (FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan), and built-in Hyperparameter Tuning (Optuna + MLflow tracking) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
