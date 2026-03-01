@@ -15,160 +15,22 @@ if TYPE_CHECKING:
 
     from ._compat import DataFrame
 
-Method = Literal["fpgrowth", "eclat", "fin", "lcm", "auto"]
+Method = Literal["fpgrowth", "eclat", "fin", "lcm", "negfin"]
 
 _RUST_DENSE = {
     "fpgrowth": _rust.fpgrowth_from_dense,
     "eclat": _rust.eclat_from_dense,
     "fin": _rust.fin_from_dense,  # type: ignore[attr-defined]
+    "negfin": _rust.negfin_from_dense,  # type: ignore[attr-defined]
     "lcm": _rust.lcm_from_dense,  # type: ignore[attr-defined]
 }
 _RUST_CSR = {
     "fpgrowth": _rust.fpgrowth_from_csr,
     "eclat": _rust.eclat_from_csr,
     "fin": _rust.fin_from_csr,  # type: ignore[attr-defined]
+    "negfin": _rust.negfin_from_csr,  # type: ignore[attr-defined]
     "lcm": _rust.lcm_from_csr,  # type: ignore[attr-defined]
 }
-
-
-def _estimate_dense_memory(shape: tuple[int, int]) -> int:
-    """Estimate memory (in bytes) of a dense uint8 array for the given shape."""
-    return shape[0] * shape[1]
-
-
-def _get_available_memory() -> int:
-    """Get available system memory in bytes."""
-    try:
-        import psutil
-
-        return psutil.virtual_memory().available
-    except ImportError:
-        # Fallback if psutil is not installed
-        return 4 * 1024 * 1024 * 1024  # Assume 4GB
-
-
-def _build_result(
-    raw: tuple[np.ndarray, np.ndarray, np.ndarray],
-    n_rows: int,
-    min_support: float,
-    col_names: list | Any,
-    use_colnames: bool,
-) -> pd.DataFrame:
-    import pandas as pd
-    import pyarrow as pa
-
-    supports_arr, offsets_arr, items_arr = raw
-
-    if len(supports_arr) == 0:
-        return pd.DataFrame(columns=["support", "itemsets"])  # type: ignore[arg-type]
-
-    supports = supports_arr / n_rows
-
-    if use_colnames:
-        col_array = pa.array(col_names)
-        items_pa = pa.DictionaryArray.from_arrays(pa.array(items_arr, type=pa.int32()), col_array)
-        item_type = col_array.type
-    else:
-        items_pa = pa.array(items_arr, type=pa.int32())
-        item_type = pa.int32()
-
-    offsets_pa = pa.array(offsets_arr, type=pa.int32())
-    list_arr = pa.ListArray.from_arrays(offsets_pa, items_pa)
-
-    result = pd.DataFrame(
-        {
-            "support": supports,
-            "itemsets": pd.Series(list_arr, dtype=pd.ArrowDtype(pa.list_(item_type))),
-        }
-    )
-
-    filtered_df = result[result["support"] >= min_support].reset_index(drop=True)
-    filtered_df.attrs["num_itemsets"] = n_rows
-    return typing.cast("pd.DataFrame", filtered_df)
-
-
-def _select_method(method: Method, density: float, verbose: int, label: str) -> Method:
-    if method != "auto":
-        return method
-    chosen: Method = "eclat" if density < 0.15 else "fpgrowth"
-    if verbose:
-        print(f"[{time.strftime('%X')}] Auto-selected method: '{chosen}' ({label} density={density:.4f})")
-    return chosen
-
-
-def _run_fpminer_fallback(
-    df: pd.DataFrame | pl.DataFrame | np.ndarray,
-    min_support: float,
-    max_len: int | None,
-    use_colnames: bool,
-    col_names: list[str],
-    verbose: int = 0,
-) -> pd.DataFrame:
-    """Fallback to FPMiner (streaming) when memory is low, avoiding slow row loops."""
-    if verbose:
-        import time
-
-        print(f"[{time.strftime('%X')}] Low memory detected! Falling back to FPMiner (streaming)...")
-
-    from .streaming import FPMiner
-
-    n_items = len(col_names)
-    miner = FPMiner(n_items=n_items)
-
-    import numpy as np
-    import pandas as pd
-
-    # Vectorized extraction of row/col indices where data is True/>0
-    if hasattr(df, "sparse"):
-        # Pandas Sparse DataFrame
-        df_pd = typing.cast("pd.DataFrame", df)
-        csr = df_pd.sparse.to_coo().tocsr()
-        csr.eliminate_zeros()
-        # Find non-zero row and column indices fast
-        row_indices, col_indices = csr.nonzero()
-        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-    elif getattr(df, "__module__", "").startswith("polars"):
-        # Use NumPy to find indices directly from the fast internal representation
-        # It's faster to do a nonzero on the numpy array, but we must be careful not to trigger full dense copy if memory is truly sparse.
-        # But for polars, sparse isn't supported yet, so it's a dense matrix anyway.
-        nd = df.to_numpy()  # type: ignore
-        row_indices, col_indices = np.nonzero(nd)
-        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-    elif isinstance(df, np.ndarray):
-        row_indices, col_indices = np.nonzero(df)
-        miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-    else:
-        import pandas as pd
-
-        if isinstance(df, pd.DataFrame):
-            # Normal Pandas dense dataframe
-            row_indices, col_indices = np.nonzero(df.values)
-            miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-        else:
-            # Fallback for Scipy sparse matrices or other objects
-            try:
-                # Assuming CSR or COO
-                coo = df.tocoo()  # type: ignore
-                row_indices = coo.row
-                col_indices = coo.col
-                miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-            except AttributeError:
-                # Extreme fallback, try to convert to numpy
-                row_indices, col_indices = np.nonzero(np.asarray(df))
-                miner.add_chunk(row_indices.astype(np.int64), col_indices.astype(np.int32))
-
-    if verbose:
-        import time
-
-        print(f"[{time.strftime('%X')}] Finished ingesting data into FPMiner. Mining...")
-
-    return miner.mine(
-        min_support=min_support,
-        max_len=max_len,
-        use_colnames=use_colnames,
-        column_names=col_names,
-        verbose=verbose,
-    )
 
 
 def _run_dense(
@@ -235,6 +97,46 @@ def _run_sparse(
     return raw
 
 
+def _build_result(
+    raw: tuple[np.ndarray, np.ndarray, np.ndarray],
+    n_rows: int,
+    min_support: float,
+    col_names: list | Any,
+    use_colnames: bool,
+) -> pd.DataFrame:
+    import pandas as pd
+    import pyarrow as pa
+
+    supports_arr, offsets_arr, items_arr = raw
+
+    if len(supports_arr) == 0:
+        return pd.DataFrame(columns=["support", "itemsets"])  # type: ignore[arg-type]
+
+    supports = supports_arr / n_rows
+
+    if use_colnames:
+        col_array = pa.array(col_names)
+        items_pa = pa.DictionaryArray.from_arrays(pa.array(items_arr, type=pa.int32()), col_array)
+        item_type = col_array.type
+    else:
+        items_pa = pa.array(items_arr, type=pa.int32())
+        item_type = pa.int32()
+
+    offsets_pa = pa.array(offsets_arr, type=pa.int32())
+    list_arr = pa.ListArray.from_arrays(offsets_pa, items_pa)
+
+    result = pd.DataFrame(
+        {
+            "support": supports,
+            "itemsets": pd.Series(list_arr, dtype=pd.ArrowDtype(pa.list_(item_type))),
+        }
+    )
+
+    filtered_df = result[result["support"] >= min_support].reset_index(drop=True)
+    filtered_df.attrs["num_itemsets"] = n_rows
+    return typing.cast("pd.DataFrame", filtered_df)
+
+
 def _run_polars(
     df: pl.DataFrame,
     min_support: float,
@@ -246,22 +148,9 @@ def _run_polars(
     import time
 
     import numpy as np
-    import polars as pl
 
     n_rows, n_cols = df.shape
     min_count = math.ceil(min_support * n_rows)
-
-    if method == "auto":
-        nnz = df.select(pl.all().cast(pl.Boolean).sum()).sum_horizontal().item()
-        density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
-
-        # Memory check MUST occur before array mapping to prevent OOM
-        required_mem = _estimate_dense_memory(df.shape)
-        available_mem = _get_available_memory()
-        if required_mem > available_mem * 0.7:  # 70% threshold
-            return _run_fpminer_fallback(df, min_support, max_len, use_colnames, list(df.columns), verbose)
-
-        method = _select_method("auto", density, verbose, "polars")
 
     t0 = 0.0
     if verbose:
@@ -327,20 +216,7 @@ def dispatch(
             t1 = time.perf_counter()
             print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
             t0 = t1
-        density = csr.nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
-
-        # Memory check for dense intermediate if we were to use fpgrowth/eclat
-        # Note: CSR is already space-efficient, but Rust algorithms might expand it.
-        # For CSR, we mostly care about the final itemsets size, but we'll stick to dense estimate
-        # for a safe fallback if the dense version would be too big.
-        if method == "auto":
-            required_mem = _estimate_dense_memory(csr.shape)
-            available_mem = _get_available_memory()
-            if required_mem > available_mem * 0.7:
-                col_names = column_names or [str(i) for i in range(n_cols)]
-                return _run_fpminer_fallback(csr.toarray(), min_support, max_len, use_colnames, col_names, verbose)
-
-        method = _select_method(method, density, verbose, "csr")
+        col_names = column_names or [str(i) for i in range(n_cols)]
         raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
         if verbose:
             print(
@@ -355,16 +231,6 @@ def dispatch(
         n_rows, n_cols = df_nd.shape
         min_count = math.ceil(min_support * n_rows)
         col_names = [str(i) for i in range(n_cols)]
-
-        density = np.count_nonzero(df_nd) / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
-
-        # Memory check MUST occur before array mapping to prevent OOM
-        if method == "auto":
-            required_mem = _estimate_dense_memory(df_nd.shape)
-            available_mem = _get_available_memory()
-            if required_mem > available_mem * 0.7:
-                return _run_fpminer_fallback(df_nd, min_support, max_len, use_colnames, col_names, verbose)
-            method = _select_method(method, density, verbose, "ndarray")
 
         if verbose:
             print(f"[{time.strftime('%X')}] Ensuring Numpy array is C-contiguous uint8...")
@@ -397,22 +263,6 @@ def dispatch(
     # Coerce integer 0/1 DataFrames to bool to avoid DeprecationWarning on next use
     if not hasattr(df_pd, "sparse") and not bool(df_pd.dtypes.apply(pd.api.types.is_bool_dtype).all()):
         df_pd = df_pd.astype(bool)
-
-    if hasattr(df_pd, "sparse"):
-        nnz = getattr(df_pd.sparse, "density", 0.0) * (n_rows * n_cols)
-    else:
-        nnz = df_pd.sum().sum()
-    density = nnz / (n_rows * n_cols) if n_rows * n_cols > 0 else 0.0
-
-    # Memory check
-    if method == "auto":
-        required_mem = _estimate_dense_memory(df_pd.shape)
-        available_mem = _get_available_memory()
-        if required_mem > available_mem * 0.7:
-            return _run_fpminer_fallback(df_pd, min_support, max_len, use_colnames, col_names, verbose)
-        method = _select_method(method, density, verbose, "pandas")
-    else:
-        method = _select_method(method, density, verbose, "pandas")
 
     if hasattr(df_pd, "sparse"):
         raw = _run_sparse(df_pd, n_cols, min_count, max_len, method, verbose)

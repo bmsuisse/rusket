@@ -225,6 +225,95 @@ fn solve_one_side_cg(
     out
 }
 
+thread_local! {
+    static SCRATCH_EALS: RefCell<(Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new())) };
+}
+
+fn solve_one_side_eals(
+    indptr: &[i64],
+    indices: &[i32],
+    data: &[f32],
+    other: &[f32],
+    gram: &[f32],
+    out: &mut [f32],
+    k: usize,
+    lambda: f32,
+    alpha: f32,
+    eals_iters: usize,
+) {
+    let eff_lambda = lambda.max(1e-6);
+
+    out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
+        let start = indptr[u] as usize;
+        let end = indptr[u + 1] as usize;
+        let nnz_u = end - start;
+
+        if nnz_u == 0 {
+            xu.fill(0.0);
+            return;
+        }
+
+        SCRATCH_EALS.with(|cell| {
+            let mut borrow = cell.borrow_mut();
+            let (ref mut r_hat, ref mut s_u) = *borrow;
+
+            r_hat.clear();
+            r_hat.resize(nnz_u, 0.0);
+            s_u.clear();
+            s_u.resize(k, 0.0);
+
+            // r_hat = y_i * xu (prediction for interacted items)
+            for (local, idx) in (start..end).enumerate() {
+                let i = indices[idx] as usize;
+                let yi = &other[i * k..(i + 1) * k];
+                r_hat[local] = dot_f32(xu, yi);
+            }
+
+            for _pass in 0..eals_iters {
+                // Precompute s_u = Gram * xu
+                for f in 0..k {
+                    let mut s = 0.0;
+                    let gram_row = &gram[f * k..];
+                    for a in 0..k {
+                        s += gram_row[a] * xu[a];
+                    }
+                    s_u[f] = s;
+                }
+
+                for f in 0..k {
+                    let mut numer = -(s_u[f] - xu[f] * gram[f * k + f]);
+                    let mut denom = eff_lambda + gram[f * k + f];
+
+                    for (local, idx) in (start..end).enumerate() {
+                        let i = indices[idx] as usize;
+                        let w = alpha * data[idx];
+                        let y_if = other[i * k + f];
+                        let r_hat_minus_f = r_hat[local] - xu[f] * y_if;
+                        
+                        numer += (w + 1.0) * y_if - w * r_hat_minus_f * y_if;
+                        denom += w * y_if * y_if;
+                    }
+
+                    let new_u_f = numer / denom;
+                    let diff = new_u_f - xu[f];
+
+                    if diff.abs() > 1e-9 {
+                        for (local, idx) in (start..end).enumerate() {
+                            let i = indices[idx] as usize;
+                            let y_if = other[i * k + f];
+                            r_hat[local] += diff * y_if;
+                        }
+                        for a in 0..k {
+                            s_u[a] += diff * gram[a * k + f];
+                        }
+                        xu[f] = new_u_f;
+                    }
+                }
+            }
+        });
+    });
+}
 
 use faer::linalg::solvers::Solve;
 
@@ -514,15 +603,19 @@ fn als_train(
     cg_iters: usize,
     use_cholesky: bool,
     anderson_m: usize,
+    use_eals: bool,
+    eals_iters: usize,
 ) -> (Vec<f32>, Vec<f32>) {
     let mut user_factors = random_factors(n_users, k, seed);
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
 
     if verbose {
-        let solver_name = if use_cholesky {
-            "Cholesky"
+        let solver_name = if use_eals {
+            format!("eALS(iters={})", eals_iters)
+        } else if use_cholesky {
+            "Cholesky".to_string()
         } else {
-            &format!("CG(iters={})", cg_iters)
+            format!("CG(iters={})", cg_iters)
         };
         println!("  Solver: {}  factors={}", solver_name, k);
         println!("  ITER | USER FACTORS | ITEM FACTORS | TOTAL TIME ");
@@ -536,11 +629,15 @@ fn als_train(
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
 
-        let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], n: usize| {
-            if use_cholesky {
-                solve_one_side_cholesky(ip, ix, d, other, gram, n, k, lambda, alpha)
+        let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], out: &mut [f32]| {
+            if use_eals {
+                solve_one_side_eals(ip, ix, d, other, gram, out, k, lambda, alpha, eals_iters);
+            } else if use_cholesky {
+                let res = solve_one_side_cholesky(ip, ix, d, other, gram, out.len() / k, k, lambda, alpha);
+                out.copy_from_slice(&res);
             } else {
-                solve_one_side_cg(ip, ix, d, other, gram, n, k, lambda, alpha, cg_iters)
+                let res = solve_one_side_cg(ip, ix, d, other, gram, out.len() / k, k, lambda, alpha, cg_iters);
+                out.copy_from_slice(&res);
             }
         };
 
@@ -554,12 +651,12 @@ fn als_train(
 
         let start_u = std::time::Instant::now();
         let g_item = gramian(&item_factors, n_items, k);
-        user_factors = solve(indptr, indices, data, &item_factors, &g_item, n_users);
+        solve(indptr, indices, data, &item_factors, &g_item, &mut user_factors);
         let u_time = start_u.elapsed();
 
         let start_i = std::time::Instant::now();
         let g_user = gramian(&user_factors, n_users, k);
-        item_factors = solve(indptr_t, indices_t, data_t, &user_factors, &g_user, n_items);
+        solve(indptr_t, indices_t, data_t, &user_factors, &g_user, &mut item_factors);
         let i_time = start_i.elapsed();
 
         if use_aa {
@@ -685,7 +782,7 @@ fn top_n_users(
 }
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0, use_eals=false, eals_iters=1))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -702,6 +799,8 @@ pub fn als_fit_implicit<'py>(
     cg_iters: usize,
     use_cholesky: bool,
     anderson_m: usize,
+    use_eals: bool,
+    eals_iters: usize,
 ) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
     let ip = indptr.as_slice()?;
     let ix = indices.as_slice()?;
@@ -728,6 +827,8 @@ pub fn als_fit_implicit<'py>(
             cg_iters,
             use_cholesky,
             anderson_m,
+            use_eals,
+            eals_iters,
         )
     });
 
@@ -781,7 +882,7 @@ pub fn als_recommend_users<'py>(
 }
 
 #[pyfunction]
-#[pyo3(signature = (item_factors, indices, data, regularization, alpha, cg_iters=10, use_cholesky=false))]
+#[pyo3(signature = (item_factors, indices, data, regularization, alpha, cg_iters=10, use_cholesky=false, use_eals=false, eals_iters=1))]
 pub fn als_recalculate_user<'py>(
     py: Python<'py>,
     item_factors: PyReadonlyArray2<f32>,
@@ -791,6 +892,8 @@ pub fn als_recalculate_user<'py>(
     alpha: f32,
     cg_iters: usize,
     use_cholesky: bool,
+    use_eals: bool,
+    eals_iters: usize,
 ) -> PyResult<Bound<'py, PyArray1<f32>>> {
     let itf = item_factors.as_slice()?;
     let ix = indices.as_slice()?;
@@ -798,6 +901,23 @@ pub fn als_recalculate_user<'py>(
 
     let k = item_factors.shape()[1];
     let n_items = item_factors.shape()[0];
+    let mut out = vec![0.0f32; k];
+    let ip = vec![0, ix.len() as i64];
+    
+    let g_item = gramian(itf, n_items, k);
+    
+    if use_eals {
+        solve_one_side_eals(&ip, ix, id, itf, &g_item, &mut out, k, regularization, alpha, eals_iters);
+    } else if use_cholesky {
+        let res = solve_one_side_cholesky(&ip, ix, id, itf, &g_item, 1, k, regularization, alpha);
+        out.copy_from_slice(&res);
+    } else {
+        let res = solve_one_side_cg(&ip, ix, id, itf, &g_item, 1, k, regularization, alpha, cg_iters);
+        out.copy_from_slice(&res);
+    }
+
+    Ok(out.into_pyarray(py))
+}
 
     // Single user indptr
     let indptr = [0i64, ix.len() as i64];

@@ -17,9 +17,10 @@ from .hybrid import HybridRecommender
 from .item_knn import ItemKNN
 from .lcm import LCM
 from .lightgcn import LightGCN
-from .mine import AutoMiner, mine
+from .mine import mine
 from .model import BaseModel, load_model
 from .model_selection import leave_one_out_split, train_test_split
+from .negfin import NegFIN
 from .nmf import NMF
 from .pca import PCA, pca, pca2, pca3
 from .pipeline import Pipeline
@@ -46,9 +47,9 @@ __all__ = [
     "eclat",
     "Eclat",
     "FIN",
+    "NegFIN",
     "LCM",
     "mine",
-    "AutoMiner",
     "mine_duckdb",
     "mine_spark",
     "association_rules",

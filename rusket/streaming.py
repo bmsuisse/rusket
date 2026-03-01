@@ -124,7 +124,7 @@ class FPMiner:
         max_len: int | None = None,
         use_colnames: bool = True,
         column_names: list[str] | None = None,
-        method: typing.Literal["fpgrowth", "eclat", "auto"] = "auto",
+        method: typing.Literal["fpgrowth", "eclat"] = "fpgrowth",
         verbose: int = 0,
     ) -> pd.DataFrame:
         """Mine frequent itemsets from all accumulated transactions.
@@ -139,10 +139,8 @@ class FPMiner:
             If ``True``, itemsets contain column names instead of indices.
         column_names : list[str] | None
             Column names to use when ``use_colnames=True``.
-        method : "fpgrowth" | "eclat" | "auto"
-            Mining algorithm to use.  ``"auto"`` (default) picks the best
-            algorithm automatically based on data density after pre-filtering
-            rare items (Borgelt 2003 heuristic: density < 15% → Eclat, else FPGrowth).
+        method : "fpgrowth" | "eclat"
+            Mining algorithm to use.
         verbose : int
             Level of verbosity: >0 prints progress logs and times.
 
@@ -164,11 +162,7 @@ class FPMiner:
             t0 = time.perf_counter()
 
         chosen_method = method
-        if method == "auto":
-            result_tuple = self._inner.mine_auto(min_support, max_len)
-            chosen_method = result_tuple[4]
-            result_tuple = result_tuple[:4]
-        elif method == "fpgrowth":
+        if method == "fpgrowth":
             result_tuple = self._inner.mine_fpgrowth(min_support, max_len)
         else:
             result_tuple = self._inner.mine_eclat(min_support, max_len)

@@ -422,13 +422,13 @@ def load_model(path: str | Path) -> BaseModel:
         try:
             mod = importlib.import_module(module_name)
             cls = getattr(mod, saved_cls_name)
-        except (ImportError, AttributeError):
+        except (ImportError, AttributeError) as err:
             # Fallback to rusket namespace if old module moved
             import rusket
 
             cls = getattr(rusket, saved_cls_name, None)
             if cls is None:
-                raise TypeError(f"Could not resolve class {saved_cls_name} from {module_name}")
+                raise TypeError(f"Could not resolve class {saved_cls_name} from {module_name}") from err
 
         instance = cls.__new__(cls)
         instance.__dict__.update(state)
@@ -443,7 +443,7 @@ def load_model(path: str | Path) -> BaseModel:
 class Miner(BaseModel):
     """Base class for all pattern mining algorithms.
 
-    Inherited by FPGrowth, Eclat, AutoMiner, PrefixSpan, and HUPM.
+    Inherited by FPGrowth, Eclat, PrefixSpan, and HUPM.
     """
 
     def __init__(self, data: pd.DataFrame | Any, item_names: list[str] | None = None, **kwargs: Any):
@@ -656,7 +656,7 @@ class Miner(BaseModel):
         max_len = kwargs.get("max_len", getattr(self, "max_len", None))
         use_colnames = kwargs.get("use_colnames", getattr(self, "use_colnames", True))
 
-        method = "auto"
+        method = "fpgrowth"
         cls_name = type(self).__name__
         if cls_name == "FPGrowth":
             method = "fpgrowth"

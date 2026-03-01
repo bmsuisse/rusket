@@ -178,7 +178,9 @@ impl FPTree {
             let end = branch_offsets[b + 1] as usize;
             filtered.clear();
             for &i in &branch_items[start..end] {
-                let new_id = old_to_new[i as usize];
+                // SAFETY: `i` is guaranteed to be a valid item ID.
+                // Bypassing bounds checking speeds up filtering.
+                let new_id = unsafe { *old_to_new.get_unchecked(i as usize) };
                 if new_id != u32::MAX {
                     filtered.push(new_id);
                 }

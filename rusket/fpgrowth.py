@@ -99,7 +99,7 @@ def fpgrowth(
     null_values: bool = False,
     use_colnames: bool = True,
     max_len: int | None = None,
-    method: str = "auto",
+    method: str = "fpgrowth",
     verbose: int = 0,
     column_names: list[str] | None = None,
 ) -> pd.DataFrame:
@@ -107,8 +107,8 @@ def fpgrowth(
 
     This module-level function relies on the Object-Oriented APIs.
     """
-    if method not in ("fpgrowth", "eclat", "fin", "lcm", "auto"):
-        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', 'fin', 'lcm', or 'auto'. Got: {method}")
+    if method not in ("fpgrowth", "eclat", "fin", "lcm"):
+        raise ValueError(f"`method` must be 'fpgrowth', 'eclat', 'fin', or 'lcm'. Got: {method}")
 
     if method == "eclat":
         from .eclat import Eclat
@@ -138,18 +138,6 @@ def fpgrowth(
         from .lcm import LCM
 
         return LCM(
-            data=df,
-            item_names=column_names,
-            min_support=min_support,
-            null_values=null_values,
-            use_colnames=use_colnames,
-            max_len=max_len,
-            verbose=verbose,
-        ).mine()
-    elif method == "auto":
-        from .mine import AutoMiner
-
-        return AutoMiner(
             data=df,
             item_names=column_names,
             min_support=min_support,

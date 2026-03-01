@@ -401,8 +401,8 @@ def test_mine_auto_spark_returns_spark(spark_session) -> None:
     )
     spark_df = to_spark(spark_session, df)
 
-    # Use the module-level 'mine' function with method="auto" explicitly
-    freq = rusket.mine(spark_df, min_support=0.4, method="auto")
+    # Use the module-level 'mine' function with method="fpgrowth" explicitly
+    freq = rusket.mine(spark_df, min_support=0.4, method="fpgrowth")
 
     import pyspark.sql
 

@@ -14,6 +14,7 @@ mod lcm;
 mod miner;
 mod prefixspan;
 mod fin;
+mod negfin;
 mod ease;
 mod item_knn;
 mod fpmc;
@@ -34,6 +35,8 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eclat::eclat_from_csr, m)?)?;
     m.add_function(wrap_pyfunction!(fin::fin_from_dense, m)?)?;
     m.add_function(wrap_pyfunction!(fin::fin_from_csr, m)?)?;
+    m.add_function(wrap_pyfunction!(negfin::negfin_from_dense, m)?)?;
+    m.add_function(wrap_pyfunction!(negfin::negfin_from_csr, m)?)?;
     m.add_function(wrap_pyfunction!(lcm::lcm_from_dense, m)?)?;
     m.add_function(wrap_pyfunction!(lcm::lcm_from_csr, m)?)?;
     m.add_function(wrap_pyfunction!(

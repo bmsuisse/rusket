@@ -24,7 +24,7 @@ IMPLICIT_RECOMMENDERS = [rusket.ALS, rusket.BPR, rusket.EASE, rusket.ItemKNN, ru
 SEQUENTIAL_RECOMMENDERS = [rusket.FPMC, rusket.SASRec]
 ALL_RECOMMENDERS = IMPLICIT_RECOMMENDERS + SEQUENTIAL_RECOMMENDERS
 
-RULE_MINERS = [rusket.FPGrowth, rusket.Eclat, rusket.AutoMiner]
+RULE_MINERS = [rusket.FPGrowth, rusket.Eclat]
 
 # FM is standalone — no from_transactions, no recommend_items in the usual sense
 STANDALONE = [rusket.FM]

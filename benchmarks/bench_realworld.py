@@ -15,7 +15,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from rusket import eclat, fpgrowth
+from rusket import FIN, LCM, eclat, fpgrowth
+
+def run_fin(df, min_support=0.5, use_colnames=False, max_len=None):
+    return FIN(data=df, min_support=min_support, use_colnames=use_colnames, max_len=max_len).mine()
+
+def run_lcm(df, min_support=0.5, use_colnames=False, max_len=None):
+    return LCM(data=df, min_support=min_support, use_colnames=use_colnames, max_len=max_len).mine()
 
 try:
     from mlxtend.frequent_patterns import fpgrowth as mlx_fpgrowth
@@ -170,6 +176,30 @@ def run_benchmark(name: str) -> None:
     )
     t2_str = t2 if isinstance(t2, str) else f"{t2:.3f}s"
     print(f"  rusket eclat     : {t2_str:>14}  ({n2:>12,} itemsets)" if n2 else f"  rusket eclat     : {t2_str}")
+
+    # rusket fin
+    n_fin, t_fin = timed_run(
+        run_fin,
+        df,
+        min_support=min_sup,
+        use_colnames=True,
+        max_len=max_len,
+        timeout_sec=timeout,
+    )
+    t_fin_str = t_fin if isinstance(t_fin, str) else f"{t_fin:.3f}s"
+    print(f"  rusket fin       : {t_fin_str:>14}  ({n_fin:>12,} itemsets)" if n_fin else f"  rusket fin       : {t_fin_str}")
+
+    # rusket lcm
+    n_lcm, t_lcm = timed_run(
+        run_lcm,
+        df,
+        min_support=min_sup,
+        use_colnames=True,
+        max_len=max_len,
+        timeout_sec=timeout,
+    )
+    t_lcm_str = t_lcm if isinstance(t_lcm, str) else f"{t_lcm:.3f}s"
+    print(f"  rusket lcm       : {t_lcm_str:>14}  ({n_lcm:>12,} itemsets)" if n_lcm else f"  rusket lcm       : {t_lcm_str}")
 
     # mlxtend
     if HAS_MLX:

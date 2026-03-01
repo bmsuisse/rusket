@@ -314,7 +314,7 @@ def build_api_reference() -> str:
     output_lines.append("")
     output_lines.append(
         "All mining classes share a common `Miner.from_transactions()` / `.mine()` interface. "
-        "`FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` also inherit `RuleMinerMixin` which adds "
+        "`FPGrowth`, `Eclat`, `FIN`, `LCM`, and `HUPM` also inherit `RuleMinerMixin` which adds "
         "`.association_rules()` and `.recommend_items()` helpers."
     )
     output_lines.append("")
@@ -322,7 +322,7 @@ def build_api_reference() -> str:
     oop_mining_symbols: list[tuple[str, Any]] = [
         ("FPGrowth", rusket.FPGrowth),
         ("Eclat", rusket.Eclat),
-        ("AutoMiner", rusket.AutoMiner),
+
         ("PrefixSpan", rusket.PrefixSpan),
         ("HUPM", rusket.HUPM),
         ("FPMiner", rusket.FPMiner),
@@ -338,7 +338,7 @@ def build_api_reference() -> str:
     output_lines.append("## `RuleMinerMixin` — Shared Miner Interface")
     output_lines.append("")
     output_lines.append(
-        "`FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` all inherit these methods from "
+        "`FPGrowth`, `Eclat`, `FIN`, `LCM`, and `HUPM` all inherit these methods from "
         "`RuleMinerMixin`.  You do not construct `RuleMinerMixin` directly."
     )
     output_lines.append("")
@@ -481,7 +481,7 @@ def build_api_schema() -> str:
         schema["functions"][fn] = _serialize_func(getattr(rusket, fn))
         
     class_names = [
-        "FPGrowth", "Eclat", "AutoMiner", "PrefixSpan", "HUPM", "FPMiner",
+        "FPGrowth", "Eclat", "FIN", "LCM", "PrefixSpan", "HUPM", "FPMiner",
         "ALS", "BPR", "FM", "Recommender", "NextBestAction",
         "FIN", "LCM", "EASE", "ItemKNN", "FPMC", "SVD", "LightGCN", "SASRec",
         "PopularityRecommender", "ContentBased", "HybridRecommender", "NMF", "PCA", "Pipeline"

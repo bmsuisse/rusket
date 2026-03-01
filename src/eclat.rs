@@ -33,15 +33,19 @@ impl BitSet {
         debug_assert_eq!(other.blocks.len(), n);
         debug_assert_eq!(out.blocks.len(), n);
         let mut count = 0u64;
+        let self_blocks = &self.blocks;
+        let other_blocks = &other.blocks;
+        let out_blocks = &mut out.blocks;
+
         for i in 0..n {
-            let v = self.blocks[i] & other.blocks[i];
-            out.blocks[i] = v;
+            let v = unsafe { *self_blocks.get_unchecked(i) & *other_blocks.get_unchecked(i) };
+            unsafe { *out_blocks.get_unchecked_mut(i) = v; }
             count += v.count_ones() as u64;
-            // Each remaining u128 block covers 128 transactions (vs 64 before)
+            // Each remaining u128 block covers 128 transactions
             let remaining_max = ((n - i - 1) * 128) as u64;
             if count + remaining_max < min_count {
                 for j in (i + 1)..n {
-                    out.blocks[j] = 0;
+                    unsafe { *out_blocks.get_unchecked_mut(j) = 0; }
                 }
                 return 0;
             }

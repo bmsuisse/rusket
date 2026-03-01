@@ -6,6 +6,7 @@ use pyo3::prelude::*;
 
 use crate::eclat::_eclat_mine_csr;
 use crate::fpgrowth::_mine_csr;
+use crate::negfin::_negfin_mine_csr;
 
 #[pyclass]
 pub struct FPMiner {
@@ -112,6 +113,26 @@ impl FPMiner {
         }
         let n_frequent = inv_remap.len();
         let (s, o, i) = _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?;
+        let i = Self::unmap_items(i, &inv_remap);
+        Ok((n_txn, s, o, i))
+    }
+
+    pub fn mine_negfin(
+        &self,
+        min_support: f64,
+        max_len: Option<usize>,
+    ) -> PyResult<(usize, Vec<u64>, Vec<u32>, Vec<u32>)> {
+        let n_txn_est = self.txns.len();
+        if n_txn_est == 0 {
+            return Ok((0, vec![], vec![], vec![]));
+        }
+        let min_count = ((min_support * n_txn_est as f64).ceil() as u64).max(1);
+        let (indptr, indices, n_txn, inv_remap) = self.build_csr_filtered(min_count)?;
+        if n_txn == 0 {
+            return Ok((0, vec![], vec![], vec![]));
+        }
+        let n_frequent = inv_remap.len();
+        let (s, o, i) = _negfin_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?;
         let i = Self::unmap_items(i, &inv_remap);
         Ok((n_txn, s, o, i))
     }

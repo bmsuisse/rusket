@@ -21,7 +21,6 @@ from rusket.eclat import Eclat
 from rusket.fin import FIN
 from rusket.fpgrowth import FPGrowth
 from rusket.lcm import LCM
-from rusket.mine import AutoMiner
 
 # ---------------------------------------------------------------------------
 # Long-format transactional data (used for mine / association_rules)
@@ -66,7 +65,7 @@ _ONEHOT_PD = pd.DataFrame(
 )
 _ONEHOT_PL = pl.from_pandas(_ONEHOT_PD)
 
-_MINERS = [FPGrowth, Eclat, FIN, LCM, AutoMiner]
+_MINERS = [FPGrowth, Eclat, FIN, LCM]
 _MINER_IDS = [cls.__name__ for cls in _MINERS]
 
 _MIN_SUPPORT = 0.4

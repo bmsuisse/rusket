@@ -19,7 +19,7 @@ def mine_grouped(
     group_col: str,
     min_support: float = 0.5,
     max_len: int | None = None,
-    method: str = "auto",
+    method: str = "fpgrowth",
     use_colnames: bool = True,
 ) -> Any:
     """Distribute Market Basket Analysis across groups. Supports Polars, Pandas, and Spark."""

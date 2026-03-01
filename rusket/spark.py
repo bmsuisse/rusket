@@ -35,7 +35,7 @@ def mine_grouped(
     group_col: str,
     min_support: float = 0.5,
     max_len: int | None = None,
-    method: str = "auto",
+    method: str = "fpgrowth",
     use_colnames: bool = True,
 ) -> Any:
     """Distribute Market Basket Analysis across PySpark partitions.
@@ -57,7 +57,7 @@ def mine_grouped(
     max_len
         Maximum itemset length.
     method
-        Algorithm to use: 'auto', 'fpgrowth', or 'eclat'.
+        Algorithm to use: 'fpgrowth', or 'eclat'.
     use_colnames
         If True, returns item names instead of column indices.
         Must be True for PySpark `applyInArrow` schema consistency.

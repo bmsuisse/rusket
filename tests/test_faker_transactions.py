@@ -190,7 +190,7 @@ class TestFakerMining:
 
     def test_autominer_roundtrip(self) -> None:
         df = _make_long_transactions(n_orders=150, n_products=20, seed=88)
-        miner = rusket.AutoMiner.from_transactions(df, transaction_col="order_id", item_col="product", min_support=0.1)
+        miner = rusket.FPGrowth.from_transactions(df, transaction_col="order_id", item_col="product", min_support=0.1)
         freq = miner.mine(use_colnames=True)
         assert len(freq) > 0
         rules = miner.association_rules()  # type: ignore
