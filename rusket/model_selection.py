@@ -512,10 +512,7 @@ def _cross_validate_python(
     all_results: list[dict[str, Any]] = [{}] * n_configs  # pre-allocate order
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(_eval_one_config, (ci, params)): ci
-            for ci, params in enumerate(param_combinations)
-        }
+        futures = {pool.submit(_eval_one_config, (ci, params)): ci for ci, params in enumerate(param_combinations)}
         for future in as_completed(futures):
             ci = futures[future]
             all_results[ci] = future.result()
