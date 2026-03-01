@@ -1,5 +1,4 @@
-use faer::prelude::*;
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2, PyArrayMethods};
+use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use rayon::prelude::*;
@@ -123,7 +122,7 @@ impl RustIncrementalPCA {
         let actual_rows = row_idx;
         let m_slice = m_mat.submatrix(0, 0, actual_rows, n_features);
         
-        let svd = m_slice.thin_svd();
+        let svd = m_slice.thin_svd().map_err(|_| PyValueError::new_err("SVD failed to converge"))?;
         let v_mat = svd.V();
         let s_vec = svd.S().column_vector();
 

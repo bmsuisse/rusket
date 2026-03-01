@@ -121,7 +121,6 @@ class FPMiner:
     def add_chunk(self, txn_ids: npt.NDArray[np.int64], item_ids: npt.NDArray[np.int32]) -> None: ...
     def mine_fpgrowth(self, min_support: float, max_len: int | None) -> tuple[int, list[int], list[int], list[int]]: ...
     def mine_eclat(self, min_support: float, max_len: int | None) -> tuple[int, list[int], list[int], list[int]]: ...
-
     def reset(self) -> None: ...
 
 def ease_recommend_items(
@@ -235,3 +234,39 @@ def pca_transform(
     mean: npt.NDArray[np.float32],
     components: npt.NDArray[np.float32],
 ) -> npt.NDArray[np.float32]: ...
+def nn_descent_build(
+    data: npt.NDArray[np.float32],
+    k: int,
+    max_iters: int = 12,
+    delta: float = 0.001,
+    seed: int = 42,
+) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.float32]]: ...
+def pacmap_fit(
+    data: npt.NDArray[np.float32],
+    n_components: int = 2,
+    n_neighbors: int = 10,
+    mn_ratio: float = 0.5,
+    fp_ratio: float = 2.0,
+    num_iters: int = 450,
+    lr: float = 1.0,
+    seed: int = 42,
+) -> npt.NDArray[np.float32]: ...
+
+class AnnIndex:
+    def __init__(self, data: npt.NDArray[np.float32], n_trees: int, leaf_size: int, seed: int) -> None: ...
+    def kneighbors(
+        self,
+        queries: npt.NDArray[np.float32],
+        n_neighbors: int,
+        search_k: int | None = None,
+    ) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.float32]]: ...
+
+class RustIncrementalPCA:
+    n_components: int
+    n_features: int
+    n_samples_seen: int
+    def __init__(self, n_components: int, n_features: int) -> None: ...
+    def partial_fit(self, data: npt.NDArray[np.float32]) -> None: ...
+    def get_components(self) -> npt.NDArray[np.float32]: ...
+    def get_singular_values(self) -> npt.NDArray[np.float32]: ...
+    def get_mean(self) -> npt.NDArray[np.float32]: ...
