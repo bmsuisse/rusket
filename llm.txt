@@ -2721,6 +2721,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🚀 Features
+
+- parallelize Python CV path with ThreadPoolExecutor
+
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
