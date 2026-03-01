@@ -2696,6 +2696,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - Replace `AutoMiner` with `FPGrowth` in documentation and examples, update ALS benchmarks to include eALS, and refine auto-mining density heuristics.
 
+### 🚀 Features
+
+- Introduce Incremental PCA and Approximate Nearest Neighbors, add ALS sparse matrix support, and remove AutoMiner functionality.
+- implement PaCMAP and NN-Descent DR algorithms
+
 ### 📖 Documentation
 
 - sync generated documentation
