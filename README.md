@@ -83,7 +83,7 @@ Identify which products co-occur most in customer baskets — the foundation of 
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # One week of supermarket checkout data (1 row = 1 receipt, 1 col = 1 SKU)
 receipts = pd.DataFrame({
@@ -96,8 +96,8 @@ receipts = pd.DataFrame({
 }, dtype=bool)
 
 # Step 1 — which SKU combinations appear in ≥40% of receipts?
-# AutoMiner selects FP-Growth or Eclat based on catalogue density
-model = AutoMiner(receipts, min_support=0.4)
+
+model = FPGrowth(receipts, min_support=0.4)
 freq = model.mine(use_colnames=True)
 
 # Step 2 — keep rules with ≥60% confidence
@@ -118,7 +118,7 @@ All mining algorithms expose a class-based API that goes straight from order lin
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # Order line export from your e-commerce backend
 orders = pd.DataFrame({
@@ -128,7 +128,7 @@ orders = pd.DataFrame({
                  "USB_DAC",  "AUX_CABLE"],
 })
 
-model = AutoMiner.from_transactions(
+model = FPGrowth.from_transactions(
     orders,
     transaction_col="order_id",
     item_col="sku",
@@ -146,14 +146,14 @@ suggestions = model.recommend_items(["HDPHONES"], n=3)
 Or use the explicit type variants:
 
 ```python
-from rusket import AutoMiner
+from rusket import FPGrowth
 
-ohe = AutoMiner.from_pandas(orders, transaction_col="order_id", item_col="sku")
-ohe = AutoMiner.from_polars(pl_orders, transaction_col="order_id", item_col="sku")
-ohe = AutoMiner.from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
+ohe = FPGrowth.from_pandas(orders, transaction_col="order_id", item_col="sku")
+ohe = FPGrowth.from_polars(pl_orders, transaction_col="order_id", item_col="sku")
+ohe = FPGrowth.from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_CASE"]])  # list of lists
 ```
 
-> **Spark** is also supported: `AutoMiner.from_spark(spark_df)` calls `.toPandas()` internally.
+> **Spark** is also supported: `FPGrowth.from_spark(spark_df)` calls `.toPandas()` internally.
 
 ---
 
@@ -173,7 +173,7 @@ baskets = pd.DataFrame({
     "belt":     [False, True, True,  False, True],
 })
 
-# Eclat — same API as AutoMiner, typically faster on sparse catalogues
+# Eclat — same API as FPGrowth, typically faster on sparse catalogues
 model = Eclat(baskets, min_support=0.4)
 freq  = model.mine(use_colnames=True)
 rules = model.association_rules(min_threshold=0.6)
@@ -182,9 +182,9 @@ print(rules)
 
 #### When to use which?
 
-You almost always want to use `AutoMiner`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
+You almost always want to use `FPGrowth`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
 
-| Scenario | Algorithm chosen by `AutoMiner` |
+| Scenario | Algorithm chosen by `FPGrowth` |
 |---|---|
 | Large SKU catalogue, small basket size (density < 0.15) | `Eclat` (bitset/SIMD intersections) |
 | Smaller catalogue, dense baskets (density > 0.15) | `FPGrowth` (FP-tree traversals) |
@@ -199,15 +199,15 @@ The fastest path from a data lake to "Frequently Bought Together" rules:
 
 ```python
 import polars as pl
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # ── 1. Read a one-hot basket matrix directly from S3/GCS/local Parquet ──
 # Columns = SKUs (bool), rows = receipts — produced by your dbt or Spark pipeline
 baskets = pl.read_parquet("s3://data-lake/gold/basket_ohe.parquet")
 print(f"Loaded {baskets.shape[0]:,} receipts × {baskets.shape[1]} SKUs")
 
-# ── 2. Instantiate AutoMiner (zero-copy from Polars) ─────────────────
-model = AutoMiner(baskets, min_support=0.02, max_len=3)
+# ── 2. Instantiate FPGrowth (zero-copy from Polars) ─────────────────
+model = FPGrowth(baskets, min_support=0.02, max_len=3)
 
 # ── 3. Mine frequent combinations ────────────────────────────────────
 freq = model.mine(use_colnames=True)
@@ -269,7 +269,7 @@ For very sparse datasets (e.g. e-commerce with thousands of SKUs), use Pandas `S
 ```python
 import pandas as pd
 import numpy as np
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 rng = np.random.default_rng(7)
 n_rows, n_cols = 30_000, 500
@@ -288,7 +288,7 @@ print(f"Dense  memory: {dense_mb:.1f} MB")
 print(f"Sparse memory: {sparse_mb:.1f} MB  ({dense_mb / sparse_mb:.1f}× smaller)")
 
 # Same API, same results — just faster and lighter
-freq = AutoMiner(df_sparse, min_support=0.01).mine(use_colnames=True)
+freq = FPGrowth(df_sparse, min_support=0.01).mine(use_colnames=True)
 print(f"Frequent itemsets: {len(freq):,}")
 ```
 
@@ -358,7 +358,7 @@ freq_df = mine_grouped(
     spark_df,
     group_col="store_id",
     min_support=0.05,    # 5% support per store
-    method="auto",       # auto-selects FP-Growth or Eclat
+
 )
 # freq_df schema: store_id | support (double) | itemsets (array<string>)
 
@@ -459,7 +459,7 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 |-------|--------------|-------------|
 | `FPGrowth` | `Miner`, `RuleMinerMixin` | FP-Tree parallel mining |
 | `Eclat` | `Miner`, `RuleMinerMixin` | Vertical bitset mining |
-| `AutoMiner` | `Miner`, `RuleMinerMixin` | Auto-selects FP-Growth or Eclat |
+| `FPGrowth` | `Miner`, `RuleMinerMixin` | Frequent Pattern Growth algorithm |
 | `FIN` | `Miner`, `RuleMinerMixin` | FP-tree Node-list intersection mining |
 | `LCM` | `Miner`, `RuleMinerMixin` | Linear-time Closed itemset Mining |
 | `HUPM` | `Miner` | High-Utility Pattern Mining (EFIM) |
@@ -486,10 +486,10 @@ model = FPGrowth.from_polars(pl_df, ...)
 model = FPGrowth.from_spark(spark_df, ...)
 ```
 
-`Miner` subclasses (`FPGrowth`, `Eclat`, `AutoMiner`) additionally expose `RuleMinerMixin`, giving a fluent pipeline:
+`Miner` subclasses (`FPGrowth`, `Eclat`) additionally expose `RuleMinerMixin`, giving a fluent pipeline:
 
 ```python
-model  = AutoMiner.from_transactions(df, min_support=0.3)
+model  = FPGrowth.from_transactions(df, min_support=0.3)
 freq   = model.mine(use_colnames=True)             # pd.DataFrame [support, itemsets]
 rules  = model.association_rules(metric="lift")    # pd.DataFrame [antecedents, consequents, ...]
 recs   = model.recommend_items(["bread", "milk"])  # list of suggested items
@@ -556,13 +556,13 @@ bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
 Combine **Collaborative Filtering** (ALS/BPR) with **Frequent Pattern Mining** to cover every placement surface — personalised homepage ("For You") and active cart ("Frequently Bought Together") — in a single engine.
 
 ```python
-from rusket import ALS, Recommender, AutoMiner
+from rusket import ALS, Recommender, FPGrowth
 
 # 1. Train on purchase history (implicit feedback)
 als = ALS(factors=64, iterations=15).fit(user_item_csr)
 
 # 2. Mine co-purchase rules from basket data
-miner = AutoMiner(basket_ohe, min_support=0.01)
+miner = FPGrowth(basket_ohe, min_support=0.01)
 freq  = miner.mine()
 rules = miner.association_rules()
 
@@ -729,14 +729,14 @@ The mining step is fast — the bottleneck at scale is the long-format → spars
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # Build CSR directly from integer IDs (no pandas!)
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
-freq = AutoMiner(csr, item_names=item_names).mine(
+freq = FPGrowth(csr, item_names=item_names).mine(
     min_support=0.001, max_len=3, use_colnames=True
 )
 ```
@@ -764,7 +764,8 @@ uv run pytest tests/test_benchmark.py -v -s      # pytest-benchmark
 
 | Benchmark | rusket | LibRecommender | **Speedup** |
 |---|:---:|:---:|:---:|
-| **ALS** (64 factors, 15 epochs) | **427 ms** | 1,324 ms | **3.1×** |
+| **ALS (Cholesky)** (64 factors, 15 epochs) | **427 ms** | 1,324 ms | **3.1×** |
+| **ALS (eALS)** (64 factors, 15 epochs) | **360 ms** | *N/A* | — |
 | **BPR** (64 factors, 10 epochs) | **33 ms** | 681 ms | **20.4×** |
 | **ItemKNN** (k=100) | **55 ms** | 287 ms | **5.2×** |
 | **SVD** (64 factors, 20 epochs) | **55 ms** | ❌ TF-only (broken) | — |

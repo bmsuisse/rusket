@@ -65,8 +65,8 @@ For real-world retail datasets scaling to 1 Billion rows, `FPMiner` uses a memor
 
 `rusket.mine(method="auto")` dynamically selects the algorithm that performs best based on the dataset density (Borgelt 2003 heuristic).
 
-- **Density > 0.15 (Dense)**: Automatically routes to **FP-Growth**.
-- **Density < 0.15 (Sparse)**: Automatically routes to **Eclat**. On sparse data (like retail baskets), traversing an enormous tree is memory-intensive. Eclat directly uses hardware SIMD array-intersections (`popcnt`) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).
+- **FP-Growth**: Excellent for dense data.
+- **Eclat**: Excellent for sparse data (like retail baskets). Eclat directly uses hardware SIMD array-intersections (`popcnt`) on the TID-lists, resulting in massive speedups (often 5× to 15× faster on sparse arrays).
 
 ---
 
@@ -87,14 +87,14 @@ For real-world retail datasets scaling to 1 Billion rows, `FPMiner` uses a memor
 ```python
 import numpy as np
 from scipy import sparse as sp
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 csr = sp.csr_matrix(
     (np.ones(len(txn_ids), dtype=np.int8), (txn_ids, item_ids)),
     shape=(n_transactions, n_items),
 )
 
-freq = AutoMiner(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
+freq = FPGrowth(csr).mine(min_support=0.001, max_len=3, column_names=item_names)
 ```
 
 At 100M rows, the mining step takes **1.2 seconds** (not a typo).
@@ -136,3 +136,18 @@ uv run pytest tests/test_benchmark.py -v -s
 | **Eclat popcount** | `Vec<u64>` bitsets + hardware `popcnt` for support |
 | **No Python loops** | FP-Tree, mining, and metrics all in Rust |
 | **`pd.factorize`** | O(n) integer encoding, faster than `pd.Categorical` at scale |
+
+---
+
+## Recommender Benchmarks vs LibRecommender
+
+> **Measured with `pytest-benchmark`** (5 rounds, warmed up, GC disabled). MovieLens 100k dataset (943 users, 1,682 items, 100k ratings). Only `model.fit()` is timed — no startup or data loading overhead.
+
+| Benchmark | rusket | LibRecommender | **Speedup** |
+|---|:---:|:---:|:---:|
+| **ALS (Cholesky)** (64 factors, 15 epochs) | **427 ms** | 1,324 ms | **3.1×** |
+| **ALS (eALS)** (64 factors, 15 epochs) | **360 ms** | *N/A* | — |
+| **BPR** (64 factors, 10 epochs) | **33 ms** | 681 ms | **20.4×** |
+| **ItemKNN** (k=100) | **55 ms** | 287 ms | **5.2×** |
+| **SVD** (64 factors, 20 epochs) | **55 ms** | ❌ TF-only (broken) | — |
+| **EASE** | **71 ms** | *N/A* | — |

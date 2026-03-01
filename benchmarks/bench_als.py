@@ -390,8 +390,9 @@ def run_method_rusket(
     cg_iters: int,
     verbose: bool = True,
     use_cholesky: bool = False,
+    use_eals: bool = False,
 ) -> dict:
-    """Benchmark rusket ALS with given cg_iters."""
+    """Benchmark rusket ALS with given solver parameters."""
     t0 = time.perf_counter()
     model = rusket.ALS(
         factors=FACTORS,
@@ -402,6 +403,8 @@ def run_method_rusket(
         verbose=verbose,
         cg_iters=cg_iters,
         use_cholesky=use_cholesky,
+        use_eals=use_eals,
+        eals_iters=1,
     )
     model.fit(mat)
     fit_s = time.perf_counter() - t0
@@ -497,6 +500,10 @@ def run_scenario(label: str, mat: sparse.csr_matrix) -> dict:
 
     print("\n  Method: rusket ALS  cg_iters=10 (default)", flush=True)
     r = run_method_rusket(mat, "rusket cg=10", cg_iters=10, verbose=False)
+    method_results.append(r)
+
+    print("\n  Method: rusket ALS  eALS (fastest)", flush=True)
+    r = run_method_rusket(mat, "rusket eALS", cg_iters=0, use_eals=True, verbose=False)
     method_results.append(r)
 
     print("\n  Method: implicit ALS", flush=True)

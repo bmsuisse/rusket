@@ -272,19 +272,16 @@ fn solve_one_side_eals(
 
             for _pass in 0..eals_iters {
                 // Precompute s_u = Gram * xu
+                // Use the SIMD dot_f32 for fast matrix-vector multiply
                 for f in 0..k {
-                    let mut s = 0.0;
-                    let gram_row = &gram[f * k..];
-                    for a in 0..k {
-                        s += gram_row[a] * xu[a];
-                    }
-                    s_u[f] = s;
+                    s_u[f] = dot_f32(&gram[f * k..(f + 1) * k], xu);
                 }
 
                 for f in 0..k {
                     let mut numer = -(s_u[f] - xu[f] * gram[f * k + f]);
                     let mut denom = eff_lambda + gram[f * k + f];
 
+                    // Process all interacted items for user u
                     for (local, idx) in (start..end).enumerate() {
                         let i = indices[idx] as usize;
                         let w = alpha * data[idx];
@@ -299,14 +296,16 @@ fn solve_one_side_eals(
                     let diff = new_u_f - xu[f];
 
                     if diff.abs() > 1e-9 {
+                        // Update r_hat and s_u using fast unrolled loops
                         for (local, idx) in (start..end).enumerate() {
                             let i = indices[idx] as usize;
                             let y_if = other[i * k + f];
                             r_hat[local] += diff * y_if;
                         }
-                        for a in 0..k {
-                            s_u[a] += diff * gram[a * k + f];
-                        }
+                        // Use AXPY for updating the s_u vector efficiently
+                        let gram_row = &gram[f * k..(f + 1) * k];
+                        axpy_f32(diff, gram_row, s_u);
+                        
                         xu[f] = new_u_f;
                     }
                 }
@@ -354,62 +353,78 @@ fn solve_one_side_cholesky(
             return;
         }
 
-        SCRATCH_CHOL.with(|cell| {
+        let (mut a_buf, mut b_buf, mut yi_buf, mut w_buf) = SCRATCH_CHOL.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut a_buf, ref mut b_buf, ref mut yi_buf, ref mut w_buf) = *borrow;
+            let (ref mut a, ref mut b, ref mut yi, ref mut w) = *borrow;
+            // take the vecs out of the RefCell temporarily so we don't hold the borrow
+            (
+                std::mem::take(a),
+                std::mem::take(b),
+                std::mem::take(yi),
+                std::mem::take(w),
+            )
+        });
 
-            // --- Build A = Gram + lambda*I + sum_i w_i * y_i * y_i^T ---
-            a_buf.clear();
-            a_buf.extend_from_slice(gram);
-            b_buf.clear();
-            b_buf.resize(k, 0.0);
+        // --- Build A = Gram + lambda*I + sum_i w_i * y_i * y_i^T ---
+        a_buf.clear();
+        a_buf.extend_from_slice(gram);
+        b_buf.clear();
+        b_buf.resize(k, 0.0);
 
-            for j in 0..k {
-                a_buf[j * k + j] += eff_lambda;
-            }
+        for j in 0..k {
+            a_buf[j * k + j] += eff_lambda;
+        }
 
-            // Collect item vectors and weights for batch rank-1 update
-            yi_buf.clear();
-            yi_buf.resize(nnz_u * k, 0.0);
-            w_buf.clear();
-            w_buf.resize(nnz_u, 0.0);
+        // Collect item vectors and weights for batch rank-1 update
+        yi_buf.clear();
+        yi_buf.resize(nnz_u * k, 0.0);
+        w_buf.clear();
+        w_buf.resize(nnz_u, 0.0);
 
-            for (local, idx) in (start..end).enumerate() {
-                let i = indices[idx] as usize;
-                let ci = 1.0 + alpha * data[idx];
-                let yi = &other[i * k..(i + 1) * k];
+        for (local, idx) in (start..end).enumerate() {
+            let i = indices[idx] as usize;
+            let ci = 1.0 + alpha * data[idx];
+            let yi = &other[i * k..(i + 1) * k];
 
-                // b += ci * yi
-                axpy_f32(ci, yi, b_buf);
+            // b += ci * yi
+            axpy_f32(ci, yi, &mut b_buf);
 
-                // Store sqrt(w) * yi for batch syrk
-                let w = ci - 1.0; // = alpha * data[idx]
-                if w > 0.0 {
-                    let sw = w.sqrt();
-                    let dest = &mut yi_buf[local * k..(local + 1) * k];
-                    for f in 0..k {
-                        dest[f] = sw * yi[f];
-                    }
-                    w_buf[local] = 1.0; // marker: has weight
-                } else {
-                    w_buf[local] = 0.0;
+            // Store sqrt(w) * yi for batch syrk
+            let w = ci - 1.0; // = alpha * data[idx]
+            if w > 0.0 {
+                let sw = w.sqrt();
+                let dest = &mut yi_buf[local * k..(local + 1) * k];
+                for f in 0..k {
+                    dest[f] = sw * yi[f];
                 }
+                w_buf[local] = 1.0; // marker: has weight
+            } else {
+                w_buf[local] = 0.0;
             }
+        }
 
-            if b_buf.iter().all(|&v| v == 0.0) {
-                return;
-            }
+        if b_buf.iter().all(|&v| v == 0.0) {
+            // Put vecs back
+            SCRATCH_CHOL.with(|cell| {
+                *cell.borrow_mut() = (a_buf, b_buf, yi_buf, w_buf);
+            });
+            return;
+        }
 
-            // Batch rank-1 updates via syrk:  A += W^T * W  where W rows = sqrt(w_i)*y_i
-            // This is a single BLAS call instead of nnz_u individual rank-1 updates.
-            // Build W matrix with only non-zero weight rows
-            let w_mat = MatRef::from_row_major_slice(&yi_buf[..nnz_u * k], nnz_u, k);
-            let w_mat_t = w_mat.transpose();
-            let mut a_mat = faer::MatMut::from_row_major_slice_mut(a_buf, k, k);
-            matmul(a_mat.as_mut(), Accum::Add, w_mat_t, w_mat, 1.0f32, Par::Seq);
+        // Batch rank-1 updates via syrk:  A += W^T * W  where W rows = sqrt(w_i)*y_i
+        // This is a single BLAS call instead of nnz_u individual rank-1 updates.
+        // Build W matrix with only non-zero weight rows
+        let w_mat = MatRef::from_row_major_slice(&yi_buf[..nnz_u * k], nnz_u, k);
+        let w_mat_t = w_mat.transpose();
+        let mut a_mat = faer::MatMut::from_row_major_slice_mut(&mut a_buf, k, k);
+        matmul(a_mat.as_mut(), Accum::Add, w_mat_t, w_mat, 1.0f32, Par::Seq);
 
-            cholesky_solve_inplace(a_buf, b_buf, k);
-            xu.copy_from_slice(b_buf);
+        cholesky_solve_inplace(&mut a_buf, &mut b_buf, k);
+        xu.copy_from_slice(&b_buf);
+
+        // Put vecs back into TLS
+        SCRATCH_CHOL.with(|cell| {
+            *cell.borrow_mut() = (a_buf, b_buf, yi_buf, w_buf);
         });
     });
 
@@ -917,7 +932,6 @@ pub fn als_recalculate_user<'py>(
     }
 
     Ok(out.into_pyarray(py))
-}
 }
 
 #[pyfunction]

@@ -83,6 +83,7 @@ def bench(
     iterations: int,
     cg_iters: int,
     use_cholesky: bool,
+    use_eals: bool = False,
 ) -> dict:
     model = rusket.ALS(
         factors=factors,
@@ -93,6 +94,8 @@ def bench(
         verbose=False,
         cg_iters=cg_iters,
         use_cholesky=use_cholesky,
+        use_eals=use_eals,
+        eals_iters=1,
     )
     t0 = time.perf_counter()
     model.fit(mat)
@@ -121,6 +124,7 @@ def bench(
         "rec_ms": rec_ms,
         "cg_iters": cg_iters,
         "use_cholesky": use_cholesky,
+        "use_eals": use_eals,
     }
 
 
@@ -231,6 +235,10 @@ def main() -> None:
         for k in [32, 128]:
             r = bench(mat, f"CG cg_iters=3  k={k}", k, args.iters, 3, False)
             results.append(r)
+
+    print("\n── eALS (element-wise coordinate descent) ────────────────────", flush=True)
+    r = bench(mat, "eALS  k=64", 64, args.iters, 0, False, True)
+    results.append(r)
 
     # Summary table
     print(f"\n  {'Variant':<32}  {'Fit (s)':>7}  {'M rat/s':>8}  {'Rec (ms)':>9}")
