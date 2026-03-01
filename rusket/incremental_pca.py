@@ -60,7 +60,7 @@ class IncrementalPCA:
         batch_size = self.batch_size or max(5 * n_features, 1024)
 
         for i in range(0, n_samples, batch_size):
-            X_batch = X[i:i + batch_size]
+            X_batch = X[i : i + batch_size]
             self.partial_fit(X_batch)
 
         return self

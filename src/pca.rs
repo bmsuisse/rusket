@@ -7,6 +7,7 @@ extern crate accelerate_src;
 
 /// Cross-platform GEMM: C = alpha * op(A) * op(B) + beta * C (row-major).
 /// Uses Apple Accelerate (AMX) on macOS, faer::matmul elsewhere.
+#[allow(unused_variables)]
 #[inline]
 fn gemm(
     trans_a: bool,
@@ -155,7 +156,7 @@ pub fn pca_fit<'py>(
 
     let min_dim = n_samples.min(n_features);
 
-    let (mut components, mut singular_values) = if use_covariance {
+    let (components, mut singular_values) = if use_covariance {
         // Parallel X^T X computation
         let mut cov = data_slice.par_chunks(2048 * n_features).fold(
             || vec![0.0f32; n_features * n_features],

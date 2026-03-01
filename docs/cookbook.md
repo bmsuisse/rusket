@@ -489,11 +489,11 @@ table = db.create_table("item_embeddings", data=df_vectors, mode="overwrite")
 
 ---
 
-## 16. Visualizing Latent Spaces (PCA)
+## 16. Visualizing Latent Spaces (PaCMAP)
 
 ```python
-# Built-in 3D PCA visualization via fluent API
-fig = model.fit().pca(n_components=3).plot(title="Latent Item Space")
+# Built-in interactive 2D PaCMAP visualization via fluent API
+fig = model.fit().pacmap2().plot(title="Latent Item Space")
 fig.show()
 ```
 

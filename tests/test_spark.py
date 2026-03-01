@@ -389,9 +389,6 @@ def test_als_grouped(spark_session) -> None:
     assert len(user_1_recs) > 0
 
 
-
-
-
 def test_oo_mine_grouped_and_rules_grouped(spark_session) -> None:
 
     from rusket.fpgrowth import FPGrowth

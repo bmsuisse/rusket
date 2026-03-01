@@ -31,7 +31,7 @@ pub fn leave_one_out(
 
     let mut rng = rand::rng();
 
-    for (_user, mut indices) in user_interactions {
+    for (_user, indices) in user_interactions {
         if indices.is_empty() {
              continue;
         }

@@ -1,6 +1,5 @@
 use numpy::{
     IntoPyArray, PyArray1, PyReadonlyArray1,
-    PyUntypedArrayMethods,
 };
 use pyo3::prelude::*;
 use rayon::prelude::*;

@@ -12,6 +12,7 @@ use crate::fpgrowth::{flatten_results, process_item_counts};
 // Because nodes in a Nodeset are sorted by `pre` natively (from tree traversal or we can sort them),
 // the intersection can be done linearly.
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct PPNode {
     pub item: u32,
@@ -38,6 +39,7 @@ impl PPNode {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct PPCTree {
     pub nodes: Vec<PPNode>,
     children_arena: Vec<(u32, u32)>,
@@ -299,7 +301,7 @@ fn mine_itemsets_fin(
     let mut results = Vec::new();
 
     // Start FIN core
-    let root_ns = Nodeset {
+    let _root_ns = Nodeset {
         nodes: vec![NodesetNode {
             pre: tree.nodes[0].pre,
             post: tree.nodes[0].post,

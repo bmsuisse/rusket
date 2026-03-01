@@ -103,18 +103,13 @@ fn mine_itemsets_lcm(
     global_to_local: Vec<u32>,
     min_count: u64,
     max_len: Option<usize>,
-    n_rows: usize,
+    _n_rows: usize,
 ) -> PyResult<Vec<(u64, Vec<u32>)>> {
     let active_items_arc = Arc::new(active_items);
 
     // Root transaction set contains all transactions (all 1s)
     // BitSet now uses u128 blocks (128 transactions per block)
-    let n_blocks = n_rows.div_ceil(128);
-    let mut root_blocks = vec![u128::MAX; n_blocks];
-    if n_rows % 128 != 0 {
-        root_blocks[n_blocks - 1] = (1u128 << (n_rows % 128)) - 1;
-    }
-    let root_bs = BitSet { blocks: root_blocks };
+    // _root_bs is not used currently
 
     // Parallelize the first level of the tree
     let results: Vec<(u64, Vec<u32>)> = (0..active_items_arc.len())

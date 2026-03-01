@@ -550,8 +550,6 @@ class TestInstacartALS:
 class TestCrossAlgorithmSanity:
     """Tests that verify self-consistency across different algorithms."""
 
-
-
     def test_support_is_consistent_with_raw_counts(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """Support from FPGrowth matches manually-computed co-occurrence frequency."""
         import rusket

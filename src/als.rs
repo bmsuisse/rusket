@@ -327,22 +327,88 @@ fn solve_one_side_eals(
                         let yi_ptr = yi_cols.as_ptr().add(yi_f_offset);
                         let r_hat_ptr = r_hat.as_ptr();
                         
-                        for local in 0..nnz_u {
-                            let w = *w_ptr.add(local);
-                            let y_if = *yi_ptr.add(local);
-                            let r_hat_val = *r_hat_ptr.add(local);
+                            let mut local = 0;
+                            let local8 = nnz_u / 8 * 8;
                             
-                            // The exact math from eALS:
-                            // numer += (w + 1) * y_if - w * (r_hat - xu_f * y_if) * y_if
-                            // Which simplifies to:
-                            // numer += y_if + w * y_if - w * r_hat * y_if + w * xu_f * y_if^2
-                            // Which equals:
-                            // numer += y_if + w * y_if * (1 - r_hat + xu_f * y_if)
+                            while local < local8 {
+                                let w0 = *w_ptr.add(local);
+                                let y_if0 = *yi_ptr.add(local);
+                                let r_hat_val0 = *r_hat_ptr.add(local);
+                                let wy_if0 = w0 * y_if0;
+                                let wy20 = wy_if0 * y_if0;
+                                numer += y_if0 + wy_if0 * (1.0 - r_hat_val0) + xu_f * wy20;
+                                denom += wy20;
+                                
+                                let w1 = *w_ptr.add(local + 1);
+                                let y_if1 = *yi_ptr.add(local + 1);
+                                let r_hat_val1 = *r_hat_ptr.add(local + 1);
+                                let wy_if1 = w1 * y_if1;
+                                let wy21 = wy_if1 * y_if1;
+                                numer += y_if1 + wy_if1 * (1.0 - r_hat_val1) + xu_f * wy21;
+                                denom += wy21;
+                                
+                                let w2 = *w_ptr.add(local + 2);
+                                let y_if2 = *yi_ptr.add(local + 2);
+                                let r_hat_val2 = *r_hat_ptr.add(local + 2);
+                                let wy_if2 = w2 * y_if2;
+                                let wy22 = wy_if2 * y_if2;
+                                numer += y_if2 + wy_if2 * (1.0 - r_hat_val2) + xu_f * wy22;
+                                denom += wy22;
+                                
+                                let w3 = *w_ptr.add(local + 3);
+                                let y_if3 = *yi_ptr.add(local + 3);
+                                let r_hat_val3 = *r_hat_ptr.add(local + 3);
+                                let wy_if3 = w3 * y_if3;
+                                let wy23 = wy_if3 * y_if3;
+                                numer += y_if3 + wy_if3 * (1.0 - r_hat_val3) + xu_f * wy23;
+                                denom += wy23;
+                                
+                                let w4 = *w_ptr.add(local + 4);
+                                let y_if4 = *yi_ptr.add(local + 4);
+                                let r_hat_val4 = *r_hat_ptr.add(local + 4);
+                                let wy_if4 = w4 * y_if4;
+                                let wy24 = wy_if4 * y_if4;
+                                numer += y_if4 + wy_if4 * (1.0 - r_hat_val4) + xu_f * wy24;
+                                denom += wy24;
+                                
+                                let w5 = *w_ptr.add(local + 5);
+                                let y_if5 = *yi_ptr.add(local + 5);
+                                let r_hat_val5 = *r_hat_ptr.add(local + 5);
+                                let wy_if5 = w5 * y_if5;
+                                let wy25 = wy_if5 * y_if5;
+                                numer += y_if5 + wy_if5 * (1.0 - r_hat_val5) + xu_f * wy25;
+                                denom += wy25;
+                                
+                                let w6 = *w_ptr.add(local + 6);
+                                let y_if6 = *yi_ptr.add(local + 6);
+                                let r_hat_val6 = *r_hat_ptr.add(local + 6);
+                                let wy_if6 = w6 * y_if6;
+                                let wy26 = wy_if6 * y_if6;
+                                numer += y_if6 + wy_if6 * (1.0 - r_hat_val6) + xu_f * wy26;
+                                denom += wy26;
+                                
+                                let w7 = *w_ptr.add(local + 7);
+                                let y_if7 = *yi_ptr.add(local + 7);
+                                let r_hat_val7 = *r_hat_ptr.add(local + 7);
+                                let wy_if7 = w7 * y_if7;
+                                let wy27 = wy_if7 * y_if7;
+                                numer += y_if7 + wy_if7 * (1.0 - r_hat_val7) + xu_f * wy27;
+                                denom += wy27;
+                                
+                                local += 8;
+                            }
                             
-                            let wy_if = w * y_if;
-                            numer += y_if + wy_if * (1.0 - r_hat_val + xu_f * y_if);
-                            denom += wy_if * y_if;
-                        }
+                            while local < nnz_u {
+                                let w = *w_ptr.add(local);
+                                let y_if = *yi_ptr.add(local);
+                                let r_hat_val = *r_hat_ptr.add(local);
+                                
+                                let wy_if = w * y_if;
+                                let wy2 = wy_if * y_if;
+                                numer += y_if + wy_if * (1.0 - r_hat_val) + xu_f * wy2;
+                                denom += wy2;
+                                local += 1;
+                            }
                     }
 
                     let new_u_f = numer / denom;
