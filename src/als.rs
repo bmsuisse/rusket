@@ -555,7 +555,7 @@ fn solve_one_side_cholesky(
 }
 
 
-fn csr_transpose(
+pub(crate) fn csr_transpose(
     indptr: &[i64],
     indices: &[i32],
     data: &[f32],
@@ -588,7 +588,7 @@ fn csr_transpose(
     (ti, tv, td)
 }
 
-fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
+pub(crate) fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     let mut out = vec![0.0f32; n * k];
     let mut s = seed;
     let scale = 1.0 / (k as f32).sqrt();
@@ -723,7 +723,7 @@ fn gauss_solve_inplace(mat: &mut Vec<f32>, rhs: &mut Vec<f32>, n: usize) -> bool
     true
 }
 
-fn als_train(
+pub(crate) fn als_train(
     indptr: &[i64],
     indices: &[i32],
     data: &[f32],
@@ -831,7 +831,7 @@ fn als_train(
     (user_factors, item_factors)
 }
 
-fn top_n_items(
+pub(crate) fn top_n_items(
     uf: &[f32],
     itf: &[f32],
     uid: usize,

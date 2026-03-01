@@ -30,6 +30,7 @@ mod ann;
 mod incremental_pca;
 mod nn_descent;
 mod pacmap;
+mod cross_validate;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -86,5 +87,6 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<incremental_pca::RustIncrementalPCA>()?;
     m.add_function(wrap_pyfunction!(nn_descent::nn_descent_build, m)?)?;
     m.add_function(wrap_pyfunction!(pacmap::pacmap_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(cross_validate::cross_validate_als, m)?)?;
     Ok(())
 }

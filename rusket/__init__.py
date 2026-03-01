@@ -20,7 +20,14 @@ from .lcm import LCM
 from .lightgcn import LightGCN
 from .mine import mine
 from .model import BaseModel, load_model
-from .model_selection import CrossValidationResult, cross_validate, leave_one_out_split, train_test_split
+from .model_selection import (
+    CrossValidationResult,
+    OptunaSearchSpace,
+    cross_validate,
+    leave_one_out_split,
+    optuna_optimize,
+    train_test_split,
+)
 from .negfin import NegFIN
 from .nmf import NMF
 from .pacmap import PaCMAP, pacmap, pacmap2, pacmap3
@@ -92,7 +99,9 @@ __all__ = [
     "train_test_split",
     "leave_one_out_split",
     "cross_validate",
+    "optuna_optimize",
     "CrossValidationResult",
+    "OptunaSearchSpace",
     "PCA",
     "pca",
     "pca2",

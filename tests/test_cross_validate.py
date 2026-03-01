@@ -166,3 +166,61 @@ def test_cross_validate_with_eals():
 
     assert isinstance(result, CrossValidationResult)
     assert 0.0 <= result.best_score <= 1.0
+
+
+def test_optuna_optimize_basic():
+    """Optuna Bayesian HP search — 5 trials, verify result structure."""
+    optuna = __import__("pytest").importorskip("optuna")  # noqa: F841
+    from rusket import OptunaSearchSpace, optuna_optimize
+
+    df = _make_dataset()
+
+    result = optuna_optimize(
+        ALS,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        search_space=[
+            OptunaSearchSpace.int("factors", 8, 16),
+            OptunaSearchSpace.float("regularization", 0.01, 0.1, log=True),
+        ],
+        n_trials=5,
+        n_folds=2,
+        k=5,
+        metric="precision",
+        verbose=False,
+        seed=42,
+    )
+
+    assert isinstance(result, CrossValidationResult)
+    assert result.best_score >= 0.0
+    assert "factors" in result.best_params
+    assert "regularization" in result.best_params
+    assert len(result.results) == 5  # 5 trials
+
+
+def test_optuna_optimize_refit():
+    """Optuna with refit_best=True returns a fitted model."""
+    optuna = __import__("pytest").importorskip("optuna")  # noqa: F841
+    from rusket import OptunaSearchSpace, optuna_optimize
+
+    df = _make_dataset()
+
+    result = optuna_optimize(
+        ALS,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        search_space=[
+            OptunaSearchSpace.int("factors", 8, 16),
+        ],
+        n_trials=3,
+        n_folds=2,
+        k=5,
+        refit_best=True,
+        verbose=False,
+        seed=42,
+    )
+
+    assert result.best_model is not None
+    assert result.best_model.fitted
