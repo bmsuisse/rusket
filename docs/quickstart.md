@@ -127,3 +127,44 @@ freq = AutoMiner(csr).mine(min_support=0.001, column_names=sku_names)
 - [API Reference](api-reference.md)
 - [Polars Support](polars.md)
 - [Recommender Workflows](recommender.md)
+## Saving and Serving Models
+
+`rusket` models use a unified `BaseModel` that provides `.save()` and `.load()` functionality. You can also export trained models to a Vector Database (like LanceDB, FAISS, or Qdrant) for fast, real-time serving in production.
+
+```python
+import rusket
+from pathlib import Path
+
+# 1. Train the model
+model = rusket.ALS(factors=32).fit(interactions)
+
+# 2. Save your trained model to disk
+model.save("my_als_model.pkl")
+
+# 3. Load it back using the generic loader
+loaded_model = rusket.load_model("my_als_model.pkl")
+
+# 4. Export the embeddings for a Vector Database
+items_df = rusket.export_item_factors(
+    loaded_model, 
+    normalize=True,     # Best for Cosine Similarity search
+    format="pandas"
+)
+
+# 5. Serve it in real-time (Example using LanceDB)
+import lancedb
+
+# Create a local vector database
+db = lancedb.connect("./lancedb_store")
+table = db.create_table("items", data=items_df)
+
+# Query the table with a specific user's latent factors
+user_emb = loaded_model.user_factors[0]
+
+# Normalize user vector identically to items
+user_emb = user_emb / max(np.linalg.norm(user_emb), 1e-9)
+
+# Retrieve top 5 item recommendations for this user!
+results = table.search(user_emb).limit(5).to_pandas()
+print(results)
+```

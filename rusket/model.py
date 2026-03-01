@@ -389,6 +389,57 @@ class BaseModel(ABC):
         return instance  # type: ignore[return-value]
 
 
+def load_model(path: str | Path) -> BaseModel:
+    """Load a previously saved model from disk.
+
+    This function automatically determines the correct model class
+    and instantiates it.
+
+    Parameters
+    ----------
+    path : str or Path
+        File path to load from.
+
+    Returns
+    -------
+    BaseModel
+        The restored model.
+    """
+    import pickle
+
+    path = Path(path)
+    with open(path, "rb") as f:
+        payload = pickle.load(f)  # noqa: S301
+
+    if isinstance(payload, dict) and "__rusket_version__" in payload:
+        saved_cls_name = payload.get("class", "")
+        module_name = payload.get("module", "")
+        state = payload["state"]
+
+        # Import the class dynamically
+        import importlib
+
+        try:
+            mod = importlib.import_module(module_name)
+            cls = getattr(mod, saved_cls_name)
+        except (ImportError, AttributeError):
+            # Fallback to rusket namespace if old module moved
+            import rusket
+
+            cls = getattr(rusket, saved_cls_name, None)
+            if cls is None:
+                raise TypeError(f"Could not resolve class {saved_cls_name} from {module_name}")
+
+        instance = cls.__new__(cls)
+        instance.__dict__.update(state)
+        return instance
+    else:
+        # Legacy: plain pickled object
+        if hasattr(payload, "__dict__"):
+            return payload
+        raise TypeError(f"Expected a rusket model, got {type(payload).__name__}")
+
+
 class Miner(BaseModel):
     """Base class for all pattern mining algorithms.
 

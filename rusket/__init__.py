@@ -18,7 +18,7 @@ from .item_knn import ItemKNN
 from .lcm import LCM
 from .lightgcn import LightGCN
 from .mine import AutoMiner, mine
-from .model import BaseModel
+from .model import BaseModel, load_model
 from .model_selection import leave_one_out_split, train_test_split
 from .nmf import NMF
 from .pca import PCA, pca, pca2, pca3
@@ -60,6 +60,7 @@ __all__ = [
     "from_arrow",
     "FPMiner",
     "BaseModel",
+    "load_model",
     "ALS",
     "BPR",
     "EASE",
