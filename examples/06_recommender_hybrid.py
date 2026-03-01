@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse as sp
 
-from rusket import ALS, AutoMiner, Recommender
+from rusket import ALS, FPGrowth, Recommender
 
 # ── 1. Synthetic purchase history ────────────────────────────────────────────
 rng = np.random.default_rng(42)
@@ -38,7 +38,7 @@ print(f"           Scores:             {scores.round(3).tolist()}")
 
 # ── 3. Mine basket association rules ────────────────────────────────────────
 basket_df = pd.DataFrame(purchases.astype(bool), columns=[f"item_{i}" for i in range(n_items)])
-miner = AutoMiner(basket_df, min_support=0.05)
+miner = FPGrowth(basket_df, min_support=0.05)
 freq = miner.mine(use_colnames=True)
 rules = miner.association_rules(metric="lift", min_threshold=1.0)
 

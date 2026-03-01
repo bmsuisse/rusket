@@ -424,7 +424,7 @@ def test_all_methods_produce_same_results() -> None:
         }
     )
 
-    methods = ["fpgrowth", "eclat", "fin", "lcm", "auto"]
+    methods = ["fpgrowth", "eclat", "fin", "lcm"]
     results: dict[str, set[tuple]] = {}
 
     for method in methods:

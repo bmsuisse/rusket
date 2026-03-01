@@ -106,7 +106,7 @@ rusket has two major class families: **Miners** and **Recommenders**. All share 
 
 ```
 BaseModel (ABC)
-├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+├── Miner ─── FPGrowth, Eclat, FIN, LCM, FPGrowth (+ RuleMinerMixin)
 │             PrefixSpan, HUPM (specialized miners)
 ├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
 ├── SequentialRecommender ─── FPMC, SASRec

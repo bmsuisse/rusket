@@ -14,7 +14,7 @@ pip install rusket
 import numpy as np
 import pandas as pd
 import polars as pl
-from rusket import FPGrowth, Eclat, AutoMiner, association_rules
+from rusket import FPGrowth, Eclat, FPGrowth, association_rules
 from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender
 ```
 
@@ -110,7 +110,7 @@ freq_ec = Eclat.from_transactions(
 
 | Condition | Recommended class |
 |---|---|
-| Dense dataset, few items | `AutoMiner` |
+| Dense dataset, few items | `FPGrowth` |
 | Sparse dataset, many items, low support | `Eclat` |
 | Very large dataset (100M+ rows) | `FPMiner` with streaming |
 
@@ -340,11 +340,11 @@ All miners accept Polars DataFrames directly — no conversion needed:
 
 ```python
 import polars as pl
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 df_pl = pl.read_parquet("transactions.parquet")
 
-freq = AutoMiner.from_transactions(
+freq = FPGrowth.from_transactions(
     df_pl,
     transaction_col="order_id",
     item_col="product_id",
@@ -436,7 +436,7 @@ item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_laye
 
 ## 12. Tuning Guide
 
-### FPGrowth / Eclat / AutoMiner
+### FPGrowth / Eclat / FPGrowth
 
 | Parameter | Default | Effect |
 |---|---|---|

@@ -39,11 +39,11 @@ To also enable **Polars** support:
 
 ## Step 1 — Prepare your data
 
-`AutoMiner` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
+`FPGrowth` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 orders = pd.DataFrame({
     "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
@@ -53,7 +53,7 @@ orders = pd.DataFrame({
                    "milk", "bread", "eggs", "coffee"],
 })
 
-model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
+model = FPGrowth.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
 ```
 
 ---
@@ -66,7 +66,7 @@ print(freq.sort_values("support", ascending=False))
 ```
 
 !!! tip
-    `AutoMiner` picks `Eclat` for sparse data (density < 0.15) and `FPGrowth` for dense data.
+    `FPGrowth` picks `Eclat` for sparse data (density < 0.15) and `FPGrowth` for dense data.
 
 ---
 
@@ -111,13 +111,13 @@ rules = miner.association_rules()
 
 ```python
 from scipy import sparse as sp
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 csr = sp.csr_matrix(
     (np.ones(len(receipt_ids), dtype=np.int8), (receipt_ids, sku_indices)),
     shape=(n_receipts, n_skus),
 )
-freq = AutoMiner(csr).mine(min_support=0.001, column_names=sku_names)
+freq = FPGrowth(csr).mine(min_support=0.001, column_names=sku_names)
 ```
 
 ---

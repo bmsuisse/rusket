@@ -6,7 +6,7 @@ Three complementary recommendation strategies: cart add-ons, personalised "For Y
 
 | Strategy | Best for | API |
 |---|---|---|
-| **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `AutoMiner` |
+| **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `FPGrowth` |
 | **"For You" (Personalised)** | Homepage, email, loyalty | `ALS` / `BPR` |
 | **Hybrid** | Blend both signals | `Recommender` |
 
@@ -16,7 +16,7 @@ Three complementary recommendation strategies: cart add-ons, personalised "For Y
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 checkouts = pd.DataFrame({
     "receipt_id": [1, 1, 2, 2, 2, 3, 3, 4, 4, 4],
@@ -26,7 +26,7 @@ checkouts = pd.DataFrame({
                    "espresso_beans", "grinder", "descaler"],
 })
 
-model = AutoMiner.from_transactions(
+model = FPGrowth.from_transactions(
     checkouts,
     transaction_col="receipt_id",
     item_col="product",
@@ -79,10 +79,10 @@ top_customers, scores = als.recommend_users(item_id="D33", n=100)
 ## The Hybrid Recommender
 
 ```python
-from rusket import ALS, AutoMiner, Recommender
+from rusket import ALS, FPGrowth, Recommender
 
 als  = ALS(factors=64, iterations=15).fit(user_item_csr)
-model = AutoMiner(basket_ohe, min_support=0.01)
+model = FPGrowth(basket_ohe, min_support=0.01)
 freq  = model.mine()
 rules = model.association_rules()
 rec = Recommender(model=als, rules_df=rules)

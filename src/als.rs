@@ -226,8 +226,8 @@ fn solve_one_side_cg(
 }
 
 thread_local! {
-    static SCRATCH_EALS: RefCell<(Vec<f32>, Vec<f32>)> =
-        const { RefCell::new((Vec::new(), Vec::new())) };
+    static SCRATCH_EALS: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_eals(
@@ -256,23 +256,55 @@ fn solve_one_side_eals(
 
         SCRATCH_EALS.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut r_hat, ref mut s_u) = *borrow;
+            let (ref mut r_hat, ref mut s_u, ref mut yi_cols, ref mut w_vec) = *borrow;
 
             r_hat.clear();
             r_hat.resize(nnz_u, 0.0);
             s_u.clear();
             s_u.resize(k, 0.0);
+            
+            // Pre-allocate contiguous column-major memory for item vectors 
+            yi_cols.clear();
+            yi_cols.resize(k * nnz_u, 0.0);
+            w_vec.clear();
+            w_vec.resize(nnz_u, 0.0);
 
-            // r_hat = y_i * xu (prediction for interacted items)
+            // Populate the contiguous memory buffer (column-major)
             for (local, idx) in (start..end).enumerate() {
                 let i = indices[idx] as usize;
-                let yi = &other[i * k..(i + 1) * k];
-                r_hat[local] = dot_f32(xu, yi);
+                
+                // Transpose row-major into col-major
+                // Using get_unchecked for the hot loop mapping yi into yi_cols
+                unsafe {
+                    let yi = other.get_unchecked(i * k..(i + 1) * k);
+                    w_vec[local] = alpha * *data.get_unchecked(idx);
+                    
+                    let mut f = 0;
+                    let k8 = k / 8 * 8;
+                    // 8-wide unrolled transpose for max memory throughput
+                    while f < k8 {
+                        *yi_cols.get_unchecked_mut(f * nnz_u + local) = *yi.get_unchecked(f);
+                        *yi_cols.get_unchecked_mut((f + 1) * nnz_u + local) = *yi.get_unchecked(f + 1);
+                        *yi_cols.get_unchecked_mut((f + 2) * nnz_u + local) = *yi.get_unchecked(f + 2);
+                        *yi_cols.get_unchecked_mut((f + 3) * nnz_u + local) = *yi.get_unchecked(f + 3);
+                        *yi_cols.get_unchecked_mut((f + 4) * nnz_u + local) = *yi.get_unchecked(f + 4);
+                        *yi_cols.get_unchecked_mut((f + 5) * nnz_u + local) = *yi.get_unchecked(f + 5);
+                        *yi_cols.get_unchecked_mut((f + 6) * nnz_u + local) = *yi.get_unchecked(f + 6);
+                        *yi_cols.get_unchecked_mut((f + 7) * nnz_u + local) = *yi.get_unchecked(f + 7);
+                        f += 8;
+                    }
+                    while f < k {
+                        *yi_cols.get_unchecked_mut(f * nnz_u + local) = *yi.get_unchecked(f);
+                        f += 1;
+                    }
+                }
+                
+                // r_hat is pred for interacted items
+                r_hat[local] = dot_f32(xu, &other[i * k..(i + 1) * k]);
             }
 
             for _pass in 0..eals_iters {
                 // Precompute s_u = Gram * xu
-                // Use the SIMD dot_f32 for fast matrix-vector multiply
                 for f in 0..k {
                     s_u[f] = dot_f32(&gram[f * k..(f + 1) * k], xu);
                 }
@@ -280,28 +312,51 @@ fn solve_one_side_eals(
                 for f in 0..k {
                     let mut numer = -(s_u[f] - xu[f] * gram[f * k + f]);
                     let mut denom = eff_lambda + gram[f * k + f];
+                    
+                    // Col-major offset for latent factor f
+                    let yi_f_offset = f * nnz_u;
 
-                    // Process all interacted items for user u
-                    for (local, idx) in (start..end).enumerate() {
-                        let i = indices[idx] as usize;
-                        let w = alpha * data[idx];
-                        let y_if = other[i * k + f];
-                        let r_hat_minus_f = r_hat[local] - xu[f] * y_if;
+                    // SIMD-optimized pass over interacted items
+                    // We can move the addition of (w+1)*y_if outside the r_hat calculation
+                    let xu_f = xu[f];
+                    
+                    unsafe {
+                        let w_ptr = w_vec.as_ptr();
+                        let yi_ptr = yi_cols.as_ptr().add(yi_f_offset);
+                        let r_hat_ptr = r_hat.as_ptr();
                         
-                        numer += (w + 1.0) * y_if - w * r_hat_minus_f * y_if;
-                        denom += w * y_if * y_if;
+                        for local in 0..nnz_u {
+                            let w = *w_ptr.add(local);
+                            let y_if = *yi_ptr.add(local);
+                            let r_hat_val = *r_hat_ptr.add(local);
+                            
+                            // The exact math from eALS:
+                            // numer += (w + 1) * y_if - w * (r_hat - xu_f * y_if) * y_if
+                            // Which simplifies to:
+                            // numer += y_if + w * y_if - w * r_hat * y_if + w * xu_f * y_if^2
+                            // Which equals:
+                            // numer += y_if + w * y_if * (1 - r_hat + xu_f * y_if)
+                            
+                            let wy_if = w * y_if;
+                            numer += y_if + wy_if * (1.0 - r_hat_val + xu_f * y_if);
+                            denom += wy_if * y_if;
+                        }
                     }
 
                     let new_u_f = numer / denom;
-                    let diff = new_u_f - xu[f];
+                    let diff = new_u_f - xu_f;
 
                     if diff.abs() > 1e-9 {
-                        // Update r_hat and s_u using fast unrolled loops
-                        for (local, idx) in (start..end).enumerate() {
-                            let i = indices[idx] as usize;
-                            let y_if = other[i * k + f];
-                            r_hat[local] += diff * y_if;
+                        // Update r_hat and s_u using contiguous SIMD loops
+                        unsafe {
+                            let r_hat_mut = r_hat.as_mut_ptr();
+                            let yi_ptr = yi_cols.as_ptr().add(yi_f_offset);
+                            
+                            for local in 0..nnz_u {
+                                *r_hat_mut.add(local) += diff * *yi_ptr.add(local);
+                            }
                         }
+                        
                         // Use AXPY for updating the s_u vector efficiently
                         let gram_row = &gram[f * k..(f + 1) * k];
                         axpy_f32(diff, gram_row, s_u);

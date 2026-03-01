@@ -1,0 +1,62 @@
+/Users/dominikpeter/DevOps/rusket/rusket/als.py
+  /Users/dominikpeter/DevOps/rusket/rusket/als.py:177:13 - error: Expected 14 positional arguments (reportCallIssue)
+  /Users/dominikpeter/DevOps/rusket/rusket/als.py:224:22 - error: "als_recalculate_user" is not a known attribute of module ".._rusket" (reportAttributeAccessIssue)
+/Users/dominikpeter/DevOps/rusket/rusket/grouped.py
+  /Users/dominikpeter/DevOps/rusket/rusket/grouped.py:307:16 - error: "pd" is possibly unbound (reportPossiblyUnboundVariable)
+/Users/dominikpeter/DevOps/rusket/rusket/hupm.py
+  /Users/dominikpeter/DevOps/rusket/rusket/hupm.py:134:9 - error: Method "mine_grouped" overrides class "Miner" in an incompatible manner
+    Base method is declared as an instance method but override is not
+    Positional parameter count mismatch; base method has 3, but override has 8
+    Parameter 2 name mismatch: base parameter is named "group_col", override parameter is named "df"
+    Parameter "**kwargs" has no corresponding parameter (reportIncompatibleMethodOverride)
+/Users/dominikpeter/DevOps/rusket/rusket/lightgcn.py
+  /Users/dominikpeter/DevOps/rusket/rusket/lightgcn.py:167:28 - error: "None" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+/Users/dominikpeter/DevOps/rusket/rusket/model.py
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:378:27 - error: Cannot access attribute "update" for class "MappingProxyType[str, Any]"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:439:20 - error: Type "Any | dict[Unknown, Unknown]" is not assignable to return type "BaseModel"
+    Type "Any | dict[Unknown, Unknown]" is not assignable to type "BaseModel"
+      "dict[Unknown, Unknown]" is not assignable to "BaseModel" (reportReturnType)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:693:45 - error: Cannot access attribute "to_list" for class "ExtensionArray"
+    Attribute "to_list" is unknown (reportAttributeAccessIssue)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:693:45 - error: Cannot access attribute "to_list" for class "ndarray[_AnyShape, dtype[Any]]"
+    Attribute "to_list" is unknown (reportAttributeAccessIssue)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:694:36 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:707:24 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:709:36 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:709:57 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:710:36 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:710:57 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:711:37 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:711:58 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:711:67 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:715:20 - error: "_pl" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:1089:31 - error: Argument of type "ProjectedSpace" cannot be assigned to parameter "data" of type "NDArray[float32]" in function "__init__"
+    "ProjectedSpace" is not assignable to "ndarray[_AnyShape, dtype[float32]]" (reportArgumentType)
+  /Users/dominikpeter/DevOps/rusket/rusket/model.py:1150:31 - error: Argument of type "ProjectedSpace" cannot be assigned to parameter "data" of type "NDArray[float32]" in function "__init__"
+    "ProjectedSpace" is not assignable to "ndarray[_AnyShape, dtype[float32]]" (reportArgumentType)
+/Users/dominikpeter/DevOps/rusket/rusket/pipeline.py
+  /Users/dominikpeter/DevOps/rusket/rusket/pipeline.py:288:52 - error: "pipeline_batch_recommend" is not a known attribute of module ".._rusket" (reportAttributeAccessIssue)
+/Users/dominikpeter/DevOps/rusket/rusket/prefixspan.py
+  /Users/dominikpeter/DevOps/rusket/rusket/prefixspan.py:152:9 - error: Method "mine_grouped" overrides class "Miner" in an incompatible manner
+    Base method is declared as an instance method but override is not
+    Positional parameter count mismatch; base method has 3, but override has 8
+    Parameter 2 name mismatch: base parameter is named "group_col", override parameter is named "df"
+    Parameter "**kwargs" has no corresponding parameter (reportIncompatibleMethodOverride)
+/Users/dominikpeter/DevOps/rusket/rusket/svd.py
+  /Users/dominikpeter/DevOps/rusket/rusket/svd.py:139:28 - error: "None" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+/Users/dominikpeter/DevOps/rusket/rusket/transactions.py
+  /Users/dominikpeter/DevOps/rusket/rusket/transactions.py:64:5 - error: Overload 5 for "from_transactions" will never be used because its parameters overlap overload 4 (reportOverlappingOverload)
+  /Users/dominikpeter/DevOps/rusket/rusket/transactions.py:383:38 - error: Argument of type "Index" cannot be assigned to parameter "values" of type "Series | DataFrame | Sequence[Unknown] | Mapping[Unknown, Unknown]" in function "isin"
+    Type "Index" is not assignable to type "Series | DataFrame | Sequence[Unknown] | Mapping[Unknown, Unknown]"
+      "Index" is not assignable to "Series"
+      "Index" is not assignable to "DataFrame"
+      "Index" is not assignable to "Sequence[Unknown]"
+      "Index" is not assignable to "Mapping[Unknown, Unknown]" (reportArgumentType)
+/Users/dominikpeter/DevOps/rusket/rusket/viz.py
+  /Users/dominikpeter/DevOps/rusket/rusket/viz.py:147:16 - error: Import "networkxr" could not be resolved (reportMissingImports)
+  /Users/dominikpeter/DevOps/rusket/rusket/viz.py:214:12 - error: Type "ProjectedSpace" is not assignable to return type "ndarray[_AnyShape, dtype[Any]]"
+    "ProjectedSpace" is not assignable to "ndarray[_AnyShape, dtype[Any]]" (reportReturnType)
+28 errors, 0 warnings, 0 informations

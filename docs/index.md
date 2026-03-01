@@ -53,7 +53,7 @@ The core algorithms run entirely in **Rust** (via [PyO3](https://pyo3.rs)) and a
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 receipts = pd.DataFrame({
     "milk":    [1, 1, 0, 1, 0, 1],
@@ -63,7 +63,7 @@ receipts = pd.DataFrame({
     "coffee":  [0, 1, 0, 0, 1, 1],
 }, dtype=bool)
 
-model = AutoMiner(receipts, min_support=0.4)
+model = FPGrowth(receipts, min_support=0.4)
 freq = model.mine(use_colnames=True)
 rules = model.association_rules(metric="confidence", min_threshold=0.6)
 print(rules[["antecedents", "consequents", "confidence", "lift"]]

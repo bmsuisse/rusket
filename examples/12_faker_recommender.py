@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from faker import Faker
 
-from rusket import ALS, AutoMiner, Recommender, evaluate, train_test_split
+from rusket import ALS, FPGrowth, Recommender, evaluate, train_test_split
 
 # ── 1. Generate fake customer purchase data ─────────────────────────────────
 
@@ -151,7 +151,7 @@ for uid in sample_users:
 # ── 6. Market-basket cross-sell ──────────────────────────────────────────────
 
 # Build basket matrix for association rule mining
-basket_ohe = AutoMiner.from_transactions(
+basket_ohe = FPGrowth.from_transactions(
     train_df,
     transaction_col="customer_id",
     item_col="product_sku",

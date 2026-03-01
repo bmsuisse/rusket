@@ -7,7 +7,7 @@ description: "Three complementary recommendation strategies: cart add-ons, perso
 
 | Strategy | Best for | API |
 |---|---|---|
-| **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `AutoMiner` |
+| **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `FPGrowth` |
 | **"For You" (Personalised)** | Homepage, email, loyalty | `ALS` / `BPR` |
 | **Hybrid** | Blend both signals | `Recommender` |
 
@@ -19,7 +19,7 @@ The fastest path to cart cross-selling: mine association rules from checkout his
 
 ```python
 import pandas as pd
-from rusket import AutoMiner  # or FPGrowth, Eclat
+from rusket import FPGrowth  # or FPGrowth, Eclat
 
 # POS checkout log — one row per line item
 checkouts = pd.DataFrame({
@@ -30,7 +30,7 @@ checkouts = pd.DataFrame({
                    "espresso_beans", "grinder", "descaler"],
 })
 
-model = AutoMiner.from_transactions(
+model = FPGrowth.from_transactions(
     checkouts,
     transaction_col="receipt_id",
     item_col="product",
@@ -104,13 +104,13 @@ top_customers, scores = als.recommend_users(item_id="D33", n=100)
 Blend **Collaborative Filtering** (ALS/BPR) with **Association Rules** to handle both the personalised homepage and the active shopping cart in a single engine.
 
 ```python
-from rusket import ALS, AutoMiner, Recommender
+from rusket import ALS, FPGrowth, Recommender
 
 # 1. Personalised model trained on full purchase history
 als  = ALS(factors=64, iterations=15).fit(user_item_csr)
 
 # 2. Association rules mined from basket data
-model = AutoMiner(basket_ohe, min_support=0.01)
+model = FPGrowth(basket_ohe, min_support=0.01)
 freq  = model.mine()
 rules = model.association_rules()
 
