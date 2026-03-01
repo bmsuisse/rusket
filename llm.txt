@@ -2721,9 +2721,18 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📖 Documentation
+
+- add Hyperparameter Tuning section to README
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 🚀 Features
 
 - parallelize Python CV path with ThreadPoolExecutor
+- generic Rust rayon-parallel CV for all factor models
 
 ### 📦 Miscellaneous
 
