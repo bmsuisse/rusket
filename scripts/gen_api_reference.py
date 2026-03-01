@@ -359,6 +359,7 @@ def build_api_reference() -> str:
 
     rec_symbols: list[tuple[str, Any]] = [
         ("ALS", rusket.ALS),
+        ("eALS", rusket.eALS),
         ("BPR", rusket.BPR),
         ("FM", rusket.FM),
         ("Recommender", rusket.Recommender),

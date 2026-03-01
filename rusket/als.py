@@ -361,3 +361,39 @@ class ALS(ImplicitRecommender):
     def _check_fitted(self) -> None:
         if self._user_factors is None:
             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")
+
+
+class eALS(ALS):
+    """Element-wise ALS (eALS) collaborative filtering model.
+
+    A convenience wrapper around :class:`ALS` that sets ``use_eals=True`` by default.
+    eALS updates latent factors element-by-element rather than block-wise, which
+    is often faster and less memory-intensive for implicit datasets while yielding
+    comparable or better recommendation quality.
+
+    Parameters
+    ----------
+    factors : int
+        Number of latent factors.
+    regularization : float
+        L2 regularisation weight.
+    alpha : float
+        Confidence scaling: ``confidence = 1 + alpha * r``.
+    iterations : int
+        Number of ALS outer iterations.
+    seed : int
+        Random seed.
+    eals_iters : int
+        Number of inner iterations for eALS (default 1).
+    **kwargs
+        Additional arguments passed to :class:`ALS`.
+    """
+
+    def __init__(self, *args: Any, use_eals: bool = True, **kwargs: Any) -> None:
+        super().__init__(*args, use_eals=use_eals, **kwargs)
+
+    def __repr__(self) -> str:
+        return (
+            f"eALS(factors={self.factors}, regularization={self.regularization}, "
+            f"alpha={self.alpha}, iterations={self.iterations}, eals_iters={self.eals_iters})"
+        )

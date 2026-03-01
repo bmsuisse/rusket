@@ -1,5 +1,5 @@
 from . import viz
-from .als import ALS
+from .als import ALS, eALS
 from .analytics import customer_saturation, find_substitutes
 from .ann import ApproximateNearestNeighbors
 from .association_rules import association_rules
@@ -20,7 +20,7 @@ from .lcm import LCM
 from .lightgcn import LightGCN
 from .mine import mine
 from .model import BaseModel, load_model
-from .model_selection import leave_one_out_split, train_test_split
+from .model_selection import CrossValidationResult, cross_validate, leave_one_out_split, train_test_split
 from .negfin import NegFIN
 from .nmf import NMF
 from .pacmap import PaCMAP, pacmap, pacmap2, pacmap3
@@ -65,6 +65,7 @@ __all__ = [
     "BaseModel",
     "load_model",
     "ALS",
+    "eALS",
     "BPR",
     "EASE",
     "ItemKNN",
@@ -90,6 +91,8 @@ __all__ = [
     "evaluate",
     "train_test_split",
     "leave_one_out_split",
+    "cross_validate",
+    "CrossValidationResult",
     "PCA",
     "pca",
     "pca2",

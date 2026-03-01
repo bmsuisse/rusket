@@ -1072,6 +1072,35 @@ ALS.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
 
 ---
 
+### `eALS`
+
+Element-wise ALS (eALS) collaborative filtering model.
+
+A convenience wrapper around :class:`ALS` that sets ``use_eals=True`` by default.
+eALS updates latent factors element-by-element rather than block-wise, which
+is often faster and less memory-intensive for implicit datasets while yielding
+comparable or better recommendation quality.
+
+```python
+from rusket.als import eALS
+
+eALS(*args: 'Any', use_eals: 'bool' = True, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors. |
+| regularization | float | L2 regularisation weight. |
+| alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
+| iterations | int | Number of ALS outer iterations. |
+| seed | int | Random seed. |
+| eals_iters | int | Number of inner iterations for eALS (default 1). |
+| **kwargs |  | Additional arguments passed to :class:`ALS`. |
+
+---
+
 ### `BPR`
 
 Bayesian Personalized Ranking (BPR) model for implicit feedback.

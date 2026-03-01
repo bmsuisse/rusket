@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 from rusket import FPGrowth, Eclat, FPGrowth, association_rules
-from rusket import ALS, BPR, PrefixSpan, HUPM, Recommender
+from rusket import ALS, eALS, BPR, PrefixSpan, HUPM, Recommender
 ```
 
 ---
@@ -214,6 +214,30 @@ embeddings = model.item_embeddings
 ```
 
 ---
+
+## 4b. Element-wise ALS (eALS) — Faster Default
+
+`eALS` is a convenience wrapper that sets `use_eals=True` by default. It updates factors element-by-element and is typically **faster and more memory-efficient** than the standard CG solver.
+
+```python
+from rusket import eALS
+
+model = eALS.from_transactions(
+    purchases,
+    transaction_col="customer_id",
+    item_col="sku",
+    rating_col="revenue",
+    factors=64,
+    iterations=15,
+    alpha=40.0,
+).fit()
+
+# Exact same API as ALS — all methods work identically
+skus, scores = model.recommend_items(user_id=1002, n=5)
+```
+
+!!! tip
+    `eALS` and `ALS(use_eals=True)` produce identical results.  Use `eALS` for a cleaner API.
 
 ## 5. Out-of-Core ALS for 1B+ Ratings
 
@@ -452,6 +476,8 @@ item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_laye
 | `iterations` | 15 | 5–15 is typical |
 | `alpha` | 40.0 | Higher → stronger signal |
 | `cg_iters` | 3 | CG solver steps |
+| `use_eals` | False | Use eALS solver (faster, less memory) |
+| `eals_iters` | 1 | Inner iterations for eALS |
 | `anderson_m` | 0 | Anderson acceleration history (5 recommended) |
 
 ---

@@ -21,7 +21,7 @@ import rusket
 )
 def test_to_networkxr_hypothesis(rules):
     pytest.importorskip("networkxr")
-    import networkxr as nxr
+    import networkxr as nxr  # type: ignore[import-not-found]
 
     # Test valid conversion without pandas
     G = rusket.viz.to_networkxr(rules, edge_attr="lift")
@@ -40,7 +40,7 @@ def test_to_networkxr_hypothesis(rules):
 
 def test_to_networkxr_empty():
     pytest.importorskip("networkxr")
-    import networkxr as nxr
+    import networkxr as nxr  # type: ignore[import-not-found]
 
     G = rusket.viz.to_networkxr([])
     assert isinstance(G, nxr.DiGraph)

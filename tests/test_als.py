@@ -442,3 +442,16 @@ def test_als_properties(rows, cols):
     assert model.item_factors.shape == (10, 4)
     assert np.isfinite(model.user_factors).all()
     assert np.isfinite(model.item_factors).all()
+
+
+def test_eals_wrapper() -> None:
+    mat = get_checker_board(20)
+
+    model_als = rusket.ALS(factors=8, iterations=5, seed=42, use_eals=True)
+    model_als.fit(mat)
+
+    model_eals = rusket.eALS(factors=8, iterations=5, seed=42)
+    model_eals.fit(mat)
+
+    np.testing.assert_array_equal(model_als.user_factors, model_eals.user_factors)
+    np.testing.assert_array_equal(model_als.item_factors, model_eals.item_factors)
