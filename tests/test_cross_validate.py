@@ -224,3 +224,62 @@ def test_optuna_optimize_refit():
 
     assert result.best_model is not None
     assert result.best_model.fitted
+
+
+def test_cross_validate_bpr_rust():
+    """BPR should go through the Rust generic CV path."""
+    from rusket import BPR
+
+    df = _make_dataset()
+    result = cross_validate(
+        BPR,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        param_grid={"factors": [8, 16], "iterations": [5]},
+        n_folds=2,
+        k=5,
+        verbose=False,
+    )
+    assert isinstance(result, CrossValidationResult)
+    assert result.best_score >= 0.0
+    assert len(result.results) == 2
+
+
+def test_cross_validate_svd_rust():
+    """SVD should go through the Rust generic CV path."""
+    from rusket import SVD
+
+    df = _make_dataset()
+    result = cross_validate(
+        SVD,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        rating_col="rating",
+        param_grid={"factors": [8], "iterations": [5]},
+        n_folds=2,
+        k=5,
+        verbose=False,
+    )
+    assert isinstance(result, CrossValidationResult)
+    assert result.best_score >= 0.0
+
+
+def test_cross_validate_lightgcn_rust():
+    """LightGCN should go through the Rust generic CV path."""
+    from rusket import LightGCN
+
+    df = _make_dataset()
+    result = cross_validate(
+        LightGCN,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        param_grid={"factors": [8], "iterations": [3], "k_layers": [2]},
+        n_folds=2,
+        k=5,
+        verbose=False,
+    )
+    assert isinstance(result, CrossValidationResult)
+    assert result.best_score >= 0.0

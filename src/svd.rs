@@ -182,7 +182,7 @@ unsafe fn update_factors(
     }
 }
 
-fn svd_train(
+pub(crate) fn svd_train(
     indptr: &[i64],
     indices: &[i32],
     data: &[f32],
@@ -581,7 +581,7 @@ pub fn svd_recommend_all<'py>(
 // r̂_ui = μ + b_u + b_i + q_i · (p_u + |N(u)|^{-0.5} Σ_{j∈N(u)} y_j)
 // ══════════════════════════════════════════════════════════════════════════
 
-fn svdpp_train(
+pub(crate) fn svdpp_train(
     indptr: &[i64],
     indices: &[i32],
     data: &[f32],

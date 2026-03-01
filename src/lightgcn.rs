@@ -179,7 +179,7 @@ fn propagate(
 // ---- BPR loss + Adam update ------------------------------------------------
 
 #[allow(clippy::too_many_arguments)]
-fn lightgcn_train(
+pub(crate) fn lightgcn_train(
     u_indptr: &[i64],
     u_indices: &[i32],
     i_indptr: &[i64],

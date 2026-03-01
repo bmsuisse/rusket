@@ -244,11 +244,12 @@ def cross_validate(
         values = list(param_grid.values())
         param_combinations = [dict(zip(keys, combo, strict=True)) for combo in itertools.product(*values)]
 
-    # --- Try Rust fast-path for ALS/eALS ---
-    from .als import ALS
+    # --- Try Rust fast-path for factor-based models ---
+    rust_kind = _get_rust_model_kind(model_class)
 
-    if issubclass(model_class, ALS):
-        result = _cross_validate_rust(
+    if rust_kind == "als":
+        # ALS/eALS has a specialised Rust path
+        return _cross_validate_rust(
             model_class=model_class,
             df=df,
             user_col=user_col,
@@ -263,9 +264,27 @@ def cross_validate(
             verbose=verbose,
             seed=seed,
         )
-        return result
 
-    # --- Python fallback for non-ALS models ---
+    if rust_kind is not None:
+        # BPR, SVD, LightGCN — generic Rust path
+        return _cross_validate_rust_generic(
+            kind=rust_kind,
+            model_class=model_class,
+            df=df,
+            user_col=user_col,
+            item_col=item_col,
+            rating_col=rating_col,
+            param_combinations=param_combinations,
+            n_folds=n_folds,
+            k=k,
+            metric=metric,
+            metrics=metrics,
+            refit_best=refit_best,
+            verbose=verbose,
+            seed=seed,
+        )
+
+    # --- Python ThreadPoolExecutor fallback for non-factor models ---
     return _cross_validate_python(
         model_class=model_class,
         df=df,
@@ -280,6 +299,199 @@ def cross_validate(
         refit_best=refit_best,
         verbose=verbose,
         seed=seed,
+    )
+
+
+def _get_rust_model_kind(model_class: type) -> str | None:
+    """Return the Rust model kind string if the model supports Rust CV, else None."""
+    from .als import ALS
+    from .bpr import BPR
+    from .lightgcn import LightGCN
+    from .svd import SVD
+
+    if issubclass(model_class, ALS):
+        return "als"
+    if issubclass(model_class, BPR):
+        return "bpr"
+    if issubclass(model_class, SVD):
+        return "svd"
+    if issubclass(model_class, LightGCN):
+        return "lightgcn"
+    return None
+
+
+def _cross_validate_rust_generic(
+    *,
+    kind: str,
+    model_class: type,
+    df: pd.DataFrame,
+    user_col: str,
+    item_col: str,
+    rating_col: str | None,
+    param_combinations: list[dict[str, Any]],
+    n_folds: int,
+    k: int,
+    metric: str,
+    metrics: list[str],
+    refit_best: bool,
+    verbose: bool,
+    seed: int,
+) -> CrossValidationResult:
+    """Rust-accelerated cross-validation for BPR, SVD, LightGCN."""
+    import numpy as np
+    import pandas as _pd
+
+    from . import _rusket
+
+    # --- Factorise user/item labels to 0-based codes ---
+    u_data = df[user_col]
+    i_data = df[item_col]
+    user_codes, _user_uniques = _pd.factorize(u_data, sort=False)
+    item_codes, _item_uniques = _pd.factorize(i_data, sort=True)
+    n_users = int(_user_uniques.__len__())
+    n_items = int(_item_uniques.__len__())
+
+    users = user_codes.astype(np.int32).tolist()
+    items = item_codes.astype(np.int32).tolist()
+    if rating_col is not None:
+        values = np.asarray(df[rating_col], dtype=np.float32).tolist()
+    else:
+        values = [1.0] * len(users)
+
+    # --- Defaults per model kind ---
+    _defaults: dict[str, dict[str, Any]] = {
+        "bpr": {
+            "factors": 64,
+            "regularization": 0.01,
+            "iterations": 150,
+            "learning_rate": 0.05,
+            "alpha": 1.0,
+            "k_layers": 3,
+        },
+        "svd": {
+            "factors": 64,
+            "regularization": 0.01,
+            "iterations": 50,
+            "learning_rate": 0.005,
+            "alpha": 1.0,
+            "k_layers": 3,
+        },
+        "lightgcn": {
+            "factors": 64,
+            "regularization": 1e-4,
+            "iterations": 100,
+            "learning_rate": 0.001,
+            "alpha": 1.0,
+            "k_layers": 3,
+        },
+    }
+    d = _defaults.get(kind, _defaults["bpr"])
+
+    # --- Build flat param arrays ---
+    factors_list: list[int] = []
+    regularization_list: list[float] = []
+    iterations_list: list[int] = []
+    seed_list: list[int] = []
+    alpha_list: list[float] = []
+    use_eals_list: list[bool] = []
+    eals_iters_list: list[int] = []
+    cg_iters_list: list[int] = []
+    use_cholesky_list: list[bool] = []
+    learning_rate_list: list[float] = []
+    k_layers_list: list[int] = []
+
+    for params in param_combinations:
+        factors_list.append(int(params.get("factors", d["factors"])))
+        regularization_list.append(float(params.get("regularization", d["regularization"])))
+        iterations_list.append(int(params.get("iterations", d["iterations"])))
+        seed_list.append(int(params.get("seed", seed)))
+        alpha_list.append(float(params.get("alpha", d["alpha"])))
+        use_eals_list.append(False)
+        eals_iters_list.append(0)
+        cg_iters_list.append(0)
+        use_cholesky_list.append(False)
+        learning_rate_list.append(float(params.get("learning_rate", d["learning_rate"])))
+        k_layers_list.append(int(params.get("k_layers", d["k_layers"])))
+
+    # --- Call Rust cross_validate_generic ---
+    (
+        best_idx,
+        best_mean,
+        per_config_means,
+        per_config_stds,
+        per_config_fold_scores,
+    ) = _rusket.cross_validate_generic(
+        kind,
+        users,
+        items,
+        values,
+        n_users,
+        n_items,
+        factors_list,
+        regularization_list,
+        iterations_list,
+        seed_list,
+        alpha_list,
+        use_eals_list,
+        eals_iters_list,
+        cg_iters_list,
+        use_cholesky_list,
+        learning_rate_list,
+        k_layers_list,
+        n_folds,
+        k,
+        metric,
+        seed,
+        verbose,
+    )
+
+    # --- Reconstruct CrossValidationResult ---
+    metric_names = ["precision", "recall", "ndcg", "hr"]
+    all_results: list[dict[str, Any]] = []
+
+    for ci, params in enumerate(param_combinations):
+        means = per_config_means[ci]
+        stds = per_config_stds[ci]
+        fold_raw = per_config_fold_scores[ci]
+
+        fold_scores: list[dict[str, float]] = []
+        for fold_vals in fold_raw:
+            fold_dict: dict[str, float] = {}
+            for mi, mn in enumerate(metric_names):
+                if mn in metrics:
+                    fold_dict[mn] = fold_vals[mi]
+            fold_scores.append(fold_dict)
+
+        result_entry: dict[str, Any] = {"params": params, "fold_scores": fold_scores}
+        for mi, mn in enumerate(metric_names):
+            if mn in metrics:
+                result_entry[f"mean_{mn}"] = float(means[mi])
+                result_entry[f"std_{mn}"] = float(stds[mi])
+        all_results.append(result_entry)
+
+    best_params = param_combinations[best_idx]
+
+    if verbose:
+        print(f"\n  Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
+
+    # Optionally refit on the full dataset
+    best_model: Any = None
+    if refit_best:
+        from_kw: dict[str, Any] = {
+            "user_col": user_col,
+            "item_col": item_col,
+            "seed": seed,
+            **best_params,
+        }
+        if rating_col is not None:
+            from_kw["rating_col"] = rating_col
+        best_model = model_class.from_transactions(df, **from_kw).fit()
+
+    return CrossValidationResult(
+        best_params=best_params,
+        best_score=float(best_mean),
+        results=all_results,
+        best_model=best_model,
     )
 
 

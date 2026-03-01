@@ -88,5 +88,6 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(nn_descent::nn_descent_build, m)?)?;
     m.add_function(wrap_pyfunction!(pacmap::pacmap_fit, m)?)?;
     m.add_function(wrap_pyfunction!(cross_validate::cross_validate_als, m)?)?;
+    m.add_function(wrap_pyfunction!(cross_validate::cross_validate_generic, m)?)?;
     Ok(())
 }

@@ -404,3 +404,337 @@ pub fn cross_validate_als(
 
     Ok((best_idx, best_mean, per_config_means, per_config_stds, per_config_fold_scores))
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// Generic cross-validation for all factor-based models
+// ══════════════════════════════════════════════════════════════════════════
+
+/// Model-specific training configuration.
+struct GenericConfig {
+    // Common
+    factors: usize,
+    regularization: f32,
+    iterations: usize,
+    seed: u64,
+    // ALS-specific
+    alpha: f32,
+    use_eals: bool,
+    eals_iters: usize,
+    cg_iters: usize,
+    use_cholesky: bool,
+    // SGD-based (BPR, SVD, SVD++, LightGCN)
+    learning_rate: f32,
+    // LightGCN
+    k_layers: usize,
+}
+
+/// Dispatch training to the right model and return (user_factors, item_factors).
+/// For SVD/SVD++, we discard biases since ranking metrics only need ordering.
+fn train_model(
+    kind: &str,
+    config: &GenericConfig,
+    indptr: &[i64],
+    indices: &[i32],
+    data: &[f32],
+    n_users: usize,
+    n_items: usize,
+) -> (Vec<f32>, Vec<f32>) {
+    match kind {
+        "als" => {
+            let (ti, tx, td) = csr_transpose(indptr, indices, data, n_users, n_items);
+            als_train(
+                indptr, indices, data, &ti, &tx, &td,
+                n_users, n_items, config.factors, config.regularization,
+                config.alpha, config.iterations, config.seed, false,
+                config.cg_iters, config.use_cholesky, 0,
+                config.use_eals, config.eals_iters,
+            )
+        }
+        "bpr" => {
+            crate::bpr::bpr_train(
+                indptr, indices, n_users, n_items,
+                config.factors, config.learning_rate, config.regularization,
+                config.iterations, config.seed, false,
+            )
+        }
+        "svd" => {
+            let (uf, itf, _ub, _ib, _gm) = crate::svd::svd_train(
+                indptr, indices, data, n_users, n_items,
+                config.factors, config.learning_rate, config.regularization,
+                config.iterations, config.seed, false,
+            );
+            (uf, itf)
+        }
+        "svdpp" => {
+            let (uf, itf, _y, _ub, _ib, _gm) = crate::svd::svdpp_train(
+                indptr, indices, data, n_users, n_items,
+                config.factors, config.learning_rate, config.regularization,
+                config.iterations, config.seed, false,
+            );
+            (uf, itf)
+        }
+        "lightgcn" => {
+            let (ti, tx, _td) = csr_transpose(indptr, indices, data, n_users, n_items);
+            // LightGCN needs item→user CSR (transpose of user→item)
+            // Build item indptr from transpose
+            crate::lightgcn::lightgcn_train(
+                indptr, indices, &ti, &tx,
+                n_users, n_items,
+                config.factors, config.k_layers, config.learning_rate,
+                config.regularization, config.iterations, config.seed, false,
+            )
+        }
+        _ => panic!("Unknown model kind: {}", kind),
+    }
+}
+
+/// Run cross-validation for one config using the generic train_model dispatch.
+fn cv_one_config_generic(
+    kind: &str,
+    config: &GenericConfig,
+    folds: &[(Vec<i32>, Vec<i32>, Vec<f32>, Vec<i32>, Vec<i32>, Vec<f32>)],
+    n_users: usize,
+    n_items: usize,
+    k: usize,
+    verbose: bool,
+    config_idx: usize,
+    n_configs: usize,
+) -> Vec<[f32; 4]> {
+    let n_folds = folds.len();
+    let mut fold_metrics = Vec::with_capacity(n_folds);
+
+    for (fi, fold) in folds.iter().enumerate() {
+        let (tr_users, tr_items, tr_values, te_users, te_items, _te_values) = fold;
+
+        let (indptr, indices, data) = build_csr(tr_users, tr_items, tr_values, n_users, n_items);
+
+        let (uf, itf) = train_model(kind, config, &indptr, &indices, &data, n_users, n_items);
+
+        let metrics = evaluate_model(
+            &uf, &itf, n_items, config.factors,
+            te_users, te_items, &indptr, &indices, k,
+        );
+
+        if verbose {
+            println!(
+                "  [{}/{}] kind={} factors={} reg={} iter={} lr={}  fold {}/{}  p@{}={:.4}  r@{}={:.4}  n@{}={:.4}  h@{}={:.4}",
+                config_idx + 1, n_configs, kind,
+                config.factors, config.regularization, config.iterations, config.learning_rate,
+                fi + 1, n_folds,
+                k, metrics[0], k, metrics[1], k, metrics[2], k, metrics[3],
+            );
+        }
+
+        fold_metrics.push(metrics);
+    }
+
+    fold_metrics
+}
+
+#[pyfunction]
+#[pyo3(signature = (
+    kind,
+    users, items, values,
+    n_users, n_items,
+    factors_list, regularization_list, iterations_list, seed_list,
+    alpha_list, use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
+    learning_rate_list, k_layers_list,
+    n_folds, k, metric, fold_seed, verbose
+))]
+#[allow(clippy::too_many_arguments)]
+pub fn cross_validate_generic(
+    py: Python<'_>,
+    kind: String,
+    users: Vec<i32>,
+    items: Vec<i32>,
+    values: Vec<f32>,
+    n_users: usize,
+    n_items: usize,
+    // Common params — one entry per config
+    factors_list: Vec<usize>,
+    regularization_list: Vec<f32>,
+    iterations_list: Vec<usize>,
+    seed_list: Vec<u64>,
+    // ALS-specific
+    alpha_list: Vec<f32>,
+    use_eals_list: Vec<bool>,
+    eals_iters_list: Vec<usize>,
+    cg_iters_list: Vec<usize>,
+    use_cholesky_list: Vec<bool>,
+    // SGD-based (BPR, SVD, SVD++, LightGCN)
+    learning_rate_list: Vec<f32>,
+    // LightGCN
+    k_layers_list: Vec<usize>,
+    // CV settings
+    n_folds: usize,
+    k: usize,
+    metric: String,
+    fold_seed: u64,
+    verbose: bool,
+) -> PyResult<(
+    usize,                // best_config_idx
+    f32,                  // best_mean_score
+    Vec<Vec<f32>>,        // per_config_means: [n_configs][4]
+    Vec<Vec<f32>>,        // per_config_stds:  [n_configs][4]
+    Vec<Vec<Vec<f32>>>,   // per_config_fold_scores: [n_configs][n_folds][4]
+)> {
+    let n_configs = factors_list.len();
+    let n = users.len();
+
+    let metric_idx = match metric.as_str() {
+        "precision" => 0,
+        "recall" => 1,
+        "ndcg" => 2,
+        "hr" => 3,
+        _ => {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "Unknown metric: {}. Must be one of: precision, recall, ndcg, hr.",
+                metric
+            )))
+        }
+    };
+
+    // Validate model kind
+    match kind.as_str() {
+        "als" | "bpr" | "svd" | "svdpp" | "lightgcn" => {}
+        _ => {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "Unknown model kind: {}. Must be one of: als, bpr, svd, svdpp, lightgcn.",
+                kind
+            )))
+        }
+    }
+
+    // ── Create fold splits ─────────────────────────────────────────
+    let mut indices_arr: Vec<usize> = (0..n).collect();
+    let mut rng_state = fold_seed;
+    for i in (1..n).rev() {
+        rng_state ^= rng_state << 13;
+        rng_state ^= rng_state >> 7;
+        rng_state ^= rng_state << 17;
+        let j = (rng_state as usize) % (i + 1);
+        indices_arr.swap(i, j);
+    }
+
+    let fold_size = n / n_folds;
+    let mut fold_indices: Vec<Vec<usize>> = Vec::with_capacity(n_folds);
+    for fi in 0..n_folds {
+        let start = fi * fold_size;
+        let end = if fi == n_folds - 1 { n } else { (fi + 1) * fold_size };
+        fold_indices.push(indices_arr[start..end].to_vec());
+    }
+
+    let folds: Vec<(Vec<i32>, Vec<i32>, Vec<f32>, Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_folds)
+        .map(|fi| {
+            let test_idx = &fold_indices[fi];
+            let train_count: usize = fold_indices.iter().enumerate()
+                .filter(|(j, _)| *j != fi)
+                .map(|(_, v)| v.len())
+                .sum();
+
+            let mut tr_u = Vec::with_capacity(train_count);
+            let mut tr_i = Vec::with_capacity(train_count);
+            let mut tr_v = Vec::with_capacity(train_count);
+            let mut te_u = Vec::with_capacity(test_idx.len());
+            let mut te_i = Vec::with_capacity(test_idx.len());
+            let mut te_v = Vec::with_capacity(test_idx.len());
+
+            for (j, fold_idx) in fold_indices.iter().enumerate() {
+                if j == fi {
+                    for &idx in fold_idx {
+                        te_u.push(users[idx]);
+                        te_i.push(items[idx]);
+                        te_v.push(values[idx]);
+                    }
+                } else {
+                    for &idx in fold_idx {
+                        tr_u.push(users[idx]);
+                        tr_i.push(items[idx]);
+                        tr_v.push(values[idx]);
+                    }
+                }
+            }
+            (tr_u, tr_i, tr_v, te_u, te_i, te_v)
+        })
+        .collect();
+
+    // ── Build configs ──────────────────────────────────────────────
+    let configs: Vec<GenericConfig> = (0..n_configs)
+        .map(|i| GenericConfig {
+            factors: factors_list[i],
+            regularization: regularization_list[i],
+            iterations: iterations_list[i],
+            seed: seed_list[i],
+            alpha: alpha_list[i],
+            use_eals: use_eals_list[i],
+            eals_iters: eals_iters_list[i],
+            cg_iters: cg_iters_list[i],
+            use_cholesky: use_cholesky_list[i],
+            learning_rate: learning_rate_list[i],
+            k_layers: k_layers_list[i],
+        })
+        .collect();
+
+    // ── Run CV in parallel across configs ──────────────────────────
+    let results: Vec<Vec<[f32; 4]>> = py.detach(|| {
+        configs
+            .par_iter()
+            .enumerate()
+            .map(|(ci, config)| {
+                cv_one_config_generic(&kind, config, &folds, n_users, n_items, k, verbose, ci, n_configs)
+            })
+            .collect()
+    });
+
+    // ── Aggregate results ──────────────────────────────────────────
+    let mut per_config_means: Vec<Vec<f32>> = Vec::with_capacity(n_configs);
+    let mut per_config_stds: Vec<Vec<f32>> = Vec::with_capacity(n_configs);
+    let mut per_config_fold_scores: Vec<Vec<Vec<f32>>> = Vec::with_capacity(n_configs);
+    let mut best_idx = 0usize;
+    let mut best_mean = -1.0f32;
+
+    for (ci, fold_metrics) in results.iter().enumerate() {
+        let nf = fold_metrics.len() as f32;
+        let mut means = [0.0f32; 4];
+        for fm in fold_metrics {
+            for m in 0..4 {
+                means[m] += fm[m];
+            }
+        }
+        for m in 0..4 {
+            means[m] /= nf;
+        }
+
+        let mut stds = [0.0f32; 4];
+        for fm in fold_metrics {
+            for m in 0..4 {
+                let diff = fm[m] - means[m];
+                stds[m] += diff * diff;
+            }
+        }
+        for m in 0..4 {
+            stds[m] = (stds[m] / nf).sqrt();
+        }
+
+        if means[metric_idx] > best_mean {
+            best_mean = means[metric_idx];
+            best_idx = ci;
+        }
+
+        per_config_means.push(means.to_vec());
+        per_config_stds.push(stds.to_vec());
+
+        let fold_vecs: Vec<Vec<f32>> = fold_metrics.iter().map(|fm: &[f32; 4]| fm.to_vec()).collect();
+        per_config_fold_scores.push(fold_vecs);
+    }
+
+    if verbose {
+        let metric_names = ["precision", "recall", "ndcg", "hr"];
+        println!(
+            "\n  Best: {}@{}={:.4}  config #{}",
+            metric_names[metric_idx], k, best_mean, best_idx + 1
+        );
+    }
+
+    Ok((best_idx, best_mean, per_config_means, per_config_stds, per_config_fold_scores))
+}

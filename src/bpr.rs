@@ -152,7 +152,7 @@ impl<'a> CSRLookup<'a> {
     }
 }
 
-fn bpr_train(
+pub(crate) fn bpr_train(
     indptr: &[i64],
     indices: &[i32],
     n_users: usize,
