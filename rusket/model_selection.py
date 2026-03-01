@@ -972,7 +972,7 @@ def optuna_optimize(
 
         if verbose:
             params_str = " ".join(f"{k_}={v}" for k_, v in params.items())
-            print(f"  Trial {trial.number + 1}: {metric}@{k}={result.best_score:.4f}  {params_str}")
+            print(f"  Trial {trial.number}: {metric}@{k}={result.best_score:.4f}  {params_str}")
 
         return result.best_score
 
@@ -987,7 +987,11 @@ def optuna_optimize(
                 "MLflow tracking requires 'mlflow' and 'optuna-integration'. "
                 "Install them with: pip install mlflow optuna-integration"
             ) from e
-        mlflow_cb = MLflowCallback(metric_name=metric)
+        mlflow_cb = MLflowCallback(
+            metric_name=metric,
+            create_experiment=False,
+            mlflow_kwargs={"nested": True},
+        )
         all_callbacks.insert(0, mlflow_cb)
 
     # Create or reuse study
