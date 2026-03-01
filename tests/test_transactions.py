@@ -137,8 +137,6 @@ class TestFromPandas:
         assert result.shape == (3, 3)
 
 
-
-
 # ---------------------------------------------------------------------------
 # Polars → Polars
 # ---------------------------------------------------------------------------
@@ -210,8 +208,6 @@ class TestFromPolars:
         assert result.shape == (3, 3)
 
 
-
-
 # ---------------------------------------------------------------------------
 # Spark → Spark
 # ---------------------------------------------------------------------------
@@ -249,8 +245,6 @@ class TestFromSpark:
         df = spark.createDataFrame([(1, "x"), (1, "y"), (2, "x"), (3, "z")], ["txn", "item"])
         result = from_transactions(df)
         assert set(result.columns) == {"x", "y", "z"}
-
-
 
     def test_bool_dtype(self, spark) -> None:  # type: ignore[no-untyped-def]
         from pyspark.sql import types as T

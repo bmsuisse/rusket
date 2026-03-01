@@ -1,4 +1,4 @@
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
+use numpy::{PyArray1, PyArray2, PyReadonlyArray2, PyArrayMethods, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -363,10 +363,10 @@ impl AnnIndex {
             });
 
         let idx_arr = PyArray1::from_vec(py, all_indices)
-            .reshape((n_queries, n_neighbors))
+            .reshape([n_queries, n_neighbors])
             .unwrap();
         let dist_arr = PyArray1::from_vec(py, all_distances)
-            .reshape((n_queries, n_neighbors))
+            .reshape([n_queries, n_neighbors])
             .unwrap();
         Ok((
             idx_arr.into_pyobject(py).unwrap().unbind(),

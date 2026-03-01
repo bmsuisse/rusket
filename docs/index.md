@@ -93,18 +93,19 @@ purchases = pd.DataFrame({
 })
 
 # Fit an Implicit ALS model in milliseconds
-model = ALS(factors=64, iterations=15, alpha=40.0)
-model.fit(purchases, user_col="customer_id", item_col="sku", rating_col="revenue")
+model = ALS.from_transactions(
+    purchases, transaction_col="customer_id", item_col="sku", rating_col="revenue",
+    factors=64, iterations=15, alpha=40.0
+).fit()
 
-# Get top-3 recommendations for a customer
-items, scores = model.recommend_items(user_id=1001, n=3, exclude_seen=True)
+# Get top-3 recommendations for a customer (using their internal index)
+items, scores = model.recommend_items(user_id=0, n=3, exclude_seen=True)
 print(items)
 ```
 
 <!-- output -->
-```text
-['D33']
-```
+
+[3]
 <!-- /output -->
 
 ## Built for the Modern Data Stack

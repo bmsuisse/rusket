@@ -189,8 +189,6 @@ class TestFakerMining:
         assert high_sets.issubset(low_sets)
 
 
-
-
 # ---------------------------------------------------------------------------
 # Association rules with Faker data
 # ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ from .model import BaseModel, load_model
 from .model_selection import leave_one_out_split, train_test_split
 from .negfin import NegFIN
 from .nmf import NMF
+from .pacmap import PaCMAP, pacmap, pacmap2, pacmap3
 from .pca import PCA, pca, pca2, pca3
 from .pipeline import Pipeline
 from .popularity import PopularityRecommender
@@ -101,4 +102,8 @@ __all__ = [
     "to_networkx",
     "to_networkxr",
     "ApproximateNearestNeighbors",
+    "PaCMAP",
+    "pacmap",
+    "pacmap2",
+    "pacmap3",
 ]

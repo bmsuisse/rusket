@@ -310,7 +310,7 @@ fn sasrec_train(
     verbose: bool,
 ) -> SASRecParams {
     let mut params = SASRecParams::new(n_items, factors, n_layers, max_seq, seed);
-    let n_users = sequences.len();
+    let _n_users = sequences.len();
 
     // Simplified SGD: for each user, take all consecutive (seq, next_item) pairs
     // Use stochastic gradient descent on binary cross-entropy loss (positive vs random negative)

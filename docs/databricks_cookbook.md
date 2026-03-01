@@ -60,13 +60,13 @@ user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_laye
 item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
 ```
 
-We can map our embeddings down to 3D and visualize them using Principal Component Analysis (PCA). `rusket` features a highly optimized Rust-backed `PCA` implementation.
+We can map our embeddings down to 2D and visualize them using PaCMAP, a state-of-the-art non-linear projection algorithm that preserves both local and global structure better than PCA or t-SNE. `rusket` features a highly optimized Rust-backed `PaCMAP` implementation.
 
 You can use the fluent API to instantly project and visualize the latent space interactively:
 
 ```python
-# Fluent API for instant 3D interactive visualization
-fig = als.pca(n_components=3).plot(title="Latent Item Space")
+# Fluent API for instant 2D interactive visualization
+fig = als.pacmap2().plot(title="Latent Item Space")
 fig.show()
 ```
 
