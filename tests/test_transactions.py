@@ -136,19 +136,7 @@ class TestFromPandas:
         assert set(result.columns) == {"a", "b", "c"}
         assert result.shape == (3, 3)
 
-    def test_mine_kwargs_and_return_type(self) -> None:
-        from rusket import AutoMiner
 
-        df = pd.DataFrame({"txn": [1, 1, 1, 2, 2], "item": ["a", "b", "c", "a", "b"]})
-        model = AutoMiner.from_transactions(df, min_support=0.5)
-        # Should return pandas by default for pandas input
-        freq = model.mine(use_colnames=True)
-        assert isinstance(freq, pd.DataFrame)
-        assert isinstance(freq.iloc[0]["itemsets"][0], str)
-
-        rules = model.association_rules()  # type: ignore
-        assert isinstance(rules, pd.DataFrame)
-        assert len(rules) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -221,21 +209,7 @@ class TestFromPolars:
         assert set(result.columns) == {"a", "b", "c"}
         assert result.shape == (3, 3)
 
-    def test_mine_kwargs_and_return_type(self) -> None:
-        pl = pytest.importorskip("polars")
-        from rusket import AutoMiner
 
-        df = pl.DataFrame({"txn": [1, 1, 1, 2, 2], "item": ["a", "b", "c", "a", "b"]})
-        model = AutoMiner.from_transactions(df, min_support=0.5)
-
-        freq = model.mine(use_colnames=True)
-        assert isinstance(freq, pl.DataFrame)
-        # Check that it actually used column names (strings)
-        assert isinstance(freq["itemsets"][0][0], str)
-
-        rules = model.association_rules()  # type: ignore
-        assert isinstance(rules, pl.DataFrame)
-        assert len(rules) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -276,27 +250,7 @@ class TestFromSpark:
         result = from_transactions(df)
         assert set(result.columns) == {"x", "y", "z"}
 
-    def test_mine_kwargs_and_return_type(self, spark) -> None:  # type: ignore[no-untyped-def]
-        from rusket import AutoMiner
 
-        df = spark.createDataFrame(
-            [(1, "a"), (1, "b"), (1, "c"), (2, "a"), (2, "b")],
-            ["txn", "item"],
-        )
-        model = AutoMiner.from_transactions(df, min_support=0.5)
-
-        freq = model.mine(use_colnames=True)
-        assert type(freq).__name__ == "DataFrame"
-        assert getattr(type(freq), "__module__", "").startswith("pyspark")
-
-        # The itemsets column should be array<string>
-        schema = dict(freq.dtypes)
-        if "itemsets" in schema:
-            assert "string" in schema["itemsets"].lower()
-
-        rules = model.association_rules()  # type: ignore
-        assert type(rules).__name__ == "DataFrame"
-        assert getattr(type(rules), "__module__", "").startswith("pyspark")
 
     def test_bool_dtype(self, spark) -> None:  # type: ignore[no-untyped-def]
         from pyspark.sql import types as T

@@ -137,40 +137,7 @@ impl FPMiner {
         Ok((n_txn, s, o, i))
     }
 
-    /// Auto mode: pick algorithm based on post-filter item density.
-    /// Borgelt (2003): dense data → FP-Growth, sparse → Eclat.
-    /// Heuristic: if avg_items_per_txn / n_frequent_items > 0.15 → fpgrowth, else eclat.
-    pub fn mine_auto(
-        &self,
-        min_support: f64,
-        max_len: Option<usize>,
-    ) -> PyResult<(usize, Vec<u64>, Vec<u32>, Vec<u32>, String)> {
-        let n_txn_est = self.txns.len();
-        if n_txn_est == 0 {
-            return Ok((0, vec![], vec![], vec![], "eclat".into()));
-        }
-        let min_count = ((min_support * n_txn_est as f64).ceil() as u64).max(1);
-        let (indptr, indices, n_txn, inv_remap) = self.build_csr_filtered(min_count)?;
-        if n_txn == 0 {
-            return Ok((0, vec![], vec![], vec![], "eclat".into()));
-        }
-        let n_frequent = inv_remap.len();
-        let total_items_in_csr = *indptr.last().unwrap_or(&0) as f64;
-        let density = if n_frequent > 0 && n_txn > 0 {
-            (total_items_in_csr / n_txn as f64) / n_frequent as f64
-        } else {
-            0.0
-        };
-        let use_eclat = density < 0.15;
-        let method_name = if use_eclat { "eclat" } else { "fpgrowth" };
-        let (s, o, i) = if use_eclat {
-            _eclat_mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
-        } else {
-            _mine_csr(&indptr, &indices, n_frequent, min_count, max_len)?
-        };
-        let i = Self::unmap_items(i, &inv_remap);
-        Ok((n_txn, s, o, i, method_name.into()))
-    }
+
 
     pub fn reset(&mut self) {
         self.txns.clear();

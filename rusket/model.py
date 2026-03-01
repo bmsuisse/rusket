@@ -686,11 +686,12 @@ class Miner(BaseModel):
 
             is_polars = isinstance(df, _pl.DataFrame)
         except ImportError:
+            _pl = None  # type: ignore
             is_polars = False
 
-        if is_polars:
+        if is_polars and _pl is not None:
             frames: list[Any] = []
-            for g in df[group_col].unique().to_list():
+            for g in list(df[group_col].unique()):
                 sub_pd = df.filter(_pl.col(group_col) == g).drop(group_col).to_pandas().astype(bool)
                 res_pd = _mine(
                     sub_pd, min_support=min_support, max_len=max_len, method=method, use_colnames=use_colnames
@@ -1085,7 +1086,7 @@ class ImplicitRecommender(BaseModel):
             norms = np.linalg.norm(factors, axis=1, keepdims=True)
             factors = factors / np.clip(norms, a_min=1e-10, a_max=None)
 
-        coords = pca(factors, n_components=n_components)
+        coords: np.ndarray = pca(factors, n_components=n_components)
         return ProjectedSpace(coords, self._item_labels)
 
 

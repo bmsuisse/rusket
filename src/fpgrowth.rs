@@ -364,22 +364,6 @@ pub(crate) fn process_item_counts(
     ))
 }
 
-fn mine_itemsets(
-    itemsets: Vec<Vec<u32>>,
-    frequent_len: usize,
-    original_items: Vec<u32>,
-    min_count: u64,
-    max_len: Option<usize>,
-) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
-    let mut tree = FPTree::new(frequent_len, original_items);
-    for basket in &itemsets {
-        tree.insert_itemset(basket, 1);
-    }
-    let mut results = FlatResults::new();
-    fpg_step(&tree, min_count, max_len, &mut results);
-    Ok(results.into_tuple())
-}
-
 pub(crate) fn flatten_results(results: Vec<(u64, Vec<u32>)>) -> (Vec<u64>, Vec<u32>, Vec<u32>) {
     let mut supports = Vec::with_capacity(results.len());
     let mut offsets = Vec::with_capacity(results.len() + 1);
@@ -406,16 +390,14 @@ fn _mine_dense(
     max_len: Option<usize>,
 ) -> PyResult<(Vec<u64>, Vec<u32>, Vec<u32>)> {
     let item_count: Vec<u64> = flat
-        .par_chunks(n_cols)
+        .par_chunks(n_cols * 8192)
         .fold(
             || vec![0u64; n_cols],
-            |mut acc, row| {
-                for (col, &val) in row.iter().enumerate() {
-                    if val != 0 {
-                        // SAFETY: `col` is bounded by `row.len() == n_cols == acc.len()`
-                        // guaranteed by `par_chunks(n_cols)` producing exact-length slices.
+            |mut acc, chunk| {
+                for row in chunk.chunks_exact(n_cols) {
+                    for (col, &val) in row.iter().enumerate() {
                         unsafe {
-                            *acc.get_unchecked_mut(col) += 1;
+                            *acc.get_unchecked_mut(col) += val as u64;
                         }
                     }
                 }
@@ -438,28 +420,56 @@ fn _mine_dense(
             None => return Ok((vec![], vec![], vec![])),
         };
 
-    let itemsets: Vec<Vec<u32>> = flat
-        .par_chunks(n_cols)
-        .filter_map(|row| {
-            let items: Vec<u32> = frequent_cols
-                .iter()
-                .enumerate()
-                .filter(|&(_, &col)| {
-                    // SAFETY: `col` is a pre-filtered index known to be < n_cols (the row length),
-                    // which equals the chunk size established by `par_chunks(n_cols)`.
-                    unsafe { *row.get_unchecked(col) != 0 }
-                })
-                .map(|(local_id, _)| local_id as u32)
-                .collect();
-            if items.is_empty() {
-                return None;
-            }
-            Some(items)
-        })
-        .collect();
+    let (flat_items, flat_offsets) = flat
+        .par_chunks(n_cols * 8192)
+        .fold(
+            || (Vec::with_capacity(8192 * 10), vec![0usize]),
+            |mut acc, chunk| {
+                let (ref mut items, ref mut offsets) = acc;
+                for row in chunk.chunks_exact(n_cols) {
+                    let start_len = items.len();
+                    for (local_id, &col) in frequent_cols.iter().enumerate() {
+                        unsafe {
+                            if *row.get_unchecked(col) != 0 {
+                                items.push(local_id as u32);
+                            }
+                        }
+                    }
+                    if items.len() > start_len {
+                        offsets.push(items.len());
+                    }
+                }
+                acc
+            },
+        )
+        .reduce(
+            || (Vec::new(), vec![0usize]),
+            |mut a, b| {
+                if a.1.len() == 1 {
+                    return b;
+                }
+                if b.1.len() == 1 {
+                    return a;
+                }
+                let base_offset = a.0.len();
+                a.0.extend_from_slice(&b.0);
+                for &offset in b.1.iter().skip(1) {
+                    a.1.push(base_offset + offset);
+                }
+                a
+            },
+        );
 
-    let results = mine_itemsets(itemsets, frequent_len, original_items, min_count, max_len)?;
-    Ok(results)
+    let mut tree = FPTree::new(frequent_len, original_items);
+    for i in 0..(flat_offsets.len() - 1) {
+        let start = flat_offsets[i];
+        let end = flat_offsets[i + 1];
+        tree.insert_itemset(&flat_items[start..end], 1);
+    }
+
+    let mut results = FlatResults::new();
+    fpg_step(&tree, min_count, max_len, &mut results);
+    Ok(results.into_tuple())
 }
 
 pub(crate) fn _mine_csr(

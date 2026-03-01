@@ -3209,7 +3209,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add verbose iteration timing + out-of-core 1B support
 - comprehensive cookbook + ALS speed improvements
 - HashMap FPMiner + creative benchmark (method × chunk-size × scale)
-- frequency-sorted remap + mine_auto + hint_n_transactions (Borgelt 2003)
+- frequency-sorted remap + hint_n_transactions (Borgelt 2003)
 - Anderson Acceleration for ALS outer loop (anderson_m param)
 
 ### 🚀 Features
@@ -3385,7 +3385,7 @@ rusket has two class families: **Miners** (frequent pattern discovery) and **Rec
 
 ```
 BaseModel (ABC)
-├── Miner ─── FPGrowth, Eclat, FIN, LCM, AutoMiner (+ RuleMinerMixin)
+├── Miner ─── FPGrowth, Eclat, FIN, LCM (+ RuleMinerMixin)
 │             PrefixSpan, HUPM (specialized miners)
 ├── ImplicitRecommender ─── ALS, BPR, EASE, ItemKNN, SVD, LightGCN
 ├── SequentialRecommender ─── FPMC, SASRec
@@ -3599,11 +3599,11 @@ To also enable **Polars** support:
 
 ## Step 1 — Prepare your data
 
-`AutoMiner` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
+`FPGrowth` expects a **one-hot encoded** DataFrame where rows are transactions and columns are products.
 
 ```python
 import pandas as pd
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 orders = pd.DataFrame({
     "receipt_id": [1001, 1001, 1001, 1002, 1002, 1003, 1003, 1004],
@@ -3613,7 +3613,7 @@ orders = pd.DataFrame({
                    "milk", "bread", "eggs", "coffee"],
 })
 
-model = AutoMiner.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
+model = FPGrowth.from_transactions(orders, transaction_col="receipt_id", item_col="product", min_support=0.4)
 ```
 
 ---
@@ -3625,8 +3625,7 @@ freq = model.mine(use_colnames=True)
 print(freq.sort_values("support", ascending=False))
 ```
 
-!!! tip
-    `AutoMiner` picks `Eclat` for sparse data (density < 0.15) and `FPGrowth` for dense data.
+
 
 ---
 
@@ -3671,13 +3670,13 @@ rules = miner.association_rules()
 
 ```python
 from scipy import sparse as sp
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 csr = sp.csr_matrix(
     (np.ones(len(receipt_ids), dtype=np.int8), (receipt_ids, sku_indices)),
     shape=(n_receipts, n_skus),
 )
-freq = AutoMiner(csr).mine(min_support=0.001, column_names=sku_names)
+freq = FPGrowth(csr).mine(min_support=0.001, column_names=sku_names)
 ```
 
 ---

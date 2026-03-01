@@ -26,6 +26,8 @@ mod pca;
 mod pipeline;
 mod sasrec;
 mod svd;
+mod ann;
+mod incremental_pca;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -78,5 +80,7 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pca::pca_fit, m)?)?;
     m.add_function(wrap_pyfunction!(pca::pca_transform, m)?)?;
     m.add_function(wrap_pyfunction!(pipeline::pipeline_batch_recommend, m)?)?;
+    m.add_class::<ann::AnnIndex>()?;
+    m.add_class::<incremental_pca::RustIncrementalPCA>()?;
     Ok(())
 }

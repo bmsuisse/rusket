@@ -550,22 +550,7 @@ class TestInstacartALS:
 class TestCrossAlgorithmSanity:
     """Tests that verify self-consistency across different algorithms."""
 
-    def test_mine_auto_agrees_with_fpgrowth(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
-        """rusket.mine() with method='fpgrowth' matches FPGrowth functional API."""
-        import rusket
 
-        basket = rusket.from_transactions(
-            online_retail_df,
-            transaction_col="Invoice",
-            item_col="Description",
-        )
-        min_sup = 0.02
-        auto_result = rusket.mine(basket, min_support=min_sup, use_colnames=True, method="fpgrowth")
-        fp_result = rusket.fpgrowth(basket, min_support=min_sup, use_colnames=True)
-
-        assert len(auto_result) == len(fp_result), (
-            f"mine() returned {len(auto_result)} itemsets, fpgrowth() returned {len(fp_result)}"
-        )
 
     def test_support_is_consistent_with_raw_counts(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """Support from FPGrowth matches manually-computed co-occurrence frequency."""

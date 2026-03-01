@@ -4,13 +4,17 @@ import rusket
 
 
 def test_load_model(tmp_path: Path):
-    import pandas as pd
+    import numpy as np
+    from scipy import sparse as sp
 
-    df = pd.DataFrame({"user_id": [1, 1, 2], "item_id": [1, 2, 2]})
+    data = np.array([1, 1, 1], dtype=np.float32)
+    row = np.array([0, 0, 1])
+    col = np.array([0, 1, 1])
+    csr = sp.csr_matrix((data, (row, col)), shape=(2, 2))
 
     # Train and save a model
     model = rusket.ALS(factors=2, iterations=1)
-    model.fit(df)
+    model.fit(csr)
 
     model_path = tmp_path / "model.pkl"
     model.save(model_path)

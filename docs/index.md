@@ -78,6 +78,50 @@ print(rules[["antecedents", "consequents", "confidence", "lift"]]
 | ('eggs',)     | ('coffee',)   |         0.75 |    1.5 |
 <!-- /output -->
 
+## Quick Example — Personalised Recommendations
+
+Collaborative filtering with Implicit Feedback (e.g. tracking clicks, views, or purchase amounts) is extremely fast with the SIMD-accelerated ALS and BPR engines.
+
+```python
+import pandas as pd
+from rusket import ALS
+
+purchases = pd.DataFrame({
+    "customer_id": [1001, 1001, 1001, 1002, 1002, 1003],
+    "sku":         ["A10", "B22", "C15",  "A10", "D33",  "B22"],
+    "revenue":     [29.99, 49.00, 9.99,  29.99, 15.00, 49.00],
+})
+
+# Fit an Implicit ALS model in milliseconds
+model = ALS(factors=64, iterations=15, alpha=40.0)
+model.fit(purchases, user_col="customer_id", item_col="sku", rating_col="revenue")
+
+# Get top-3 recommendations for a customer
+items, scores = model.recommend_items(user_id=1001, n=3, exclude_seen=True)
+print(items)
+```
+
+<!-- output -->
+```text
+['D33']
+```
+<!-- /output -->
+
+## Built for the Modern Data Stack
+
+`rusket` natively accepts Polars and Apache Spark DataFrames, backing straight into Rust memory with zero-copy Arrow buffers.
+
+```python
+import polars as pl
+from rusket import fpgrowth
+
+# 10M+ rows load instantly with Polars
+df = pl.scan_parquet("s3://datalake/market_baskets/*.parquet").collect()
+
+# Native execution on Arrow buffers, no pandas fallback
+freq = fpgrowth(df, min_support=0.01, use_colnames=True)
+```
+
 ---
 
 - [Get Started](quickstart.md) — Install rusket and run your first analysis in minutes

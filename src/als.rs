@@ -270,6 +270,8 @@ fn solve_one_side_eals(
             w_vec.resize(nnz_u, 0.0);
 
             // Populate the contiguous memory buffer (column-major)
+            // But we only actually need to store and iterate over items where weight != 0 or where r_hat affects the item!
+            // In eALS, all items interacting inherently have an alpha * rating. 
             for (local, idx) in (start..end).enumerate() {
                 let i = indices[idx] as usize;
                 

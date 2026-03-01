@@ -15,7 +15,7 @@ import plotly.express as px
 import polars as pl
 import pyarrow.compute as pc
 
-from rusket import AutoMiner
+from rusket import FPGrowth
 
 # ## 1. Synthetic Dataset Generation
 #
@@ -75,7 +75,7 @@ df.head()
 
 
 # Extract frequent itemsets
-model = AutoMiner(df, min_support=0.05)
+model = FPGrowth(df, min_support=0.05)
 fi = model.mine(use_colnames=True)
 
 print(f"Found {len(fi)} frequent itemsets.")
@@ -168,7 +168,7 @@ fig.show()
 
 
 df_pl = pl.from_pandas(df)
-model_pl = AutoMiner(df_pl, min_support=0.05)
+model_pl = FPGrowth(df_pl, min_support=0.05)
 fi_pl = model_pl.mine(use_colnames=True)
 
 # Generate rules directly from Polars dataframe

@@ -188,13 +188,7 @@ class TestFakerMining:
         low_sets = {tuple(sorted(r)) for r in freq_low["itemsets"]}
         assert high_sets.issubset(low_sets)
 
-    def test_autominer_roundtrip(self) -> None:
-        df = _make_long_transactions(n_orders=150, n_products=20, seed=88)
-        miner = rusket.FPGrowth.from_transactions(df, transaction_col="order_id", item_col="product", min_support=0.1)
-        freq = miner.mine(use_colnames=True)
-        assert len(freq) > 0
-        rules = miner.association_rules()  # type: ignore
-        assert isinstance(rules, pd.DataFrame)
+
 
 
 # ---------------------------------------------------------------------------

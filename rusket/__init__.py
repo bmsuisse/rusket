@@ -1,6 +1,7 @@
 from . import viz
 from .als import ALS
 from .analytics import customer_saturation, find_substitutes
+from .ann import ApproximateNearestNeighbors
 from .association_rules import association_rules
 from .bpr import BPR
 from .content_based import ContentBased
@@ -99,4 +100,5 @@ __all__ = [
     "Pipeline",
     "to_networkx",
     "to_networkxr",
+    "ApproximateNearestNeighbors",
 ]

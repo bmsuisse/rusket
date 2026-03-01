@@ -3209,7 +3209,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add verbose iteration timing + out-of-core 1B support
 - comprehensive cookbook + ALS speed improvements
 - HashMap FPMiner + creative benchmark (method × chunk-size × scale)
-- frequency-sorted remap + mine_auto + hint_n_transactions (Borgelt 2003)
+- frequency-sorted remap + hint_n_transactions (Borgelt 2003)
 - Anderson Acceleration for ALS outer loop (anderson_m param)
 
 ### 🚀 Features

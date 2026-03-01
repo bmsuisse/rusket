@@ -5,7 +5,7 @@ Contract: every public DataFrame-returning method must echo the input type.
   - polars.DataFrame  → polars.DataFrame
   - pyspark.sql.DataFrame → pyspark.sql.DataFrame
 
-Covers FPGrowth, Eclat, FIN, LCM, and AutoMiner for:
+Covers FPGrowth, Eclat, FIN, LCM for:
   - mine()
   - association_rules()
   - mine_grouped() + fit_grouped()
