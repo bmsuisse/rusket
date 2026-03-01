@@ -33,6 +33,10 @@ class ALS(ImplicitRecommender):
     use_cholesky : bool
         Use a direct Cholesky solve instead of iterative CG. Exact solution;
         faster when users have many interactions relative to ``factors``.
+    use_eals : bool
+        Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive.
+    eals_iters : int
+        Number of inner iterations for eALS (default 1).
     anderson_m : int
         History window for **Anderson Acceleration** of the outer ALS loop
         (default 0 = disabled).  Recommended value: **5**.
@@ -75,6 +79,8 @@ class ALS(ImplicitRecommender):
         verbose: int = 0,
         cg_iters: int = 10,
         use_cholesky: bool = False,
+        use_eals: bool = False,
+        eals_iters: int = 1,
         anderson_m: int = 0,
         **kwargs: Any,
     ) -> None:
@@ -87,6 +93,8 @@ class ALS(ImplicitRecommender):
         self.verbose = verbose
         self.cg_iters = cg_iters
         self.use_cholesky = use_cholesky
+        self.use_eals = use_eals
+        self.eals_iters = eals_iters
         self.anderson_m = anderson_m
         self._user_factors: Any = None
         self._item_factors: Any = None
@@ -166,6 +174,8 @@ class ALS(ImplicitRecommender):
             self.cg_iters,
             self.use_cholesky,
             self.anderson_m,
+            self.use_eals,
+            self.eals_iters,
         )
         self._n_users = n_users
         self._n_items = n_items
@@ -219,6 +229,8 @@ class ALS(ImplicitRecommender):
             self.alpha,
             self.cg_iters,
             self.use_cholesky,
+            self.use_eals,
+            self.eals_iters,
         )
 
     def recommend_items(

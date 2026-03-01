@@ -5,6 +5,20 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🚀 Features
+
+- add generic load_model function and lancedb serving examples
+- negFIN algorithm and FPGrowth/Eclat SIMD optimizations
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- resolve lock conflicts, yolo merge, release v0.1.62
+
+### 🚀 Features
+
+- Introduce FIN and LCM frequent itemset miners, EASE recommender, PCA, model selection utilities, and NetworkX visualization integrations.
+
 ### 🐛 Bug Fixes
 
 - remove .cargo/config.toml from repo (caused SIGILL in CI)

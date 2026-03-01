@@ -918,20 +918,6 @@ pub fn als_recalculate_user<'py>(
 
     Ok(out.into_pyarray(py))
 }
-
-    // Single user indptr
-    let indptr = [0i64, ix.len() as i64];
-
-    let user_factors = py.detach(|| {
-        let gram = gramian(itf, n_items, k);
-        if use_cholesky {
-            solve_one_side_cholesky(&indptr, ix, id, itf, &gram, 1, k, regularization, alpha)
-        } else {
-            solve_one_side_cg(&indptr, ix, id, itf, &gram, 1, k, regularization, alpha, cg_iters)
-        }
-    });
-
-    Ok(PyArray1::from_vec(py, user_factors))
 }
 
 #[pyfunction]

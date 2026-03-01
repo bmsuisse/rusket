@@ -12,7 +12,7 @@
         "column_names": "list[str] | None"
       },
       "returns": "pd.DataFrame",
-      "doc": "Mine frequent itemsets using the optimal algorithm."
+      "doc": "Mine frequent itemsets using the specified algorithm."
     },
     "fpgrowth": {
       "parameters": {
@@ -343,7 +343,7 @@
       },
       "doc": "Eclat frequent itemset miner."
     },
-    "AutoMiner": {
+    "FIN": {
       "methods": {
         "__init__": {
           "parameters": {
@@ -357,17 +357,43 @@
             "kwargs": "Any"
           },
           "returns": "Any",
-          "doc": "Initialize the automatic miner."
+          "doc": "Initialize the FIN miner."
         },
         "mine": {
           "parameters": {
             "kwargs": "Any"
           },
           "returns": "pd.DataFrame",
-          "doc": "Execute the optimal algorithm on the stored data."
+          "doc": "Execute the FIN algorithm on the stored data."
         }
       },
-      "doc": "Automatic frequent itemset miner."
+      "doc": "FIN (Fast Itemset per Nodeset) frequent itemset miner."
+    },
+    "LCM": {
+      "methods": {
+        "__init__": {
+          "parameters": {
+            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
+            "item_names": "list[str] | None",
+            "min_support": "float",
+            "null_values": "bool",
+            "use_colnames": "bool",
+            "max_len": "int | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Initialize the LCM miner."
+        },
+        "mine": {
+          "parameters": {
+            "kwargs": "Any"
+          },
+          "returns": "pd.DataFrame",
+          "doc": "Execute the LCM algorithm on the stored data to find closed itemsets."
+        }
+      },
+      "doc": "LCM (Linear Closed Itemset Miner) frequent itemset miner."
     },
     "PrefixSpan": {
       "methods": {
@@ -502,7 +528,7 @@
             "max_len": "int | None",
             "use_colnames": "bool",
             "column_names": "list[str] | None",
-            "method": "Literal['fpgrowth', 'eclat', 'auto']",
+            "method": "Literal['fpgrowth', 'eclat']",
             "verbose": "int"
           },
           "returns": "pd.DataFrame",
@@ -535,6 +561,8 @@
             "verbose": "int",
             "cg_iters": "int",
             "use_cholesky": "bool",
+            "use_eals": "bool",
+            "eals_iters": "int",
             "anderson_m": "int",
             "kwargs": "Any"
           },
@@ -747,58 +775,6 @@
         }
       },
       "doc": "Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules."
-    },
-    "FIN": {
-      "methods": {
-        "__init__": {
-          "parameters": {
-            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
-            "item_names": "list[str] | None",
-            "min_support": "float",
-            "null_values": "bool",
-            "use_colnames": "bool",
-            "max_len": "int | None",
-            "verbose": "int",
-            "kwargs": "Any"
-          },
-          "returns": "Any",
-          "doc": "Initialize the FIN miner."
-        },
-        "mine": {
-          "parameters": {
-            "kwargs": "Any"
-          },
-          "returns": "pd.DataFrame",
-          "doc": "Execute the FIN algorithm on the stored data."
-        }
-      },
-      "doc": "FIN (Fast Itemset per Nodeset) frequent itemset miner."
-    },
-    "LCM": {
-      "methods": {
-        "__init__": {
-          "parameters": {
-            "data": "pd.DataFrame | pl.DataFrame | np.ndarray | Any",
-            "item_names": "list[str] | None",
-            "min_support": "float",
-            "null_values": "bool",
-            "use_colnames": "bool",
-            "max_len": "int | None",
-            "verbose": "int",
-            "kwargs": "Any"
-          },
-          "returns": "Any",
-          "doc": "Initialize the LCM miner."
-        },
-        "mine": {
-          "parameters": {
-            "kwargs": "Any"
-          },
-          "returns": "pd.DataFrame",
-          "doc": "Execute the LCM algorithm on the stored data to find closed itemsets."
-        }
-      },
-      "doc": "LCM (Linear Closed Itemset Miner) frequent itemset miner."
     },
     "EASE": {
       "methods": {

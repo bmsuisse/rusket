@@ -18,16 +18,14 @@ Convenience module-level functions.  For most use-cases these are the only entry
 
 ### `mine`
 
-Mine frequent itemsets using the optimal algorithm.
+Mine frequent itemsets using the specified algorithm.
 
 This module-level function relies on the Object-Oriented APIs.
-Automatically selects between FP-Growth and Eclat based on density,
-or falls back to FPMiner (streaming) if memory is low.
 
 ```python
 from rusket.mine import mine
 
-mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -41,7 +39,7 @@ This module-level function relies on the Object-Oriented APIs.
 ```python
 from rusket.fpgrowth import fpgrowth
 
-fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'auto', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
+fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
 
 ---
@@ -519,7 +517,7 @@ pca3(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
 
 ## OOP Mining API
 
-All mining classes share a common `Miner.from_transactions()` / `.mine()` interface. `FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` also inherit `RuleMinerMixin` which adds `.association_rules()` and `.recommend_items()` helpers.
+All mining classes share a common `Miner.from_transactions()` / `.mine()` interface. `FPGrowth`, `Eclat`, `FIN`, `LCM`, and `HUPM` also inherit `RuleMinerMixin` which adds `.association_rules()` and `.recommend_items()` helpers.
 
 ### `FPGrowth`
 
@@ -574,40 +572,6 @@ Execute the Eclat algorithm on the stored data.
 from rusket.eclat import Eclat.mine
 
 Eclat.mine(**kwargs: 'Any') -> 'pd.DataFrame'
-```
-
-**Returns**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| pandas.DataFrame |  | DataFrame with two columns: - `support`: the support score. - `itemsets`: list of items (indices or column names). |
-
----
-
----
-
-### `AutoMiner`
-
-Automatic frequent itemset miner.
-
-Selects the optimal miner (FP-Growth or Eclat) based on matrix density.
-Automatically falls back to streaming (FPMiner) if the dataset exceeds
-available memory.
-
-```python
-from rusket.mine import AutoMiner
-
-AutoMiner(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
-```
-
-#### `AutoMiner.mine`
-
-Execute the optimal algorithm on the stored data.
-
-```python
-from rusket.mine import AutoMiner.mine
-
-AutoMiner.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
 
 **Returns**
@@ -784,7 +748,7 @@ Mine frequent itemsets from all accumulated transactions.
 ```python
 from rusket.streaming import FPMiner.mine
 
-FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = True, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat', 'auto']" = 'auto', verbose: 'int' = 0) -> 'pd.DataFrame'
+FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = True, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat']" = 'fpgrowth', verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
 
 **Parameters**
@@ -795,7 +759,7 @@ FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colna
 | max_len | int \| None | Maximum itemset length. |
 | use_colnames | bool | If ``True``, itemsets contain column names instead of indices. |
 | column_names | list[str] \| None | Column names to use when ``use_colnames=True``. |
-| method | "fpgrowth" \| "eclat" \| "auto" | Mining algorithm to use.  ``"auto"`` (default) picks the best algorithm automatically based on data density after pre-filtering rare items (Borgelt 2003 heuristic: density < 15% → Eclat, else FPGrowth). |
+| method | "fpgrowth" \| "eclat" | Mining algorithm to use. |
 | verbose | int | Level of verbosity: >0 prints progress logs and times. |
 
 **Returns**
@@ -906,7 +870,7 @@ LCM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 
 ## `RuleMinerMixin` — Shared Miner Interface
 
-`FPGrowth`, `Eclat`, `AutoMiner`, and `HUPM` all inherit these methods from `RuleMinerMixin`.  You do not construct `RuleMinerMixin` directly.
+`FPGrowth`, `Eclat`, `FIN`, `LCM`, and `HUPM` all inherit these methods from `RuleMinerMixin`.  You do not construct `RuleMinerMixin` directly.
 
 ### `RuleMinerMixin.association_rules`
 
@@ -967,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -981,6 +945,8 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | seed | int | Random seed. |
 | cg_iters | int | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``).  Reduce to 3 for very large datasets. |
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
+| use_eals | bool | Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive. |
+| eals_iters | int | Number of inner iterations for eALS (default 1). |
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
 
 **Examples**
@@ -2539,7 +2505,7 @@ boolean matrix (One-Hot Encoded) per group, where rows are transactions.
 ```python
 from rusket.spark import rusket.spark.mine_grouped
 
-rusket.spark.mine_grouped(df: 'Any', group_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, method: 'str' = 'auto', use_colnames: 'bool' = True) -> 'Any'
+rusket.spark.mine_grouped(df: 'Any', group_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', use_colnames: 'bool' = True) -> 'Any'
 ```
 
 **Parameters**
@@ -2550,7 +2516,7 @@ rusket.spark.mine_grouped(df: 'Any', group_col: 'str', min_support: 'float' = 0.
 | group_col |  | The column to group by (e.g. `store_id`). |
 | min_support |  | Minimum support threshold. |
 | max_len |  | Maximum itemset length. |
-| method |  | Algorithm to use: 'auto', 'fpgrowth', or 'eclat'. |
+| method |  | Algorithm to use: 'fpgrowth', or 'eclat'. |
 | use_colnames |  | If True, returns item names instead of column indices. Must be True for PySpark `applyInArrow` schema consistency. |
 
 **Returns**
@@ -2725,6 +2691,20 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 🚀 Features
+
+- add generic load_model function and lancedb serving examples
+- negFIN algorithm and FPGrowth/Eclat SIMD optimizations
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- resolve lock conflicts, yolo merge, release v0.1.62
+
+### 🚀 Features
+
+- Introduce FIN and LCM frequent itemset miners, EASE recommender, PCA, model selection utilities, and NetworkX visualization integrations.
 
 ### 🐛 Bug Fixes
 
