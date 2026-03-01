@@ -420,7 +420,7 @@ Split interactions into random train and test sets.
 ```python
 from rusket.model_selection import train_test_split
 
-train_test_split(df, user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None)
+train_test_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
 
 **Parameters**
@@ -451,7 +451,7 @@ If no timestamp is provided, a random interaction is chosen.
 ```python
 from rusket.model_selection import leave_one_out_split
 
-leave_one_out_split(df, user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None)
+leave_one_out_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
 
 **Parameters**
@@ -1069,6 +1069,35 @@ ALS.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
 ```
 
 ---
+
+---
+
+### `eALS`
+
+Element-wise ALS (eALS) collaborative filtering model.
+
+A convenience wrapper around :class:`ALS` that sets ``use_eals=True`` by default.
+eALS updates latent factors element-by-element rather than block-wise, which
+is often faster and less memory-intensive for implicit datasets while yielding
+comparable or better recommendation quality.
+
+```python
+from rusket.als import eALS
+
+eALS(*args: 'Any', use_eals: 'bool' = True, **kwargs: 'Any') -> 'None'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| factors | int | Number of latent factors. |
+| regularization | float | L2 regularisation weight. |
+| alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
+| iterations | int | Number of ALS outer iterations. |
+| seed | int | Random seed. |
+| eals_iters | int | Number of inner iterations for eALS (default 1). |
+| **kwargs |  | Additional arguments passed to :class:`ALS`. |
 
 ---
 
@@ -2691,6 +2720,14 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- add eALS wrapper class, document eALS, fix networkxr pyright, bump to 0.1.66
 
 ### 🔧 Refactoring
 

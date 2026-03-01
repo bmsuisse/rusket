@@ -245,23 +245,23 @@
     },
     "train_test_split": {
       "parameters": {
-        "df": "Any",
+        "df": "pd.DataFrame",
         "user_col": "str",
         "item_col": "str",
         "test_size": "float",
         "random_state": "int | None"
       },
-      "returns": "Any",
+      "returns": "tuple[pd.DataFrame, pd.DataFrame]",
       "doc": "Split interactions into random train and test sets."
     },
     "leave_one_out_split": {
       "parameters": {
-        "df": "Any",
+        "df": "pd.DataFrame",
         "user_col": "str",
         "item_col": "str",
         "timestamp_col": "str | None"
       },
-      "returns": "Any",
+      "returns": "tuple[pd.DataFrame, pd.DataFrame]",
       "doc": "Leave exactly one interaction per user for the test set."
     },
     "pca": {
