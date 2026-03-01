@@ -706,6 +706,71 @@ Integrate natively with the modern GenAI/LLM stack:
 
 ---
 
+### 🔬 Hyperparameter Tuning (Optuna + MLflow)
+
+Built-in Bayesian hyperparameter optimisation using [Optuna](https://optuna.org)'s TPE sampler. For **ALS/eALS** models, each trial runs the Rust-native cross-validation backend — making the entire search blazingly fast.
+
+```python
+import rusket
+from rusket import OptunaSearchSpace
+
+# ── Quick search with sensible defaults ──────────────────────────────
+result = rusket.optuna_optimize(
+    rusket.ALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    n_trials=50,
+    metric="ndcg",
+    k=10,
+)
+print(f"Best ndcg@10: {result.best_score:.4f}")
+print(f"Best params:  {result.best_params}")
+
+# ── Custom search space + refit best model ───────────────────────────
+result = rusket.optuna_optimize(
+    rusket.eALS,
+    df,
+    user_col="user_id",
+    item_col="item_id",
+    search_space=[
+        OptunaSearchSpace.int("factors", 16, 256, log=True),
+        OptunaSearchSpace.float("alpha", 1.0, 100.0, log=True),
+        OptunaSearchSpace.float("regularization", 1e-4, 1.0, log=True),
+        OptunaSearchSpace.int("iterations", 5, 30),
+    ],
+    n_trials=100,
+    n_folds=3,
+    metric="precision",
+    refit_best=True,  # best model is already fitted
+)
+items, scores = result.best_model.recommend_items(user_id=42, n=10)
+
+# ── MLflow experiment tracking ───────────────────────────────────────
+# pip install mlflow optuna-integration
+import mlflow
+
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("als-tuning")
+
+result = rusket.optuna_optimize(
+    rusket.ALS, df,
+    user_col="user_id", item_col="item_id",
+    n_trials=50, metric="ndcg",
+    mlflow_tracking=True,   # ← every trial logged to MLflow
+)
+
+# ── Custom callbacks ─────────────────────────────────────────────────
+result = rusket.optuna_optimize(
+    rusket.ALS, df,
+    user_col="user_id", item_col="item_id",
+    n_trials=50,
+    callbacks=[my_custom_callback],  # any Optuna-compatible callback
+)
+```
+
+---
+
 ## ⚡ Benchmarks
 
 > **Benchmark environment:** Apple Silicon MacBook Air (M-series, arm64, 8 GB RAM). All timings are single-run wall-clock measurements.
