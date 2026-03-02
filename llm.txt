@@ -2725,6 +2725,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - auto-format code with Ruff [skip ci]
 - fixes typing errors for YOLO release
+- release v0.1.77
 
 ### 📖 Documentation
 
