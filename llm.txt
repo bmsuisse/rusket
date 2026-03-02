@@ -931,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -952,6 +952,7 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | use_biases | bool | If True, learn global bias (μ), user biases (b_u), and item biases (b_i) so that prediction becomes ``μ + b_u + b_i + w_u · h_i``. |
 | alpha_view | float | Confidence scaling for **view** interactions in VALS mode. Pass ``view_matrix`` to ``fit()`` to enable. Default 10.0. |
 | view_target | float | Target value for view interactions (between 0.0 and 1.0). Purchases always target 1.0. Default 0.5. |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for batch recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 **Examples**
 
@@ -2747,12 +2748,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
 
 ### 🚀 Features
 
 - add item popularity weighting in eALS and user/item bias terms
 - add FAISS ANN index export and build_ann_index() on ALS
 - add VALS (View-Aware ALS) — three-level implicit feedback
+- add GPU acceleration, export_vectors for Qdrant/Meilisearch
 
 ### 📦 Miscellaneous
 

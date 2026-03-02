@@ -568,6 +568,7 @@
             "use_biases": "bool",
             "alpha_view": "float",
             "view_target": "float",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
