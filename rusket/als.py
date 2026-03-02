@@ -68,6 +68,10 @@ class ALS(ImplicitRecommender):
     view_target : float
         Target value for view interactions (between 0.0 and 1.0).
         Purchases always target 1.0. Default 0.5.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for batch
+        recommendation. Falls back to CPU if no GPU backend found.
+        Default False.
 
     Examples
     --------
@@ -100,6 +104,7 @@ class ALS(ImplicitRecommender):
         use_biases: bool = False,
         alpha_view: float = 10.0,
         view_target: float = 0.5,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -118,6 +123,7 @@ class ALS(ImplicitRecommender):
         self.use_biases = use_biases
         self.alpha_view = float(alpha_view)
         self.view_target = float(view_target)
+        self.use_gpu = use_gpu
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0

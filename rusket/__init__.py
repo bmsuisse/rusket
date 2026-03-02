@@ -137,15 +137,25 @@ __all__ = [
     "RuleBasedRecommender",
     "FAISSIndex",
     "build_faiss_index",
+    "export_vectors",
+    "check_gpu_available",
 ]
+
+
+_LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    "FAISSIndex": (".faiss_ann", "FAISSIndex"),
+    "build_faiss_index": (".faiss_ann", "build_faiss_index"),
+    "export_vectors": (".vector_export", "export_vectors"),
+    "check_gpu_available": (".gpu", "check_gpu_available"),
+}
 
 
 def __getattr__(name: str) -> Any:
     """Lazy imports for optional dependency modules."""
-    if name in ("FAISSIndex", "build_faiss_index"):
-        from .faiss_ann import FAISSIndex, build_faiss_index
+    if name in _LAZY_IMPORTS:
+        mod_path, attr = _LAZY_IMPORTS[name]
+        import importlib
 
-        if name == "FAISSIndex":
-            return FAISSIndex
-        return build_faiss_index
+        mod = importlib.import_module(mod_path, package=__name__)
+        return getattr(mod, attr)
     raise AttributeError(f"module 'rusket' has no attribute {name!r}")
