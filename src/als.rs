@@ -78,6 +78,22 @@ fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
     r
 }
 
+/// Weighted gramian: S = Σ_i w_i · y_i · y_i^T
+/// Used by eALS with item-popularity weighting for unobserved entries.
+fn weighted_gramian(factors: &[f32], weights: &[f32], n: usize, k: usize) -> Vec<f32> {
+    // Scale each row y_i by sqrt(w_i), then compute standard gramian
+    let mut scaled = vec![0.0f32; n * k];
+    for i in 0..n {
+        let sw = weights[i].sqrt();
+        let src = &factors[i * k..(i + 1) * k];
+        let dst = &mut scaled[i * k..(i + 1) * k];
+        for f in 0..k {
+            dst[f] = sw * src[f];
+        }
+    }
+    gramian(&scaled, n, k)
+}
+
 thread_local! {
     // CG scratch: b, r, p, ap, yi_dense (item matrix), w_vec (weights), tmp
     static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>,
@@ -241,6 +257,7 @@ fn solve_one_side_eals(
     lambda: f32,
     alpha: f32,
     eals_iters: usize,
+    item_pop_weights: Option<&[f32]>,
 ) {
     let eff_lambda = lambda.max(1e-6);
 
@@ -312,6 +329,9 @@ fn solve_one_side_eals(
                 }
 
                 for f in 0..k {
+                    // With popularity weighting, the Gram already encodes
+                    // Σ c0_i · y_if · y_ig, so the unobserved-data contribution
+                    // is correctly weighted in numer and denom.
                     let mut numer = -(s_u[f] - xu[f] * gram[f * k + f]);
                     let mut denom = eff_lambda + gram[f * k + f];
                     
@@ -334,66 +354,74 @@ fn solve_one_side_eals(
                                 let w0 = *w_ptr.add(local);
                                 let y_if0 = *yi_ptr.add(local);
                                 let r_hat_val0 = *r_hat_ptr.add(local);
+                                let c0_i0 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local) as usize] as usize]);
                                 let wy_if0 = w0 * y_if0;
                                 let wy20 = wy_if0 * y_if0;
-                                numer += y_if0 + wy_if0 * (1.0 - r_hat_val0) + xu_f * wy20;
-                                denom += wy20;
+                                numer += c0_i0 * y_if0 + wy_if0 * (1.0 - r_hat_val0) + xu_f * (wy20 + (c0_i0 - 1.0) * y_if0 * y_if0);
+                                denom += wy20 + (c0_i0 - 1.0) * y_if0 * y_if0;
                                 
                                 let w1 = *w_ptr.add(local + 1);
                                 let y_if1 = *yi_ptr.add(local + 1);
                                 let r_hat_val1 = *r_hat_ptr.add(local + 1);
+                                let c0_i1 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 1) as usize] as usize]);
                                 let wy_if1 = w1 * y_if1;
                                 let wy21 = wy_if1 * y_if1;
-                                numer += y_if1 + wy_if1 * (1.0 - r_hat_val1) + xu_f * wy21;
-                                denom += wy21;
+                                numer += c0_i1 * y_if1 + wy_if1 * (1.0 - r_hat_val1) + xu_f * (wy21 + (c0_i1 - 1.0) * y_if1 * y_if1);
+                                denom += wy21 + (c0_i1 - 1.0) * y_if1 * y_if1;
                                 
                                 let w2 = *w_ptr.add(local + 2);
                                 let y_if2 = *yi_ptr.add(local + 2);
                                 let r_hat_val2 = *r_hat_ptr.add(local + 2);
+                                let c0_i2 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 2) as usize] as usize]);
                                 let wy_if2 = w2 * y_if2;
                                 let wy22 = wy_if2 * y_if2;
-                                numer += y_if2 + wy_if2 * (1.0 - r_hat_val2) + xu_f * wy22;
-                                denom += wy22;
+                                numer += c0_i2 * y_if2 + wy_if2 * (1.0 - r_hat_val2) + xu_f * (wy22 + (c0_i2 - 1.0) * y_if2 * y_if2);
+                                denom += wy22 + (c0_i2 - 1.0) * y_if2 * y_if2;
                                 
                                 let w3 = *w_ptr.add(local + 3);
                                 let y_if3 = *yi_ptr.add(local + 3);
                                 let r_hat_val3 = *r_hat_ptr.add(local + 3);
+                                let c0_i3 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 3) as usize] as usize]);
                                 let wy_if3 = w3 * y_if3;
                                 let wy23 = wy_if3 * y_if3;
-                                numer += y_if3 + wy_if3 * (1.0 - r_hat_val3) + xu_f * wy23;
-                                denom += wy23;
+                                numer += c0_i3 * y_if3 + wy_if3 * (1.0 - r_hat_val3) + xu_f * (wy23 + (c0_i3 - 1.0) * y_if3 * y_if3);
+                                denom += wy23 + (c0_i3 - 1.0) * y_if3 * y_if3;
                                 
                                 let w4 = *w_ptr.add(local + 4);
                                 let y_if4 = *yi_ptr.add(local + 4);
                                 let r_hat_val4 = *r_hat_ptr.add(local + 4);
+                                let c0_i4 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 4) as usize] as usize]);
                                 let wy_if4 = w4 * y_if4;
                                 let wy24 = wy_if4 * y_if4;
-                                numer += y_if4 + wy_if4 * (1.0 - r_hat_val4) + xu_f * wy24;
-                                denom += wy24;
+                                numer += c0_i4 * y_if4 + wy_if4 * (1.0 - r_hat_val4) + xu_f * (wy24 + (c0_i4 - 1.0) * y_if4 * y_if4);
+                                denom += wy24 + (c0_i4 - 1.0) * y_if4 * y_if4;
                                 
                                 let w5 = *w_ptr.add(local + 5);
                                 let y_if5 = *yi_ptr.add(local + 5);
                                 let r_hat_val5 = *r_hat_ptr.add(local + 5);
+                                let c0_i5 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 5) as usize] as usize]);
                                 let wy_if5 = w5 * y_if5;
                                 let wy25 = wy_if5 * y_if5;
-                                numer += y_if5 + wy_if5 * (1.0 - r_hat_val5) + xu_f * wy25;
-                                denom += wy25;
+                                numer += c0_i5 * y_if5 + wy_if5 * (1.0 - r_hat_val5) + xu_f * (wy25 + (c0_i5 - 1.0) * y_if5 * y_if5);
+                                denom += wy25 + (c0_i5 - 1.0) * y_if5 * y_if5;
                                 
                                 let w6 = *w_ptr.add(local + 6);
                                 let y_if6 = *yi_ptr.add(local + 6);
                                 let r_hat_val6 = *r_hat_ptr.add(local + 6);
+                                let c0_i6 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 6) as usize] as usize]);
                                 let wy_if6 = w6 * y_if6;
                                 let wy26 = wy_if6 * y_if6;
-                                numer += y_if6 + wy_if6 * (1.0 - r_hat_val6) + xu_f * wy26;
-                                denom += wy26;
+                                numer += c0_i6 * y_if6 + wy_if6 * (1.0 - r_hat_val6) + xu_f * (wy26 + (c0_i6 - 1.0) * y_if6 * y_if6);
+                                denom += wy26 + (c0_i6 - 1.0) * y_if6 * y_if6;
                                 
                                 let w7 = *w_ptr.add(local + 7);
                                 let y_if7 = *yi_ptr.add(local + 7);
                                 let r_hat_val7 = *r_hat_ptr.add(local + 7);
+                                let c0_i7 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 7) as usize] as usize]);
                                 let wy_if7 = w7 * y_if7;
                                 let wy27 = wy_if7 * y_if7;
-                                numer += y_if7 + wy_if7 * (1.0 - r_hat_val7) + xu_f * wy27;
-                                denom += wy27;
+                                numer += c0_i7 * y_if7 + wy_if7 * (1.0 - r_hat_val7) + xu_f * (wy27 + (c0_i7 - 1.0) * y_if7 * y_if7);
+                                denom += wy27 + (c0_i7 - 1.0) * y_if7 * y_if7;
                                 
                                 local += 8;
                             }
@@ -403,10 +431,11 @@ fn solve_one_side_eals(
                                 let y_if = *yi_ptr.add(local);
                                 let r_hat_val = *r_hat_ptr.add(local);
                                 
+                                let c0_i = item_pop_weights.map_or(1.0f32, |pw| pw[indices[(start + local) as usize] as usize]);
                                 let wy_if = w * y_if;
                                 let wy2 = wy_if * y_if;
-                                numer += y_if + wy_if * (1.0 - r_hat_val) + xu_f * wy2;
-                                denom += wy2;
+                                numer += c0_i * y_if + wy_if * (1.0 - r_hat_val) + xu_f * (wy2 + (c0_i - 1.0) * y_if * y_if);
+                                denom += wy2 + (c0_i - 1.0) * y_if * y_if;
                                 local += 1;
                             }
                     }
@@ -743,9 +772,25 @@ pub(crate) fn als_train(
     anderson_m: usize,
     use_eals: bool,
     eals_iters: usize,
-) -> (Vec<f32>, Vec<f32>) {
+    item_pop_weights: Option<&[f32]>,
+    use_biases: bool,
+) -> (Vec<f32>, Vec<f32>, f32, Vec<f32>, Vec<f32>) {
     let mut user_factors = random_factors(n_users, k, seed);
     let mut item_factors = random_factors(n_items, k, seed.wrapping_add(1));
+
+    // Bias terms: μ + b_u + b_i + w_u · h_i
+    let mut global_bias: f32 = 0.0;
+    let mut user_biases = vec![0.0f32; n_users];
+    let mut item_biases = vec![0.0f32; n_items];
+
+    if use_biases {
+        // Compute global bias = average observed value
+        let total_vals: f64 = data.iter().map(|&v| v as f64).sum();
+        let total_count = data.len() as f64;
+        if total_count > 0.0 {
+            global_bias = (total_vals / total_count) as f32;
+        }
+    }
 
     if verbose {
         let solver_name = if use_eals {
@@ -767,9 +812,9 @@ pub(crate) fn als_train(
     for iter in 0..iterations {
         let iter_start = std::time::Instant::now();
 
-        let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], out: &mut [f32]| {
+        let solve = |ip: &[i64], ix: &[i32], d: &[f32], other: &[f32], gram: &[f32], out: &mut [f32], ipw: Option<&[f32]>| {
             if use_eals {
-                solve_one_side_eals(ip, ix, d, other, gram, out, k, lambda, alpha, eals_iters);
+                solve_one_side_eals(ip, ix, d, other, gram, out, k, lambda, alpha, eals_iters, ipw);
             } else if use_cholesky {
                 let res = solve_one_side_cholesky(ip, ix, d, other, gram, out.len() / k, k, lambda, alpha);
                 out.copy_from_slice(&res);
@@ -788,13 +833,19 @@ pub(crate) fn als_train(
         };
 
         let start_u = std::time::Instant::now();
-        let g_item = gramian(&item_factors, n_items, k);
-        solve(indptr, indices, data, &item_factors, &g_item, &mut user_factors);
+        // When eALS + popularity weights: use weighted gramian for user-side solve
+        let g_item = if use_eals && item_pop_weights.is_some() {
+            weighted_gramian(&item_factors, item_pop_weights.unwrap(), n_items, k)
+        } else {
+            gramian(&item_factors, n_items, k)
+        };
+        solve(indptr, indices, data, &item_factors, &g_item, &mut user_factors, item_pop_weights);
         let u_time = start_u.elapsed();
 
         let start_i = std::time::Instant::now();
         let g_user = gramian(&user_factors, n_users, k);
-        solve(indptr_t, indices_t, data_t, &user_factors, &g_user, &mut item_factors);
+        // Item-side solve: no popularity weighting (items are the "other" side)
+        solve(indptr_t, indices_t, data_t, &user_factors, &g_user, &mut item_factors, None);
         let i_time = start_i.elapsed();
 
         if use_aa {
@@ -828,7 +879,45 @@ pub(crate) fn als_train(
         println!("  Done in {:.1}s", total_time.as_secs_f64());
     }
 
-    (user_factors, item_factors)
+    if use_biases {
+        // Final bias update after all iterations
+        // b_u = Σ_i c_ui (r_ui - μ - b_i - x_u·y_i) / (Σ_i c_ui + λ)
+        for u in 0..n_users {
+            let s = indptr[u] as usize;
+            let e = indptr[u + 1] as usize;
+            let xu = &user_factors[u * k..(u + 1) * k];
+            let mut num = 0.0f32;
+            let mut den = lambda;
+            for idx in s..e {
+                let i = indices[idx] as usize;
+                let r = data[idx];
+                let c = 1.0 + alpha * r;
+                let pred = dot_f32(xu, &item_factors[i * k..(i + 1) * k]) + item_biases[i] + global_bias;
+                num += c * (r - pred);
+                den += c;
+            }
+            user_biases[u] = num / den;
+        }
+        // b_i = Σ_u c_ui (r_ui - μ - b_u - x_u·y_i) / (Σ_u c_ui + λ)
+        for i in 0..n_items {
+            let s = indptr_t[i] as usize;
+            let e = indptr_t[i + 1] as usize;
+            let yi = &item_factors[i * k..(i + 1) * k];
+            let mut num = 0.0f32;
+            let mut den = lambda;
+            for idx in s..e {
+                let u = indices_t[idx] as usize;
+                let r = data_t[idx];
+                let c = 1.0 + alpha * r;
+                let pred = dot_f32(&user_factors[u * k..(u + 1) * k], yi) + user_biases[u] + global_bias;
+                num += c * (r - pred);
+                den += c;
+            }
+            item_biases[i] = num / den;
+        }
+    }
+
+    (user_factors, item_factors, global_bias, user_biases, item_biases)
 }
 
 pub(crate) fn top_n_items(
@@ -841,6 +930,9 @@ pub(crate) fn top_n_items(
     exc: &[i32],
     exc_start: usize,
     exc_end: usize,
+    global_bias: f32,
+    user_biases: Option<&[f32]>,
+    item_biases: Option<&[f32]>,
 ) -> (Vec<i32>, Vec<f32>) {
     use ahash::AHashSet;
     let u = &uf[uid * k..(uid + 1) * k];
@@ -855,6 +947,19 @@ pub(crate) fn top_n_items(
         1.0f32,
         faer::Par::Seq,
     );
+
+    // Add bias terms if present
+    let bu = user_biases.map_or(0.0, |b| b[uid]);
+    let bias_offset = global_bias + bu;
+    if let Some(ib) = item_biases {
+        for (i, sc) in scores.iter_mut().enumerate() {
+            *sc += bias_offset + ib[i];
+        }
+    } else if bias_offset != 0.0 {
+        for sc in scores.iter_mut() {
+            *sc += bias_offset;
+        }
+    }
 
     let mut scored: Vec<(f32, i32)> = scores
         .into_iter()
@@ -886,6 +991,9 @@ fn top_n_users(
     n_users: usize,
     k: usize,
     n: usize,
+    global_bias: f32,
+    user_biases: Option<&[f32]>,
+    item_biases: Option<&[f32]>,
 ) -> (Vec<i32>, Vec<f32>) {
     let y = &itf[iid * k..(iid + 1) * k];
 
@@ -898,6 +1006,19 @@ fn top_n_users(
         1.0f32,
         faer::Par::Seq,
     );
+
+    // Add bias terms if present
+    let bi = item_biases.map_or(0.0, |b| b[iid]);
+    let bias_offset = global_bias + bi;
+    if let Some(ub) = user_biases {
+        for (u, sc) in scores.iter_mut().enumerate() {
+            *sc += bias_offset + ub[u];
+        }
+    } else if bias_offset != 0.0 {
+        for sc in scores.iter_mut() {
+            *sc += bias_offset;
+        }
+    }
 
     let mut scored: Vec<(f32, i32)> = scores
         .into_iter()
@@ -920,7 +1041,7 @@ fn top_n_users(
 }
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0, use_eals=false, eals_iters=1))]
+#[pyo3(signature = (indptr, indices, data, n_users, n_items, factors, regularization, alpha, iterations, seed, verbose, cg_iters=10, use_cholesky=false, anderson_m=0, use_eals=false, eals_iters=1, item_pop_weights=None, use_biases=false))]
 pub fn als_fit_implicit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -939,14 +1060,24 @@ pub fn als_fit_implicit<'py>(
     anderson_m: usize,
     use_eals: bool,
     eals_iters: usize,
-) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
+    item_pop_weights: Option<PyReadonlyArray1<f32>>,
+    use_biases: bool,
+) -> PyResult<(
+    Py<PyArray2<f32>>,
+    Py<PyArray2<f32>>,
+    f32,
+    Bound<'py, PyArray1<f32>>,
+    Bound<'py, PyArray1<f32>>,
+)> {
     let ip = indptr.as_slice()?;
     let ix = indices.as_slice()?;
     let id = data.as_slice()?;
 
+    let ipw_vec: Option<Vec<f32>> = item_pop_weights.map(|w| w.as_slice().unwrap().to_vec());
+
     let (ti, tx, td) = py.detach(|| csr_transpose(ip, ix, id, n_users, n_items));
 
-    let (uf, itf) = py.detach(|| {
+    let (uf, itf, gb, ub, ib) = py.detach(|| {
         als_train(
             ip,
             ix,
@@ -967,6 +1098,8 @@ pub fn als_fit_implicit<'py>(
             anderson_m,
             use_eals,
             eals_iters,
+            ipw_vec.as_deref(),
+            use_biases,
         )
     });
 
@@ -976,11 +1109,14 @@ pub fn als_fit_implicit<'py>(
     Ok((
         ua.reshape([n_users, factors])?.into(),
         ia.reshape([n_items, factors])?.into(),
+        gb,
+        ub.into_pyarray(py),
+        ib.into_pyarray(py),
     ))
 }
 
 #[pyfunction]
-#[pyo3(signature = (user_factors, item_factors, user_id, n, exclude_indptr, exclude_indices))]
+#[pyo3(signature = (user_factors, item_factors, user_id, n, exclude_indptr, exclude_indices, global_bias=0.0, user_biases=None, item_biases=None))]
 pub fn als_recommend_items<'py>(
     py: Python<'py>,
     user_factors: PyReadonlyArray2<f32>,
@@ -989,6 +1125,9 @@ pub fn als_recommend_items<'py>(
     n: usize,
     exclude_indptr: PyReadonlyArray1<i64>,
     exclude_indices: PyReadonlyArray1<i32>,
+    global_bias: f32,
+    user_biases: Option<PyReadonlyArray1<f32>>,
+    item_biases: Option<PyReadonlyArray1<f32>>,
 ) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f32>>)> {
     let uf = user_factors.as_slice()?;
     let itf = item_factors.as_slice()?;
@@ -998,29 +1137,36 @@ pub fn als_recommend_items<'py>(
     let ex = exclude_indices.as_slice()?;
     let es = ep[user_id] as usize;
     let ee = ep[user_id + 1] as usize;
-    let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee);
+    let ub: Option<&[f32]> = user_biases.as_ref().and_then(|b| b.as_slice().ok());
+    let ib: Option<&[f32]> = item_biases.as_ref().and_then(|b| b.as_slice().ok());
+    let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee, global_bias, ub, ib);
     Ok((ids.into_pyarray(py), scores.into_pyarray(py)))
 }
 
 #[pyfunction]
-#[pyo3(signature = (user_factors, item_factors, item_id, n))]
+#[pyo3(signature = (user_factors, item_factors, item_id, n, global_bias=0.0, user_biases=None, item_biases=None))]
 pub fn als_recommend_users<'py>(
     py: Python<'py>,
     user_factors: PyReadonlyArray2<f32>,
     item_factors: PyReadonlyArray2<f32>,
     item_id: usize,
     n: usize,
+    global_bias: f32,
+    user_biases: Option<PyReadonlyArray1<f32>>,
+    item_biases: Option<PyReadonlyArray1<f32>>,
 ) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f32>>)> {
     let uf = user_factors.as_slice()?;
     let itf = item_factors.as_slice()?;
     let k = user_factors.shape()[1];
     let n_users = user_factors.shape()[0];
-    let (ids, scores) = top_n_users(uf, itf, item_id, n_users, k, n);
+    let ub: Option<&[f32]> = user_biases.as_ref().and_then(|b| b.as_slice().ok());
+    let ib: Option<&[f32]> = item_biases.as_ref().and_then(|b| b.as_slice().ok());
+    let (ids, scores) = top_n_users(uf, itf, item_id, n_users, k, n, global_bias, ub, ib);
     Ok((ids.into_pyarray(py), scores.into_pyarray(py)))
 }
 
 #[pyfunction]
-#[pyo3(signature = (item_factors, indices, data, regularization, alpha, cg_iters=10, use_cholesky=false, use_eals=false, eals_iters=1))]
+#[pyo3(signature = (item_factors, indices, data, regularization, alpha, cg_iters=10, use_cholesky=false, use_eals=false, eals_iters=1, item_pop_weights=None))]
 pub fn als_recalculate_user<'py>(
     py: Python<'py>,
     item_factors: PyReadonlyArray2<f32>,
@@ -1032,6 +1178,7 @@ pub fn als_recalculate_user<'py>(
     use_cholesky: bool,
     use_eals: bool,
     eals_iters: usize,
+    item_pop_weights: Option<PyReadonlyArray1<f32>>,
 ) -> PyResult<Bound<'py, PyArray1<f32>>> {
     let itf = item_factors.as_slice()?;
     let ix = indices.as_slice()?;
@@ -1042,10 +1189,16 @@ pub fn als_recalculate_user<'py>(
     let mut out = vec![0.0f32; k];
     let ip = vec![0, ix.len() as i64];
     
-    let g_item = gramian(itf, n_items, k);
+    let ipw: Option<&[f32]> = item_pop_weights.as_ref().and_then(|w| w.as_slice().ok());
+    
+    let g_item = if use_eals && ipw.is_some() {
+        weighted_gramian(itf, ipw.unwrap(), n_items, k)
+    } else {
+        gramian(itf, n_items, k)
+    };
     
     if use_eals {
-        solve_one_side_eals(&ip, ix, id, itf, &g_item, &mut out, k, regularization, alpha, eals_iters);
+        solve_one_side_eals(&ip, ix, id, itf, &g_item, &mut out, k, regularization, alpha, eals_iters, ipw);
     } else if use_cholesky {
         let res = solve_one_side_cholesky(&ip, ix, id, itf, &g_item, 1, k, regularization, alpha);
         out.copy_from_slice(&res);
@@ -1058,7 +1211,7 @@ pub fn als_recalculate_user<'py>(
 }
 
 #[pyfunction]
-#[pyo3(signature = (user_factors, item_factors, n, exclude_indptr, exclude_indices))]
+#[pyo3(signature = (user_factors, item_factors, n, exclude_indptr, exclude_indices, global_bias=0.0, user_biases=None, item_biases=None))]
 pub fn als_recommend_all<'py>(
     py: Python<'py>,
     user_factors: PyReadonlyArray2<f32>,
@@ -1066,6 +1219,9 @@ pub fn als_recommend_all<'py>(
     n: usize,
     exclude_indptr: PyReadonlyArray1<i64>,
     exclude_indices: PyReadonlyArray1<i32>,
+    global_bias: f32,
+    user_biases: Option<PyReadonlyArray1<f32>>,
+    item_biases: Option<PyReadonlyArray1<f32>>,
 ) -> PyResult<(Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f32>>)> {
     let uf = user_factors.as_slice()?;
     let itf = item_factors.as_slice()?;
@@ -1074,6 +1230,8 @@ pub fn als_recommend_all<'py>(
     let n_items = item_factors.shape()[0];
     let ep = exclude_indptr.as_slice()?;
     let ex = exclude_indices.as_slice()?;
+    let ub: Option<&[f32]> = user_biases.as_ref().and_then(|b| b.as_slice().ok());
+    let ib: Option<&[f32]> = item_biases.as_ref().and_then(|b| b.as_slice().ok());
 
     // Parallel processing across all users
     let results: Vec<(Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_users)
@@ -1081,7 +1239,7 @@ pub fn als_recommend_all<'py>(
         .map(|user_id| {
             let es = ep[user_id] as usize;
             let ee = ep[user_id + 1] as usize;
-            let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee);
+            let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee, global_bias, ub, ib);
             
             let user_ids = vec![user_id as i32; ids.len()];
             (user_ids, ids, scores)

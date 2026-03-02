@@ -91,7 +91,7 @@ fn evaluate_model(
             let es = train_indptr[u] as usize;
             let ee = train_indptr[u + 1] as usize;
             let (pred_ids, _scores) =
-                top_n_items(user_factors, item_factors, u, n_items, k_latent, k, train_indices, es, ee);
+                top_n_items(user_factors, item_factors, u, n_items, k_latent, k, train_indices, es, ee, 0.0, None, None);
             let actual = &user_test_items[&uid];
             (
                 precision_raw(actual, &pred_ids, k),
@@ -145,7 +145,7 @@ fn cv_one_config(
         let (ti, tx, td) = csr_transpose(&indptr, &indices, &data, n_users, n_items);
 
         // Train
-        let (uf, itf) = als_train(
+        let (uf, itf, _gb, _ub, _ib) = als_train(
             &indptr,
             &indices,
             &data,
@@ -165,6 +165,8 @@ fn cv_one_config(
             0, // anderson_m
             config.use_eals,
             config.eals_iters,
+            None, // item_pop_weights
+            false, // use_biases
         );
 
         // Evaluate
@@ -459,13 +461,16 @@ fn train_model(
     match kind {
         "als" => {
             let (ti, tx, td) = csr_transpose(indptr, indices, data, n_users, n_items);
-            als_train(
+            let (uf, itf, _gb, _ub, _ib) = als_train(
                 indptr, indices, data, &ti, &tx, &td,
                 n_users, n_items, config.factors, config.regularization,
                 config.alpha, config.iterations, config.seed, false,
                 config.cg_iters, config.use_cholesky, 0,
                 config.use_eals, config.eals_iters,
-            )
+                None, // item_pop_weights
+                false, // use_biases
+            );
+            (uf, itf)
         }
         "bpr" => {
             crate::bpr::bpr_train(

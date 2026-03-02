@@ -54,6 +54,14 @@ class ALS(ImplicitRecommender):
 
         Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix
         (~57 MB per copy at 25M ratings, k=64).
+    popularity_weighting : str
+        Weighting scheme for missing data in **eALS**. Items that are frequently
+        interacted-with provide stronger negative signals when *not* chosen.
+        Options: ``"none"`` (uniform, default), ``"sqrt"``, ``"log"``, ``"linear"``.
+        Only used when ``use_eals=True``.
+    use_biases : bool
+        If True, learn global bias (μ), user biases (b_u), and item biases (b_i)
+        so that prediction becomes ``μ + b_u + b_i + w_u · h_i``.
 
     Examples
     --------
@@ -82,6 +90,8 @@ class ALS(ImplicitRecommender):
         use_eals: bool = False,
         eals_iters: int = 1,
         anderson_m: int = 0,
+        popularity_weighting: str = "none",
+        use_biases: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -96,12 +106,18 @@ class ALS(ImplicitRecommender):
         self.use_eals = use_eals
         self.eals_iters = eals_iters
         self.anderson_m = anderson_m
+        self.popularity_weighting = popularity_weighting
+        self.use_biases = use_biases
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
         self._n_items: int = 0
         self._fit_indptr: Any = None
         self._fit_indices: Any = None
+        self._item_pop_weights: Any = None
+        self._global_bias: float = 0.0
+        self._user_biases: Any = None
+        self._item_biases: Any = None
         self._user_labels: list[Any] | None = None
         self._item_labels: list[Any] | None = None
         self.fitted: bool = False
@@ -159,7 +175,29 @@ class ALS(ImplicitRecommender):
         indices = np.asarray(csr.indices, dtype=np.int32)
         data = np.asarray(csr.data, dtype=np.float32)
 
-        self._user_factors, self._item_factors = _rust.als_fit_implicit(
+        # Compute item popularity weights for eALS
+        item_pop_weights = None
+        if self.use_eals and self.popularity_weighting != "none":
+            col_sums = np.zeros(n_items, dtype=np.float64)
+            for i in range(len(indices)):
+                col_sums[indices[i]] += 1.0
+            col_sums /= max(col_sums.sum(), 1.0)  # normalize to probabilities
+            if self.popularity_weighting == "sqrt":
+                item_pop_weights = np.sqrt(col_sums).astype(np.float32)
+            elif self.popularity_weighting == "log":
+                item_pop_weights = np.log1p(col_sums * n_items).astype(np.float32)
+                item_pop_weights /= max(item_pop_weights.max(), 1e-9)
+            elif self.popularity_weighting == "linear":
+                item_pop_weights = col_sums.astype(np.float32)
+            else:
+                raise ValueError(
+                    f"Unknown popularity_weighting: '{self.popularity_weighting}'. "
+                    "Must be one of: 'none', 'sqrt', 'log', 'linear'."
+                )
+            # Ensure minimum weight so rare items aren't zeroed out
+            item_pop_weights = np.maximum(item_pop_weights, 1e-6)
+
+        self._user_factors, self._item_factors, self._global_bias, self._user_biases, self._item_biases = _rust.als_fit_implicit(
             indptr,
             indices,
             data,
@@ -176,11 +214,14 @@ class ALS(ImplicitRecommender):
             self.anderson_m,
             self.use_eals,
             self.eals_iters,
+            item_pop_weights,
+            self.use_biases,
         )
         self._n_users = n_users
         self._n_items = n_items
         self._fit_indptr = indptr
         self._fit_indices = indices
+        self._item_pop_weights = item_pop_weights
         self.fitted = True
         return self
 
@@ -231,6 +272,7 @@ class ALS(ImplicitRecommender):
             self.use_cholesky,
             self.use_eals,
             self.eals_iters,
+            self._item_pop_weights,
         )
 
     def recommend_items(
@@ -258,6 +300,9 @@ class ALS(ImplicitRecommender):
             n,
             exc_indptr,
             exc_indices,
+            self._global_bias,
+            self._user_biases,
+            self._item_biases,
         )
         return np.asarray(ids), np.asarray(scores)
 
@@ -299,6 +344,9 @@ class ALS(ImplicitRecommender):
             n,
             exc_indptr,
             exc_indices,
+            self._global_bias,
+            self._user_biases,
+            self._item_biases,
         )
 
         u_ids_arr = np.asarray(u_ids)
@@ -348,6 +396,9 @@ class ALS(ImplicitRecommender):
             self._item_factors,
             item_id,
             n,
+            self._global_bias,
+            self._user_biases,
+            self._item_biases,
         )
         return np.asarray(ids), np.asarray(scores)
 
@@ -362,6 +413,24 @@ class ALS(ImplicitRecommender):
         """Item factor matrix (n_items, factors)."""
         self._check_fitted()
         return self._item_factors
+
+    @property
+    def global_bias(self) -> float:
+        """Global bias μ (scalar). Zero when use_biases=False."""
+        self._check_fitted()
+        return self._global_bias
+
+    @property
+    def user_biases(self) -> Any:
+        """User bias vector b_u (n_users,). Zeros when use_biases=False."""
+        self._check_fitted()
+        return self._user_biases
+
+    @property
+    def item_biases(self) -> Any:
+        """Item bias vector b_i (n_items,). Zeros when use_biases=False."""
+        self._check_fitted()
+        return self._item_biases
 
     def _check_fitted(self) -> None:
         if self._user_factors is None:

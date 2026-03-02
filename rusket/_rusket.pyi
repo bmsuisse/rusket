@@ -47,7 +47,15 @@ def als_fit_implicit(
     anderson_m: int = 0,
     use_eals: bool = False,
     eals_iters: int = 1,
-) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
+    item_pop_weights: npt.NDArray[np.float32] | None = None,
+    use_biases: bool = False,
+) -> tuple[
+    npt.NDArray[np.float32],  # user_factors
+    npt.NDArray[np.float32],  # item_factors
+    float,                     # global_bias
+    npt.NDArray[np.float32],  # user_biases
+    npt.NDArray[np.float32],  # item_biases
+]: ...
 def als_recalculate_user(
     item_factors: npt.NDArray[np.float32],
     indices: npt.NDArray[np.int32],
@@ -58,6 +66,7 @@ def als_recalculate_user(
     use_cholesky: bool = False,
     use_eals: bool = False,
     eals_iters: int = 1,
+    item_pop_weights: npt.NDArray[np.float32] | None = None,
 ) -> npt.NDArray[np.float32]: ...
 def als_recommend_items(
     user_factors: npt.NDArray[np.float32],
@@ -66,6 +75,9 @@ def als_recommend_items(
     n: int,
     exclude_indptr: npt.NDArray[np.int64],
     exclude_indices: npt.NDArray[np.int32],
+    global_bias: float = 0.0,
+    user_biases: npt.NDArray[np.float32] | None = None,
+    item_biases: npt.NDArray[np.float32] | None = None,
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
 def als_recommend_all(
     user_factors: npt.NDArray[np.float32],
@@ -73,12 +85,18 @@ def als_recommend_all(
     n: int,
     exclude_indptr: npt.NDArray[np.int64],
     exclude_indices: npt.NDArray[np.int32],
+    global_bias: float = 0.0,
+    user_biases: npt.NDArray[np.float32] | None = None,
+    item_biases: npt.NDArray[np.float32] | None = None,
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
 def als_recommend_users(
     user_factors: npt.NDArray[np.float32],
     item_factors: npt.NDArray[np.float32],
     item_id: int,
     n: int,
+    global_bias: float = 0.0,
+    user_biases: npt.NDArray[np.float32] | None = None,
+    item_biases: npt.NDArray[np.float32] | None = None,
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
 def bpr_fit_implicit(
     indptr: npt.NDArray[np.int64],

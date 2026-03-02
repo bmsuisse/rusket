@@ -455,3 +455,103 @@ def test_eals_wrapper() -> None:
 
     np.testing.assert_array_equal(model_als.user_factors, model_eals.user_factors)
     np.testing.assert_array_equal(model_als.item_factors, model_eals.item_factors)
+
+
+# ---------------------------------------------------------------------------
+# eALS popularity weighting tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("weighting", ["sqrt", "log", "linear"])
+def test_eals_popularity_weighting_modes(weighting: str) -> None:
+    """Fit with each popularity weighting mode — factors must be finite."""
+    mat = get_checker_board(20)
+    model = rusket.eALS(factors=8, iterations=5, seed=42, popularity_weighting=weighting)
+    model.fit(mat)
+    assert np.isfinite(model.user_factors).all()
+    assert np.isfinite(model.item_factors).all()
+
+
+@pytest.mark.parametrize("weighting", ["sqrt", "log", "linear"])
+def test_eals_popularity_weighting_differs_from_uniform(weighting: str) -> None:
+    """Popularity weighting should produce different factors than uniform weighting."""
+    # Build a skewed matrix where item popularity follows a power law
+    rng = np.random.RandomState(99)
+    n_users, n_items = 50, 30
+    rows, cols = [], []
+    for u in range(n_users):
+        # Popular items (0-5) appear much more often than tail items (20-29)
+        n_interactions = rng.randint(3, 10)
+        items = rng.choice(n_items, size=n_interactions, replace=False, p=np.arange(n_items, 0, -1, dtype=float) / sum(range(1, n_items + 1)))
+        for i in items:
+            rows.append(u)
+            cols.append(i)
+    mat = csr_matrix((np.ones(len(rows), dtype=np.float32), (rows, cols)), shape=(n_users, n_items))
+
+    m_base = rusket.eALS(factors=8, iterations=10, seed=42)
+    m_base.fit(mat)
+    m_pop = rusket.eALS(factors=8, iterations=10, seed=42, popularity_weighting=weighting)
+    m_pop.fit(mat)
+    # Factors must differ (same seed, same data, but different weighting scheme)
+    assert not np.allclose(m_base.user_factors, m_pop.user_factors, rtol=1e-3)
+
+
+def test_eals_popularity_default_unchanged() -> None:
+    """popularity_weighting='none' must produce identical results to no weighting."""
+    mat = get_checker_board(20)
+    m1 = rusket.eALS(factors=8, iterations=5, seed=42)
+    m1.fit(mat)
+    m2 = rusket.eALS(factors=8, iterations=5, seed=42, popularity_weighting="none")
+    m2.fit(mat)
+    np.testing.assert_array_equal(m1.user_factors, m2.user_factors)
+    np.testing.assert_array_equal(m1.item_factors, m2.item_factors)
+
+
+# ---------------------------------------------------------------------------
+# Bias terms tests
+# ---------------------------------------------------------------------------
+
+
+def test_als_bias_terms_finite() -> None:
+    """Bias terms must be finite with correct shapes."""
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, iterations=10, seed=42, use_biases=True)
+    model.fit(mat)
+    assert np.isfinite(model.user_factors).all()
+    assert np.isfinite(model.item_factors).all()
+    assert np.isfinite(model.global_bias)
+    assert np.isfinite(model.user_biases).all()
+    assert np.isfinite(model.item_biases).all()
+    assert model.user_biases.shape == (20,)
+    assert model.item_biases.shape == (20,)
+
+
+def test_als_bias_disabled_matches_baseline() -> None:
+    """use_biases=False must give zero biases and match factor-only baseline."""
+    mat = get_checker_board(20)
+    m1 = rusket.ALS(factors=8, iterations=5, seed=42, use_biases=False)
+    m1.fit(mat)
+    m2 = rusket.ALS(factors=8, iterations=5, seed=42)
+    m2.fit(mat)
+    # Biases should be zero
+    assert m1.global_bias == 0.0
+    assert (m1.user_biases == 0.0).all()
+    assert (m1.item_biases == 0.0).all()
+    # Factors should be identical
+    np.testing.assert_array_equal(m1.user_factors, m2.user_factors)
+    np.testing.assert_array_equal(m1.item_factors, m2.item_factors)
+
+
+def test_als_bias_recommendations_work() -> None:
+    """Model with biases should produce valid recommendations."""
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, iterations=10, seed=42, use_biases=True)
+    model.fit(mat)
+    ids, scores = model.recommend_items(0, n=5)
+    assert len(ids) == 5
+    assert np.isfinite(scores).all()
+    # recommend_users should also work
+    uids, uscores = model.recommend_users(0, n=5)
+    assert len(uids) == 5
+    assert np.isfinite(uscores).all()
+
