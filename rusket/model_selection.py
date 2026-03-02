@@ -1216,6 +1216,26 @@ def optuna_optimize(
     original_verbosity = optuna.logging.get_verbosity()
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
+    # Use our own tqdm progress bar instead of Optuna's built-in one,
+    # which can get stuck / show incorrect percentages.
+    _pbar = None
+    if verbose:
+        try:
+            from tqdm.auto import tqdm
+
+            _pbar = tqdm(total=n_trials, desc="Optuna hyperparameter search", unit="trial")
+        except ImportError:
+            pass
+
+    def _progress_callback(study: Any, trial: Any) -> None:  # noqa: ARG001
+        if _pbar is not None:
+            best = study.best_trial
+            _pbar.set_postfix_str(f"best trial: {best.number}, best value: {best.value:.6f}")
+            _pbar.update(1)
+
+    if _pbar is not None:
+        all_callbacks.append(_progress_callback)
+
     try:
         # Create or reuse study
         if study is None:
@@ -1225,9 +1245,11 @@ def optuna_optimize(
             _objective,
             n_trials=n_trials,
             callbacks=all_callbacks or None,
-            show_progress_bar=verbose,
+            show_progress_bar=False,
         )
     finally:
+        if _pbar is not None:
+            _pbar.close()
         optuna.logging.set_verbosity(original_verbosity)
 
     best_params = study.best_trial.params
