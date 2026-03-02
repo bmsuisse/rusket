@@ -1678,7 +1678,7 @@ Typical training time on ml-100k: < 0.5s/epoch.
 ```python
 from rusket.lightgcn import LightGCN
 
-LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**

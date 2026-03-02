@@ -162,6 +162,22 @@ def itemknn_recommend_items(
     exc_indices: npt.NDArray[np.int32],
     n_items: int,
 ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
+def userknn_top_k(
+    indptr: npt.NDArray[np.int64], indices: npt.NDArray[np.int32], data: npt.NDArray[np.float32], k: int
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
+def userknn_recommend_items(
+    w_indptr: npt.NDArray[np.int64],
+    w_indices: npt.NDArray[np.int32],
+    w_data: npt.NDArray[np.float32],
+    fit_indptr: npt.NDArray[np.int64],
+    fit_indices: npt.NDArray[np.int32],
+    user_data: npt.NDArray[np.float32],
+    user_id: int,
+    n: int,
+    exc_indptr: npt.NDArray[np.int64],
+    exc_indices: npt.NDArray[np.int32],
+    n_items: int,
+) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32]]: ...
 def fpmc_fit(
     indptr: npt.NDArray[np.int64],
     indices: npt.NDArray[np.int32],

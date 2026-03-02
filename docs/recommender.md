@@ -8,6 +8,7 @@ Three complementary recommendation strategies: cart add-ons, personalised "For Y
 |---|---|---|
 | **"Frequently Bought Together"** | Cart add-ons, shelf placement | `FPGrowth` / `FPGrowth` |
 | **"For You" (Personalised)** | Homepage, email, loyalty | `ALS` / `BPR` |
+| **Nearest Neighbors** | Simple, strong baselines | `ItemKNN` / `UserKNN` |
 | **Hybrid** | Blend both signals | `Recommender` |
 
 ---
@@ -128,6 +129,55 @@ item_factors_df = als.export_factors(normalize=True, format="spark")
 user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.user_embeddings")
 item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
 ```
+
+---
+
+## Nearest-Neighbor Collaborative Filtering — ItemKNN & UserKNN
+
+Two complementary memory-based methods that consistently rank among the **top performers** in academic benchmarks ([Anelli et al. 2022](https://arxiv.org/abs/2203.01155)).
+
+- **ItemKNN** — Finds items similar to what the user already liked. Computes item-item similarity via `X^T · X`.
+- **UserKNN** — Finds users similar to the target and recommends what they liked. Computes user-user similarity via `X · X^T`.
+
+Both support **BM25**, **TF-IDF**, **Cosine**, and raw **Count** weighting. The top-K neighbor pruning runs in parallel Rust.
+
+### ItemKNN — "Customers who bought X also bought Y"
+
+```python
+from rusket import ItemKNN
+
+item_knn = ItemKNN.from_transactions(
+    purchases, user_col="user_id", item_col="item_id",
+    method="bm25", k=100,
+).fit()
+
+items, scores = item_knn.recommend_items(user_id=42, n=10, exclude_seen=True)
+```
+
+### UserKNN — "Users similar to you enjoyed these"
+
+```python
+from rusket import UserKNN
+
+user_knn = UserKNN.from_transactions(
+    purchases, user_col="user_id", item_col="item_id",
+    method="cosine", k=50,
+).fit()
+
+items, scores = user_knn.recommend_items(user_id=42, n=10, exclude_seen=True)
+```
+
+### Weighting methods
+
+| Method | Description | Best for |
+|---|---|---|
+| `"bm25"` | BM25 term-frequency saturation + IDF | Long-tail catalogs (e-commerce) |
+| `"tfidf"` | Standard TF-IDF weighting | General purpose |
+| `"cosine"` | Row-normalized for cosine similarity | Dense datasets |
+| `"count"` | Raw interaction counts (no weighting) | Quick baseline |
+
+!!! tip "Which to choose?"
+    Start with `ItemKNN(method="bm25")` — it's fast and robust. Switch to `UserKNN` for denser datasets or more diverse results. Evaluate both with `rusket.evaluate()`.
 
 ---
 

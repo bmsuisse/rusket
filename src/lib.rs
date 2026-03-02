@@ -19,6 +19,7 @@ mod fin;
 mod negfin;
 mod ease;
 mod item_knn;
+mod user_knn;
 mod fpmc;
 mod fm;
 mod lightgcn;
@@ -63,6 +64,8 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ease::ease_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_top_k, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(user_knn::userknn_top_k, m)?)?;
+    m.add_function(wrap_pyfunction!(user_knn::userknn_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(fpmc::fpmc_fit, m)?)?;
     m.add_function(wrap_pyfunction!(fm::fm_fit, m)?)?;
     m.add_function(wrap_pyfunction!(fm::fm_predict, m)?)?;

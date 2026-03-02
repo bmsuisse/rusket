@@ -53,6 +53,7 @@ from .transactions import (
     from_transactions,
     from_transactions_csr,
 )
+from .user_knn import UserKNN
 from .viz import to_networkx, to_networkxr
 
 __all__ = [
@@ -82,6 +83,7 @@ __all__ = [
     "BPR",
     "EASE",
     "ItemKNN",
+    "UserKNN",
     "FPMC",
     "FM",
     "SVD",

@@ -34,7 +34,7 @@
 
 **Zero runtime dependencies.** No TensorFlow, no PyTorch, no JVM — just `pip install rusket` and go. The entire engine is compiled Rust, distributed as a single ~3 MB wheel.
 
-It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE), Sequential Recommendation (FPMC, SASRec), Context-aware Prediction (FM), Pattern Mining (FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan), and built-in Hyperparameter Tuning (Optuna + MLflow tracking) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
+It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, UserKNN, EASE), Sequential Recommendation (FPMC, SASRec), Context-aware Prediction (FM), Pattern Mining (FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan), and built-in Hyperparameter Tuning (Optuna + MLflow tracking) with high performance and low memory footprints. Both functional and OOP APIs are available for seamless integration.
 
 ---
 
@@ -45,7 +45,7 @@ It features Collaborative Filtering (ALS, BPR, SVD, LightGCN, ItemKNN, EASE), Se
 | **Core language** | Rust (PyO3) | TF + PyTorch + Cython | Cython / C++ | Scala / Java (JVM) |
 | **Runtime deps** | **0** | TF + PyTorch + gensim (~2 GB) | OpenBLAS / MKL | JVM + Spark |
 | **Install size** | ~3 MB | ~2 GB | ~50 MB | ~300 MB |
-| **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, EASE, FM, FPMC, SASRec, FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
+| **Algorithms** | ALS, BPR, SVD, LightGCN, ItemKNN, UserKNN, EASE, FM, FPMC, SASRec, FP-Growth, Eclat, FIN, LCM, HUPM, PrefixSpan | ALS, BPR, SVD, LightGCN, ItemCF, FM, DeepFM, ... | ALS, BPR | ALS, FP-Growth, PrefixSpan |
 | **Recommender API** | ✅ Hybrid Engine + i2i Similarity | ✅ | ✅ | ✅ (ALS only) |
 | **Graph & Embeddings** | ✅ NetworkX Export, Vector DB Export | ❌ | ❌ | ❌ |
 | **OOP class API** | ✅ `ALS.from_transactions(df).fit()` | ✅ | ✅ | ✅ |
@@ -435,6 +435,7 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 | `SVD` | `ImplicitRecommender` | Funk SVD (biased SGD) |
 | `LightGCN` | `ImplicitRecommender` | Graph Convolutional CF |
 | `ItemKNN` | `ImplicitRecommender` | Item-based k-NN CF |
+| `UserKNN` | `ImplicitRecommender` | User-based k-NN CF |
 | `EASE` | `ImplicitRecommender` | Embarrassingly Shallow Autoencoders |
 | `FM` | `BaseModel` | Factorization Machines (CTR prediction) |
 | `FPMC` | `SequentialRecommender` | Factorizing Personalized Markov Chains |
@@ -461,7 +462,7 @@ rules  = model.association_rules(metric="lift")    # pd.DataFrame [antecedents, 
 recs   = model.recommend_items(["bread", "milk"])  # list of suggested items
 ```
 
-`ImplicitRecommender` subclasses (`ALS`, `BPR`, `SVD`, `LightGCN`, `ItemKNN`, `EASE`) follow the **scikit-learn** `fit()`/`predict()` pattern.
+`ImplicitRecommender` subclasses (`ALS`, `BPR`, `SVD`, `LightGCN`, `ItemKNN`, `UserKNN`, `EASE`) follow the **scikit-learn** `fit()`/`predict()` pattern.
 `SequentialRecommender` subclasses (`FPMC`, `SASRec`) use `from_transactions(..., time_col=...).fit()` for sequential next-item prediction:
 
 ```python
@@ -487,6 +488,35 @@ users, scores = model.recommend_users(item_id=99, n=5)
 ## 🧠 Advanced Pattern & Recommendation Algorithms
 
 `rusket` provides more than just basic market basket analysis. It includes an entire suite of modern algorithms and a high-level Business Recommender API.
+
+### 🎯 ItemKNN & UserKNN — Nearest-Neighbor Collaborative Filtering
+
+Two complementary memory-based methods that consistently rank among the **top performers** in academic benchmarks (see [Anelli et al. 2022](https://arxiv.org/abs/2203.01155)).
+
+- **ItemKNN** — Finds items similar to what the user already liked. Fast, stable, and scales well with pre-computed item-item similarity.
+- **UserKNN** — Finds users similar to the target user and recommends what they liked. Often more serendipitous and performs particularly well on dense datasets.
+
+Both support **BM25**, **TF-IDF**, **Cosine**, and raw **Count** weighting, with the top-K neighbor pruning running in parallel Rust.
+
+```python
+from rusket import ItemKNN, UserKNN
+
+# ── Item-based: "Customers who bought X also bought Y" ────────────
+item_knn = ItemKNN.from_transactions(
+    purchases, user_col="user_id", item_col="item_id",
+    method="bm25", k=100,
+).fit()
+items, scores = item_knn.recommend_items(user_id=42, n=10)
+
+# ── User-based: "Users similar to you enjoyed these items" ────────
+user_knn = UserKNN.from_transactions(
+    purchases, user_col="user_id", item_col="item_id",
+    method="cosine", k=50,
+).fit()
+items, scores = user_knn.recommend_items(user_id=42, n=10)
+```
+
+> **Which one to choose?** Start with `ItemKNN(method="bm25")` — it's the fastest and most stable. Switch to `UserKNN` if you have a dense dataset or want more diverse recommendations. In production, try both and evaluate with `rusket.evaluate()`.
 
 ### 🎯 ALS & BPR Collaborative Filtering
 
