@@ -2745,8 +2745,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🐛 Bug Fixes
+
+- replace unreliable Optuna progress bar with custom tqdm callback, bump v0.1.82
+
 ### 📦 Miscellaneous
 
+- auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
