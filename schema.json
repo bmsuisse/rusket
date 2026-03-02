@@ -566,6 +566,8 @@
             "anderson_m": "int",
             "popularity_weighting": "str",
             "use_biases": "bool",
+            "alpha_view": "float",
+            "view_target": "float",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -591,7 +593,8 @@
         },
         "fit": {
           "parameters": {
-            "interactions": "Any"
+            "interactions": "Any",
+            "view_matrix": "Any"
           },
           "returns": "ALS",
           "doc": "Fit the model to the user-item interaction matrix."

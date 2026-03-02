@@ -931,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -950,6 +950,8 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
 | popularity_weighting | str | Weighting scheme for missing data in **eALS**. Items that are frequently interacted-with provide stronger negative signals when *not* chosen. Options: ``"none"`` (uniform, default), ``"sqrt"``, ``"log"``, ``"linear"``. Only used when ``use_eals=True``. |
 | use_biases | bool | If True, learn global bias (μ), user biases (b_u), and item biases (b_i) so that prediction becomes ``μ + b_u + b_i + w_u · h_i``. |
+| alpha_view | float | Confidence scaling for **view** interactions in VALS mode. Pass ``view_matrix`` to ``fit()`` to enable. Default 10.0. |
+| view_target | float | Target value for view interactions (between 0.0 and 1.0). Purchases always target 1.0. Default 0.5. |
 
 **Examples**
 
@@ -1025,7 +1027,7 @@ Fit the model to the user-item interaction matrix.
 ```python
 from rusket.als import ALS.fit
 
-ALS.fit(interactions: 'Any' = None) -> 'ALS'
+ALS.fit(interactions: 'Any' = None, *, view_matrix: 'Any' = None) -> 'ALS'
 ```
 
 **Parameters**
@@ -1033,6 +1035,7 @@ ALS.fit(interactions: 'Any' = None) -> 'ALS'
 | Parameter | Type | Description |
 | --- | --- | --- |
 | interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
+| view_matrix | sparse matrix or numpy array, optional | Optional view/browse interaction matrix (same shape as ``interactions``). When provided, enables **VALS** mode: views are treated as weaker positive signals with confidence ``alpha_view`` targeting ``view_target``. |
 
 **Raises**
 
@@ -2749,6 +2752,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - add item popularity weighting in eALS and user/item bias terms
 - add FAISS ANN index export and build_ann_index() on ALS
+- add VALS (View-Aware ALS) — three-level implicit feedback
 
 ### 📦 Miscellaneous
 
