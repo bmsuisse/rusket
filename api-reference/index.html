@@ -7377,7 +7377,7 @@ without a projection step.</p>
 </tbody>
 </table>
 <h4 id="nmffit"><code>NMF.fit</code><a class="headerlink" href="#nmffit" title="Permanent link">&para;</a></h4>
-<p>Fit via multiplicative update rules.</p>
+<p>Fit via multiplicative update rules (Rust-accelerated).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-102-1"><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.nmf</span><span class="w"> </span><span class="kn">import</span> <span class="n">NMF</span><span class="o">.</span><span class="n">fit</span>
 </span><span id="__span-102-2"><a id="__codelineno-102-2" name="__codelineno-102-2" href="#__codelineno-102-2"></a>
 </span><span id="__span-102-3"><a id="__codelineno-102-3" name="__codelineno-102-3" href="#__codelineno-102-3"></a><span class="n">NMF</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;NMF&#39;</span>

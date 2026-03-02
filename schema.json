@@ -1186,7 +1186,7 @@
             "interactions": "Any"
           },
           "returns": "NMF",
-          "doc": "Fit via multiplicative update rules."
+          "doc": "Fit via multiplicative update rules (Rust-accelerated)."
         },
         "recommend_items": {
           "parameters": {
