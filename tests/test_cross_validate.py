@@ -168,6 +168,36 @@ def test_cross_validate_with_eals():
     assert 0.0 <= result.best_score <= 1.0
 
 
+def test_cross_validate_eals_advanced_params():
+    """Verify cross_validate works with popularity_weighting, use_biases, and anderson_m."""
+    df = _make_dataset()
+
+    result = cross_validate(
+        eALS,
+        df,
+        user_col="user_id",
+        item_col="item_id",
+        param_grid={
+            "factors": [8],
+            "popularity_weighting": ["none", "sqrt", "log"],
+            "use_biases": [True, False],
+            "anderson_m": [0, 3],
+        },
+        n_folds=2,
+        k=5,
+        verbose=False,
+    )
+
+    assert isinstance(result, CrossValidationResult)
+    # 1 * 3 * 2 * 2 = 12 param combos
+    assert len(result.results) == 12
+    assert 0.0 <= result.best_score <= 1.0
+    # Best params should include the new keys
+    assert "popularity_weighting" in result.best_params
+    assert "use_biases" in result.best_params
+    assert "anderson_m" in result.best_params
+
+
 def test_optuna_optimize_basic():
     """Optuna Bayesian HP search — 5 trials, verify result structure."""
     optuna = __import__("pytest").importorskip("optuna")  # noqa: F841

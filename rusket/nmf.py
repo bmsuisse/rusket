@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 
+from . import _rusket as _rust  # type: ignore
 from .model import ImplicitRecommender
 
 
@@ -62,7 +63,7 @@ class NMF(ImplicitRecommender):
     # ── fit ────────────────────────────────────────────────────────────
 
     def fit(self, interactions: Any = None) -> NMF:
-        """Fit via multiplicative update rules.
+        """Fit via multiplicative update rules (Rust-accelerated).
 
         Parameters
         ----------
@@ -96,53 +97,32 @@ class NMF(ImplicitRecommender):
             V = V.tocsr()
 
         n_users, n_items = typing.cast(tuple[int, int], V.shape)
-        k = self.factors
-        eps = 1e-12  # avoid division by zero
 
-        rng = np.random.RandomState(self.seed)
+        indptr = np.asarray(V.indptr, dtype=np.int64)
+        indices = np.asarray(V.indices, dtype=np.int32)
+        data = np.asarray(V.data, dtype=np.float64)
 
-        # Initialise with small positive random values
-        W = np.abs(rng.randn(n_users, k).astype(np.float64)) * 0.01 + eps
-        H = np.abs(rng.randn(k, n_items).astype(np.float64)) * 0.01 + eps
+        user_factors, item_factors = _rust.nmf_fit(
+            indptr,
+            indices,
+            data,
+            n_users,
+            n_items,
+            self.factors,
+            self.iterations,
+            self.regularization,
+            self.seed,
+            self.verbose > 0,
+        )
 
-        reg = self.regularization
-
-        for it in range(self.iterations):
-            # --- Update H (item factors) ---
-            # H = H * (W^T V) / (W^T W H + reg * H + eps)
-            WtV = W.T @ V  # (k, n_items) — sparse-aware
-            if sp.issparse(WtV):
-                WtV = WtV.toarray()
-            WtW = W.T @ W  # (k, k)
-            numerator_H = np.asarray(WtV)
-            denominator_H = WtW @ H + reg * H + eps
-            H *= numerator_H / denominator_H
-
-            # --- Update W (user factors) ---
-            # W = W * (V H^T) / (W H H^T + reg * W + eps)
-            VHt = V @ H.T  # (n_users, k) — sparse-aware
-            if sp.issparse(VHt):
-                VHt = VHt.toarray()
-            HHt = H @ H.T  # (k, k)
-            numerator_W = np.asarray(VHt)
-            denominator_W = W @ HHt + reg * W + eps
-            W *= numerator_W / denominator_W
-
-            if self.verbose and (it + 1) % max(1, self.iterations // 10) == 0:
-                # Compute reconstruction error on non-zero entries only
-                approx = W @ H
-                diff = V.toarray() - approx
-                loss = np.sum(diff**2 * (V.toarray() > 0))
-                print(f"NMF iteration {it + 1}/{self.iterations}  loss={loss:.4f}")
-
-        self._user_factors = W.astype(np.float32)
-        self._item_factors = H.T.astype(np.float32)  # stored as (n_items, k)
+        self._user_factors = user_factors
+        self._item_factors = item_factors
         self._n_users = n_users
         self._n_items = n_items
 
         # Store CSR data for seen-item exclusion
-        self._fit_indptr = np.asarray(V.indptr, dtype=np.int64)
-        self._fit_indices = np.asarray(V.indices, dtype=np.int32)
+        self._fit_indptr = indptr
+        self._fit_indices = indices
         self.fitted = True
 
         if self.verbose:

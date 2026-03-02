@@ -575,6 +575,9 @@ def _cross_validate_rust_generic(
     eals_iters_list: list[int] = []
     cg_iters_list: list[int] = []
     use_cholesky_list: list[bool] = []
+    anderson_m_list: list[int] = []
+    popularity_weighting_list: list[str] = []
+    use_biases_list: list[bool] = []
     learning_rate_list: list[float] = []
     k_layers_list: list[int] = []
 
@@ -588,6 +591,9 @@ def _cross_validate_rust_generic(
         eals_iters_list.append(0)
         cg_iters_list.append(0)
         use_cholesky_list.append(False)
+        anderson_m_list.append(0)
+        popularity_weighting_list.append("none")
+        use_biases_list.append(False)
         learning_rate_list.append(float(params.get("learning_rate", d["learning_rate"])))
         k_layers_list.append(int(params.get("k_layers", d["k_layers"])))
 
@@ -614,6 +620,9 @@ def _cross_validate_rust_generic(
         eals_iters_list,
         cg_iters_list,
         use_cholesky_list,
+        anderson_m_list,
+        popularity_weighting_list,
+        use_biases_list,
         learning_rate_list,
         k_layers_list,
         n_folds,
@@ -730,6 +739,9 @@ def _cross_validate_rust(
     cg_iters_list: list[int] = []
     use_cholesky_list: list[bool] = []
     seed_list: list[int] = []
+    anderson_m_list: list[int] = []
+    popularity_weighting_list: list[str] = []
+    use_biases_list: list[bool] = []
 
     for params in param_combinations:
         factors_list.append(int(params.get("factors", defaults.factors)))
@@ -741,6 +753,9 @@ def _cross_validate_rust(
         cg_iters_list.append(int(params.get("cg_iters", defaults.cg_iters)))
         use_cholesky_list.append(bool(params.get("use_cholesky", defaults.use_cholesky)))
         seed_list.append(int(params.get("seed", seed)))
+        anderson_m_list.append(int(params.get("anderson_m", defaults.anderson_m)))
+        popularity_weighting_list.append(str(params.get("popularity_weighting", defaults.popularity_weighting)))
+        use_biases_list.append(bool(params.get("use_biases", defaults.use_biases)))
 
     # --- Call Rust cross_validate_als ---
     (
@@ -764,6 +779,9 @@ def _cross_validate_rust(
         cg_iters_list,
         use_cholesky_list,
         seed_list,
+        anderson_m_list,
+        popularity_weighting_list,
+        use_biases_list,
         n_folds,
         k,
         metric,
@@ -1077,6 +1095,9 @@ def optuna_optimize(
                 OptunaSearchSpace.float("regularization", 1e-4, 1.0, log=True),
                 OptunaSearchSpace.int("iterations", 5, 50),
                 OptunaSearchSpace.categorical("use_eals", [True, False]),
+                OptunaSearchSpace.categorical("popularity_weighting", ["none", "sqrt", "log", "linear"]),
+                OptunaSearchSpace.categorical("use_biases", [True, False]),
+                OptunaSearchSpace.int("anderson_m", 0, 5),
             ]
 
     n_trials : int, default=50
@@ -1148,6 +1169,9 @@ def optuna_optimize(
             OptunaSearchSpace.float("regularization", 1e-4, 1.0, log=True),
             OptunaSearchSpace.int("iterations", 5, 50),
             OptunaSearchSpace.categorical("use_eals", [True, False]),
+            OptunaSearchSpace.categorical("popularity_weighting", ["none", "sqrt", "log", "linear"]),
+            OptunaSearchSpace.categorical("use_biases", [True, False]),
+            OptunaSearchSpace.int("anderson_m", 0, 5),
         ]
 
     all_trial_results: list[dict[str, Any]] = []
@@ -1223,7 +1247,7 @@ def optuna_optimize(
         try:
             from tqdm.auto import tqdm
 
-            _pbar = tqdm(total=n_trials, desc="Optuna hyperparameter search", unit="trial")
+            _pbar = tqdm(total=n_trials, desc="🔍 Optuna hyperparameter search", unit="trial")
         except ImportError:
             pass
 

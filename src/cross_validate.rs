@@ -6,6 +6,44 @@ use rayon::prelude::*;
 use crate::als::{als_train, csr_transpose, top_n_items};
 use crate::metrics::{hit_rate_raw, ndcg_raw, precision_raw, recall_raw};
 
+/// Compute item popularity weights from CSR indices for eALS.
+fn compute_item_pop_weights(indices: &[i32], n_items: usize, scheme: &str) -> Option<Vec<f32>> {
+    if scheme == "none" {
+        return None;
+    }
+    let mut counts = vec![0.0f64; n_items];
+    for &idx in indices {
+        counts[idx as usize] += 1.0;
+    }
+    let total: f64 = counts.iter().sum();
+    if total == 0.0 {
+        return None;
+    }
+    // Normalize to probabilities
+    for c in counts.iter_mut() {
+        *c /= total;
+    }
+    let mut weights: Vec<f32> = match scheme {
+        "sqrt" => counts.iter().map(|&c| (c as f32).sqrt()).collect(),
+        "log" => {
+            let n = n_items as f64;
+            let mut w: Vec<f32> = counts.iter().map(|&c| ((1.0 + c * n).ln()) as f32).collect();
+            let max_w = w.iter().cloned().fold(1e-9f32, f32::max);
+            for v in w.iter_mut() {
+                *v /= max_w;
+            }
+            w
+        }
+        "linear" => counts.iter().map(|&c| c as f32).collect(),
+        _ => return None,
+    };
+    // Minimum weight so rare items aren't zeroed out
+    for v in weights.iter_mut() {
+        *v = v.max(1e-6);
+    }
+    Some(weights)
+}
+
 // ── Helpers ────────────────────────────────────────────────────────
 
 /// Build a CSR matrix from COO (users, items, values) arrays.
@@ -120,6 +158,9 @@ struct AlsConfig {
     cg_iters: usize,
     use_cholesky: bool,
     seed: u64,
+    anderson_m: usize,
+    popularity_weighting: String,
+    use_biases: bool,
 }
 
 /// Run cross-validation for a single config, returning per-fold metric arrays.
@@ -144,6 +185,9 @@ fn cv_one_config(
         let (indptr, indices, data) = build_csr(tr_users, tr_items, tr_values, n_users, n_items);
         let (ti, tx, td) = csr_transpose(&indptr, &indices, &data, n_users, n_items);
 
+        // Compute item popularity weights if needed
+        let ipw = compute_item_pop_weights(&indices, n_items, &config.popularity_weighting);
+
         // Train
         let (uf, itf, _gb, _ub, _ib) = als_train(
             &indptr,
@@ -162,11 +206,11 @@ fn cv_one_config(
             false, // verbose for individual ALS training off
             config.cg_iters,
             config.use_cholesky,
-            0, // anderson_m
+            config.anderson_m,
             config.use_eals,
             config.eals_iters,
-            None, // item_pop_weights
-            false, // use_biases
+            ipw.as_deref(),
+            config.use_biases,
         );
 
         // Evaluate
@@ -218,6 +262,7 @@ fn cv_one_config(
     factors_list, regularization_list, alpha_list, iterations_list,
     use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
     seed_list,
+    anderson_m_list, popularity_weighting_list, use_biases_list,
     n_folds, k, metric, fold_seed, verbose
 ))]
 #[allow(clippy::too_many_arguments)]
@@ -238,6 +283,9 @@ pub fn cross_validate_als(
     cg_iters_list: Vec<usize>,
     use_cholesky_list: Vec<bool>,
     seed_list: Vec<u64>,
+    anderson_m_list: Vec<usize>,
+    popularity_weighting_list: Vec<String>,
+    use_biases_list: Vec<bool>,
     // CV settings
     n_folds: usize,
     k: usize,
@@ -337,6 +385,9 @@ pub fn cross_validate_als(
             cg_iters: cg_iters_list[i],
             use_cholesky: use_cholesky_list[i],
             seed: seed_list[i],
+            anderson_m: anderson_m_list[i],
+            popularity_weighting: popularity_weighting_list[i].clone(),
+            use_biases: use_biases_list[i],
         })
         .collect();
 
@@ -441,6 +492,9 @@ struct GenericConfig {
     eals_iters: usize,
     cg_iters: usize,
     use_cholesky: bool,
+    anderson_m: usize,
+    popularity_weighting: String,
+    use_biases: bool,
     // SGD-based (BPR, SVD, SVD++, LightGCN)
     learning_rate: f32,
     // LightGCN
@@ -461,14 +515,15 @@ fn train_model(
     match kind {
         "als" => {
             let (ti, tx, td) = csr_transpose(indptr, indices, data, n_users, n_items);
+            let ipw = compute_item_pop_weights(indices, n_items, &config.popularity_weighting);
             let (uf, itf, _gb, _ub, _ib) = als_train(
                 indptr, indices, data, &ti, &tx, &td,
                 n_users, n_items, config.factors, config.regularization,
                 config.alpha, config.iterations, config.seed, false,
-                config.cg_iters, config.use_cholesky, 0,
+                config.cg_iters, config.use_cholesky, config.anderson_m,
                 config.use_eals, config.eals_iters,
-                None, // item_pop_weights
-                false, // use_biases
+                ipw.as_deref(),
+                config.use_biases,
             );
             (uf, itf)
         }
@@ -561,6 +616,7 @@ fn cv_one_config_generic(
     n_users, n_items,
     factors_list, regularization_list, iterations_list, seed_list,
     alpha_list, use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
+    anderson_m_list, popularity_weighting_list, use_biases_list,
     learning_rate_list, k_layers_list,
     n_folds, k, metric, fold_seed, verbose
 ))]
@@ -584,6 +640,9 @@ pub fn cross_validate_generic(
     eals_iters_list: Vec<usize>,
     cg_iters_list: Vec<usize>,
     use_cholesky_list: Vec<bool>,
+    anderson_m_list: Vec<usize>,
+    popularity_weighting_list: Vec<String>,
+    use_biases_list: Vec<bool>,
     // SGD-based (BPR, SVD, SVD++, LightGCN)
     learning_rate_list: Vec<f32>,
     // LightGCN
@@ -693,6 +752,9 @@ pub fn cross_validate_generic(
             eals_iters: eals_iters_list[i],
             cg_iters: cg_iters_list[i],
             use_cholesky: use_cholesky_list[i],
+            anderson_m: anderson_m_list[i],
+            popularity_weighting: popularity_weighting_list[i].clone(),
+            use_biases: use_biases_list[i],
             learning_rate: learning_rate_list[i],
             k_layers: k_layers_list[i],
         })
