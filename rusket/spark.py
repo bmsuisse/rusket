@@ -74,8 +74,12 @@ def mine_grouped(
         raise ValueError("mine_grouped requires use_colnames=True to safely manage PySpark schemas across partitions.")
 
     # We defer the pyspark imports so we don't crash if pyspark is not installed
-    import pyarrow as pa
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     # 1. Define the output schema for the Spark UDF
     # PySpark Grouped Map UDF requires an exact schema
@@ -194,9 +198,15 @@ def prefixspan_grouped(
         - `support` (long/int64)
         - `sequence` (array of strings)
     """
-    import pandas as pd
-    import pyarrow as pa
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     schema = T.StructType(
         [
@@ -324,9 +334,15 @@ def hupm_grouped(
         - `utility` (double/float64)
         - `itemset` (array of longs/int64)
     """
-    import pandas as pd
-    import pyarrow as pa
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     schema = T.StructType(
         [
@@ -447,9 +463,15 @@ def rules_grouped(
         A DataFrame containing antecedents, consequents, and all rule metrics,
         prepended with the `group_col`.
     """
-    import pandas as pd
-    import pyarrow as pa
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     all_metrics = [
         "antecedent support",
@@ -593,8 +615,12 @@ def recommend_batches(
         - `user_col`
         - `recommended_items` (array of longs/int64)
     """
-    import pandas as pd
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     # If it's a raw ALS model, wrap it
     try:
@@ -693,9 +719,15 @@ def als_grouped(
         - `user_col`
         - `recommended_items` (array of ints)
     """
-    import pandas as pd
-    import pyarrow as pa
-    import pyspark.sql.types as T
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
+    from rusket._dependencies import import_optional_dependency
+
+    T = import_optional_dependency("pyspark.sql.types", "pyspark")
 
     schema = T.StructType(
         [

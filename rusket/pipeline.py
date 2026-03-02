@@ -352,11 +352,15 @@ class Pipeline:
             return records
 
         if format == "polars":
-            import polars as pl
+            from rusket._dependencies import import_optional_dependency
+
+            pl = import_optional_dependency("polars")
 
             return pl.DataFrame(records)
 
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         return pd.DataFrame(records)
 

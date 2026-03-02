@@ -33,7 +33,9 @@ def association_rules(
     support_only: bool = False,
     return_metrics: list[str] = _ALL_METRICS,
 ) -> pd.DataFrame:
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     # Convert non-Pandas DataFrames to Pandas for the internal operations,
     # the returned type is re-converted to Spark/Polars by RuleMinerMixin.

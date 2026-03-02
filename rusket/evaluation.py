@@ -53,7 +53,9 @@ def evaluate(
     import numpy as np
 
     try:
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
     except ImportError:
         pd = None
 

@@ -70,7 +70,9 @@ class RuleMinerMixin:
                 pass
 
         if is_empty:
-            import pandas as pd
+            from rusket._dependencies import import_optional_dependency
+
+            pd = import_optional_dependency("pandas")
 
             empty_df = pd.DataFrame(columns=["antecedents", "consequents"] + return_metrics)
             if hasattr(self, "_convert_to_orig_type"):
@@ -191,7 +193,9 @@ class RuleMinerMixin:
             return []
 
         # Ensure we are working with Pandas for recommend_for_cart logic since we use .apply()
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         if not isinstance(rules_df, pd.DataFrame):
             try:
@@ -510,13 +514,17 @@ class Miner(BaseModel):
 
     def _convert_to_orig_type(self, df: pd.DataFrame) -> Any:
         """Helper to convert the resulting pandas DataFrame back to the input DataFrame type."""
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         if df is None or not isinstance(df, pd.DataFrame):
             return df
 
         if self._orig_df_type == "pyarrow":
-            import pyarrow as pa
+            from rusket._dependencies import import_optional_dependency
+
+            pa = import_optional_dependency("pyarrow")
 
             # Convert tuples to lists for Arrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
@@ -524,7 +532,9 @@ class Miner(BaseModel):
                     df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
             return pa.Table.from_pandas(df)
         elif self._orig_df_type == "polars":
-            import polars as pl
+            from rusket._dependencies import import_optional_dependency
+
+            pl = import_optional_dependency("polars")
 
             # Convert tuples to lists for pyarrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
@@ -535,7 +545,10 @@ class Miner(BaseModel):
         elif self._orig_df_type == "spark":
             # Best-effort conversion to Spark
             try:
-                from pyspark.sql import SparkSession
+                from rusket._dependencies import import_optional_dependency
+
+                pyspark_sql = import_optional_dependency("pyspark.sql", "pyspark")
+                SparkSession = pyspark_sql.SparkSession
 
                 # Convert tuples to lists for Spark schema compatibility
                 for col in ["antecedents", "consequents", "itemsets"]:
@@ -609,8 +622,12 @@ class Miner(BaseModel):
             miner._orig_df_type = "pandas"
             return miner
 
-        import pandas as _pd
-        import polars as _pl
+        from rusket._dependencies import import_optional_dependency
+
+        _pd = import_optional_dependency("pandas")
+        from rusket._dependencies import import_optional_dependency
+
+        _pl = import_optional_dependency("polars")
 
         if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
             raise TypeError(f"Expected a Pandas/Polars/Spark DataFrame or list of lists, got {type(data)}")
@@ -672,7 +689,9 @@ class Miner(BaseModel):
             A DataFrame containing ``group_col``, ``support``, and ``itemsets``.
             The type mirrors the input ``data`` type.
         """
-        import pandas as _pd
+        from rusket._dependencies import import_optional_dependency
+
+        _pd = import_optional_dependency("pandas")
 
         min_support = kwargs.get("min_support", getattr(self, "min_support", 0.5))
         max_len = kwargs.get("max_len", getattr(self, "max_len", None))
@@ -704,7 +723,9 @@ class Miner(BaseModel):
 
         # ── Polars path ───────────────────────────────────────────────────────
         try:
-            import polars as _pl
+            from rusket._dependencies import import_optional_dependency
+
+            _pl = import_optional_dependency("polars")
 
             is_polars = isinstance(df, _pl.DataFrame)
         except ImportError:
@@ -797,7 +818,7 @@ class ImplicitRecommender(BaseModel):
         item_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
-    ) -> ImplicitRecommender:
+    ) -> Self:
         """Initialize the model from a long-format DataFrame.
 
         Prepares the interaction matrix but does **not** fit the model.
@@ -845,7 +866,10 @@ class ImplicitRecommender(BaseModel):
     ) -> ImplicitRecommender:
         """Prepare interaction matrix from a long-format DataFrame without fitting."""
         import numpy as np
-        import pandas as _pd
+
+        from rusket._dependencies import import_optional_dependency
+
+        _pd = import_optional_dependency("pandas")
         from scipy import sparse as sp
 
         from ._compat import to_dataframe
@@ -857,7 +881,9 @@ class ImplicitRecommender(BaseModel):
         i_col = item_col or str(cols[1])
 
         try:
-            import polars as pl
+            from rusket._dependencies import import_optional_dependency
+
+            pl = import_optional_dependency("polars")
 
             is_polars = isinstance(data, pl.DataFrame)
         except ImportError:
@@ -902,7 +928,7 @@ class ImplicitRecommender(BaseModel):
         return self.fit(self._prepared_interactions)
 
     @abstractmethod
-    def fit(self, interactions: Any) -> ImplicitRecommender:
+    def fit(self, interactions: Any = None) -> ImplicitRecommender:
         """Fit the model to a user-item interaction matrix.
 
         Must be implemented by subclasses.

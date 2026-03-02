@@ -104,8 +104,12 @@ def _build_result(
     col_names: list | Any,
     use_colnames: bool,
 ) -> pd.DataFrame:
-    import pandas as pd
-    import pyarrow as pa
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
+    from rusket._dependencies import import_optional_dependency
+
+    pa = import_optional_dependency("pyarrow")
 
     supports_arr, offsets_arr, items_arr = raw
 
@@ -253,7 +257,9 @@ def dispatch(
     min_count = math.ceil(min_support * n_rows)
     col_names = list(df_pd.columns)
 
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     from ._validation import valid_input_check
 

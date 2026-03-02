@@ -305,7 +305,9 @@ class ALS(ImplicitRecommender):
         i_ids_arr = np.asarray(i_ids)
         scores_arr = np.asarray(scores)
 
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         df = pl.DataFrame({"user_id": u_ids_arr, "item_id": i_ids_arr, "score": scores_arr})
         if self._user_labels is not None and len(self._user_labels) == self._n_users:
@@ -322,7 +324,10 @@ class ALS(ImplicitRecommender):
         elif format == "pandas":
             return df.to_pandas()
         elif format == "spark":
-            from pyspark.sql import SparkSession
+            from rusket._dependencies import import_optional_dependency
+
+            pyspark_sql = import_optional_dependency("pyspark.sql", "pyspark")
+            SparkSession = pyspark_sql.SparkSession
 
             spark = SparkSession.getActiveSession()
             if spark is None:

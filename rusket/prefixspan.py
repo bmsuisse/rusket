@@ -99,7 +99,9 @@ class PrefixSpan(Miner):
         min_supp = kwargs.get("min_support", self.min_support)
         max_len = kwargs.get("max_len", self.max_len)
 
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         if isinstance(min_supp, float):
             n_seqs = min(1, len(self.data)) if isinstance(self.data, list) else 1  # simplistic fallback
@@ -231,7 +233,10 @@ def prefixspan(
     )
 
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     indptr_list = [0]
     indices_list = []
@@ -288,19 +293,25 @@ def sequences_from_event_log(
         - indices: Flattened item index list.
         - item_mapping: A dictionary mapping the integer IDs back to the original item labels.
     """
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     data = to_dataframe(df)
 
     try:
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         is_polars = isinstance(data, pl.DataFrame)
     except ImportError:
         is_polars = False
 
     if is_polars:
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         sorted_df = data.sort([user_col, time_col])
         unique_items = sorted_df[item_col].unique(maintain_order=True).to_list()

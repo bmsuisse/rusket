@@ -150,7 +150,9 @@ class FPMiner:
             Columns ``support`` and ``itemsets``.
         """
         if self._n_rows == 0:
-            import pandas as pd
+            from rusket._dependencies import import_optional_dependency
+
+            pd = import_optional_dependency("pandas")
 
             return pd.DataFrame(columns=["support", "itemsets"])  # type: ignore
 

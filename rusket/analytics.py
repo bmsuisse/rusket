@@ -59,7 +59,9 @@ def customer_saturation(
     if category_col is None and item_col is None:
         raise ValueError("Must provide either category_col or item_col.")
 
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     target_col = category_col or item_col
     assert target_col is not None  # narrowing for type checker

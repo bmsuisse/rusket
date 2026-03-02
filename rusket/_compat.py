@@ -27,14 +27,20 @@ def to_dataframe(data: Any) -> Any:
 
     # PyArrow Table → Polars (zero-copy via Arrow memory)
     if type(data).__name__ == "Table" and mod.startswith("pyarrow"):
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         return pl.from_arrow(data)
 
     # We want Spark DataFrames to stay in Arrow memory, saving GC pauses
     if type(data).__name__ == "DataFrame" and mod.startswith("pyspark"):
-        import polars as pl
-        import pyarrow as pa
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
+        from rusket._dependencies import import_optional_dependency
+
+        pa = import_optional_dependency("pyarrow")
 
         # PySpark 3.4+ supports toArrow() zero-copy serialization
         # Older PySpark may not have it, so we fallback gracefully but warn.

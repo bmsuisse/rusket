@@ -54,7 +54,9 @@ class OptunaPruningCallback:
     """
 
     def __init__(self, trial: optuna.Trial, report_interval: int = 50) -> None:
-        import optuna
+        from rusket._dependencies import import_optional_dependency
+
+        optuna = import_optional_dependency("optuna")
 
         # Use an internal flag for Optuna's trial to save the exception instance
         self._trial = trial
@@ -102,7 +104,10 @@ def train_test_split(
         train_df, test_df
     """
     import numpy as np
-    import pandas as _pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    _pd = import_optional_dependency("pandas")
 
     if not isinstance(df, _pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame.")
@@ -146,7 +151,10 @@ def leave_one_out_split(
         train_df, test_df
     """
     import numpy as np
-    import pandas as _pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    _pd = import_optional_dependency("pandas")
 
     if not isinstance(df, _pd.DataFrame):
         raise TypeError("df must be a pandas DataFrame.")
@@ -312,7 +320,7 @@ def cross_validate(
     k: int = 10,
     metric: str = "precision",
     metrics: list[str] | None = None,
-    callbacks: list[PruningCallback] | None = None,
+    callbacks: list[Any] | None = None,
     refit_best: bool = False,
     verbose: bool = True,
     seed: int = 42,
@@ -418,7 +426,9 @@ def cross_validate(
             param_combinations=param_combinations,
             n_folds=n_folds,
             k=k,
+            metric=metric,
             metrics=metrics,
+            callbacks=callbacks,
             refit_best=refit_best,
             verbose=verbose,
             seed=seed,
@@ -438,6 +448,7 @@ def cross_validate(
             k=k,
             metric=metric,
             metrics=metrics,
+            callbacks=callbacks,
             refit_best=refit_best,
             verbose=verbose,
             seed=seed,
@@ -453,7 +464,9 @@ def cross_validate(
         param_combinations=param_combinations,
         n_folds=n_folds,
         k=k,
+        metric=metric,
         metrics=metrics,
+        callbacks=callbacks,
         refit_best=refit_best,
         verbose=verbose,
         seed=seed,
@@ -491,13 +504,17 @@ def _cross_validate_rust_generic(
     k: int,
     metric: str,
     metrics: list[str],
+    callbacks: list[PruningCallback] | None = None,
     refit_best: bool,
     verbose: bool,
     seed: int,
 ) -> CrossValidationResult:
     """Rust-accelerated cross-validation for BPR, SVD, LightGCN."""
     import numpy as np
-    import pandas as _pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    _pd = import_optional_dependency("pandas")
 
     from . import _rusket
 
@@ -571,6 +588,13 @@ def _cross_validate_rust_generic(
         learning_rate_list.append(float(params.get("learning_rate", d["learning_rate"])))
         k_layers_list.append(int(params.get("k_layers", d["k_layers"])))
 
+    cb_obj = None
+    if callbacks is not None:
+        for c in callbacks:
+            if callable(c):
+                cb_obj = c
+                break
+
     # --- Call Rust cross_validate_generic ---
     (
         best_idx,
@@ -597,9 +621,11 @@ def _cross_validate_rust_generic(
         learning_rate_list,
         k_layers_list,
         n_folds,
+        k,
         metric,
         seed,
         verbose,
+        cb_obj,
     )
 
     # --- Reconstruct CrossValidationResult ---
@@ -664,13 +690,17 @@ def _cross_validate_rust(
     k: int,
     metric: str,
     metrics: list[str],
+    callbacks: list[PruningCallback] | None = None,
     refit_best: bool,
     verbose: bool,
     seed: int,
 ) -> CrossValidationResult:
     """Rust-accelerated cross-validation for ALS/eALS models."""
     import numpy as np
-    import pandas as _pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    _pd = import_optional_dependency("pandas")
 
     from .als import ALS
 
@@ -717,6 +747,13 @@ def _cross_validate_rust(
         use_cholesky_list.append(bool(params.get("use_cholesky", defaults.use_cholesky)))
         seed_list.append(int(params.get("seed", seed)))
 
+    cb_obj = None
+    if callbacks is not None:
+        for c in callbacks:
+            if callable(c):
+                cb_obj = c
+                break
+
     # --- Call Rust cross_validate_als ---
     (
         best_idx,
@@ -744,6 +781,7 @@ def _cross_validate_rust(
         metric,
         seed,
         verbose,
+        cb_obj,
     )
 
     # --- Reconstruct CrossValidationResult ---
@@ -808,6 +846,7 @@ def _cross_validate_python(
     k: int,
     metric: str,
     metrics: list[str],
+    callbacks: list[Any] | None = None,
     refit_best: bool,
     verbose: bool,
     seed: int,
@@ -864,6 +903,19 @@ def _cross_validate_python(
             eval_df = test_df.rename(columns={user_col: "user", item_col: "item"})
             scores = evaluate(model, eval_df, k=k, metrics=cast(list["MetricName"], metrics))
             fold_scores.append(scores)
+
+            primary = scores.get(metric, 0.0)
+
+            # --- Check Pruning ---
+            if callbacks:
+                # Trigger callback for epoch=iterations for pruning early stops
+                # Since pure-Python path doesn't yield during fit, we only check at fold end
+                iters = params.get("iterations", 1)  # Or some generic epoch identifier
+                for cb in callbacks:
+                    if cb(iters, primary):
+                        # Signal Early Stopping
+                        pass
+
 
             if verbose:
                 primary = scores.get(metric, 0.0)
@@ -1093,7 +1145,9 @@ def optuna_optimize(
         )
     """
     try:
-        import optuna
+        from rusket._dependencies import import_optional_dependency
+
+        optuna = import_optional_dependency("optuna")
     except ImportError as e:
         raise ImportError("Optuna is required for optuna_optimize(). Install it with: pip install optuna") from e
 

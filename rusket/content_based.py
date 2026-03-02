@@ -90,7 +90,9 @@ class ContentBased(BaseModel):
         ContentBased
             A ready-to-fit model instance.
         """
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         # Convert Polars → Pandas if needed
         if not isinstance(df, pd.DataFrame):

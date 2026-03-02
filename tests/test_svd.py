@@ -32,10 +32,10 @@ class TestSVDBasic:
         model = SVD(factors=16, iterations=5, seed=42)
         model.fit(small_explicit_matrix)
         assert model._fitted
-        assert model.user_factors.shape == (50, 16)
-        assert model.item_factors.shape == (30, 16)
-        assert model.user_biases.shape == (50,)
-        assert model.item_biases.shape == (30,)
+        assert model.user_factors.shape == (50, 16)  # type: ignore
+        assert model.item_factors.shape == (30, 16)  # type: ignore
+        assert model.user_biases.shape == (50,)  # type: ignore
+        assert model.item_biases.shape == (30,)  # type: ignore
 
     def test_predict(self, small_explicit_matrix: sparse.csr_matrix) -> None:
         model = SVD(factors=16, iterations=10, seed=42)

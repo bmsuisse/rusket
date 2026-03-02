@@ -1,4 +1,4 @@
-with open("rusket/mlflow.py", "r") as f:
+with open("rusket/mlflow.py") as f:
     lines = f.readlines()
 
 new_lines = []
@@ -49,7 +49,7 @@ else:
 """
 new_lines.append(new_code)
 
-for line in lines[lines.index("def save_model(model: Any, path: str, **kwargs: Any) -> None:\n"):]:
+for line in lines[lines.index("def save_model(model: Any, path: str, **kwargs: Any) -> None:\n") :]:
     new_lines.append(line)
 
 with open("rusket/mlflow.py", "w") as f:

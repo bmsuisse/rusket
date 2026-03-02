@@ -8,7 +8,10 @@ from typing import Any
 if typing.TYPE_CHECKING:
     import networkx  # type: ignore
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
 
 def to_networkx(
@@ -236,7 +239,10 @@ def visualize_latent_space(
         A Plotly figure object.
     """
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     try:
         import plotly.express as px
@@ -356,7 +362,10 @@ def plot_pca(
         ) from err
 
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     if hasattr(data, "data"):
         data = data.data

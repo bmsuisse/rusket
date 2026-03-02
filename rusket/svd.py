@@ -98,11 +98,15 @@ class SVD(ImplicitRecommender):
         else:
             # Try pandas or polars DataFrame
             try:
-                import pandas as pd
+                from rusket._dependencies import import_optional_dependency
+
+                pd = import_optional_dependency("pandas")
             except ImportError:
                 pd = None  # type: ignore
             try:
-                import polars as pl
+                from rusket._dependencies import import_optional_dependency
+
+                pl = import_optional_dependency("polars")
             except ImportError:
                 pl = None  # type: ignore
 
@@ -286,13 +290,17 @@ class SVD(ImplicitRecommender):
 
         if format == "polars":
             try:
-                import polars as pl
+                from rusket._dependencies import import_optional_dependency
+
+                pl = import_optional_dependency("polars")
 
                 return pl.DataFrame(data)
             except ImportError:
                 pass
 
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         return pd.DataFrame(data)
 

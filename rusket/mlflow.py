@@ -11,8 +11,12 @@ if TYPE_CHECKING:
     import pandas as pd
 
 try:
-    import mlflow
-    import mlflow.pyfunc
+    from rusket._dependencies import import_optional_dependency
+
+    mlflow = import_optional_dependency("mlflow")
+    from rusket._dependencies import import_optional_dependency
+
+    import_optional_dependency("mlflow.pyfunc", "mlflow")
 
     HAS_MLFLOW = True
 except ImportError:
@@ -25,6 +29,7 @@ _ORIG_FIT_METHODS: dict[Any, Callable[..., Any]] = {}
 
 
 if HAS_MLFLOW:
+
     class _RusketWrapper(mlflow.pyfunc.PythonModel):  # type: ignore
         """PyFunc wrapper for rusket models."""
 
@@ -39,7 +44,9 @@ if HAS_MLFLOW:
 
             Input dataframe should have a 'user' column (or user inputs directly).
             """
-            import pandas as pd
+            from rusket._dependencies import import_optional_dependency
+
+            pd = import_optional_dependency("pandas")
 
             if isinstance(model_input, pd.DataFrame):
                 if "user" in model_input.columns:
@@ -62,6 +69,8 @@ if HAS_MLFLOW:
             return pd.DataFrame(results)
 else:
     _RusketWrapper = None  # type: ignore
+
+
 def save_model(model: Any, path: str, **kwargs: Any) -> None:
     """Save a rusket model as an MLflow pyfunc model."""
     if not HAS_MLFLOW:

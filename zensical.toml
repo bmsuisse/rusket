@@ -10,11 +10,15 @@ nav = [
   ]},
   { "User Guide" = [
     { "API Reference" = "api-reference.md" },
-    { "Cookbook" = "cookbook.md" },
-    { "Notebooks" = [
-      { "Online Retail & Basket Analysis" = "notebooks/1_online_retail_basket_analysis.md" },
-      { "MovieLens Recommendations" = "notebooks/2_movielens_recommendations.md" },
-      { "E-Commerce Lifecycle Mining" = "notebooks/3_ecommerce_lifecycle_mining.md" },
+    { "Cookbooks & Notebooks" = [
+      { "General Cookbook" = "cookbook.md" },
+      { "Databricks Cookbook" = "databricks_cookbook.md" },
+      { "1. Online Retail & Basket Analysis" = "notebooks/1_online_retail_basket_analysis.md" },
+      { "2. MovieLens Recommendations" = "notebooks/2_movielens_recommendations.md" },
+      { "3. E-Commerce Lifecycle Mining" = "notebooks/3_ecommerce_lifecycle_mining.md" },
+      { "4. LightGCN Recommendations" = "notebooks/4_lightgcn_ecommerce_recommendations.md" },
+      { "5. SASRec Next Best Product" = "notebooks/5_sasrec_next_best_product.md" },
+      { "6. Optuna Hyperparameter Tuning" = "notebooks/6_optuna_tuning.md" },
     ]},
     { "Recommender Workflows" = "recommender.md" },
     { "Pipeline API" = "pipeline.md" },

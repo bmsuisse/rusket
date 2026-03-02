@@ -19,7 +19,10 @@ def valid_input_check(df: pd.DataFrame, null_values: bool = False) -> None:
         Whether NaN values are allowed in *df*.
     """
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     if df is None:
         return

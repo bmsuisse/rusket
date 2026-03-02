@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+# Removed
 import pandas as pd
 
 from .model import Miner

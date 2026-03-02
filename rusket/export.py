@@ -43,7 +43,10 @@ def export_item_factors(
     >>> vectors = np.stack(df["vector"].values)
     """
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     factors = model.item_factors
     if factors is None:
@@ -76,11 +79,16 @@ def export_item_factors(
     if format == "pandas":
         return df
     elif format == "polars":
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         return pl.from_pandas(df)
     elif format == "spark":
-        from pyspark.sql import SparkSession
+        from rusket._dependencies import import_optional_dependency
+
+        pyspark_sql = import_optional_dependency("pyspark.sql", "pyspark")
+        SparkSession = pyspark_sql.SparkSession
 
         spark = SparkSession.getActiveSession()
         if spark is None:
@@ -113,7 +121,10 @@ def export_user_factors(
         optionally ``user_label``, and ``vector``.
     """
     import numpy as np
-    import pandas as pd
+
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     factors = model.user_factors
     if factors is None:
@@ -145,11 +156,16 @@ def export_user_factors(
     if format == "pandas":
         return df
     elif format == "polars":
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         return pl.from_pandas(df)
     elif format == "spark":
-        from pyspark.sql import SparkSession
+        from rusket._dependencies import import_optional_dependency
+
+        pyspark_sql = import_optional_dependency("pyspark.sql", "pyspark")
+        SparkSession = pyspark_sql.SparkSession
 
         spark = SparkSession.getActiveSession()
         if spark is None:

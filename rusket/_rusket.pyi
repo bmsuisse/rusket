@@ -45,7 +45,21 @@ def als_fit_implicit(
     cg_iters: int = 3,
     use_cholesky: bool = False,
     anderson_m: int = 0,
+    use_eals: bool = False,
+    eals_iters: int = 1,
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
+
+def als_recalculate_user(
+    item_factors: npt.NDArray[np.float32],
+    indices: npt.NDArray[np.int32],
+    data: npt.NDArray[np.float32],
+    regularization: float,
+    alpha: float,
+    cg_iters: int = 3,
+    use_cholesky: bool = False,
+    use_eals: bool = False,
+    eals_iters: int = 1,
+) -> npt.NDArray[np.float32]: ...
 def als_recommend_items(
     user_factors: npt.NDArray[np.float32],
     item_factors: npt.NDArray[np.float32],

@@ -130,7 +130,9 @@ class Recommender:
 
     def predict_next_chunk(self, user_history_df: pd.DataFrame, user_col: str = "user_id", k: int = 5) -> pd.DataFrame:
         """Batch-rank the next best products for every user in *user_history_df*."""
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         recs = [
             {

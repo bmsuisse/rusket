@@ -79,14 +79,18 @@ class HUPM(Miner):
         data = to_dataframe(data)
 
         try:
-            import polars as pl
+            from rusket._dependencies import import_optional_dependency
+
+            pl = import_optional_dependency("polars")
 
             is_polars = isinstance(data, pl.DataFrame)
         except ImportError:
             is_polars = False
 
         if is_polars:
-            import polars as pl
+            from rusket._dependencies import import_optional_dependency
+
+            pl = import_optional_dependency("polars")
 
             grouped = data.group_by(transaction_col).agg(
                 [pl.col(item_col).alias("items"), pl.col(utility_col).alias("utils")]
@@ -94,7 +98,9 @@ class HUPM(Miner):
             transactions = grouped["items"].to_list()
             utilities = grouped["utils"].to_list()
         else:
-            import pandas as pd
+            from rusket._dependencies import import_optional_dependency
+
+            pd = import_optional_dependency("pandas")
 
             if not isinstance(data, pd.DataFrame):
                 raise TypeError(f"Expected Pandas or Polars DataFrame, got {type(data)}")
@@ -114,7 +120,9 @@ class HUPM(Miner):
         """
         from typing import cast
 
-        import pandas as pd
+        from rusket._dependencies import import_optional_dependency
+
+        pd = import_optional_dependency("pandas")
 
         data_list = cast(list[list[int]], self.data)
         total_utils, patterns = _rust.hupm_mine_py(data_list, self.utilities, self.min_utility, self.max_len)
@@ -212,7 +220,9 @@ def hupm(
         "rusket.hupm() is deprecated. Use HUPM.from_transactions() instead.", DeprecationWarning, stacklevel=2
     )
 
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     total_utils, patterns = _rust.hupm_mine_py(transactions, utilities, min_utility, max_len)
 
@@ -266,21 +276,27 @@ def mine_hupm(
     warnings.warn(
         "rusket.mine_hupm() is deprecated. Use HUPM.from_transactions() instead.", DeprecationWarning, stacklevel=2
     )
-    import pandas as pd
+    from rusket._dependencies import import_optional_dependency
+
+    pd = import_optional_dependency("pandas")
 
     from ._compat import to_dataframe
 
     data = to_dataframe(data)
 
     try:
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         is_polars = isinstance(data, pl.DataFrame)
     except ImportError:
         is_polars = False
 
     if is_polars:
-        import polars as pl
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
 
         # Polars native grouping
         grouped = data.group_by(transaction_col).agg(
