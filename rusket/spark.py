@@ -200,9 +200,6 @@ def prefixspan_grouped(
     """
     from rusket._dependencies import import_optional_dependency
 
-    pd = import_optional_dependency("pandas")
-    from rusket._dependencies import import_optional_dependency
-
     pa = import_optional_dependency("pyarrow")
     from rusket._dependencies import import_optional_dependency
 
