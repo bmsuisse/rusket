@@ -95,33 +95,89 @@ class TestALSGPUParam:
 
 
 # ---------------------------------------------------------------------------
-# Vector DB export (mocked clients)
+# Vector export — auto-detect from client type
 # ---------------------------------------------------------------------------
 
 
 class TestExportVectors:
-    def test_unknown_backend_raises(self) -> None:
+    def test_unsupported_client_raises_typeerror(self) -> None:
         from rusket.vector_export import export_vectors
 
-        with pytest.raises(ValueError, match="Unknown backend"):
-            export_vectors(np.zeros((5, 3), dtype=np.float32), backend="pinecone")
+        with pytest.raises(TypeError, match="Unsupported client type"):
+            export_vectors(np.zeros((5, 3), dtype=np.float32), client="not_a_client")
 
-    def test_qdrant_import_error(self) -> None:
-        with patch.dict("sys.modules", {"qdrant_client": None, "qdrant_client.models": None}):
-            import importlib
+    def test_qdrant_auto_detected(self) -> None:
+        mock_client = MagicMock()
+        mock_client.__class__.__module__ = "qdrant_client.qdrant_client"
+        mock_client.__class__.__qualname__ = "QdrantClient"
 
-            import rusket.vector_export as vmod
+        mock_models = MagicMock()
+        mock_models.Distance.DOT = "Dot"
+        with patch.dict("sys.modules", {
+            "qdrant_client": MagicMock(),
+            "qdrant_client.models": mock_models,
+        }):
+            from rusket.vector_export import export_vectors
 
-            importlib.reload(vmod)
-            with pytest.raises(ImportError, match="qdrant-client"):
-                vmod.export_vectors(np.zeros((5, 3), dtype=np.float32), backend="qdrant")
+            n = export_vectors(np.random.randn(5, 3).astype(np.float32), client=mock_client)
+            assert n == 5
+            mock_client.upsert.assert_called_once()
 
-    def test_meilisearch_import_error(self) -> None:
-        with patch.dict("sys.modules", {"meilisearch": None}):
-            import importlib
+    def test_meilisearch_auto_detected(self) -> None:
+        mock_client = MagicMock()
+        mock_client.__class__.__module__ = "meilisearch.client"
+        mock_client.__class__.__qualname__ = "Client"
 
-            import rusket.vector_export as vmod
+        from rusket.vector_export import export_vectors
 
-            importlib.reload(vmod)
-            with pytest.raises(ImportError, match="meilisearch"):
-                vmod.export_vectors(np.zeros((5, 3), dtype=np.float32), backend="meilisearch")
+        n = export_vectors(np.random.randn(5, 3).astype(np.float32), client=mock_client)
+        assert n == 5
+        mock_client.index.assert_called_once()
+
+    def test_pgvector_auto_detected(self) -> None:
+        """A mock psycopg2 connection should be auto-detected as pgvector."""
+        mock_conn = MagicMock()
+        mock_conn.__class__.__module__ = "psycopg2.extensions"
+        mock_conn.__class__.__qualname__ = "connection"
+        mock_cursor = MagicMock()
+        mock_cursor.mogrify = lambda fmt, vals: (
+            fmt % tuple(f"'{v}'" if isinstance(v, str) else str(v) for v in vals)
+        ).encode()
+        mock_conn.cursor.return_value = mock_cursor
+
+        from rusket.vector_export import export_vectors
+
+        n = export_vectors(np.random.randn(5, 3).astype(np.float32), client=mock_conn)
+        assert n == 5
+        mock_conn.commit.assert_called()
+        mock_cursor.execute.assert_called()
+
+    def test_chromadb_auto_detected(self) -> None:
+        mock_client = MagicMock()
+        mock_client.__class__.__module__ = "chromadb.api.client"
+        mock_client.__class__.__qualname__ = "Client"
+
+        from rusket.vector_export import export_vectors
+
+        n = export_vectors(np.random.randn(5, 3).astype(np.float32), client=mock_client)
+        assert n == 5
+        mock_client.get_or_create_collection.assert_called_once()
+
+    def test_dbapi_connection_detected_as_pgvector(self) -> None:
+        """Any DB-API 2.0 connection (cursor+commit) should fall back to pgvector."""
+        mock_conn = MagicMock()
+        mock_conn.__class__.__module__ = "some_custom_driver"
+        mock_conn.__class__.__qualname__ = "Connection"
+        # DB-API 2.0 protocol
+        mock_conn.cursor = MagicMock()
+        mock_conn.commit = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.mogrify = lambda fmt, vals: (
+            fmt % tuple(f"'{v}'" if isinstance(v, str) else str(v) for v in vals)
+        ).encode()
+        mock_conn.cursor.return_value = mock_cursor
+
+        from rusket.vector_export import export_vectors
+
+        n = export_vectors(np.random.randn(3, 2).astype(np.float32), client=mock_conn)
+        assert n == 3
