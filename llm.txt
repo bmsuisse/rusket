@@ -2750,6 +2750,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
 
 ### 🚀 Features
 
@@ -2758,6 +2759,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add VALS (View-Aware ALS) — three-level implicit feedback
 - add GPU acceleration, export_vectors for Qdrant/Meilisearch
 - unified export_vectors with 6 vector DB backends (auto-detect)
+- expand export_vectors to 11 vector DB backends
 
 ### 📦 Miscellaneous
 
