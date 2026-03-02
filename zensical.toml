@@ -19,6 +19,7 @@ nav = [
       { "4. LightGCN Recommendations" = "notebooks/4_lightgcn_ecommerce_recommendations.md" },
       { "5. SASRec Next Best Product" = "notebooks/5_sasrec_next_best_product.md" },
       { "6. Optuna Hyperparameter Tuning" = "notebooks/6_optuna_tuning.md" },
+      { "7. Next-Item Prediction" = "notebooks/7_next_item_prediction_combined.md" },
     ]},
     { "Recommender Workflows" = "recommender.md" },
     { "Pipeline API" = "pipeline.md" },

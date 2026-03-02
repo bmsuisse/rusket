@@ -55,3 +55,32 @@ def test_optuna_dummy_integration() -> None:
         return 0.0
 
     study.optimize(objective, n_trials=1)
+
+
+def test_optuna_optimize_enable_pruning_integration() -> None:
+    import pandas as pd
+    from optuna.pruners import MedianPruner
+
+    from rusket import ItemKNN, OptunaSearchSpace, optuna_optimize
+
+    df = pd.DataFrame(
+        {
+            "user_id": [0, 0, 1, 1, 2, 2, 3, 3, 4],
+            "item_id": [0, 1, 1, 2, 0, 2, 0, 1, 2],
+        }
+    )
+
+    result = optuna_optimize(
+        model_class=ItemKNN,
+        df=df,
+        user_col="user_id",
+        item_col="item_id",
+        search_space=[OptunaSearchSpace.int("k", 1, 5), OptunaSearchSpace.int("iterations", 1, 2)],
+        n_trials=2,
+        n_folds=2,
+        enable_pruning=True,
+        pruner=MedianPruner(n_warmup_steps=0),
+        verbose=False,
+    )
+
+    assert result.best_score >= 0.0

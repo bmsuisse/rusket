@@ -1042,6 +1042,7 @@ def optuna_optimize(
     seed: int = 42,
     study: Any = None,
     mlflow_tracking: bool = False,
+    enable_pruning: bool = False,
     callbacks: list[Any] | None = None,
     **study_kwargs: Any,
 ) -> CrossValidationResult:
@@ -1095,6 +1096,9 @@ def optuna_optimize(
         If ``True``, log every trial's parameters and metrics to MLflow
         using ``optuna_integration.MLflowCallback``.  Requires the
         ``mlflow`` and ``optuna-integration`` packages.
+    enable_pruning : bool, default=False
+        If ``True``, raises `optuna.TrialPruned` if intermediate evaluation score
+        is deemed unpromising, saving evaluation time.
     callbacks : list[Any] or None
         Extra Optuna callbacks passed to ``study.optimize()``.
     **study_kwargs
@@ -1161,6 +1165,8 @@ def optuna_optimize(
             elif sp.kind == "categorical":
                 params[sp.name] = trial.suggest_categorical(sp.name, sp.choices)
 
+        cv_callbacks = [OptunaPruningCallback(trial)] if enable_pruning else None
+
         result = cross_validate(
             model_class=model_class,
             df=df,
@@ -1174,6 +1180,7 @@ def optuna_optimize(
             refit_best=False,
             verbose=False,
             seed=seed,
+            callbacks=cv_callbacks,
         )
         all_trial_results.append(result.results[0])
 
