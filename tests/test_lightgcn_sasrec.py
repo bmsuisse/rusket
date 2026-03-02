@@ -117,6 +117,21 @@ class TestLightGCN:
         ids, scores = model.recommend_items(user_id=0, n=3)
         assert len(ids) > 0
 
+    def test_fit_with_ssl(self, interactions_df):
+        model = rusket.LightGCN.from_transactions(
+            interactions_df,
+            user_col="user_id",
+            item_col="item_id",
+            factors=8,
+            iterations=5,
+            ssl_ratio=0.1,
+            ssl_temp=0.2,
+            ssl_weight=0.1,
+            seed=42,
+        ).fit()
+        ids, _ = model.recommend_items(user_id=0, n=3)
+        assert len(ids) == 3
+
 
 # ─── SASRec ──────────────────────────────────────────────────────────────────
 

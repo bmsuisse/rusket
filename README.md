@@ -21,7 +21,7 @@
 
 | Goal | Details |
 |---|---|
-| ⚡ **Blazing fast** | All algorithms run in compiled Rust (via PyO3) with multi-threaded Rayon parallelism and SIMD-accelerated kernels. ALS is **3×**, BPR **20×** faster than Python alternatives. |
+| ⚡ **Blazing fast** | All algorithms run in compiled Rust (via PyO3) with multi-threaded Rayon parallelism and SIMD-accelerated kernels. ALS is **11×**, and FP-Growth is **140×** faster than PySpark. |
 | 📦 **Zero dependencies** | No TensorFlow, no PyTorch, no JVM. A single ~3 MB wheel is all you need — `pip install rusket` and go. |
 | 🧑‍💻 **Easy to use** | Common cases are one-liners: `model.recommend_items(user_id)`, `model.recommend_users(item_id)`, `model.export_item_factors()` for vector/embedding export. No boilerplate. |
 | 🏗️ **Modern data stack** | Native Pandas, Polars, and Apache Spark support with zero-copy Arrow transfers. Works seamlessly with Delta Lake, Databricks, Snowflake, and any dbt/Parquet pipeline. |

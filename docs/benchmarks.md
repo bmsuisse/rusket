@@ -151,3 +151,16 @@ uv run pytest tests/test_benchmark.py -v -s
 | **ItemKNN** (k=100) | **55 ms** | 287 ms | **5.2×** |
 | **SVD** (64 factors, 20 epochs) | **55 ms** | ❌ TF-only (broken) | — |
 | **EASE** | **71 ms** | *N/A* | — |
+
+---
+
+## Benchmark vs PySpark
+
+PySpark is the industry standard for large-scale recommendation workloads. While `rusket` runs strictly single-machine (utilizing Rust Rayon threading), it relies on native memory and avoids the JVM serialization overhead, resulting in massive speedups over PySpark local mode.
+
+> **Benchmark environment:** Apple Silicon M-Series, `local[*]` Spark master, 1 million ALS interactions (20k Users × 10k Items), 50k FPGrowth transactions.
+
+| Algorithm | `rusket` | `pyspark.ml` | **Speedup** |
+|---|:---:|:---:|:---:|
+| **FPGrowth** (50k txns) | **0.027 s** | 3.89 s | **139.8×** |
+| **ALS** (1M interactions) | **6.5 s** | 71.1 s | **10.9×** |

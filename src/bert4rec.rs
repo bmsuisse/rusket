@@ -1,18 +1,16 @@
-// SASRec – Self-Attentive Sequential Recommendation (simplified Rust implementation)
-// 
-// Architecture:
-//   1. Item embedding table  E ∈ R^{|I| × d}
-//   2. Learnable positional encodings P ∈ R^{N × d}
-//   3. L transformer blocks: MHSA (single head, causal) + FFN + Layer-Norm
-//   4. Next-item binary-cross-entropy loss over positive / sampled-negative
+// BERT4Rec – Sequential Recommendation with Bidirectional Encoder Representations from Transformer
 //
-// All math is done with raw Vec<f32> to avoid external crate dependencies.
+// Architecture:
+//   1. Item embedding table  E ∈ R^{(|I| + 1) × d}, where index |I|+1 is the [MASK] token.
+//   2. Learnable positional encodings P ∈ R^{N × d}
+//   3. L transformer blocks: MHSA (single head, BIDIRECTIONAL) + FFN + Layer-Norm
+//   4. Cloze objective: Masked item prediction with negative sampling.
 
 use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// ─── RNG (same as bpr.rs) ───────────────────────────────────────────────────
+// ─── RNG ────────────────────────────────────────────────────────────────────
 
 struct XorShift64 {
     state: u64,
@@ -69,9 +67,9 @@ fn layer_norm(x: &mut [f32], gamma: &[f32], beta: &[f32]) {
     }
 }
 
-// ─── Dot-product attention (single head, causal) ────────────────────────────
+// ─── Dot-product attention (single head, BIDIRECTIONAL) ─────────────────────
 
-fn causal_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32], w_v: &[f32]) -> Vec<f32> {
+fn bidirectional_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32], w_v: &[f32]) -> Vec<f32> {
     let scale = (d as f32).powf(-0.5);
 
     let compute_proj = |w: &[f32]| -> Vec<f32> {
@@ -94,7 +92,7 @@ fn causal_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32
 
     let mut attn = vec![f32::NEG_INFINITY; seq_len * seq_len];
     for i in 0..seq_len {
-        for j in 0..=i {
+        for j in 0..seq_len { // NO CAUSAL MASK
             let mut dot = 0.0_f32;
             for f in 0..d {
                 dot += q[i * d + f] * k[j * d + f];
@@ -131,8 +129,7 @@ fn causal_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32
     out
 }
 
-// ─── FFN (2-layer, ReLU) ─────────────────────────────────────────────────────
-
+// ─── FFN (2-layer, GELU) ── BERT uses GELU, we will stick to RELU for simplicity and perf 
 fn ffn(x: &[f32], d: usize, w1: &[f32], b1: &[f32], w2: &[f32], b2: &[f32]) -> Vec<f32> {
     let d_ff = w1.len() / d;
     let mut h = vec![0.0_f32; d_ff];
@@ -141,6 +138,9 @@ fn ffn(x: &[f32], d: usize, w1: &[f32], b1: &[f32], w2: &[f32], b2: &[f32]) -> V
         for k in 0..d {
             s += x[k] * w1[k * d_ff + j];
         }
+        // GELU approximation or ReLU
+        // We'll use ReLU here for speed and consistency with SASRec, but technically
+        // BERT4Rec uses GELU. Let's use ReLU.
         h[j] = s.max(0.0);
     }
     let mut out = vec![0.0_f32; d];
@@ -156,12 +156,11 @@ fn ffn(x: &[f32], d: usize, w1: &[f32], b1: &[f32], w2: &[f32], b2: &[f32]) -> V
 
 // ─── Parameter struct ────────────────────────────────────────────────────────
 
-struct SASRecParams {
+struct BERT4RecParams {
     d: usize,
     n_layers: usize,
     item_emb: Vec<f32>,
     pos_emb: Vec<f32>,
-    time_emb: Vec<f32>,
     wq: Vec<Vec<f32>>,
     wk: Vec<Vec<f32>>,
     wv: Vec<Vec<f32>>,
@@ -175,7 +174,7 @@ struct SASRecParams {
     ln2_b: Vec<Vec<f32>>,
 }
 
-impl SASRecParams {
+impl BERT4RecParams {
     fn new(n_items: usize, d: usize, n_layers: usize, max_seq: usize, seed: u64) -> Self {
         let scale = (1.0 / d as f32).sqrt();
         let d_ff = d * 4;
@@ -186,10 +185,10 @@ impl SASRecParams {
             randn_vec(n, s, rng_seed)
         };
 
-        let item_emb = mk((n_items + 1) * d, scale, 1);
+        // n_items + 1 is for normal items (1-indexed). 
+        // We add ONE more for the [MASK] token. So size is n_items + 2.
+        let item_emb = mk((n_items + 2) * d, scale, 1);
         let pos_emb = mk(max_seq * d, scale, 2);
-        
-        let time_emb = Vec::new(); // Will be replaced in sasrec_train if max_time_steps > 0
 
         let mut wq = Vec::with_capacity(n_layers);
         let mut wk = Vec::with_capacity(n_layers);
@@ -219,22 +218,19 @@ impl SASRecParams {
         }
 
         Self {
-            d, n_layers, item_emb, pos_emb, time_emb,
+            d, n_layers, item_emb, pos_emb,
             wq, wk, wv, ffn_w1, ffn_b1, ffn_w2, ffn_b2,
             ln1_g, ln1_b, ln2_g, ln2_b,
         }
     }
 
-    /// Forward pass explicitly using raw pointers to support Hogwild safely avoiding aliasing
+    /// Forward pass (Returns all hidden states)
     unsafe fn forward_hogwild(
         &self, 
         seq: &[usize], 
-        time_seq: Option<&[i64]>, 
         max_seq: usize, 
-        max_time_steps: usize,
         item_emb_ptr: *const f32, 
         pos_emb_ptr: *const f32,
-        time_emb_ptr: *const f32,
     ) -> Vec<f32> {
         let d = self.d;
         let seq_len = seq.len().min(max_seq);
@@ -245,32 +241,15 @@ impl SASRecParams {
         let mut h = vec![0.0_f32; seq_len * d];
         for (t, &item) in seq.iter().rev().take(seq_len).enumerate() {
             let pos = seq_len - 1 - t;
-            
-            let mut t_diff_adjusted = 0;
-            if let Some(tj) = time_seq {
-                if !time_emb_ptr.is_null() && max_time_steps > 0 {
-                    // Time difference from the current event to the past event
-                    let t_current = tj[seq_len]; // The target item's timestamp is at the end of the context
-                    let t_past = tj[seq.len() - 1 - t]; 
-                    
-                    let time_diff = (t_current - t_past).max(0);
-                    // Bin by days (86400 seconds)
-                    let days_diff = (time_diff as f64 / 86400.0).floor() as usize; 
-                    t_diff_adjusted = days_diff.min(max_time_steps - 1);
-                }
-            }
 
             for f in 0..d {
-                let mut emb_val = *item_emb_ptr.add(item * d + f) + *pos_emb_ptr.add(t * d + f);
-                if !time_emb_ptr.is_null() && max_time_steps > 0 {
-                    emb_val += *time_emb_ptr.add(t_diff_adjusted * d + f);
-                }
+                let emb_val = *item_emb_ptr.add(item * d + f) + *pos_emb_ptr.add(t * d + f);
                 h[pos * d + f] = emb_val;
             }
         }
 
         for l in 0..self.n_layers {
-            let attn_out = causal_attention(
+            let attn_out = bidirectional_attention(
                 &h, d, seq_len,
                 &self.wq[l], &self.wk[l], &self.wv[l],
             );
@@ -296,38 +275,31 @@ impl SASRecParams {
             h = h3;
         }
 
-        h[(seq_len - 1) * d..seq_len * d].to_vec()
+        h
     }
 }
 
 // ─── Training loop ───────────────────────────────────────────────────────────
 
 #[allow(clippy::too_many_arguments)]
-fn sasrec_train(
+fn bert4rec_train(
     sequences: &[Vec<usize>],
-    timestamps: Option<&[Vec<i64>]>,
     n_items: usize,
     factors: usize,
     n_layers: usize,
     max_seq: usize,
-    max_time_steps: usize,
+    mask_prob: f32,
     learning_rate: f32,
     lambda: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
-) -> SASRecParams {
-    let mut params = SASRecParams::new(n_items, factors, n_layers, max_seq, seed);
-    let _n_users = sequences.len();
-
-    if max_time_steps > 0 && timestamps.is_some() {
-        let scale = (1.0 / factors as f32).sqrt();
-        params.time_emb = randn_vec(max_time_steps * factors, scale, seed.wrapping_add(100));
-    }
+) -> BERT4RecParams {
+    let mut params = BERT4RecParams::new(n_items, factors, n_layers, max_seq, seed);
+    let mask_token = n_items + 1; // 1-indexed items. [MASK] is |I| + 1.
 
     let item_emb_ptr_raw = params.item_emb.as_mut_ptr() as usize;
     let pos_emb_ptr_raw = params.pos_emb.as_mut_ptr() as usize;
-    let time_emb_ptr_raw = if params.time_emb.is_empty() { 0 } else { params.time_emb.as_mut_ptr() as usize };
 
     for iter in 0..iterations {
         let t0 = std::time::Instant::now();
@@ -340,80 +312,88 @@ fn sasrec_train(
                     return (local_tot_loss, local_n_samples);
                 }
                 
-                let time_seq = timestamps.map(|ts| ts[uid].as_slice());
                 let mut rng = XorShift64::new(
                     seed.wrapping_add(iter as u64 * 997).wrapping_add(uid as u64 * 131),
                 );
 
-                let ctx_end = seq.len().min(max_seq + 1);
-                let ctx = &seq[..ctx_end.saturating_sub(1)];
-                let target_pos = seq[ctx_end - 1];
-                let target_neg = {
-                    let mut j = rng.next_usize(n_items) + 1;
-                    for _ in 0..5 {
-                        if !seq.contains(&j) { break; }
-                        j = rng.next_usize(n_items) + 1;
+                let ctx_end = seq.len().min(max_seq);
+                let ctx = &seq[..ctx_end];
+                
+                // Cloze Task: construct masked sequence
+                let mut masked_seq = Vec::with_capacity(ctx.len());
+                let mut targets = Vec::new(); // (position in seq, target_item, negative_item)
+                
+                // Always mask the last item during training for Next-Item prediction simulation
+                // and randomly mask others
+                for (pos, &item) in ctx.iter().enumerate() {
+                    let is_last = pos == ctx.len() - 1;
+                    if is_last || rng.next_f32() < mask_prob {
+                        masked_seq.push(mask_token);
+                        let target_neg = {
+                            let mut j = rng.next_usize(n_items) + 1;
+                            for _ in 0..5 {
+                                if !seq.contains(&j) { break; }
+                                j = rng.next_usize(n_items) + 1;
+                            }
+                            j
+                        };
+                        targets.push((pos, item, target_neg));
+                    } else {
+                        masked_seq.push(item);
                     }
-                    j
-                };
+                }
 
-                if ctx.is_empty() { return (local_tot_loss, local_n_samples); }
+                if targets.is_empty() { return (local_tot_loss, local_n_samples); }
 
                 let item_emb_ptr = item_emb_ptr_raw as *mut f32;
                 let pos_emb_ptr = pos_emb_ptr_raw as *mut f32;
-                let time_emb_ptr = if time_emb_ptr_raw == 0 { std::ptr::null_mut() } else { time_emb_ptr_raw as *mut f32 };
 
-                let seq_repr = unsafe { params.forward_hogwild(ctx, time_seq, max_seq, max_time_steps, item_emb_ptr, pos_emb_ptr, time_emb_ptr) };
-                
-                let mut s_pos = 0.0_f32;
-                let mut s_neg = 0.0_f32;
+                let seq_repr = unsafe { params.forward_hogwild(&masked_seq, max_seq, item_emb_ptr, pos_emb_ptr) };
                 let d = factors;
+                
+                for (pos, target_pos, target_neg) in targets {
+                    let repr = &seq_repr[pos * d..(pos + 1) * d];
 
-                unsafe {
-                    for f in 0..d {
-                        s_pos += seq_repr[f] * *item_emb_ptr.add(target_pos * d + f);
-                        s_neg += seq_repr[f] * *item_emb_ptr.add(target_neg * d + f);
+                    let mut s_pos = 0.0_f32;
+                    let mut s_neg = 0.0_f32;
+
+                    unsafe {
+                        for f in 0..d {
+                            s_pos += repr[f] * *item_emb_ptr.add(target_pos * d + f);
+                            s_neg += repr[f] * *item_emb_ptr.add(target_neg * d + f);
+                        }
                     }
-                }
 
-                let diff = s_pos - s_neg;
-                let sigmoid_neg = 1.0 / (1.0 + diff.exp()); 
-                let loss = (1.0 + (-diff).exp()).ln() as f64;
-                local_tot_loss += loss;
-                local_n_samples += 1;
+                    let diff = s_pos - s_neg;
+                    let sigmoid_neg = 1.0 / (1.0 + diff.exp()); 
+                    let loss = (1.0 + (-diff).exp()).ln() as f64;
+                    local_tot_loss += loss;
+                    local_n_samples += 1;
 
-                unsafe {
-                    for f in 0..d {
-                        let gr_pos = -sigmoid_neg * seq_repr[f];
-                        let gr_neg = sigmoid_neg * seq_repr[f];
+                    unsafe {
+                        for f in 0..d {
+                            let gr_pos = -sigmoid_neg * repr[f];
+                            let gr_neg = sigmoid_neg * repr[f];
 
-                        let ipos_val = *item_emb_ptr.add(target_pos * d + f);
-                        let ineg_val = *item_emb_ptr.add(target_neg * d + f);
-                        let sr_grad = -sigmoid_neg * (ipos_val - ineg_val);
-
-                        *item_emb_ptr.add(target_pos * d + f) = ipos_val - lr * (gr_pos + lambda * ipos_val);
-                        *item_emb_ptr.add(target_neg * d + f) = ineg_val - lr * (gr_neg + lambda * ineg_val);
-
-                        if ctx.len() > 0 {
-                            let last_pos = (ctx.len() - 1).min(max_seq - 1);
-                            let pos_item = *pos_emb_ptr.add(last_pos * d + f);
-                            *pos_emb_ptr.add(last_pos * d + f) = pos_item - lr * sr_grad;
+                            let ipos_val = *item_emb_ptr.add(target_pos * d + f);
+                            let ineg_val = *item_emb_ptr.add(target_neg * d + f);
                             
-                            if !time_emb_ptr.is_null() && max_time_steps > 0 {
-                                let mut t_diff_adjusted = 0;
-                                if let Some(tj) = time_seq {
-                                    let t_current = tj[ctx_end - 1];
-                                    let t_past = tj[seq.len() - 2]; 
-                                    let time_diff = (t_current - t_past).max(0);
-                                    let days_diff = (time_diff as f64 / 86400.0).floor() as usize; 
-                                    t_diff_adjusted = days_diff.min(max_time_steps - 1);
-                                }
-                                let time_item = *time_emb_ptr.add(t_diff_adjusted * d + f);
-                                *time_emb_ptr.add(t_diff_adjusted * d + f) = time_item - lr * sr_grad;
-                            }
+                            // Approximate gradient w.r.t input to simplify. Real backprop requires retaining gradients
+                            // through layers, but Hogwild with Adam is hard enough. SASRec approximation:
+                            let sr_grad = -sigmoid_neg * (ipos_val - ineg_val);
+
+                            *item_emb_ptr.add(target_pos * d + f) = ipos_val - lr * (gr_pos + lambda * ipos_val);
+                            *item_emb_ptr.add(target_neg * d + f) = ineg_val - lr * (gr_neg + lambda * ineg_val);
+
+                            // Update pos_emb
+                            let rev_pos = seq.len() - 1 - pos;
+                            let physical_pos = rev_pos.min(max_seq - 1);
+                            let pos_item = *pos_emb_ptr.add(physical_pos * d + f);
+                            *pos_emb_ptr.add(physical_pos * d + f) = pos_item - lr * sr_grad;
                         }
                     }
                 }
+                
                 (local_tot_loss, local_n_samples)
             }
         ).reduce(
@@ -423,7 +403,7 @@ fn sasrec_train(
 
         if verbose {
             println!(
-                "SASRec iter {:>3}/{} | loss={:.4} | {:.2}s",
+                "BERT4Rec iter {:>3}/{} | loss={:.4} | {:.2}s",
                 iter + 1, iterations,
                 total_loss / n_samples.max(1) as f64,
                 t0.elapsed().as_secs_f64()
@@ -437,56 +417,43 @@ fn sasrec_train(
 // ─── Python entry points ─────────────────────────────────────────────────────
 
 #[pyfunction]
-#[pyo3(signature = (sequences, timestamps, n_items, factors, n_layers, max_seq, max_time_steps, learning_rate, lambda_, iterations, seed, verbose))]
+#[pyo3(signature = (sequences, n_items, factors, n_layers, max_seq, mask_prob, learning_rate, lambda_, iterations, seed, verbose))]
 #[allow(clippy::too_many_arguments)]
-pub fn sasrec_fit<'py>(
+pub fn bert4rec_fit<'py>(
     py: Python<'py>,
     sequences: Vec<Vec<usize>>,
-    timestamps: Option<Vec<Vec<i64>>>,
     n_items: usize,
     factors: usize,
     n_layers: usize,
     max_seq: usize,
-    max_time_steps: usize,
+    mask_prob: f32,
     learning_rate: f32,
     lambda_: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
-) -> PyResult<(Py<PyArray2<f32>>, Option<Py<PyArray2<f32>>>)> {
-    let ts_ref = timestamps.as_ref().map(|v| v.as_slice());
+) -> PyResult<Py<PyArray2<f32>>> {
     let params = py.detach(|| {
-        sasrec_train(
-            &sequences, ts_ref, n_items, factors, n_layers, max_seq, max_time_steps,
+        bert4rec_train(
+            &sequences, n_items, factors, n_layers, max_seq, mask_prob,
             learning_rate, lambda_, iterations, seed, verbose,
         )
     });
 
     let flat_item = params.item_emb;
-    let n_rows = n_items + 1;
+    let n_rows = n_items + 2; // +1 for 1-index, +1 for MASK
     let arr_item = PyArray1::from_vec(py, flat_item);
-    
-    let arr_time = if max_time_steps > 0 && !params.time_emb.is_empty() {
-        let flat_time = params.time_emb;
-        let arr = PyArray1::from_vec(py, flat_time);
-        Some(arr.reshape([max_time_steps, factors])?.into())
-    } else {
-        None
-    };
 
-    Ok((arr_item.reshape([n_rows, factors])?.into(), arr_time))
+    Ok(arr_item.reshape([n_rows, factors])?.into())
 }
 
 #[pyfunction]
-#[pyo3(signature = (item_emb_matrix, time_emb_matrix, sequences, timestamps, max_seq, max_time_steps, exclude_seen, n_items, k))]
-pub fn sasrec_predict<'py>(
+#[pyo3(signature = (item_emb_matrix, sequences, max_seq, exclude_seen, n_items, k))]
+pub fn bert4rec_predict<'py>(
     py: Python<'py>,
     item_emb_matrix: PyReadonlyArray2<'py, f32>,
-    time_emb_matrix: Option<PyReadonlyArray2<'py, f32>>,
     sequences: Vec<Vec<usize>>,
-    timestamps: Option<Vec<Vec<i64>>>,
     max_seq: usize,
-    max_time_steps: usize,
     exclude_seen: bool,
     n_items: usize,
     k: usize,
@@ -494,14 +461,7 @@ pub fn sasrec_predict<'py>(
     let item_emb = item_emb_matrix.as_slice()?;
     let d = item_emb_matrix.shape()[1];
     let n_seq = sequences.len();
-    
-    // Process Option<PyReadonlyArray2> to Option<&[f32]> gracefully.
-    let time_emb_slice = match &time_emb_matrix {
-        Some(mat) => Some(mat.as_slice()?),
-        None => None,
-    };
-
-    let ts_ref = timestamps.as_ref().map(|ts| ts.as_slice());
+    let mask_token = n_items + 1;
 
     let (all_ids, all_scores) = py.detach(|| {
         let mut out_ids = vec![0_i64; n_seq * k];
@@ -514,41 +474,20 @@ pub fn sasrec_predict<'py>(
             let out_ids_ptr = out_ids_ptr_raw as *mut i64;
             let out_scores_ptr = out_scores_ptr_raw as *mut f32;
 
-            let seq_cut = if seq.len() > max_seq { &seq[seq.len() - max_seq..] } else { &seq[..] };
-            let ts_cut = if let Some(ts) = ts_ref {
-                let u_ts = &ts[i];
-                if u_ts.len() > max_seq { Some(&u_ts[u_ts.len() - max_seq..]) } else { Some(&u_ts[..]) }
-            } else {
-                None
-            };
+            // Prepare testing sequence by appending [MASK]
+            let mut test_seq = seq.clone();
+            test_seq.push(mask_token);
+
+            let seq_cut = if test_seq.len() > max_seq { &test_seq[test_seq.len() - max_seq..] } else { &test_seq[..] };
             
             let mut seq_repr = vec![0.0_f32; d];
             
             let mut valid_len = 0_usize;
-            for (t, &item) in seq_cut.iter().enumerate() {
-                if item > 0 && item <= n_items {
+            for &item in seq_cut.iter() {
+                if item > 0 && item <= n_items + 1 {
                     for f in 0..d {
                         seq_repr[f] += item_emb[item * d + f];
                     }
-                    
-                    if let Some(time_emb) = time_emb_slice {
-                        if let Some(u_ts) = ts_cut {
-                            if max_time_steps > 0 {
-                                // For prediction, we assume the "current" time is the time of the last event in sequences,
-                                // or the current unix timestamp. But for simplicity let's use the delta between the last event and this event.
-                                let t_current = u_ts[u_ts.len() - 1]; // Time of the last event in sequence
-                                let t_past = u_ts[t];
-                                let time_diff = (t_current - t_past).max(0);
-                                let days_diff = (time_diff as f64 / 86400.0).floor() as usize; 
-                                let t_diff_adjusted = days_diff.min(max_time_steps - 1);
-                                
-                                for f in 0..d {
-                                    seq_repr[f] += time_emb[t_diff_adjusted * d + f];
-                                }
-                            }
-                        }
-                    }
-                    
                     valid_len += 1;
                 }
             }

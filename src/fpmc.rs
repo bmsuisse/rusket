@@ -67,28 +67,49 @@ impl<'a> SequenceLookup<'a> {
     }
 }
 
+struct TimeLookup<'a> {
+    indptr: &'a [i64],
+    timestamps: &'a [i64],
+}
+
+impl<'a> TimeLookup<'a> {
+    fn get_time_sequence(&self, u: usize) -> &'a [i64] {
+        let start = self.indptr[u] as usize;
+        let end = self.indptr[u + 1] as usize;
+        &self.timestamps[start..end]
+    }
+}
+
 fn fpmc_train(
     indptr: &[i64],
     indices: &[i32],
+    timestamps_opt: Option<&[i64]>,
     n_users: usize,
     n_items: usize,
     k: usize,
+    max_time_steps: usize,
     learning_rate: f32,
     regularization: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
-) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
+) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
     // FPMC Models:
     // V_{U,I} -> User factors for Matrix Factorization
     // V_{I,U} -> Item factors for Matrix Factorization
     // V_{I,L} -> Item next-factors for Markov Chain
     // V_{L,I} -> Item prev-factors for Markov Chain
+    // V_{time} -> Elapsed time factors
     
     let mut vu = random_factors(n_users * k, seed);
     let mut viu = random_factors(n_items * k, seed.wrapping_add(1));
     let mut vil = random_factors(n_items * k, seed.wrapping_add(2));
     let mut vli = random_factors(n_items * k, seed.wrapping_add(3));
+    let mut vtime = if max_time_steps > 0 && timestamps_opt.is_some() {
+        random_factors(max_time_steps * k, seed.wrapping_add(4))
+    } else {
+        Vec::new()
+    };
 
     let num_threads = rayon::current_num_threads();
 
@@ -96,8 +117,10 @@ fn fpmc_train(
     let viu_ptr_raw = viu.as_mut_ptr() as usize;
     let vil_ptr_raw = vil.as_mut_ptr() as usize;
     let vli_ptr_raw = vli.as_mut_ptr() as usize;
+    let vtime_ptr_raw = if vtime.is_empty() { 0 } else { vtime.as_mut_ptr() as usize };
 
     let lookup = SequenceLookup { indptr, indices };
+    let time_lookup = timestamps_opt.map(|ts| TimeLookup { indptr, timestamps: ts });
 
     // Count transitions
     let mut total_transitions = 0;
@@ -143,6 +166,18 @@ fn fpmc_train(
                 let pos = (rng.next() as usize % (seq.len() - 1)) + 1;
                 let l = seq[pos - 1] as usize;
                 let i = seq[pos] as usize;
+                
+                let mut t_diff_adjusted = 0;
+                if let Some(ref tl) = time_lookup {
+                    if vtime_ptr_raw != 0 && max_time_steps > 0 {
+                        let t_seq = tl.get_time_sequence(u);
+                        let t_current = t_seq[pos];
+                        let t_past = t_seq[pos - 1];
+                        let time_diff = (t_current - t_past).max(0);
+                        let days_diff = (time_diff as f64 / 86400.0).floor() as usize;
+                        t_diff_adjusted = days_diff.min(max_time_steps - 1);
+                    }
+                }
 
                 let mut j = (rng.next() as usize) % n_items;
                 for _ in 0..10 {
@@ -160,6 +195,9 @@ fn fpmc_train(
                     let il_ptr = vil_ptr.add(i * k);
                     let jl_ptr = vil_ptr.add(j * k);
                     let li_ptr = vli_ptr.add(l * k);
+                    
+                    let vtime_ptr = if vtime_ptr_raw == 0 { std::ptr::null_mut() } else { vtime_ptr_raw as *mut f32 };
+                    let t_ptr = if vtime_ptr.is_null() { std::ptr::null_mut() } else { vtime_ptr.add(t_diff_adjusted * k) };
 
                     let v_u = std::slice::from_raw_parts_mut(u_ptr, k);
                     
@@ -174,8 +212,15 @@ fn fpmc_train(
                     // \hat{x}_{u,l,i} = dot(v_u, v_iu) + dot(v_il, v_li)
                     // \hat{x}_{u,l,j} = dot(v_u, v_ju) + dot(v_jl, v_li)
                     
-                    let p_i = dot(v_u, v_iu) + dot(v_il, v_li);
-                    let p_j = dot(v_u, v_ju) + dot(v_jl, v_li);
+                    let mut p_i = dot(v_u, v_iu) + dot(v_il, v_li);
+                    let mut p_j = dot(v_u, v_ju) + dot(v_jl, v_li);
+                    
+                    if !t_ptr.is_null() {
+                        let v_t = std::slice::from_raw_parts_mut(t_ptr, k);
+                        p_i += dot(v_il, v_t);
+                        p_j += dot(v_jl, v_t);
+                    }
+                    
                     let diff = p_i - p_j;
 
                     let sig = sigmoid(diff);
@@ -193,9 +238,17 @@ fn fpmc_train(
                         v_iu[f] += learning_rate * (deriv * w_u - regularization * w_iu);
                         v_ju[f] += learning_rate * (deriv * (-w_u) - regularization * w_ju);
                         
+                        let mut w_li_eff = w_li;
+                        if !t_ptr.is_null() {
+                            let v_t = std::slice::from_raw_parts_mut(t_ptr, k);
+                            let w_t = v_t[f];
+                            v_t[f] += learning_rate * (deriv * (w_il - w_jl) - regularization * w_t);
+                            w_li_eff += w_t;
+                        }
+
                         v_li[f] += learning_rate * (deriv * (w_il - w_jl) - regularization * w_li);
-                        v_il[f] += learning_rate * (deriv * w_li - regularization * w_il);
-                        v_jl[f] += learning_rate * (deriv * (-w_li) - regularization * w_jl);
+                        v_il[f] += learning_rate * (deriv * w_li_eff - regularization * w_il);
+                        v_jl[f] += learning_rate * (deriv * (-w_li_eff) - regularization * w_jl);
                     }
                 }
             }
@@ -213,30 +266,37 @@ fn fpmc_train(
         println!("  Total time: {:.1}s", start_time.elapsed().as_secs_f64());
     }
 
-    (vu, viu, vil, vli)
+    (vu, viu, vil, vli, vtime)
 }
 
 #[pyfunction]
-#[pyo3(signature = (indptr, indices, n_users, n_items, factors, learning_rate, regularization, iterations, seed, verbose))]
+#[pyo3(signature = (indptr, indices, timestamps, n_users, n_items, factors, max_time_steps, learning_rate, regularization, iterations, seed, verbose))]
 pub fn fpmc_fit<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
     indices: PyReadonlyArray1<i32>,
+    timestamps: Option<PyReadonlyArray1<i64>>,
     n_users: usize,
     n_items: usize,
     factors: usize,
+    max_time_steps: usize,
     learning_rate: f32,
     regularization: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
-) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<f32>>)> {
+) -> PyResult<(Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<f32>>, Py<PyArray2<f32>>, Option<Py<PyArray2<f32>>>)> {
     let ip = indptr.as_slice()?;
     let ix = indices.as_slice()?;
+    let ts_slice = match &timestamps {
+        Some(arr) => Some(arr.as_slice()?),
+        None => None,
+    };
 
-    let (vu, viu, vil, vli) = py.detach(|| {
+    let (vu, viu, vil, vli, vtime) = py.detach(|| {
         fpmc_train(
-            ip, ix, n_users, n_items, factors, learning_rate, regularization, iterations, seed, verbose,
+            ip, ix, ts_slice, n_users, n_items, factors, max_time_steps, 
+            learning_rate, regularization, iterations, seed, verbose,
         )
     });
 
@@ -244,6 +304,11 @@ pub fn fpmc_fit<'py>(
     let a_viu = PyArray1::from_vec(py, viu).reshape([n_items, factors])?;
     let a_vil = PyArray1::from_vec(py, vil).reshape([n_items, factors])?;
     let a_vli = PyArray1::from_vec(py, vli).reshape([n_items, factors])?;
+    let a_vtime = if max_time_steps > 0 && !vtime.is_empty() {
+        Some(PyArray1::from_vec(py, vtime).reshape([max_time_steps, factors])?.into())
+    } else {
+        None
+    };
 
-    Ok((a_vu.into(), a_viu.into(), a_vil.into(), a_vli.into()))
+    Ok((a_vu.into(), a_viu.into(), a_vil.into(), a_vli.into(), a_vtime))
 }

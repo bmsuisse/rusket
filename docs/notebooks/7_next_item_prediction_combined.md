@@ -66,10 +66,14 @@ events = pd.DataFrame({
 })
 
 # 2. Initialize and fit the model
+# We set time_aware=True so the Transformer learns how the physical time 
+# elapsed between events affects the next item!
 model = SASRec(
     factors=64,
     n_layers=2,
-    max_seq=50
+    max_seq=50,
+    time_aware=True,
+    max_time_steps=256
 ).from_transactions(
     events, 
     user_col="user_id", 
@@ -79,7 +83,8 @@ model = SASRec(
 
 # 3. Predict the next item based on an ad-hoc chronological sequence
 user_history = ["Phone", "Case"]
-next_items, scores = model.recommend_items(user_sequence=user_history, n=3)
+user_timestamps = [4, 5]  # the times those items were interacted with
+next_items, scores = model.recommend_items(user_sequence=user_history, timestamps=user_timestamps, n=3)
 
 print("Predicted next items based on history:", next_items)
 ```

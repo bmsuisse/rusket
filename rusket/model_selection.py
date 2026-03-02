@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -11,6 +12,8 @@ if TYPE_CHECKING:
     import pandas as pd
 
 from . import _rusket
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Callbacks
@@ -647,7 +650,7 @@ def _cross_validate_rust_generic(
     best_params = param_combinations[best_idx]
 
     if verbose:
-        print(f"\n  Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
+        logger.info(f"Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
 
     # Optionally refit on the full dataset
     best_model: Any = None
@@ -795,7 +798,7 @@ def _cross_validate_rust(
     best_params = param_combinations[best_idx]
 
     if verbose:
-        print(f"\n  Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
+        logger.info(f"Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
 
     # Optionally refit on the full dataset
     best_model: Any = None
@@ -903,7 +906,7 @@ def _cross_validate_python(
             if verbose:
                 primary = scores.get(metric, 0.0)
                 params_str = " ".join(f"{k_}={v}" for k_, v in params.items()) if params else "(defaults)"
-                print(f"  [{ci + 1}/{n_configs}] {params_str}  fold {fi + 1}/{n_folds}  {metric}@{k}={primary:.4f}")
+                logger.info(f"[{ci + 1}/{n_configs}] {params_str}  fold {fi + 1}/{n_folds}  {metric}@{k}={primary:.4f}")
 
             del model
 
@@ -944,7 +947,7 @@ def _cross_validate_python(
             best_params = entry["params"]
 
     if verbose:
-        print(f"\n  Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
+        logger.info(f"Best: {metric}@{k}={best_mean:.4f}  params={best_params}")
 
     # Optionally refit on the full dataset
     best_model: Any = None
@@ -1186,7 +1189,7 @@ def optuna_optimize(
 
         if verbose:
             params_str = " ".join(f"{k_}={v}" for k_, v in params.items())
-            print(f"  Trial {trial.number}: {metric}@{k}={result.best_score:.4f}  {params_str}")
+            logger.info(f"Trial {trial.number}: {metric}@{k}={result.best_score:.4f}  {params_str}")
 
         return result.best_score
 
@@ -1208,24 +1211,30 @@ def optuna_optimize(
         )
         all_callbacks.insert(0, mlflow_cb)
 
-    # Create or reuse study
-    if study is None:
-        if not verbose:
-            optuna.logging.set_verbosity(optuna.logging.WARNING)
-        study = optuna.create_study(direction="maximize", **study_kwargs)
+    # We temporarily suppress optuna's own verbose logging which conflicts
+    # with our standard logging and tqdm progress bars.
+    original_verbosity = optuna.logging.get_verbosity()
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-    study.optimize(
-        _objective,
-        n_trials=n_trials,
-        callbacks=all_callbacks or None,
-        show_progress_bar=verbose,
-    )
+    try:
+        # Create or reuse study
+        if study is None:
+            study = optuna.create_study(direction="maximize", **study_kwargs)
+
+        study.optimize(
+            _objective,
+            n_trials=n_trials,
+            callbacks=all_callbacks or None,
+            show_progress_bar=verbose,
+        )
+    finally:
+        optuna.logging.set_verbosity(original_verbosity)
 
     best_params = study.best_trial.params
     best_score = study.best_trial.value or 0.0
 
     if verbose:
-        print(f"\n  Best: {metric}@{k}={best_score:.4f}  params={best_params}")
+        logger.info(f"Best: {metric}@{k}={best_score:.4f}  params={best_params}")
 
     # Optionally refit on the full dataset
     best_model: Any = None

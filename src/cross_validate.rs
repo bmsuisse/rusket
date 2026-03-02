@@ -498,7 +498,7 @@ fn train_model(
                 indptr, indices, &ti, &tx,
                 n_users, n_items,
                 config.factors, config.k_layers, config.learning_rate,
-                config.regularization, config.iterations, config.seed, false,
+                config.regularization, 0.0, 0.2, 0.1, config.iterations, config.seed, false,
             )
         }
         _ => panic!("Unknown model kind: {}", kind),

@@ -48,6 +48,9 @@ class LightGCN(ImplicitRecommender):
         k_layers: int = 3,
         learning_rate: float = 1e-3,
         lambda_: float = 1e-4,
+        ssl_ratio: float = 0.0,
+        ssl_temp: float = 0.2,
+        ssl_weight: float = 0.1,
         iterations: int = 20,
         seed: int | None = None,
         verbose: int = 0,
@@ -58,6 +61,9 @@ class LightGCN(ImplicitRecommender):
         self.k_layers = k_layers
         self.learning_rate = learning_rate
         self.lambda_ = lambda_
+        self.ssl_ratio = ssl_ratio
+        self.ssl_temp = ssl_temp
+        self.ssl_weight = ssl_weight
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
@@ -191,6 +197,9 @@ class LightGCN(ImplicitRecommender):
             self.k_layers,
             float(self.learning_rate),
             float(self.lambda_),
+            float(self.ssl_ratio),
+            float(self.ssl_temp),
+            float(self.ssl_weight),
             self.iterations,
             int(seed),
             bool(self.verbose),

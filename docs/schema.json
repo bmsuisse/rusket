@@ -848,6 +848,8 @@
             "regularization": "float",
             "iterations": "int",
             "seed": "int",
+            "time_aware": "bool",
+            "max_time_steps": "int",
             "verbose": "int",
             "kwargs": "Any"
           },
@@ -857,14 +859,28 @@
         "fit": {
           "parameters": {
             "sequences": "list[list[int]] | None",
+            "timestamps": "list[list[int]] | None",
             "n_items": "int | None"
           },
           "returns": "FPMC",
           "doc": "Fit the FPMC model to a list of sequential interactions."
         },
+        "from_transactions": {
+          "parameters": {
+            "data": "Any",
+            "user_col": "str",
+            "item_col": "str",
+            "timestamp_col": "str | None",
+            "verbose": "int",
+            "kwargs": "Any"
+          },
+          "returns": "FPMC",
+          "doc": "Instantiate from transaction DataFrame."
+        },
         "recommend_items": {
           "parameters": {
             "user_id": "int",
+            "timestamp": "int | None",
             "n": "int",
             "exclude_seen": "bool"
           },
@@ -990,6 +1006,8 @@
             "lambda_": "float",
             "iterations": "int",
             "seed": "int | None",
+            "time_aware": "bool",
+            "max_time_steps": "int",
             "verbose": "int",
             "kwargs": "Any"
           },
@@ -998,10 +1016,11 @@
         },
         "fit": {
           "parameters": {
-            "sequences": "list[list[int]] | None"
+            "sequences": "list[list[int]] | None",
+            "timestamps": "list[list[int]] | None"
           },
           "returns": "SASRec",
-          "doc": "Train SASRec on integer-encoded sequences (0-indexed item IDs)."
+          "doc": ""
         },
         "from_transactions": {
           "parameters": {
@@ -1017,6 +1036,7 @@
         "recommend_items": {
           "parameters": {
             "user_id": "int | list[int]",
+            "timestamps": "list[int] | None",
             "n": "int",
             "exclude_seen": "bool"
           },

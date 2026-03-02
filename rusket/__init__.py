@@ -3,6 +3,7 @@ from .als import ALS, eALS
 from .analytics import customer_saturation, find_substitutes
 from .ann import ApproximateNearestNeighbors
 from .association_rules import association_rules
+from .bert4rec import BERT4Rec
 from .bpr import BPR
 from .content_based import ContentBased
 from .ease import EASE
@@ -86,6 +87,7 @@ __all__ = [
     "SVD",
     "LightGCN",
     "SASRec",
+    "BERT4Rec",
     "prefixspan",
     "PrefixSpan",
     "sequences_from_event_log",

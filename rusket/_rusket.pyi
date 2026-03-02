@@ -207,6 +207,9 @@ def lightgcn_fit(
     k_layers: int,
     learning_rate: float,
     lambda_: float,
+    ssl_ratio: float,
+    ssl_temp: float,
+    ssl_weight: float,
     iterations: int,
     seed: int,
     verbose: bool,
@@ -223,6 +226,35 @@ def sasrec_fit(
     seed: int,
     verbose: bool,
 ) -> npt.NDArray[np.float32]: ...
+def sasrec_predict(
+    item_emb_matrix: npt.NDArray[np.float32],
+    sequences: list[list[int]],
+    max_seq: int,
+    exclude_seen: bool,
+    n_items: int,
+    k: int,
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float32]]: ...
+def bert4rec_fit(
+    sequences: list[list[int]],
+    n_items: int,
+    factors: int,
+    n_layers: int,
+    max_seq: int,
+    mask_prob: float,
+    learning_rate: float,
+    lambda_: float,
+    iterations: int,
+    seed: int,
+    verbose: bool,
+) -> npt.NDArray[np.float32]: ...
+def bert4rec_predict(
+    item_emb_matrix: npt.NDArray[np.float32],
+    sequences: list[list[int]],
+    max_seq: int,
+    exclude_seen: bool,
+    n_items: int,
+    k: int,
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.float32]]: ...
 def ndcg_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
 def precision_at_k(actual: list[int], pred: list[int], k: int) -> float: ...
 def recall_at_k(actual: list[int], pred: list[int], k: int) -> float: ...

@@ -7,6 +7,16 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### 📦 Miscellaneous
 
+- auto-format code with Ruff [skip ci]
+- release v0.1.79
+- bump version to 0.1.80 and add sasrec benchmark
+
+### 🚀 Features
+
+- Add enable_pruning option to optuna_optimize
+
+### 📦 Miscellaneous
+
 - remove AI slop from try/except and unused variables; bump version to 0.1.78
 
 ### 📦 Miscellaneous

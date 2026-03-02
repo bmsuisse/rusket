@@ -1196,6 +1196,7 @@ class SequentialRecommender(BaseModel):
         data: Any,
         transaction_col: str | None = None,
         item_col: str | None = None,
+        timestamp_col: str | None = None,
         verbose: int = 0,
         **kwargs: Any,
     ) -> SequentialRecommender:

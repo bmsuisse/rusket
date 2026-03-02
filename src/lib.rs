@@ -27,6 +27,7 @@ mod model_selection;
 mod pca;
 mod pipeline;
 mod sasrec;
+mod bert4rec;
 mod svd;
 mod ann;
 mod incremental_pca;
@@ -67,7 +68,9 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fm::fm_predict, m)?)?;
     m.add_function(wrap_pyfunction!(lightgcn::lightgcn_fit, m)?)?;
     m.add_function(wrap_pyfunction!(sasrec::sasrec_fit, m)?)?;
-    m.add_function(wrap_pyfunction!(sasrec::sasrec_encode, m)?)?;
+    m.add_function(wrap_pyfunction!(sasrec::sasrec_predict, m)?)?;
+    m.add_function(wrap_pyfunction!(bert4rec::bert4rec_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(bert4rec::bert4rec_predict, m)?)?;
     m.add_function(wrap_pyfunction!(metrics::ndcg_at_k, m)?)?;
     m.add_function(wrap_pyfunction!(metrics::precision_at_k, m)?)?;
     m.add_function(wrap_pyfunction!(metrics::recall_at_k, m)?)?;

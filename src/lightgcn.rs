@@ -44,6 +44,129 @@ fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
     }
     out
 }
+
+// ── Graph Augmentation (Edge Dropout for SGL) ──────────────────────────────
+fn edge_dropout(
+    u_indptr: &[i64], 
+    u_indices: &[i32], 
+    n_users: usize, 
+    n_items: usize, 
+    p: f32, 
+    seed: u64
+) -> (Vec<i64>, Vec<i32>, Vec<i64>, Vec<i32>, Vec<f32>, Vec<f32>) {
+    let mut rng = XorShift64::new(seed);
+    let mut new_u_indptr = vec![0i64; n_users + 1];
+    let mut new_u_indices = Vec::with_capacity((u_indices.len() as f32 * (1.0 - p) * 1.1) as usize);
+
+    for u in 0..n_users {
+        let start = u_indptr[u] as usize;
+        let end = u_indptr[u + 1] as usize;
+        for j in start..end {
+            if rng.next_f32() >= p {
+                new_u_indices.push(u_indices[j]);
+            }
+        }
+        new_u_indptr[u + 1] = new_u_indices.len() as i64;
+    }
+
+    let mut d_i = vec![0.0f32; n_items];
+    let mut i_counts = vec![0i64; n_items];
+    for &i in new_u_indices.iter() {
+        d_i[i as usize] += 1.0;
+        i_counts[i as usize] += 1;
+    }
+
+    let mut new_i_indptr = vec![0i64; n_items + 1];
+    let mut current = 0;
+    for i in 0..n_items {
+        new_i_indptr[i] = current;
+        current += i_counts[i];
+    }
+    new_i_indptr[n_items] = current;
+
+    let mut i_insert_pos = new_i_indptr.clone();
+    let mut new_i_indices = vec![0i32; current as usize];
+    
+    for u in 0..n_users {
+        let start = new_u_indptr[u] as usize;
+        let end = new_u_indptr[u + 1] as usize;
+        for j in start..end {
+            let item = new_u_indices[j] as usize;
+            let pos = i_insert_pos[item] as usize;
+            new_i_indices[pos] = u as i32;
+            i_insert_pos[item] += 1;
+        }
+    }
+
+    let d_u = (0..n_users).map(|u| (new_u_indptr[u + 1] - new_u_indptr[u]) as f32).collect();
+    (new_u_indptr, new_u_indices, new_i_indptr, new_i_indices, d_u, d_i)
+}
+
+// ── InfoNCE Loss for SSL ────────────────────────────────────────────────────
+fn compute_infonce_loss(
+    v1: &[f32],
+    v2: &[f32],
+    k: usize,
+    n_entities: usize,
+    temp: f32,
+    chunk_size: usize,
+) -> (f32, Vec<f32>, Vec<f32>) {
+    let mut g1 = vec![0.0f32; n_entities * k];
+    let mut g2 = vec![0.0f32; n_entities * k];
+    let g1_ptr = g1.as_mut_ptr() as usize;
+    let g2_ptr = g2.as_mut_ptr() as usize;
+
+    let loss: f32 = (0..n_entities)
+        .into_par_iter()
+        .chunks(chunk_size)
+        .map(|chunk| {
+            let mut loss_sum = 0.0;
+            for &i in &chunk {
+                let s_pos = dot(&v1[i * k..(i + 1) * k], &v2[i * k..(i + 1) * k]) / temp;
+                let mut sum_exp = 0.0;
+                let mut exp_scores = Vec::with_capacity(chunk.len());
+                for &j in &chunk {
+                    let s = dot(&v1[i * k..(i + 1) * k], &v2[j * k..(j + 1) * k]) / temp;
+                    let es = s.exp();
+                    exp_scores.push(es);
+                    sum_exp += es;
+                }
+                
+                loss_sum += -(s_pos.exp() / sum_exp).ln(); 
+                
+                let mut grad_v1_i = vec![0.0; k];
+                let g1_p = g1_ptr as *mut f32;
+                let g2_p = g2_ptr as *mut f32;
+                
+                for (idx, &j) in chunk.iter().enumerate() {
+                    let es = exp_scores[idx];
+                    let weight = es / sum_exp;
+                    let grad_score = if i == j { weight - 1.0 } else { weight };
+                    let g_factor = grad_score / temp;
+                    
+                    for f in 0..k {
+                        let val_v1 = v1[i * k + f];
+                        let val_v2 = v2[j * k + f];
+                        grad_v1_i[f] += g_factor * val_v2;
+                        unsafe {
+                            *g2_p.add(j * k + f) += g_factor * val_v1;
+                        }
+                    }
+                }
+                
+                for f in 0..k {
+                    unsafe {
+                        *g1_p.add(i * k + f) += grad_v1_i[f];
+                    }
+                }
+            }
+            loss_sum
+        })
+        .sum();
+
+    (loss, g1, g2)
+}
+
 // ── SIMD-optimised dot product (8-wide unrolling for NEON / AVX2) ──────────
 #[inline(always)]
 fn dot(a: &[f32], b: &[f32]) -> f32 {
@@ -190,6 +313,9 @@ pub(crate) fn lightgcn_train(
     k_layers: usize,
     learning_rate: f32,
     lambda: f32,
+    ssl_ratio: f32,
+    ssl_temp: f32,
+    ssl_weight: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
@@ -315,7 +441,57 @@ pub(crate) fn lightgcn_train(
                 },
             );
 
-        // Back-propagate through graph layers to get gradient w.r.t. e_u, e_i
+        // SSL Contrastive Loss and Gradients
+        let mut g_eu_ssl = vec![0.0f32; n_users * k];
+        let mut g_ei_ssl = vec![0.0f32; n_items * k];
+        let mut iter_ssl_loss = 0.0f32;
+
+        if ssl_ratio > 0.0 && ssl_weight > 0.0 {
+            // View 1
+            let (v1_u_indptr, v1_u_indices, v1_i_indptr, v1_i_indices, v1_du, v1_di) = 
+                edge_dropout(u_indptr, u_indices, n_users, n_items, ssl_ratio, seed.wrapping_add(iter as u64 * 3));
+            let (v1_u, v1_i) = propagate(
+                &e_u, &e_i, k, n_users, n_items,
+                &v1_u_indptr, &v1_u_indices, &v1_i_indptr, &v1_i_indices,
+                &v1_du, &v1_di, k_layers,
+            );
+
+            // View 2
+            let (v2_u_indptr, v2_u_indices, v2_i_indptr, v2_i_indices, v2_du, v2_di) = 
+                edge_dropout(u_indptr, u_indices, n_users, n_items, ssl_ratio, seed.wrapping_add(iter as u64 * 7));
+            let (v2_u, v2_i) = propagate(
+                &e_u, &e_i, k, n_users, n_items,
+                &v2_u_indptr, &v2_u_indices, &v2_i_indptr, &v2_i_indices,
+                &v2_du, &v2_di, k_layers,
+            );
+
+            let chunk_size = 512;
+            let (lu, g1_u, g2_u) = compute_infonce_loss(&v1_u, &v2_u, k, n_users, ssl_temp, chunk_size);
+            let (li, g1_i, g2_i) = compute_infonce_loss(&v1_i, &v2_i, k, n_items, ssl_temp, chunk_size);
+            
+            iter_ssl_loss = (lu + li) * ssl_weight;
+
+            let (g_eu_v1, g_ei_v1) = propagate(
+                &g1_u, &g1_i, k, n_users, n_items,
+                &v1_u_indptr, &v1_u_indices, &v1_i_indptr, &v1_i_indices,
+                &v1_du, &v1_di, k_layers,
+            );
+            
+            let (g_eu_v2, g_ei_v2) = propagate(
+                &g2_u, &g2_i, k, n_users, n_items,
+                &v2_u_indptr, &v2_u_indices, &v2_i_indptr, &v2_i_indices,
+                &v2_du, &v2_di, k_layers,
+            );
+
+            for idx in 0..g_eu_ssl.len() {
+                g_eu_ssl[idx] = (g_eu_v1[idx] + g_eu_v2[idx]) * ssl_weight;
+            }
+            for idx in 0..g_ei_ssl.len() {
+                g_ei_ssl[idx] = (g_ei_v1[idx] + g_ei_v2[idx]) * ssl_weight;
+            }
+        }
+
+        // Back-propagate through graph layers to get BPR gradient w.r.t. e_u, e_i
         let (g_eu, g_ei) = propagate(
             &g_fu, &g_fi, k, n_users, n_items,
             u_indptr, u_indices, i_indptr, i_indices,
@@ -327,25 +503,36 @@ pub(crate) fn lightgcn_train(
         let alpha = learning_rate * (1.0 - beta2.powf(t)).sqrt() / (1.0 - beta1.powf(t));
 
         for idx in 0..e_u.len() {
-            let g = g_eu[idx] + lambda * e_u[idx];
+            let g = g_eu[idx] + g_eu_ssl[idx] + lambda * e_u[idx];
             m_u[idx] = beta1 * m_u[idx] + (1.0 - beta1) * g;
             v_u[idx] = beta2 * v_u[idx] + (1.0 - beta2) * g * g;
             e_u[idx] -= alpha * m_u[idx] / (v_u[idx].sqrt() + eps);
         }
         for idx in 0..e_i.len() {
-            let g = g_ei[idx] + lambda * e_i[idx];
+            let g = g_ei[idx] + g_ei_ssl[idx] + lambda * e_i[idx];
             m_i[idx] = beta1 * m_i[idx] + (1.0 - beta1) * g;
             v_i[idx] = beta2 * v_i[idx] + (1.0 - beta2) * g * g;
             e_i[idx] -= alpha * m_i[idx] / (v_i[idx].sqrt() + eps);
         }
 
         if verbose {
-            println!(
-                "{:>4} | {:>7.4} | {:.2}s",
-                iter + 1,
-                total_loss / n_interactions as f32,
-                t_iter.elapsed().as_secs_f64()
-            );
+            let bpr_loss_avg = total_loss / n_interactions as f32;
+            if ssl_ratio > 0.0 {
+                println!(
+                    "{:>4} | BPR: {:>6.4} SSL: {:>6.4} | {:.2}s",
+                    iter + 1,
+                    bpr_loss_avg,
+                    iter_ssl_loss / (n_users + n_items) as f32,
+                    t_iter.elapsed().as_secs_f64()
+                );
+            } else {
+                println!(
+                    "{:>4} | {:>7.4} | {:.2}s",
+                    iter + 1,
+                    bpr_loss_avg,
+                    t_iter.elapsed().as_secs_f64()
+                );
+            }
         }
     }
 
@@ -358,7 +545,7 @@ pub(crate) fn lightgcn_train(
 #[pyo3(signature = (
     u_indptr, u_indices, i_indptr, i_indices,
     n_users, n_items, factors, k_layers,
-    learning_rate, lambda_, iterations, seed, verbose
+    learning_rate, lambda_, ssl_ratio, ssl_temp, ssl_weight, iterations, seed, verbose
 ))]
 #[allow(clippy::too_many_arguments)]
 pub fn lightgcn_fit<'py>(
@@ -373,6 +560,9 @@ pub fn lightgcn_fit<'py>(
     k_layers: usize,
     learning_rate: f32,
     lambda_: f32,
+    ssl_ratio: f32,
+    ssl_temp: f32,
+    ssl_weight: f32,
     iterations: usize,
     seed: u64,
     verbose: bool,
@@ -386,7 +576,7 @@ pub fn lightgcn_fit<'py>(
         lightgcn_train(
             up, ui, ip, ii,
             n_users, n_items, factors, k_layers,
-            learning_rate, lambda_, iterations, seed, verbose,
+            learning_rate, lambda_, ssl_ratio, ssl_temp, ssl_weight, iterations, seed, verbose,
         )
     });
 
