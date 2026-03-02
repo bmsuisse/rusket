@@ -108,8 +108,14 @@ def export_vectors(
 
     fn = dispatch[backend]
     return fn(
-        factors, client, collection_name, ids_list, payloads,
-        batch_size, recreate, **kwargs,
+        factors,
+        client,
+        collection_name,
+        ids_list,
+        payloads,
+        batch_size,
+        recreate,
+        **kwargs,
     )
 
 
@@ -179,7 +185,8 @@ def _export_qdrant(
         end = min(start + batch_size, n)
         points = [
             PointStruct(
-                id=ids[i], vector=factors[i].tolist(),
+                id=ids[i],
+                vector=factors[i].tolist(),
                 payload=payloads[i] if payloads else {},
             )
             for i in range(start, end)
@@ -245,11 +252,7 @@ def _export_pgvector(
     if recreate:
         cur.execute(f"DROP TABLE IF EXISTS {table_name}")
         cur.execute(
-            f"CREATE TABLE {table_name} ("
-            f"  id TEXT PRIMARY KEY,"
-            f"  embedding vector({d}),"
-            f"  payload JSONB DEFAULT '{{}}'"
-            f")"
+            f"CREATE TABLE {table_name} (  id TEXT PRIMARY KEY,  embedding vector({d}),  payload JSONB DEFAULT '{{}}')"
         )
         conn.commit()
 
@@ -379,7 +382,9 @@ def _export_weaviate(
             for i in range(n):
                 props = payloads[i] if payloads and i < len(payloads) else {}
                 batch.add_data_object(
-                    data_object=props, class_name=collection_name,
-                    vector=factors[i].tolist(), uuid=str(ids[i]),
+                    data_object=props,
+                    class_name=collection_name,
+                    vector=factors[i].tolist(),
+                    uuid=str(ids[i]),
                 )
     return n

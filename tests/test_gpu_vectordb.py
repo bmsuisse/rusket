@@ -113,10 +113,13 @@ class TestExportVectors:
 
         mock_models = MagicMock()
         mock_models.Distance.DOT = "Dot"
-        with patch.dict("sys.modules", {
-            "qdrant_client": MagicMock(),
-            "qdrant_client.models": mock_models,
-        }):
+        with patch.dict(
+            "sys.modules",
+            {
+                "qdrant_client": MagicMock(),
+                "qdrant_client.models": mock_models,
+            },
+        ):
             from rusket.vector_export import export_vectors
 
             n = export_vectors(np.random.randn(5, 3).astype(np.float32), client=mock_client)
