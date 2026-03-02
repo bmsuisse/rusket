@@ -5,10 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    import pandas as pd
+from typing import Any
 
 try:
     from rusket._dependencies import import_optional_dependency
@@ -39,7 +36,7 @@ if HAS_MLFLOW:
             model_path = context.artifacts["model_path"]
             self.model = load_model(model_path)
 
-        def predict(self, context: Any, model_input: pd.DataFrame) -> pd.DataFrame:
+        def predict(self, context: Any, model_input):
             """Predict recommendations for a dataframe of users.
 
             Input dataframe should have a 'user' column (or user inputs directly).
@@ -61,7 +58,7 @@ if HAS_MLFLOW:
             results = []
             for u in users:
                 try:
-                    items, scores = self.model.recommend_items(u, n=10, exclude_seen=True)
+                    items, scores = self.model.recommend_items(u, n=10, exclude_seen=True)  # type: ignore
                     results.append({"user": u, "items": items.tolist(), "scores": scores.scores.tolist()})
                 except Exception:
                     results.append({"user": u, "items": [], "scores": []})

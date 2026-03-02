@@ -72,3 +72,46 @@ pipeline = Pipeline(
 recs, scores = pipeline.recommend(user_id=1, n=5)
 # returned candidates are guaranteed to be filtered over the mask.
 ```
+
+---
+
+## Injecting Business Rules
+
+While mathematical filters are great for removing items, you sometimes need to forcibly **promote** items based on curated business logic (e.g., "If a user bought a laptop, they should definitely see an extended warranty"). 
+
+By passing `RuleBasedRecommender` instances to the `rules` parameter, their item associations are evaluated and injected into the final candidate set *after* re-ranking, receiving an artificially high mathematical advantage (a score boost of `+1M`). This guarantees your curated rules always rank at the top.
+
+```python
+import pandas as pd
+from rusket import Pipeline, ALS, ItemKNN, RuleBasedRecommender
+
+als = ALS(factors=64).fit(interactions)
+knn = ItemKNN(k=50).fit(interactions)
+
+# 1. Define specific item-to-item business rules
+rules_df = pd.DataFrame({
+    "antecedent": ["102", "102"],    # Laptop SKU
+    "consequent": ["999", "888"],    # Warranty SKU & Premium Mouse SKU
+    "score": [2.0, 1.5]
+})
+
+# 2. Build the rule model
+rule_model = RuleBasedRecommender.from_transactions(
+    interactions, 
+    rules=rules_df, 
+    user_col="user", 
+    item_col="item"
+).fit()
+
+# 3. Inject it into the pipeline's `rules` phase
+pipeline = Pipeline(
+    retrieve=[als, knn],
+    rerank=als,
+    rules=rule_model,  # Injects forced correlations
+)
+
+# User 42 interaction history is checked during retrieval. 
+# If they previously interacted with Laptop "102", the warranty "999" 
+# will bypass reranking logic and rank #1.
+recs, scores = pipeline.recommend(user_id=42, n=5)
+```

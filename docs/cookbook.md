@@ -501,6 +501,36 @@ item_ids, scores = rec.recommend_for_user(user_id=125, n=5)
 suggested_additions = rec.recommend_for_cart([10, 15], n=3)
 ```
 
+### Advanced Pipeline with Business Rules
+
+You can also use a `Pipeline` to forcefully inject curated item associations. Items from a `RuleBasedRecommender` completely bypass CF reranking and are artificially pushed to the top (e.g., +1,000,000 score).
+
+```python
+import pandas as pd
+from rusket import ALS, Pipeline, RuleBasedRecommender
+
+als = ALS(factors=64).fit(interactions)
+
+# "When buying headphones (102), always push the warranty (999)"
+rules_df = pd.DataFrame({
+    "antecedent": [102],
+    "consequent": [999],
+    "score": [2.0]
+})
+rules = RuleBasedRecommender.from_transactions(
+    interactions, rules=rules_df, user_col="user_id", item_col="item_id"
+).fit()
+
+pipeline = Pipeline(
+    retrieve=[als],
+    rules=rules, 
+)
+
+# If the user previously interacted with item 102, 
+# item 999 will rank #1 globally.
+recs, scores = pipeline.recommend(user_id=42, n=5)
+```
+
 ---
 
 ## 15. GenAI / LLM Stack Integration

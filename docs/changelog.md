@@ -5,6 +5,109 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- remove AI slop from try/except and unused variables; bump version to 0.1.78
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- fixes typing errors for YOLO release
+- release v0.1.77
+
+### 📖 Documentation
+
+- comprehensive MLOps & Optuna documentation
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
+- YOLO release v0.1.76
+
+### 🚀 Features
+
+- Add SASRec and LightGCN notebooks, refine existing documentation, and enhance model selection and MLflow integration.
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- ignore mlflow.db
+- release v0.1.73
+
+### 📦 Miscellaneous
+
+- release v0.1.72 with MLflow, Metrics, and Splitters
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- Bump `rusket` package version to 0.1.70 and delete `test_nxr.py`.
+- bump version to 0.1.70 and YOLO release optimizations
+
+### 🚀 Features
+
+- wip release 0.1.71
+
+### 📖 Documentation
+
+- add Hyperparameter Tuning section to README
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- parallelize Python CV path with ThreadPoolExecutor
+- generic Rust rayon-parallel CV for all factor models
+- Rust CV for BPR/SVD/LightGCN, MLflow nested runs fix, bump v0.1.70
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- add MLflow tracking + callbacks to optuna_optimize, docs, bump v0.1.69
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- Rust-native parallel cross-validation + Optuna Bayesian HPO
+
+### 🚀 Features
+
+- add cross_validate grid-search for ALS/eALS hyperparameter tuning, bump to 0.1.67
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- add eALS wrapper class, document eALS, fix networkxr pyright, bump to 0.1.66
+
+### 🔧 Refactoring
+
+- Replace `AutoMiner` with `FPGrowth` in documentation and examples, update ALS benchmarks to include eALS, and refine auto-mining density heuristics.
+
+### 🚀 Features
+
+- Introduce Incremental PCA and Approximate Nearest Neighbors, add ALS sparse matrix support, and remove AutoMiner functionality.
+- implement PaCMAP and NN-Descent DR algorithms
+
+### 📖 Documentation
+
+- sync generated documentation
+
+### 🚀 Features
+
+- Implement optimized element-wise coordinate descent ALS (eALS)
+
 ### 🚀 Features
 
 - add generic load_model function and lancedb serving examples
@@ -522,7 +625,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - add verbose iteration timing + out-of-core 1B support
 - comprehensive cookbook + ALS speed improvements
 - HashMap FPMiner + creative benchmark (method × chunk-size × scale)
-- frequency-sorted remap + hint_n_transactions (Borgelt 2003)
+- frequency-sorted remap + mine_auto + hint_n_transactions (Borgelt 2003)
 - Anderson Acceleration for ALS outer loop (anderson_m param)
 
 ### 🚀 Features

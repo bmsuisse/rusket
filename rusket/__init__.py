@@ -38,6 +38,7 @@ from .pipeline import Pipeline
 from .popularity import PopularityRecommender
 from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
 from .recommend import NextBestAction, Recommender, score_potential
+from .rules import RuleBasedRecommender
 from .sasrec import SASRec
 from .similarity import similar_items
 from .streaming import FPMiner, mine_duckdb, mine_spark
@@ -127,4 +128,5 @@ __all__ = [
     "pacmap2",
     "pacmap3",
     "mlflow",
+    "RuleBasedRecommender",
 ]
