@@ -62,6 +62,12 @@ class ALS(ImplicitRecommender):
     use_biases : bool
         If True, learn global bias (μ), user biases (b_u), and item biases (b_i)
         so that prediction becomes ``μ + b_u + b_i + w_u · h_i``.
+    alpha_view : float
+        Confidence scaling for **view** interactions in VALS mode.
+        Pass ``view_matrix`` to ``fit()`` to enable. Default 10.0.
+    view_target : float
+        Target value for view interactions (between 0.0 and 1.0).
+        Purchases always target 1.0. Default 0.5.
 
     Examples
     --------
@@ -92,6 +98,8 @@ class ALS(ImplicitRecommender):
         anderson_m: int = 0,
         popularity_weighting: str = "none",
         use_biases: bool = False,
+        alpha_view: float = 10.0,
+        view_target: float = 0.5,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -108,6 +116,8 @@ class ALS(ImplicitRecommender):
         self.anderson_m = anderson_m
         self.popularity_weighting = popularity_weighting
         self.use_biases = use_biases
+        self.alpha_view = float(alpha_view)
+        self.view_target = float(view_target)
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -128,13 +138,17 @@ class ALS(ImplicitRecommender):
             f"alpha={self.alpha}, iterations={self.iterations})"
         )
 
-    def fit(self, interactions: Any = None) -> ALS:
+    def fit(self, interactions: Any = None, *, view_matrix: Any = None) -> ALS:
         """Fit the model to the user-item interaction matrix.
 
         Parameters
         ----------
         interactions : sparse matrix or numpy array, optional
             If None, uses the matrix prepared by ``from_transactions()``.
+        view_matrix : sparse matrix or numpy array, optional
+            Optional view/browse interaction matrix (same shape as ``interactions``).
+            When provided, enables **VALS** mode: views are treated as weaker
+            positive signals with confidence ``alpha_view`` targeting ``view_target``.
 
         Raises
         ------
@@ -162,6 +176,30 @@ class ALS(ImplicitRecommender):
 
         if not isinstance(csr, sp.csr_matrix):
             csr = csr.tocsr()
+
+        # VALS: merge view interactions into the main matrix
+        if view_matrix is not None:
+            if sp.issparse(view_matrix):
+                view_csr = sp.csr_matrix(view_matrix, dtype=np.float32)
+            elif isinstance(view_matrix, np.ndarray):
+                view_csr = sp.csr_matrix(view_matrix.astype(np.float32))
+            else:
+                raise TypeError(f"Expected sparse matrix or ndarray for view_matrix, got {type(view_matrix)}")
+            if view_csr.shape != csr.shape:
+                raise ValueError(
+                    f"view_matrix shape {view_csr.shape} != interactions shape {csr.shape}"
+                )
+            # Scale purchase entries: data encodes confidence. We use 1.0 for purchases.
+            # Scale view entries: use (alpha_view / alpha) * view_target as the data value,
+            # so that confidence = 1 + alpha * data = 1 + alpha_view * view_target
+            # This gives views intermediate confidence between unobserved (1) and purchase (1+alpha)
+            view_only = view_csr - view_csr.multiply(csr.astype(bool))  # views not already purchased
+            view_only.eliminate_zeros()
+            if view_only.nnz > 0:
+                scale = (self.alpha_view * self.view_target) / max(self.alpha, 1e-9)
+                view_only.data[:] = scale
+                csr = csr + view_only
+                csr.sum_duplicates()
 
         # SciPy's C++ algorithms overflow int32 for nnz > 1B, so skip canonical
         # format enforcement on very large matrices.

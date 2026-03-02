@@ -592,3 +592,56 @@ def test_build_ann_index_invalid_backend() -> None:
     model.fit(mat)
     with pytest.raises(ValueError, match="Unknown backend"):
         model.build_ann_index(backend="unknown")
+
+
+# ---------------------------------------------------------------------------
+# VALS (View-Aware ALS) tests
+# ---------------------------------------------------------------------------
+
+
+def test_vals_basic_fit() -> None:
+    """Fit with purchase + view matrices — factors must be finite."""
+    rng = np.random.RandomState(42)
+    n_users, n_items = 30, 20
+    purchases = csr_matrix(rng.randint(0, 2, (n_users, n_items)).astype(np.float32))
+    views = csr_matrix(rng.randint(0, 2, (n_users, n_items)).astype(np.float32))
+
+    model = rusket.ALS(factors=8, iterations=10, seed=42, alpha_view=10.0, view_target=0.5)
+    model.fit(purchases, view_matrix=views)
+    assert np.isfinite(model.user_factors).all()
+    assert np.isfinite(model.item_factors).all()
+
+
+def test_vals_no_views_unchanged() -> None:
+    """Without view_matrix, VALS params don't change results."""
+    mat = get_checker_board(20)
+    m1 = rusket.ALS(factors=8, iterations=5, seed=42)
+    m1.fit(mat)
+    m2 = rusket.ALS(factors=8, iterations=5, seed=42, alpha_view=10.0, view_target=0.5)
+    m2.fit(mat)
+    np.testing.assert_array_equal(m1.user_factors, m2.user_factors)
+    np.testing.assert_array_equal(m1.item_factors, m2.item_factors)
+
+
+def test_vals_view_matrix_shape_mismatch() -> None:
+    """Mismatched view_matrix shape should raise ValueError."""
+    purchases = csr_matrix(np.ones((10, 20), dtype=np.float32))
+    views = csr_matrix(np.ones((10, 15), dtype=np.float32))  # wrong shape
+    model = rusket.ALS(factors=8, iterations=5, seed=42)
+    with pytest.raises(ValueError, match="shape"):
+        model.fit(purchases, view_matrix=views)
+
+
+def test_vals_views_affect_results() -> None:
+    """Providing views should produce different factors than no views."""
+    rng = np.random.RandomState(42)
+    n_users, n_items = 30, 20
+    purchases = csr_matrix(rng.randint(0, 2, (n_users, n_items)).astype(np.float32))
+    views = csr_matrix(rng.randint(0, 2, (n_users, n_items)).astype(np.float32))
+
+    m1 = rusket.ALS(factors=8, iterations=10, seed=42)
+    m1.fit(purchases)
+    m2 = rusket.ALS(factors=8, iterations=10, seed=42, alpha_view=15.0, view_target=0.5)
+    m2.fit(purchases, view_matrix=views)
+    assert not np.allclose(m1.user_factors, m2.user_factors, rtol=1e-3)
+
