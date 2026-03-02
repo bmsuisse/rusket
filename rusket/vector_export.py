@@ -74,18 +74,29 @@ def export_vectors(
 
     if backend == "qdrant":
         return _export_qdrant(
-            factors, collection_name, ids_list, payloads,
-            url or "http://localhost:6333", api_key, batch_size, recreate, **kwargs,
+            factors,
+            collection_name,
+            ids_list,
+            payloads,
+            url or "http://localhost:6333",
+            api_key,
+            batch_size,
+            recreate,
+            **kwargs,
         )
     elif backend == "meilisearch":
         return _export_meilisearch(
-            factors, collection_name, ids_list, payloads,
-            url or "http://localhost:7700", api_key, batch_size, **kwargs,
+            factors,
+            collection_name,
+            ids_list,
+            payloads,
+            url or "http://localhost:7700",
+            api_key,
+            batch_size,
+            **kwargs,
         )
     else:
-        raise ValueError(
-            f"Unknown backend '{backend}'. Supported: 'qdrant', 'meilisearch'."
-        )
+        raise ValueError(f"Unknown backend '{backend}'. Supported: 'qdrant', 'meilisearch'.")
 
 
 # ---------------------------------------------------------------------------
@@ -113,9 +124,7 @@ def _export_qdrant(
             VectorParams,
         )
     except ImportError as e:
-        raise ImportError(
-            "Qdrant client required. Install with: pip install qdrant-client"
-        ) from e
+        raise ImportError("Qdrant client required. Install with: pip install qdrant-client") from e
 
     n, d = factors.shape
     dist_map = {"Dot": Distance.DOT, "Cosine": Distance.COSINE, "Euclid": Distance.EUCLID}
@@ -158,9 +167,7 @@ def _export_meilisearch(
     try:
         import meilisearch  # type: ignore[import-untyped]
     except ImportError as e:
-        raise ImportError(
-            "Meilisearch client required. Install with: pip install meilisearch"
-        ) from e
+        raise ImportError("Meilisearch client required. Install with: pip install meilisearch") from e
 
     n = factors.shape[0]
     client = meilisearch.Client(url, api_key)
