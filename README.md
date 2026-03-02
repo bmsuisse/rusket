@@ -559,17 +559,31 @@ It chains multiple models together:
 3. **Filter:** Apply business rules (e.g. exclude out-of-stock items, diversify)
 
 ```python
-from rusket import ALS, BPR, Pipeline
+from rusket import ALS, BPR, Pipeline, RuleBasedRecommender
+import pandas as pd
 
 # 1. Train multiple base models
 als = ALS(factors=64).fit(interactions)
 bpr = BPR(factors=128).fit(interactions)
 
-# 2. Compose the Pipeline (Retrieve from ALS, rerank with deeper BPR vectors)
+# 2. Define explicit business rules (e.g. promoting warranties with laptops)
+rules_df = pd.DataFrame({
+    "antecedent": ["102"],   # Laptop SKU
+    "consequent": ["999"],   # Warranty SKU
+    "score": [2.0]
+})
+rules = RuleBasedRecommender.from_transactions(
+    interactions, rules=rules_df, user_col="user", item_col="item"
+).fit()
+
+# 3. Compose the Pipeline (Retrieve from ALS, rerank with deeper BPR vectors)
+# Items from the `rules` model receive an artificial +1,000,000 score 
+# ensuring they rank at the top *after* the algorithmic reranking.
 pipeline = Pipeline(
     retrieve=[als, bpr],
     merge_strategy="max",  # how to combine candidate scores
     rerank=bpr,
+    rules=rules, 
 )
 
 # Recommend for a user

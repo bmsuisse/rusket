@@ -18,7 +18,7 @@ new_code = """if HAS_MLFLOW:
             model_path = context.artifacts["model_path"]
             self.model = load_model(model_path)
 
-        def predict(self, context: Any, model_input: pd.DataFrame) -> pd.DataFrame:
+        def predict(self, context: Any, model_input):
             \"""Predict recommendations for a dataframe of users.
 
             Input dataframe should have a 'user' column (or user inputs directly).

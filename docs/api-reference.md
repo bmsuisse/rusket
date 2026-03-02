@@ -410,7 +410,7 @@ Split interactions into random train and test sets.
 ```python
 from rusket.model_selection import train_test_split
 
-train_test_split(df, user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None)
+train_test_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
 
 **Parameters**
@@ -441,7 +441,7 @@ If no timestamp is provided, a random interaction is chosen.
 ```python
 from rusket.model_selection import leave_one_out_split
 
-leave_one_out_split(df, user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None)
+leave_one_out_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
 
 **Parameters**
@@ -2366,7 +2366,7 @@ at Twitter/X, YouTube, and Spotify.
 ```python
 from rusket.pipeline import Pipeline
 
-Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None, filter: 'Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None' = None, merge_strategy: "Literal['max', 'mean', 'sum']" = 'max') -> 'None'
+Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None, rules: 'Any | list[Any] | None' = None, filter: 'Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None' = None, merge_strategy: "Literal['max', 'mean', 'sum']" = 'max') -> 'None'
 ```
 
 **Parameters**
@@ -2375,7 +2375,8 @@ Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None,
 | --- | --- | --- |
 | retrieve | list or single model | One or more ``ImplicitRecommender`` instances used for candidate generation.  Each model's ``recommend_items()`` is called and results are merged. |
 | rerank | model, optional | An ``ImplicitRecommender`` used to re-score the merged candidate set. Typically a heavier model (e.g. BPR or LightGCN) that produces higher-quality rankings on a smaller candidate pool. |
-| filter | callable, optional | A function ``(item_ids, scores) -> (filtered_ids, filtered_scores)`` applied after re-ranking.  Use for block lists, category restrictions, recency filters, NSFW removal, etc. |
+| rules | model or list, optional | One or more ``RuleBasedRecommender`` instances.  Rules are evaluated for the user's history and injected into the candidate set *after* re-ranking, with an artificially boosted score (e.g., +1,000,000) to ensure they always surface at the very top of the final recommendations. |
+| filter | callable, optional | A function ``(item_ids, scores) -> (filtered_ids, filtered_scores)`` applied at the very end.  Use for block lists, category restrictions, recency filters, NSFW removal, etc. |
 | merge_strategy | {'max', 'mean', 'sum'}, default='max' | How to combine scores when multiple retrievers return the same item. |
 
 **Examples**
@@ -2384,6 +2385,7 @@ Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None,
 >>> pipeline = Pipeline(
 ...     retrieve=[als, item_knn],
 ...     rerank=bpr,
+...     rules=my_curated_rules,
 ...     filter=lambda ids, sc: (
 ...         [i for i in ids if i not in blocked_set],
 ...         [s for i, s in zip(ids, sc) if i not in blocked_set],

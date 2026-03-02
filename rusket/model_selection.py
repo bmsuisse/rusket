@@ -588,13 +588,6 @@ def _cross_validate_rust_generic(
         learning_rate_list.append(float(params.get("learning_rate", d["learning_rate"])))
         k_layers_list.append(int(params.get("k_layers", d["k_layers"])))
 
-    cb_obj = None
-    if callbacks is not None:
-        for c in callbacks:
-            if callable(c):
-                cb_obj = c
-                break
-
     # --- Call Rust cross_validate_generic ---
     (
         best_idx,
@@ -625,7 +618,6 @@ def _cross_validate_rust_generic(
         metric,
         seed,
         verbose,
-        cb_obj,
     )
 
     # --- Reconstruct CrossValidationResult ---
@@ -747,13 +739,6 @@ def _cross_validate_rust(
         use_cholesky_list.append(bool(params.get("use_cholesky", defaults.use_cholesky)))
         seed_list.append(int(params.get("seed", seed)))
 
-    cb_obj = None
-    if callbacks is not None:
-        for c in callbacks:
-            if callable(c):
-                cb_obj = c
-                break
-
     # --- Call Rust cross_validate_als ---
     (
         best_idx,
@@ -781,7 +766,6 @@ def _cross_validate_rust(
         metric,
         seed,
         verbose,
-        cb_obj,
     )
 
     # --- Reconstruct CrossValidationResult ---

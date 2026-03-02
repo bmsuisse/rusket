@@ -15,7 +15,9 @@ Example
 >>> pipeline = Pipeline(
 ...     retrieve=[als, knn],           # cheap candidate generation
 ...     rerank=bpr,                    # expensive re-scoring
-...     filter=lambda ids, sc: (       # business rules
+...     rerank=bpr,                    # expensive re-scoring
+...     rules=rule_model,              # business rules (injected at the top)
+...     filter=lambda ids, sc: (       # availability / block filter
 ...         [i for i in ids if i not in blocked],
 ...         [s for i, s in zip(ids, sc) if i not in blocked],
 ...     ),
@@ -49,9 +51,14 @@ class Pipeline:
         An ``ImplicitRecommender`` used to re-score the merged candidate set.
         Typically a heavier model (e.g. BPR or LightGCN) that produces
         higher-quality rankings on a smaller candidate pool.
+    rules : model or list, optional
+        One or more ``RuleBasedRecommender`` instances.  Rules are evaluated for
+        the user's history and injected into the candidate set *after* re-ranking,
+        with an artificially boosted score (e.g., +1,000,000) to ensure they
+        always surface at the very top of the final recommendations.
     filter : callable, optional
         A function ``(item_ids, scores) -> (filtered_ids, filtered_scores)``
-        applied after re-ranking.  Use for block lists, category restrictions,
+        applied at the very end.  Use for block lists, category restrictions,
         recency filters, NSFW removal, etc.
     merge_strategy : {'max', 'mean', 'sum'}, default='max'
         How to combine scores when multiple retrievers return the same item.
@@ -61,6 +68,7 @@ class Pipeline:
     >>> pipeline = Pipeline(
     ...     retrieve=[als, item_knn],
     ...     rerank=bpr,
+    ...     rules=my_curated_rules,
     ...     filter=lambda ids, sc: (
     ...         [i for i in ids if i not in blocked_set],
     ...         [s for i, s in zip(ids, sc) if i not in blocked_set],
@@ -73,6 +81,7 @@ class Pipeline:
         self,
         retrieve: Any | list[Any] | None = None,
         rerank: Any | None = None,
+        rules: Any | list[Any] | None = None,
         filter: Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None = None,
         merge_strategy: Literal["max", "mean", "sum"] = "max",
     ) -> None:
@@ -81,6 +90,7 @@ class Pipeline:
 
         self.retrievers: list[Any] = retrieve if isinstance(retrieve, list) else [retrieve]
         self.reranker: Any | None = rerank
+        self.rules: list[Any] = rules if isinstance(rules, list) else ([rules] if rules else [])
         self.filter_fn: Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None = filter
         self.merge_strategy: str = merge_strategy
 
@@ -90,10 +100,11 @@ class Pipeline:
     def __repr__(self) -> str:
         retriever_names = [type(r).__name__ for r in self.retrievers]
         reranker_name = type(self.reranker).__name__ if self.reranker else "None"
+        rules_name = [type(r).__name__ for r in self.rules] if self.rules else "None"
         filter_name = "custom" if self.filter_fn else "None"
         return (
             f"Pipeline(retrieve={retriever_names}, "
-            f"rerank={reranker_name}, filter={filter_name}, "
+            f"rerank={reranker_name}, rules={rules_name}, filter={filter_name}, "
             f"merge={self.merge_strategy})"
         )
 
@@ -140,7 +151,13 @@ class Pipeline:
         if self.reranker is not None:
             candidate_scores = self._rerank_for_user(user_id, candidate_ids, candidate_scores)
 
-        # ── Stage 3: Filter ────────────────────────────────────────────────
+        # ── Stage 3: Rules ─────────────────────────────────────────────────
+        if self.rules:
+            candidate_ids, candidate_scores = self._inject_rules(
+                user_id, candidate_ids, candidate_scores, n, exclude_seen
+            )
+
+        # ── Stage 4: Filter ────────────────────────────────────────────────
         if self.filter_fn is not None:
             candidate_ids, candidate_scores = self._filter(candidate_ids, candidate_scores)
             if len(candidate_ids) == 0:
@@ -330,8 +347,23 @@ class Pipeline:
             # Apply filter if present (post Rust, per user)
             for uid in user_ids:
                 item_ids, scores = user_results.get(int(uid), ([], []))
+
+                # Apply Rules (per user fallback if Rust doesn't handle rules)
+                if self.rules and item_ids:
+                    item_ids_mapped = np.array(item_ids, dtype=np.int64)
+                    scores_mapped = np.array(scores, dtype=np.float64)
+                    new_i, new_s = self._inject_rules(uid, item_ids_mapped, scores_mapped, n, exclude_seen)
+                    item_ids, scores = new_i.tolist(), new_s.tolist()
+
                 if self.filter_fn is not None and item_ids:
                     item_ids, scores = self.filter_fn(item_ids, scores)
+
+                # Re-sort and truncate to top-n if rules or filters modified the length
+                if len(item_ids) > n:
+                    order = np.argsort(-np.array(scores))[:n]
+                    item_ids = [item_ids[i] for i in order]
+                    scores = [scores[i] for i in order]
+
                 records.append(
                     {
                         "user_id": uid,
@@ -439,6 +471,57 @@ class Pipeline:
             new_scores[valid_mask] = item_factors[valid_ids] @ user_vec
 
         return new_scores
+
+    def _inject_rules(
+        self,
+        user_id: int | Any,
+        candidate_ids: np.ndarray,
+        candidate_scores: np.ndarray,
+        n: int,
+        exclude_seen: bool,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Inject curated rules with an artificially boosted score.
+
+        Evaluates the business rules for a user, merges the results into the
+        existing candidate set, and sets their score extremely high (e.g. +1,000,000)
+        so they dominate the top-N sorting phase.
+        """
+        import numpy as np
+
+        if not self.rules:
+            return candidate_ids, candidate_scores
+
+        rule_merged: dict[int, float] = {}
+        for r_model in self.rules:
+            try:
+                ids, scores = r_model.recommend_items(user_id=user_id, n=n, exclude_seen=exclude_seen)
+                for item_id, score in zip(ids, scores, strict=False):
+                    item_key = int(item_id)
+                    # + 1,000,000 to ensure rule-based answers beat algorithmic models
+                    rule_score = float(score) + 1_000_000.0
+                    if item_key not in rule_merged or rule_score > rule_merged[item_key]:
+                        rule_merged[item_key] = rule_score
+            except Exception:
+                continue
+
+        if not rule_merged:
+            return candidate_ids, candidate_scores
+
+        # Update existing candidate scores or append new ones
+        final_ids = candidate_ids.tolist()
+        final_scores = candidate_scores.tolist()
+
+        # We index candidate_ids to quickly overwrite existing scores
+        existing_map = {int(_id): idx for idx, _id in enumerate(final_ids)}
+
+        for rule_id, rule_score in rule_merged.items():
+            if rule_id in existing_map:
+                final_scores[existing_map[rule_id]] = rule_score
+            else:
+                final_ids.append(rule_id)
+                final_scores.append(rule_score)
+
+        return np.array(final_ids, dtype=np.int64), np.array(final_scores, dtype=np.float64)
 
     def _filter(
         self,
