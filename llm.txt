@@ -2721,6 +2721,20 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📖 Documentation
+
+- comprehensive MLOps & Optuna documentation
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- ignore mlflow.db
+- release v0.1.73
+
 ### 📦 Miscellaneous
 
 - release v0.1.72 with MLflow, Metrics, and Splitters
