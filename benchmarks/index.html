@@ -1132,6 +1132,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#benchmark-vs-pyspark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark vs PySpark
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1507,6 +1518,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#benchmark-vs-pyspark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmark vs PySpark
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1823,6 +1845,36 @@ All timings are single-run wall-clock measurements. Your results may vary depend
 <td style="text-align: center;"><strong>71 ms</strong></td>
 <td style="text-align: center;"><em>N/A</em></td>
 <td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="benchmark-vs-pyspark">Benchmark vs PySpark<a class="headerlink" href="#benchmark-vs-pyspark" title="Permanent link">&para;</a></h2>
+<p>PySpark is the industry standard for large-scale recommendation workloads. While <code>rusket</code> runs strictly single-machine (utilizing Rust Rayon threading), it relies on native memory and avoids the JVM serialization overhead, resulting in massive speedups over PySpark local mode.</p>
+<blockquote>
+<p><strong>Benchmark environment:</strong> Apple Silicon M-Series, <code>local[*]</code> Spark master, 1 million ALS interactions (20k Users × 10k Items), 50k FPGrowth transactions.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th style="text-align: center;"><code>rusket</code></th>
+<th style="text-align: center;"><code>pyspark.ml</code></th>
+<th style="text-align: center;"><strong>Speedup</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FPGrowth</strong> (50k txns)</td>
+<td style="text-align: center;"><strong>0.027 s</strong></td>
+<td style="text-align: center;">3.89 s</td>
+<td style="text-align: center;"><strong>139.8×</strong></td>
+</tr>
+<tr>
+<td><strong>ALS</strong> (1M interactions)</td>
+<td style="text-align: center;"><strong>6.5 s</strong></td>
+<td style="text-align: center;">71.1 s</td>
+<td style="text-align: center;"><strong>10.9×</strong></td>
 </tr>
 </tbody>
 </table>

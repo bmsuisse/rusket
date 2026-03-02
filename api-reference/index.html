@@ -6303,7 +6303,7 @@ per item. Similarity methods include BM25, TF-IDF, Cosine, or unweighted Count.<
 where both personal taste and sequential behavior matter (e.g., next-basket delivery).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-76-1"><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.fpmc</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPMC</span>
 </span><span id="__span-76-2"><a id="__codelineno-76-2" name="__codelineno-76-2" href="#__codelineno-76-2"></a>
-</span><span id="__span-76-3"><a id="__codelineno-76-3" name="__codelineno-76-3" href="#__codelineno-76-3"></a><span class="n">FPMC</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</span><span id="__span-76-3"><a id="__codelineno-76-3" name="__codelineno-76-3" href="#__codelineno-76-3"></a><span class="n">FPMC</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">regularization</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">150</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">time_aware</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_time_steps</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6351,7 +6351,7 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 <p>Fit the FPMC model to a list of sequential interactions.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-77-1"><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.fpmc</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPMC</span><span class="o">.</span><span class="n">fit</span>
 </span><span id="__span-77-2"><a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a>
-</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a><span class="n">FPMC</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_items</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FPMC&#39;</span>
+</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a><span class="n">FPMC</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_items</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;FPMC&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6369,6 +6369,11 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 <td>List of item sequences, where each sequence belongs to a unique user. Users are assigned IDs from 0 to len(sequences)-1. If None, uses data prepared by <code>from_transactions()</code>.</td>
 </tr>
 <tr>
+<td>timestamps</td>
+<td>list of list of int, optional</td>
+<td>Corresponding unix timestamps for sequences if time_aware is True.</td>
+</tr>
+<tr>
 <td>n_items</td>
 <td>int | None</td>
 <td>Maximum number of items. If None, it is inferred from data.</td>
@@ -6380,7 +6385,7 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 <p>Top-N sequential items for a user.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.fpmc</span><span class="w"> </span><span class="kn">import</span> <span class="n">FPMC</span><span class="o">.</span><span class="n">recommend_items</span>
 </span><span id="__span-78-2"><a id="__codelineno-78-2" name="__codelineno-78-2" href="#__codelineno-78-2"></a>
-</span><span id="__span-78-3"><a id="__codelineno-78-3" name="__codelineno-78-3" href="#__codelineno-78-3"></a><span class="n">FPMC</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
+</span><span id="__span-78-3"><a id="__codelineno-78-3" name="__codelineno-78-3" href="#__codelineno-78-3"></a><span class="n">FPMC</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[Any, Any]&#39;</span>
 </span></code></pre></div>
 <hr />
 <hr />
@@ -6638,7 +6643,7 @@ over the user–item bipartite graph without non-linear transformations.</p>
 <p>Typical training time on ml-100k: &lt; 0.5s/epoch.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-85-1"><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.lightgcn</span><span class="w"> </span><span class="kn">import</span> <span class="n">LightGCN</span>
 </span><span id="__span-85-2"><a id="__codelineno-85-2" name="__codelineno-85-2" href="#__codelineno-85-2"></a>
-</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a><span class="n">LightGCN</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">k_layers</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a><span class="n">LightGCN</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">k_layers</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="n">ssl_ratio</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">ssl_temp</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">ssl_weight</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6787,7 +6792,7 @@ the next item. Significantly outperforms Markov-chain methods like FPMC
 on long sequences.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-88-1"><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.sasrec</span><span class="w"> </span><span class="kn">import</span> <span class="n">SASRec</span>
 </span><span id="__span-88-2"><a id="__codelineno-88-2" name="__codelineno-88-2" href="#__codelineno-88-2"></a>
-</span><span id="__span-88-3"><a id="__codelineno-88-3" name="__codelineno-88-3" href="#__codelineno-88-3"></a><span class="n">SASRec</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">max_seq</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</span><span id="__span-88-3"><a id="__codelineno-88-3" name="__codelineno-88-3" href="#__codelineno-88-3"></a><span class="n">SASRec</span><span class="p">(</span><span class="n">factors</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">max_seq</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">0.0001</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="s1">&#39;int | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">time_aware</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">max_time_steps</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6835,6 +6840,16 @@ on long sequences.</p>
 <td>Seed for reproducibility.</td>
 </tr>
 <tr>
+<td>time_aware</td>
+<td>bool</td>
+<td>If true, incorporates timestamp deltas into sequential modeling.</td>
+</tr>
+<tr>
+<td>max_time_steps</td>
+<td>int</td>
+<td>Maximum number of time bins (e.g. days) to consider for time-awareness.</td>
+</tr>
+<tr>
 <td>verbose</td>
 <td>int</td>
 <td>Print epoch progress.</td>
@@ -6842,51 +6857,16 @@ on long sequences.</p>
 </tbody>
 </table>
 <h4 id="sasrecfit"><code>SASRec.fit</code><a class="headerlink" href="#sasrecfit" title="Permanent link">&para;</a></h4>
-<p>Train SASRec on integer-encoded sequences (0-indexed item IDs).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-89-1"><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.sasrec</span><span class="w"> </span><span class="kn">import</span> <span class="n">SASRec</span><span class="o">.</span><span class="n">fit</span>
 </span><span id="__span-89-2"><a id="__codelineno-89-2" name="__codelineno-89-2" href="#__codelineno-89-2"></a>
-</span><span id="__span-89-3"><a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a><span class="n">SASRec</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SASRec&#39;</span>
+</span><span id="__span-89-3"><a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a><span class="n">SASRec</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">:</span> <span class="s1">&#39;list[list[int]] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SASRec&#39;</span>
 </span></code></pre></div>
-<p><strong>Parameters</strong></p>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>sequences</td>
-<td>list of list of int, optional</td>
-<td>List of per-user interaction histories (item IDs). If None, uses data prepared by <code>from_transactions()</code>.</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Returns</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SASRec</td>
-<td></td>
-<td>The fitted model.</td>
-</tr>
-</tbody>
-</table>
 <hr />
 <h4 id="sasrecrecommend_items"><code>SASRec.recommend_items</code><a class="headerlink" href="#sasrecrecommend_items" title="Permanent link">&para;</a></h4>
 <p>Top-N items for a user or an ad-hoc sequence.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-90-1"><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.sasrec</span><span class="w"> </span><span class="kn">import</span> <span class="n">SASRec</span><span class="o">.</span><span class="n">recommend_items</span>
 </span><span id="__span-90-2"><a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a>
-</span><span id="__span-90-3"><a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a><span class="n">SASRec</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int | list[int]&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
+</span><span id="__span-90-3"><a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a><span class="n">SASRec</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="s1">&#39;int | list[int]&#39;</span><span class="p">,</span> <span class="n">timestamps</span><span class="p">:</span> <span class="s1">&#39;list[int] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[np.ndarray, np.ndarray]&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6902,6 +6882,11 @@ on long sequences.</p>
 <td>user_id</td>
 <td>int or list[int]</td>
 <td>The ID of the user (implicitly 0 to len(sequences)-1 from fit), or a list of items representing an ad-hoc sequence.</td>
+</tr>
+<tr>
+<td>timestamps</td>
+<td>list[int], optional</td>
+<td>Corresponding unix timestamps if user_id is a list of items and time_aware=True.</td>
 </tr>
 <tr>
 <td>n</td>

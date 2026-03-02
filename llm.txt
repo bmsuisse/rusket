@@ -1489,7 +1489,7 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 ```python
 from rusket.fpmc import FPMC
 
-FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1510,7 +1510,7 @@ Fit the FPMC model to a list of sequential interactions.
 ```python
 from rusket.fpmc import FPMC.fit
 
-FPMC.fit(sequences: 'list[list[int]] | None' = None, n_items: 'int | None' = None) -> 'FPMC'
+FPMC.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[int]] | None' = None, n_items: 'int | None' = None) -> 'FPMC'
 ```
 
 **Parameters**
@@ -1518,6 +1518,7 @@ FPMC.fit(sequences: 'list[list[int]] | None' = None, n_items: 'int | None' = Non
 | Parameter | Type | Description |
 | --- | --- | --- |
 | sequences | list of list of int, optional | List of item sequences, where each sequence belongs to a unique user. Users are assigned IDs from 0 to len(sequences)-1. If None, uses data prepared by ``from_transactions()``. |
+| timestamps | list of list of int, optional | Corresponding unix timestamps for sequences if time_aware is True. |
 | n_items | int \| None | Maximum number of items. If None, it is inferred from data. |
 
 ---
@@ -1529,7 +1530,7 @@ Top-N sequential items for a user.
 ```python
 from rusket.fpmc import FPMC.recommend_items
 
-FPMC.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
+FPMC.recommend_items(user_id: 'int', timestamp: 'int | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
 
 ---
@@ -1687,7 +1688,7 @@ Typical training time on ml-100k: < 0.5s/epoch.
 ```python
 from rusket.lightgcn import LightGCN
 
-LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1765,7 +1766,7 @@ on long sequences.
 ```python
 from rusket.sasrec import SASRec
 
-SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1779,29 +1780,17 @@ SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_r
 | lambda\_ | float | L2 regularization. |
 | iterations | int | Number of training epochs. |
 | seed | int or None | Seed for reproducibility. |
+| time_aware | bool | If true, incorporates timestamp deltas into sequential modeling. |
+| max_time_steps | int | Maximum number of time bins (e.g. days) to consider for time-awareness. |
 | verbose | int | Print epoch progress. |
 
 #### `SASRec.fit`
 
-Train SASRec on integer-encoded sequences (0-indexed item IDs).
-
 ```python
 from rusket.sasrec import SASRec.fit
 
-SASRec.fit(sequences: 'list[list[int]] | None' = None) -> 'SASRec'
+SASRec.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[int]] | None' = None) -> 'SASRec'
 ```
-
-**Parameters**
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| sequences | list of list of int, optional | List of per-user interaction histories (item IDs). If None, uses data prepared by ``from_transactions()``. |
-
-**Returns**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| SASRec |  | The fitted model. |
 
 ---
 
@@ -1812,7 +1801,7 @@ Top-N items for a user or an ad-hoc sequence.
 ```python
 from rusket.sasrec import SASRec.recommend_items
 
-SASRec.recommend_items(user_id: 'int | list[int]', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
+SASRec.recommend_items(user_id: 'int | list[int]', timestamps: 'list[int] | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
 
 **Parameters**
@@ -1820,6 +1809,7 @@ SASRec.recommend_items(user_id: 'int | list[int]', n: 'int' = 10, exclude_seen: 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | user_id | int or list[int] | The ID of the user (implicitly 0 to len(sequences)-1 from fit), or a list of items representing an ad-hoc sequence. |
+| timestamps | list[int], optional | Corresponding unix timestamps if user_id is a list of items and time_aware=True. |
 | n | int, default=10 | Number of recommendations. |
 | exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
 
@@ -2728,6 +2718,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 - auto-format code with Ruff [skip ci]
 - release v0.1.79
 - bump version to 0.1.80 and add sasrec benchmark
+- auto-format code with Ruff [skip ci]
+- bump version to v0.1.80, bypass FPMC test, enable optuna pruning
 
 ### 🚀 Features
 
