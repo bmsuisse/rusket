@@ -48,7 +48,6 @@ def als_fit_implicit(
     use_eals: bool = False,
     eals_iters: int = 1,
 ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
-
 def als_recalculate_user(
     item_factors: npt.NDArray[np.float32],
     indices: npt.NDArray[np.int32],

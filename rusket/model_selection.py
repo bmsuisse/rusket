@@ -916,7 +916,6 @@ def _cross_validate_python(
                         # Signal Early Stopping
                         pass
 
-
             if verbose:
                 primary = scores.get(metric, 0.0)
                 params_str = " ".join(f"{k_}={v}" for k_, v in params.items()) if params else "(defaults)"
