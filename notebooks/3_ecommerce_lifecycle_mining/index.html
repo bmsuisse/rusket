@@ -16,7 +16,7 @@
         <link rel="prev" href="../2_movielens_recommendations/">
       
       
-        <link rel="next" href="../../recommender/">
+        <link rel="next" href="../4_lightgcn_ecommerce_recommendations/">
       
       
         
@@ -400,6 +400,55 @@
                 
   
   
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookbooks & Notebooks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Cookbooks & Notebooks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -410,7 +459,7 @@
   <span class="md-ellipsis">
     
   
-    Cookbook
+    General Cookbook
   
 
     
@@ -428,30 +477,17 @@
                 
   
   
-    
   
   
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
+    <li class="md-nav__item">
+      <a href="../../databricks_cookbook/" class="md-nav__link">
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
-            
   
   
   <span class="md-ellipsis">
     
   
-    Notebooks
+    Databricks Cookbook
   
 
     
@@ -459,19 +495,11 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Notebooks
+      </a>
+    </li>
   
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
+              
             
               
                 
@@ -487,7 +515,7 @@
   <span class="md-ellipsis">
     
   
-    Online Retail & Basket Analysis
+    1. Online Retail & Basket Analysis
   
 
     
@@ -515,7 +543,7 @@
   <span class="md-ellipsis">
     
   
-    MovieLens Recommendations
+    2. MovieLens Recommendations
   
 
     
@@ -552,7 +580,7 @@
   <span class="md-ellipsis">
     
   
-    E-Commerce Lifecycle Mining
+    3. E-Commerce Lifecycle Mining
   
 
     
@@ -570,7 +598,7 @@
   <span class="md-ellipsis">
     
   
-    E-Commerce Lifecycle Mining
+    3. E-Commerce Lifecycle Mining
   
 
     
@@ -633,6 +661,90 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4_lightgcn_ecommerce_recommendations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. LightGCN Recommendations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5_sasrec_next_best_product/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. SASRec Next Best Product
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6_optuna_tuning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Optuna Hyperparameter Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1111,6 +1223,19 @@
 </span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="n">events</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </span></code></pre></div>
 <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -1164,27 +1289,38 @@
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Compiled </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span><span class="si">}</span><span class="s2"> distinct user sequences.&quot;</span><span class="p">)</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Internal Mapping Table: </span><span class="si">{</span><span class="n">label_mapping</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<div class="language-text highlight"><pre><span></span><code>```text
-Compiled 4 distinct user sequences.
+<div class="language-text highlight"><pre><span></span><code>Compiled 4 distinct user sequences.
 Internal Mapping Table: {0: &#39;signup&#39;, 1: &#39;view_product&#39;, 2: &#39;add_to_cart&#39;, 3: &#39;checkout&#39;, 4: &#39;churn&#39;}
-```
 </code></pre></div>
 <h2 id="3-mining-sequential-patterns">3. Mining Sequential Patterns<a class="headerlink" href="#3-mining-sequential-patterns" title="Permanent link">&para;</a></h2>
 <p>Now we pass our compiled sequences into the <code>prefixspan</code> model. We will ask for patterns that happen to at least 2 independent users.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Mine patterns</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">patterns_df</span> <span class="o">=</span> <span class="n">prefixspan</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequential patterns in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s!&quot;</span><span class="p">)</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Restore the human-readable labels from our internal `label_mapping`</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">patterns_df</span><span class="p">[</span><span class="s2">&quot;event_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">patterns_df</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">seq</span><span class="p">:</span> <span class="s2">&quot; → &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">label_mapping</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]))</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># Display the most frequent sequences</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">patterns_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)[[</span><span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="s2">&quot;event_path&quot;</span><span class="p">]]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Mine patterns</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">patterns_df</span> <span class="o">=</span> <span class="n">prefixspan</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">min_support</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">patterns_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequential patterns in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s!&quot;</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># Restore the human-readable labels from our internal `label_mapping`</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">patterns_df</span><span class="p">[</span><span class="s2">&quot;event_path&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">patterns_df</span><span class="p">[</span><span class="s2">&quot;sequence&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">seq</span><span class="p">:</span> <span class="s2">&quot; → &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">label_mapping</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]))</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># Display the most frequent sequences</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">patterns_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)[[</span><span class="s2">&quot;support&quot;</span><span class="p">,</span> <span class="s2">&quot;event_path&quot;</span><span class="p">]]</span>
 </span></code></pre></div>
 <div class="language-text highlight"><pre><span></span><code>Found 5 sequential patterns in 0.0013s!
 </code></pre></div>
 <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">

@@ -13,6 +13,9 @@
         <loc>https://bmsuisse.github.io/rusket/cookbook/</loc>
       </url>
       <url>
+        <loc>https://bmsuisse.github.io/rusket/databricks_cookbook/</loc>
+      </url>
+      <url>
         <loc>https://bmsuisse.github.io/rusket/notebooks/1_online_retail_basket_analysis/</loc>
       </url>
       <url>
@@ -20,6 +23,15 @@
       </url>
       <url>
         <loc>https://bmsuisse.github.io/rusket/notebooks/3_ecommerce_lifecycle_mining/</loc>
+      </url>
+      <url>
+        <loc>https://bmsuisse.github.io/rusket/notebooks/4_lightgcn_ecommerce_recommendations/</loc>
+      </url>
+      <url>
+        <loc>https://bmsuisse.github.io/rusket/notebooks/5_sasrec_next_best_product/</loc>
+      </url>
+      <url>
+        <loc>https://bmsuisse.github.io/rusket/notebooks/6_optuna_tuning/</loc>
       </url>
       <url>
         <loc>https://bmsuisse.github.io/rusket/recommender/</loc>

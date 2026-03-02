@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://bmsuisse.github.io/rusket/notebooks/2_movielens_recommendations/">
+        <link rel="canonical" href="https://bmsuisse.github.io/rusket/notebooks/6_optuna_tuning/">
       
       
-        <link rel="prev" href="../1_online_retail_basket_analysis/">
+        <link rel="prev" href="../5_sasrec_next_best_product/">
       
       
-        <link rel="next" href="../3_ecommerce_lifecycle_mining/">
+        <link rel="next" href="../../recommender/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Hybrid Recommendations & User Potential with MovieLens - rusket</title>
+        <title>6. Optuna Hyperparameter Tuning - rusket</title>
       
     
     
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#hybrid-recommendations-user-potential-with-movielens" class="md-skip">
+        <a href="#6-optuna-hyperparameter-tuning" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Hybrid Recommendations &amp; User Potential with MovieLens
+              6. Optuna Hyperparameter Tuning
             
           </span>
         </div>
@@ -533,37 +533,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2. MovieLens Recommendations
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../2_movielens_recommendations/" class="md-nav__link">
         
   
   
@@ -579,82 +552,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-load-movielens-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Load MovieLens Data
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-fitting-alternating-least-squares-als" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Fitting Alternating Least Squares (ALS)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bayesian-personalized-ranking-bpr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Bayesian Personalized Ranking (BPR)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-next-best-action-hybrid-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Next Best Action (Hybrid API)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-marketing-potential-score" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Marketing Potential Score
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -748,10 +645,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../6_optuna_tuning/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Optuna Hyperparameter Tuning
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -767,6 +691,60 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customizing-the-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customizing the Search Space
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mlflow-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MLflow Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1149,10 +1127,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-load-movielens-data" class="md-nav__link">
+  <a href="#basic-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Load MovieLens Data
+        Basic Usage
       
     </span>
   </a>
@@ -1160,10 +1138,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-fitting-alternating-least-squares-als" class="md-nav__link">
+  <a href="#customizing-the-search-space" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Fitting Alternating Least Squares (ALS)
+        Customizing the Search Space
       
     </span>
   </a>
@@ -1171,32 +1149,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-bayesian-personalized-ranking-bpr" class="md-nav__link">
+  <a href="#mlflow-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Bayesian Personalized Ranking (BPR)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-next-best-action-hybrid-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Next Best Action (Hybrid API)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-marketing-potential-score" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Marketing Potential Score
+        MLflow Integration
       
     </span>
   </a>
@@ -1218,78 +1174,78 @@
                 
                   
 
-<h1 id="hybrid-recommendations-user-potential-with-movielens">Hybrid Recommendations &amp; User Potential with MovieLens<a class="headerlink" href="#hybrid-recommendations-user-potential-with-movielens" title="Permanent link">&para;</a></h1>
-<p>In this cookbook, we will use the classic <strong>MovieLens 100k dataset</strong> to showcase <code>rusket</code>'s collaborative filtering models (<code>ALS</code> and <code>BPR</code>) and demonstrate how to deploy the ultimate hybrid engine using <code>NextBestAction</code>.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>import time
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>import numpy as np
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>import pandas as pd
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>from rusket import ALS, BPR, NextBestAction
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>from rusket.recommend import score_potential
+<h1 id="6-optuna-hyperparameter-tuning">6. Optuna Hyperparameter Tuning<a class="headerlink" href="#6-optuna-hyperparameter-tuning" title="Permanent link">&para;</a></h1>
+<p><code>rusket</code> comes with built-in Bayesian hyperparameter optimization via <a href="https://optuna.org">Optuna</a>. Instead of doing a manual grid search, you can use <code>rusket.optuna_optimize()</code> to intelligently and efficiently explore the parameter space. It leverages the Rust-native cross-validation engine, making each trial evaluation extremely fast.</p>
+<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<p>The easiest way to start is to use the default search space provided by <code>rusket</code> for your model class (e.g., <code>ALS</code>, <code>eALS</code>, or <code>BPR</code>).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Load your interaction data</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="s2">&quot;item_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="s2">&quot;clicks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">})</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Run the optimization</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">result</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">optuna_optimize</span><span class="p">(</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">df</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">rating_col</span><span class="o">=</span><span class="s2">&quot;clicks&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">n_trials</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>          <span class="c1"># number of parameter combinations to try</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="n">n_folds</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>            <span class="c1"># 3-fold cross validation per trial</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;ndcg&quot;</span><span class="p">,</span>        <span class="c1"># metric to optimize (e.g., ndcg, precision, recall)</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="n">k</span><span class="o">=</span><span class="mi">10</span>                  <span class="c1"># cut-off for the ranking metric</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="p">)</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best score (NDCG@10): </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">best_score</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best parameters: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">best_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="1-load-movielens-data">1. Load MovieLens Data<a class="headerlink" href="#1-load-movielens-data" title="Permanent link">&para;</a></h2>
-<p>We will download and parse the MovieLens 100k dataset into a Pandas DataFrame representing user ID, movie ID, and rating (1-5).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>import os
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>import urllib.request
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>import zipfile
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>if not os.path.exists(&quot;ml-100k&quot;):
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    url = &quot;https://files.grouplens.org/datasets/movielens/ml-100k.zip&quot;
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    urllib.request.urlretrieve(url, &quot;ml-100k.zip&quot;)
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    with zipfile.ZipFile(&quot;ml-100k.zip&quot;, &quot;r&quot;) as zip_ref:
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        zip_ref.extractall(&quot;.&quot;)
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>columns = [&quot;user_id&quot;, &quot;item_id&quot;, &quot;rating&quot;, &quot;timestamp&quot;]
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>df = pd.read_csv(&quot;ml-100k/u.data&quot;, sep=&quot;\t&quot;, names=columns)
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>print(f&quot;Loaded {len(df):,} ratings!&quot;)
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>df.head()
+<h2 id="customizing-the-search-space">Customizing the Search Space<a class="headerlink" href="#customizing-the-search-space" title="Permanent link">&para;</a></h2>
+<p>If you want to fine-tune the parameter boundaries, you can define a custom <code>search_space</code> using <code>OptunaSearchSpace</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">eALS</span><span class="p">,</span> <span class="n">OptunaSearchSpace</span><span class="p">,</span> <span class="n">optuna_optimize</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">search_space</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">OptunaSearchSpace</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="s2">&quot;factors&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">OptunaSearchSpace</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">OptunaSearchSpace</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="s2">&quot;regularization&quot;</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">OptunaSearchSpace</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">result</span> <span class="o">=</span> <span class="n">optuna_optimize</span><span class="p">(</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">eALS</span><span class="p">,</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">df</span><span class="p">,</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">search_space</span><span class="o">=</span><span class="n">search_space</span><span class="p">,</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">n_trials</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;precision&quot;</span><span class="p">,</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">refit_best</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Automatically retrains the best model on the full dataset!</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">)</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># Because we used refit_best=True, we can use the best model immediately:</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">best_model</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="2-fitting-alternating-least-squares-als">2. Fitting Alternating Least Squares (ALS)<a class="headerlink" href="#2-fitting-alternating-least-squares-als" title="Permanent link">&para;</a></h2>
-<p><code>rusket</code> provides <code>ALS</code>, a highly optimized collaborative filtering engine that learns latent representations of users based on their interaction histories.</p>
-<p>We can fit our model directly off the raw Pandas transaction dataframe using <code>fit_transactions</code>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>als_model = ALS(factors=64, iterations=15, alpha=15.0, regularization=0.01, seed=42)
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>t0 = time.time()
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>als_model.fit_transactions(df, user_col=&quot;user_id&quot;, item_col=&quot;item_id&quot;, rating_col=&quot;rating&quot;)
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>print(f&quot;⚡ ALS training complete in {time.time() - t0:.4f}s!&quot;)
-</span></code></pre></div>
-<h2 id="3-bayesian-personalized-ranking-bpr">3. Bayesian Personalized Ranking (BPR)<a class="headerlink" href="#3-bayesian-personalized-ranking-bpr" title="Permanent link">&para;</a></h2>
-<p>While ALS is great for general score predictions, BPR natively optimizes for <strong>Rank</strong>. This makes it the superior choice when your goal is purely to rank Top-N recommendations based entirely on implicit (binary) views or clicks, ignoring explicit star ratings.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bpr_model = BPR(factors=64, iterations=150, learning_rate=0.05, regularization=0.01)
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a># Notice BPR trains on implicit behavior (user_col and item_col), completely ignoring ratings
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>t0 = time.time()
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>bpr_model.fit_transactions(df, user_col=&quot;user_id&quot;, item_col=&quot;item_id&quot;)
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>print(f&quot;⚡ BPR training complete in {time.time() - t0:.4f}s!&quot;)
-</span></code></pre></div>
-<h2 id="4-next-best-action-hybrid-api">4. Next Best Action (Hybrid API)<a class="headerlink" href="#4-next-best-action-hybrid-api" title="Permanent link">&para;</a></h2>
-<p>The <code>NextBestAction</code> engine wraps these complicated matrices and index boundaries into a dead-simple business API for analysts. </p>
-<p>If we pass it our <code>als_model</code>, we can instantly ask for the top 5 next best products for a handful of target users.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>nba = NextBestAction(model=als_model)
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a># Target users from our CRM
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>target_users = pd.DataFrame({&quot;customer_id&quot;: [1, 5, 25, 42]})
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a># Predict the best 3 movies for these users to watch next!
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>recommendations = nba.predict_next_chunk(target_users, user_col=&quot;customer_id&quot;, k=3)
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>recommendations
-</span></code></pre></div>
-<h2 id="5-marketing-potential-score">5. Marketing Potential Score<a class="headerlink" href="#5-marketing-potential-score" title="Permanent link">&para;</a></h2>
-<p>Want to launch an email marketing campaign for specific movies (say movies <code>10</code>, <code>50</code>, and <code>100</code>), but only want to email users who are <em>highly primed</em> to buy them? </p>
-<p>We can use the <code>score_potential</code> API to predict their exact likelihood of interaction across the entire customer base.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>user_histories = df.groupby(&quot;user_id&quot;)[&quot;item_id&quot;].apply(list).tolist()
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>potential_scores = score_potential(user_history=user_histories, model=als_model, target_categories=[10, 50, 100])
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>print(&quot;Top 5 user scores for Movie ID 10:&quot;)
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a># Get users with the highest probability to interact with Movie 10
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>movie_10_scores = potential_scores[:, 0]  # First column corresponds to Item 10
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>best_users_for_campaign = np.argsort(movie_10_scores)[::-1][:5]
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>for u in best_users_for_campaign:
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    print(f&quot;User {u}: {movie_10_scores[u]:.2f}&quot;)
+<h2 id="mlflow-integration">MLflow Integration<a class="headerlink" href="#mlflow-integration" title="Permanent link">&para;</a></h2>
+<p>You can easily log all Optuna trials directly into MLflow:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">mlflow</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">mlflow</span><span class="o">.</span><span class="n">set_tracking_uri</span><span class="p">(</span><span class="s2">&quot;http://localhost:5000&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">mlflow</span><span class="o">.</span><span class="n">set_experiment</span><span class="p">(</span><span class="s2">&quot;rusket-tuning&quot;</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Setting mlflow_tracking=True takes care of everything automatically</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">result</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">optuna_optimize</span><span class="p">(</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">,</span> 
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">df</span><span class="p">,</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> 
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">n_trials</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> 
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">mlflow_tracking</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">)</span>
 </span></code></pre></div>
 
 
