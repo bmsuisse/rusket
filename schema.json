@@ -564,6 +564,8 @@
             "use_eals": "bool",
             "eals_iters": "int",
             "anderson_m": "int",
+            "popularity_weighting": "str",
+            "use_biases": "bool",
             "kwargs": "Any"
           },
           "returns": "None",

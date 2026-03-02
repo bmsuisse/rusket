@@ -931,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -948,6 +948,8 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | use_eals | bool | Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive. |
 | eals_iters | int | Number of inner iterations for eALS (default 1). |
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
+| popularity_weighting | str | Weighting scheme for missing data in **eALS**. Items that are frequently interacted-with provide stronger negative signals when *not* chosen. Options: ``"none"`` (uniform, default), ``"sqrt"``, ``"log"``, ``"linear"``. Only used when ``use_eals=True``. |
+| use_biases | bool | If True, learn global bias (μ), user biases (b_u), and item biases (b_i) so that prediction becomes ``μ + b_u + b_i + w_u · h_i``. |
 
 **Examples**
 
@@ -2712,6 +2714,10 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 🚀 Features
+
+- add item popularity weighting in eALS and user/item bias terms
 
 ### 📦 Miscellaneous
 
