@@ -172,10 +172,7 @@ def _detect_backend(client: Any) -> str:
         "pymilvus.Collection, elasticsearch.Elasticsearch, "
         "pymongo.database.Database, lancedb.DBConnection, typesense.Client"
     )
-    raise TypeError(
-        f"Unsupported client type: {client_name} (module: {client_mod}). "
-        f"Supported: {supported}."
-    )
+    raise TypeError(f"Unsupported client type: {client_name} (module: {client_mod}). Supported: {supported}.")
 
 
 # ---------------------------------------------------------------------------
@@ -445,6 +442,7 @@ def _export_milvus(
         ]
         if payloads:
             import json
+
             data.append([json.dumps(payloads[i]) for i in range(start, end)])
         collection.insert(data)
     collection.flush()
@@ -566,6 +564,7 @@ def _export_lancedb(
     }
     if payloads:
         import json
+
         data["payload"] = [json.dumps(payloads[i]) if i < len(payloads) else "{}" for i in range(n)]
 
     table = pa.table(data)
@@ -602,14 +601,16 @@ def _export_typesense(
             client.collections[collection_name].delete()
         except Exception:
             pass
-        client.collections.create({
-            "name": collection_name,
-            "fields": [
-                {"name": "id", "type": "string"},
-                {"name": "vec", "type": "float[]", "num_dim": d},
-                {"name": "payload", "type": "object", "optional": True},
-            ]
-        })
+        client.collections.create(
+            {
+                "name": collection_name,
+                "fields": [
+                    {"name": "id", "type": "string"},
+                    {"name": "vec", "type": "float[]", "num_dim": d},
+                    {"name": "payload", "type": "object", "optional": True},
+                ],
+            }
+        )
 
     for start in range(0, n, batch_size):
         end = min(start + batch_size, n)
