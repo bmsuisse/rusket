@@ -177,26 +177,7 @@ impl KnnHeap {
 
 // ── XorShift RNG (fast, thread-safe when cloned per-thread) ─────────
 
-struct XorShift(u64);
-
-impl XorShift {
-    fn new(seed: u64) -> Self {
-        Self(if seed == 0 { 0xDEAD_BEEF_CAFE_1234 } else { seed })
-    }
-    #[inline(always)]
-    fn next(&mut self) -> u64 {
-        let mut s = self.0;
-        s ^= s << 13;
-        s ^= s >> 7;
-        s ^= s << 17;
-        self.0 = s;
-        s
-    }
-    #[inline(always)]
-    fn next_usize(&mut self, max: usize) -> usize {
-        (self.next() % max as u64) as usize
-    }
-}
+use crate::rng::XorShift64;
 
 // ── NN-Descent core ─────────────────────────────────────────────────
 
@@ -216,7 +197,7 @@ pub(crate) fn nn_descent_inner(
     let mut heaps: Vec<KnnHeap> = (0..n)
         .into_par_iter()
         .map(|i| {
-            let mut rng = XorShift::new(seed.wrapping_add(i as u64 * 6364136223846793005));
+            let mut rng = XorShift64::new(seed.wrapping_add(i as u64 * 6364136223846793005));
             let mut heap = KnnHeap::new(k);
             let mut attempts = 0;
             while heap.items.len() < k && attempts < k * 10 {

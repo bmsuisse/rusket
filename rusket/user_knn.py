@@ -41,6 +41,7 @@ class UserKNN(ImplicitRecommender):
         bm25_k1: float = 1.2,
         bm25_b: float = 0.75,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ):
         super().__init__()
@@ -49,6 +50,7 @@ class UserKNN(ImplicitRecommender):
         self.bm25_k1 = bm25_k1
         self.bm25_b = bm25_b
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self.w_indptr: np.ndarray | None = None
         self.w_indices: np.ndarray | None = None

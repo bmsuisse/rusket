@@ -12,50 +12,8 @@ use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArray
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// ─── RNG (same as bpr.rs) ───────────────────────────────────────────────────
+use crate::rng::{randn_vec, XorShift64};
 
-struct XorShift64 {
-    state: u64,
-}
-
-impl XorShift64 {
-    fn new(seed: u64) -> Self {
-        Self { state: if seed == 0 { 0xdeadbeef } else { seed } }
-    }
-
-    #[inline(always)]
-    fn next(&mut self) -> u64 {
-        self.state ^= self.state << 13;
-        self.state ^= self.state >> 7;
-        self.state ^= self.state << 17;
-        self.state
-    }
-
-    #[inline(always)]
-    fn next_usize(&mut self, n: usize) -> usize { (self.next() as usize) % n }
-
-    #[inline(always)]
-    fn next_f32(&mut self) -> f32 {
-        (self.next() & 0xFFFFFF) as f32 / 0xFFFFFF_u64 as f32
-    }
-
-    #[inline(always)]
-    fn next_f32_range(&mut self, lo: f32, hi: f32) -> f32 {
-        lo + self.next_f32() * (hi - lo)
-    }
-}
-
-fn randn_vec(n: usize, scale: f32, seed: u64) -> Vec<f32> {
-    let mut rng = XorShift64::new(seed);
-    let mut out = Vec::with_capacity(n);
-    for _ in 0..n {
-        let u = rng.next_f32_range(1e-7, 1.0);
-        let v = rng.next_f32_range(0.0, std::f32::consts::TAU);
-        let z = (-2.0 * u.ln()).sqrt() * v.cos();
-        out.push(z * scale);
-    }
-    out
-}
 
 // ─── Layer Norm ─────────────────────────────────────────────────────────────
 

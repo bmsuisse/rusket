@@ -1,5 +1,5 @@
 use numpy::{
-    IntoPyArray, PyArray1, PyReadonlyArray1, PyReadonlyArray2,
+    IntoPyArray, PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArray2,
     PyUntypedArrayMethods,
 };
 use pyo3::prelude::*;
@@ -86,3 +86,109 @@ pub fn ease_recommend_items<'py>(
     );
     Ok((ids.into_pyarray(py), scores.into_pyarray(py)))
 }
+
+/// Compute EASE item weight matrix B entirely in Rust.
+///
+/// Steps:
+/// 1. Build dense Gram matrix G = X^T X from CSR input
+/// 2. Add regularization to diagonal: G += λI
+/// 3. Invert G via Cholesky decomposition (using faer)
+/// 4. Compute B = P / (-diag(P)), zero the diagonal
+fn ease_compute_weights(
+    indptr: &[i64],
+    indices: &[i32],
+    data: &[f32],
+    n_items: usize,
+    regularization: f32,
+) -> Vec<f32> {
+    let n_users = indptr.len() - 1;
+
+    // Step 1: Build dense Gram matrix G = X^T X  (n_items × n_items)
+    // For each user u, accumulate outer products of their item vectors
+    let num_threads = rayon::current_num_threads();
+    let chunk_size = (n_users + num_threads - 1) / num_threads;
+
+    let partials: Vec<Vec<f64>> = (0..num_threads)
+        .into_par_iter()
+        .map(|t| {
+            let mut local = vec![0.0f64; n_items * n_items];
+            let row_start = t * chunk_size;
+            let row_end = (row_start + chunk_size).min(n_users);
+            for u in row_start..row_end {
+                let start = indptr[u] as usize;
+                let end = indptr[u + 1] as usize;
+                let u_ix = &indices[start..end];
+                let u_data = &data[start..end];
+                // Outer product contribution
+                for (idx_a, &val_a) in u_ix.iter().zip(u_data.iter()) {
+                    let a = *idx_a as usize;
+                    for (idx_b, &val_b) in u_ix.iter().zip(u_data.iter()) {
+                        let b = *idx_b as usize;
+                        local[a * n_items + b] += (val_a as f64) * (val_b as f64);
+                    }
+                }
+            }
+            local
+        })
+        .collect();
+
+    let mut gram = vec![0.0f64; n_items * n_items];
+    for partial in &partials {
+        for (g, p) in gram.iter_mut().zip(partial.iter()) {
+            *g += *p;
+        }
+    }
+
+    // Step 2: Add regularization to diagonal
+    for i in 0..n_items {
+        gram[i * n_items + i] += regularization as f64;
+    }
+
+    // Step 3: Invert via faer Cholesky
+    use faer::linalg::solvers::Solve;
+    let gram_mat = faer::Mat::<f64>::from_fn(n_items, n_items, |r, c| gram[r * n_items + c]);
+    let llt = gram_mat.as_ref().llt(faer::Side::Lower).expect("Cholesky decomposition failed");
+    
+    // Solve G * P = I to get P = G^-1
+    let mut p_mat = faer::Mat::<f64>::identity(n_items, n_items);
+    llt.solve_in_place(p_mat.as_mut());
+
+    // Step 4: Compute B = P / (-diag(P)), zero diagonal
+    let mut b = vec![0.0f32; n_items * n_items];
+    for i in 0..n_items {
+        let diag_val = p_mat[(i, i)];
+        let neg_diag = -diag_val;
+        for j in 0..n_items {
+            if i == j {
+                b[i * n_items + j] = 0.0;
+            } else {
+                b[i * n_items + j] = (p_mat[(i, j)] / neg_diag) as f32;
+            }
+        }
+    }
+
+    b
+}
+
+#[pyfunction]
+#[pyo3(signature = (indptr, indices, data, n_items, regularization))]
+pub fn ease_fit<'py>(
+    py: Python<'py>,
+    indptr: PyReadonlyArray1<i64>,
+    indices: PyReadonlyArray1<i32>,
+    data: PyReadonlyArray1<f32>,
+    n_items: usize,
+    regularization: f32,
+) -> PyResult<Py<PyArray2<f32>>> {
+    let ip = indptr.as_slice()?;
+    let ix = indices.as_slice()?;
+    let dt = data.as_slice()?;
+
+    let weights = py.detach(|| {
+        ease_compute_weights(ip, ix, dt, n_items, regularization)
+    });
+
+    let arr = PyArray1::from_vec(py, weights);
+    Ok(arr.reshape([n_items, n_items])?.into())
+}
+

@@ -7,6 +7,8 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::cell::RefCell;
 
+use crate::rng::random_factors;
+
 // ── SIMD‑friendly primitives ───────────────────────────────────────
 // 8‑wide manual unroll – LLVM maps these to NEON/AVX without needing
 // architecture‑specific intrinsics, and it's faster than the plain
@@ -617,18 +619,7 @@ pub(crate) fn csr_transpose(
     (ti, tv, td)
 }
 
-pub(crate) fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
-    let mut out = vec![0.0f32; n * k];
-    let mut s = seed;
-    let scale = 1.0 / (k as f32).sqrt();
-    for v in out.iter_mut() {
-        s ^= s << 13;
-        s ^= s >> 7;
-        s ^= s << 17;
-        *v = ((s & 0xFFFF) as f32) / (0xFFFF as f32) * scale;
-    }
-    out
-}
+
 
 struct AndersonAccel {
     m: usize,

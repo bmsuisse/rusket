@@ -31,6 +31,9 @@ class NMF(ImplicitRecommender):
         Random seed for initialisation.
     verbose : int, default=0
         Verbosity level.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -40,12 +43,14 @@ class NMF(ImplicitRecommender):
         regularization: float = 0.01,
         seed: int = 42,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.factors = factors
         self.iterations = iterations
         self.regularization = float(regularization)
+        self.use_gpu = use_gpu
         self.seed = seed
         self.verbose = verbose
 
@@ -160,6 +165,26 @@ class NMF(ImplicitRecommender):
 
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
+
+        if self.use_gpu:
+            from .gpu import get_gpu_backend_safe, gpu_score_user
+
+            gpu = get_gpu_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                scores = gpu_score_user(
+                    self._user_factors[user_id],
+                    self._item_factors,
+                    backend,
+                    lib,
+                )
+                if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+                    start = self._fit_indptr[user_id]
+                    end = self._fit_indptr[user_id + 1]
+                    seen = self._fit_indices[start:end]
+                    scores[seen] = -np.inf
+                top_n = np.argsort(scores)[::-1][:n]
+                return top_n.astype(np.intp), scores[top_n].astype(np.float32)
 
         scores = self._user_factors[user_id] @ self._item_factors.T
 

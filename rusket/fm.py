@@ -30,6 +30,9 @@ class FM(BaseModel):
         Random seed for SGD sampling (default: 42).
     verbose : bool
         Whether to print training progress (default: False).
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -40,6 +43,7 @@ class FM(BaseModel):
         iterations: int = 100,
         seed: int = 42,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -49,6 +53,7 @@ class FM(BaseModel):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self.w0_: float | None = None
         self.w_: Any = None

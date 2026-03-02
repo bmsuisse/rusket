@@ -40,6 +40,9 @@ class LightGCN(ImplicitRecommender):
         Seed for reproducible training.
     verbose : int
         Print training progress.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -54,6 +57,7 @@ class LightGCN(ImplicitRecommender):
         iterations: int = 20,
         seed: int | None = None,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -67,6 +71,7 @@ class LightGCN(ImplicitRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self._user_factors: np.ndarray | None = None
         self._item_factors: np.ndarray | None = None
@@ -279,6 +284,27 @@ class LightGCN(ImplicitRecommender):
         uid = self._user_map.get(user_id)
         if uid is None:
             return np.array([], dtype=np.int64), np.array([], dtype=np.float32)
+
+        if self.use_gpu:
+            from .gpu import get_gpu_backend_safe, gpu_score_user
+
+            gpu = get_gpu_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                scores = gpu_score_user(
+                    self._user_factors[uid],
+                    self._item_factors,
+                    backend,
+                    lib,
+                )
+                if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+                    start_idx = self._fit_indptr[uid]
+                    end_idx = self._fit_indptr[uid + 1]
+                    seen_items = self._fit_indices[start_idx:end_idx]
+                    scores[seen_items] = -np.inf
+                top_idx = np.argsort(scores)[::-1][:n]
+                original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)
+                return original_ids, scores[top_idx]
 
         scores = self._user_factors[uid] @ self._item_factors.T
 

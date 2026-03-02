@@ -22,17 +22,22 @@ class EASE(ImplicitRecommender):
     regularization : float
         L2 regularization weight (lambda). Higher values encourage smaller weights
         and reduce overfitting. Default is 500.0.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
         self,
         regularization: float = 500.0,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
         self.regularization = float(regularization)
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self.item_weights: Any = None
         self._n_users: int = 0
@@ -49,7 +54,7 @@ class EASE(ImplicitRecommender):
         return f"EASE(regularization={self.regularization})"
 
     def fit(self, interactions: Any = None) -> EASE:
-        """Fit the model to the user-item interaction matrix.
+        """Fit the model to the user-item interaction matrix (Rust-accelerated).
 
         Parameters
         ----------
@@ -78,34 +83,26 @@ class EASE(ImplicitRecommender):
 
         n_users, n_items = typing.cast(tuple[int, int], csr.shape)
 
-        if self.verbose:
-            print(f"EASE fitting Gram matrix for {n_items} items...")
-
-        G = csr.T.dot(csr)
-        G_dense = G.toarray()
-
-        diag_indices = np.diag_indices(n_items)
-        G_dense[diag_indices] += self.regularization
+        indptr = np.asarray(csr.indptr, dtype=np.int64)
+        indices = np.asarray(csr.indices, dtype=np.int32)
+        data = np.asarray(csr.data, dtype=np.float32)
 
         if self.verbose:
-            print("EASE inverting Gram matrix (Cholesky)...")
+            print(f"EASE fitting {n_items} items via Rust (Cholesky)...")
 
-        import scipy.linalg
-
-        # Solve P = G^-1 using Cholesky decomposition inplace
-        # np.eye is used as the RHS (b) to compute the inverse
-        L = scipy.linalg.cholesky(G_dense, lower=True, overwrite_a=True, check_finite=False)
-        P = scipy.linalg.cho_solve((L, True), np.eye(n_items, dtype=np.float32), overwrite_b=True, check_finite=False)
-        B = P / (-np.diag(P))
-        B[diag_indices] = 0.0
-
-        self.item_weights = B.astype(np.float32)
+        self.item_weights = _rust.ease_fit(
+            indptr,
+            indices,
+            data,
+            n_items,
+            float(self.regularization),
+        )
 
         self._n_users = n_users
         self._n_items = n_items
-        self._fit_indptr = np.asarray(csr.indptr, dtype=np.int64)
-        self._fit_indices = np.asarray(csr.indices, dtype=np.int32)
-        self._fit_data = np.asarray(csr.data, dtype=np.float32)
+        self._fit_indptr = indptr
+        self._fit_indices = indices
+        self._fit_data = data
         self.fitted = True
 
         if self.verbose:

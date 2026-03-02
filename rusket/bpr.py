@@ -28,6 +28,9 @@ class BPR(ImplicitRecommender):
         Number of passes over the entire interaction dataset (default: 150).
     seed : int
         Random seed for Hogwild! SGD sampling (default: 42).
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -38,6 +41,7 @@ class BPR(ImplicitRecommender):
         iterations: int = 150,
         seed: int = 42,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -47,6 +51,7 @@ class BPR(ImplicitRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
+        self.use_gpu = use_gpu
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -135,6 +140,27 @@ class BPR(ImplicitRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
+
+        if self.use_gpu:
+            from .gpu import get_gpu_backend_safe, gpu_score_user
+
+            gpu = get_gpu_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                scores = gpu_score_user(
+                    self._user_factors[user_id],
+                    self._item_factors,
+                    backend,
+                    lib,
+                )
+                if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+                    start = self._fit_indptr[user_id]
+                    end = self._fit_indptr[user_id + 1]
+                    seen = self._fit_indices[start:end]
+                    scores[seen] = -np.inf
+                top_n = np.argsort(scores)[::-1][:n]
+                return top_n.astype(np.int32), scores[top_n].astype(np.float32)
+
         if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices

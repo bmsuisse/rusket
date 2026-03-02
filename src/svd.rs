@@ -2,33 +2,10 @@ use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// ── SIMD-optimised dot product (8-wide unrolling for NEON / AVX2) ──────────
-#[inline(always)]
-fn dot(a: &[f32], b: &[f32]) -> f32 {
-    let k = a.len();
-    let chunks = k / 8;
-    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
-    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
-    let mut idx = 0;
-    for _ in 0..chunks {
-        unsafe {
-            s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx);
-            s1 += *a.get_unchecked(idx + 1) * *b.get_unchecked(idx + 1);
-            s2 += *a.get_unchecked(idx + 2) * *b.get_unchecked(idx + 2);
-            s3 += *a.get_unchecked(idx + 3) * *b.get_unchecked(idx + 3);
-            s4 += *a.get_unchecked(idx + 4) * *b.get_unchecked(idx + 4);
-            s5 += *a.get_unchecked(idx + 5) * *b.get_unchecked(idx + 5);
-            s6 += *a.get_unchecked(idx + 6) * *b.get_unchecked(idx + 6);
-            s7 += *a.get_unchecked(idx + 7) * *b.get_unchecked(idx + 7);
-        }
-        idx += 8;
-    }
-    while idx < k {
-        unsafe { s0 += *a.get_unchecked(idx) * *b.get_unchecked(idx); }
-        idx += 1;
-    }
-    (s0 + s1 + s2 + s3) + (s4 + s5 + s6 + s7)
-}
+use crate::rng::{random_factors, XorShift64};
+use crate::simd::dot;
+
+
 
 // ── dot(a, b+c) without allocating a temp vector — SVD++ hot path ─────────
 // Computes Σ a[f] * (b[f] + c[f]) using 8-wide unrolling.
@@ -96,42 +73,7 @@ unsafe fn scale8(v: *mut f32, scalar: f32, k: usize) {
     }
 }
 
-// ── Fast XorShift64 RNG ───────────────────────────────────────────────────
-struct XorShift64 {
-    state: u64,
-}
 
-impl XorShift64 {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: if seed == 0 { 0xbad5eed } else { seed },
-        }
-    }
-
-    #[inline(always)]
-    fn next(&mut self) -> u64 {
-        self.state ^= self.state << 13;
-        self.state ^= self.state >> 7;
-        self.state ^= self.state << 17;
-        self.state
-    }
-
-    #[inline(always)]
-    fn next_float(&mut self) -> f32 {
-        let v = self.next() & 0xFFFFFF;
-        v as f32 / 0xFFFFFF as f32
-    }
-}
-
-fn random_factors(n: usize, k: usize, seed: u64) -> Vec<f32> {
-    let mut rng = XorShift64::new(seed);
-    let scale = 1.0 / (k as f32).sqrt();
-    let mut out = vec![0.0f32; n * k];
-    for v in out.iter_mut() {
-        *v = (rng.next_float() * 2.0 - 1.0) * scale;
-    }
-    out
-}
 
 // ── Factor update with snapshot (avoids stale-value hazard) ───────────────
 // 8-wide unrolled: reads both pu[f] and qi[f] BEFORE writing, so updates

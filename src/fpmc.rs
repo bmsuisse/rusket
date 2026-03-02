@@ -2,46 +2,9 @@ use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-#[inline(always)]
-fn dot(a: &[f32], b: &[f32]) -> f32 {
-    a.iter().zip(b).map(|(x, y)| x * y).sum()
-}
+use crate::rng::{random_factors_flat, XorShift64};
+use crate::simd::dot;
 
-struct XorShift64 {
-    state: u64,
-}
-
-impl XorShift64 {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: if seed == 0 { 0xbad5eed } else { seed },
-        }
-    }
-
-    #[inline(always)]
-    fn next(&mut self) -> u64 {
-        self.state ^= self.state << 13;
-        self.state ^= self.state >> 7;
-        self.state ^= self.state << 17;
-        self.state
-    }
-
-    #[inline(always)]
-    fn next_float(&mut self) -> f32 {
-        let v = self.next() & 0xFFFFFF;
-        v as f32 / 0xFFFFFF as f32
-    }
-}
-
-fn random_factors(size: usize, seed: u64) -> Vec<f32> {
-    let mut rng = XorShift64::new(seed);
-    let scale = 0.01; // small random initialization
-    let mut out = vec![0.0f32; size];
-    for v in out.iter_mut() {
-        *v = (rng.next_float() * 2.0 - 1.0) * scale;
-    }
-    out
-}
 
 #[inline(always)]
 fn sigmoid(x: f32) -> f32 {
@@ -101,12 +64,12 @@ fn fpmc_train(
     // V_{L,I} -> Item prev-factors for Markov Chain
     // V_{time} -> Elapsed time factors
     
-    let mut vu = random_factors(n_users * k, seed);
-    let mut viu = random_factors(n_items * k, seed.wrapping_add(1));
-    let mut vil = random_factors(n_items * k, seed.wrapping_add(2));
-    let mut vli = random_factors(n_items * k, seed.wrapping_add(3));
+    let mut vu = random_factors_flat(n_users * k, seed);
+    let mut viu = random_factors_flat(n_items * k, seed.wrapping_add(1));
+    let mut vil = random_factors_flat(n_items * k, seed.wrapping_add(2));
+    let mut vli = random_factors_flat(n_items * k, seed.wrapping_add(3));
     let mut vtime = if max_time_steps > 0 && timestamps_opt.is_some() {
-        random_factors(max_time_steps * k, seed.wrapping_add(4))
+        random_factors_flat(max_time_steps * k, seed.wrapping_add(4))
     } else {
         Vec::new()
     };

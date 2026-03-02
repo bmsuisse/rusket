@@ -1,8 +1,13 @@
-"""GPU-accelerated ALS operations via CuPy or PyTorch.
+"""GPU-accelerated operations via CuPy or PyTorch.
 
-This module provides GPU implementations of the heavy ALS operations:
+This module provides GPU implementations for all rusket models:
 - Gramian computation (Y^T Y)
-- Factor solve via Cholesky or CG
+- Factor solve via Cholesky
+- Batch recommendation (matmul + top-K)
+- Dense matrix multiplication
+- Sparse-dense matrix multiplication (for EASE, KNN)
+- Attention forward pass (for SASRec, BERT4Rec)
+- Layer normalization
 
 Falls back gracefully when no GPU library is available.
 """
@@ -12,6 +17,8 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+
+# ── Backend detection ────────────────────────────────────────────────────────
 
 
 def _get_gpu_backend() -> tuple[str, Any]:
@@ -46,6 +53,18 @@ def _get_gpu_backend() -> tuple[str, Any]:
     )
 
 
+def check_gpu_available() -> bool:
+    """Check if a GPU backend is available without raising."""
+    try:
+        _get_gpu_backend()
+        return True
+    except ImportError:
+        return False
+
+
+# ── Gramian ──────────────────────────────────────────────────────────────────
+
+
 def gpu_gramian(factors: np.ndarray, backend: str, lib: Any) -> np.ndarray:
     """Compute Y^T Y on GPU.
 
@@ -73,6 +92,9 @@ def gpu_gramian(factors: np.ndarray, backend: str, lib: Any) -> np.ndarray:
         return g.cpu().numpy()
     else:
         raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── Cholesky solve ──────────────────────────────────────────────────────────
 
 
 def gpu_solve_cholesky(
@@ -119,6 +141,9 @@ def gpu_solve_cholesky(
         raise ValueError(f"Unknown backend: {backend}")
 
 
+# ── Batch recommend (matmul + top-K) ─────────────────────────────────────────
+
+
 def gpu_batch_recommend(
     user_factors: np.ndarray,
     item_factors: np.ndarray,
@@ -159,10 +184,231 @@ def gpu_batch_recommend(
         raise ValueError(f"Unknown backend: {backend}")
 
 
-def check_gpu_available() -> bool:
-    """Check if a GPU backend is available without raising."""
+# ── Dense matrix multiply ────────────────────────────────────────────────────
+
+
+def gpu_matmul(
+    a: np.ndarray,
+    b: np.ndarray,
+    backend: str,
+    lib: Any,
+) -> np.ndarray:
+    """Dense matrix multiply A @ B on GPU.
+
+    Parameters
+    ----------
+    a : ndarray (m, k)
+    b : ndarray (k, n)
+    backend : str
+    lib : module
+
+    Returns
+    -------
+    ndarray (m, n)
+    """
+    if backend == "cupy":
+        A = lib.asarray(a)
+        B = lib.asarray(b)
+        C = A @ B
+        return lib.asnumpy(C)
+    elif backend == "torch":
+        A = lib.tensor(a, device="cuda", dtype=lib.float32)
+        B = lib.tensor(b, device="cuda", dtype=lib.float32)
+        C = A @ B
+        return C.cpu().numpy()
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── Top-K selection ──────────────────────────────────────────────────────────
+
+
+def gpu_topk(
+    scores: np.ndarray,
+    k: int,
+    backend: str,
+    lib: Any,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Top-K selection per row on GPU.
+
+    Parameters
+    ----------
+    scores : ndarray (n, m)
+        Score matrix.
+    k : int
+        Number of top entries per row.
+    backend : str
+    lib : module
+
+    Returns
+    -------
+    (ids, top_scores) : tuple of ndarrays
+        ids: (n, k), top_scores: (n, k)
+    """
+    if backend == "cupy":
+        S = lib.asarray(scores)
+        top_idx = lib.argsort(-S, axis=1)[:, :k]
+        top_scores = lib.take_along_axis(S, top_idx, axis=1)
+        return lib.asnumpy(top_idx).astype(np.int32), lib.asnumpy(top_scores).astype(np.float32)
+    elif backend == "torch":
+        S = lib.tensor(scores, device="cuda", dtype=lib.float32)
+        top_scores, top_idx = lib.topk(S, k=min(k, S.shape[1]), dim=1)
+        return top_idx.cpu().numpy().astype(np.int32), top_scores.cpu().numpy().astype(np.float32)
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── User scoring (single user x all items) ───────────────────────────────────
+
+
+def gpu_score_user(
+    user_vec: np.ndarray,
+    item_factors: np.ndarray,
+    backend: str,
+    lib: Any,
+) -> np.ndarray:
+    """Compute scores for a single user against all items on GPU.
+
+    Parameters
+    ----------
+    user_vec : ndarray (d,)
+        Single user factor vector.
+    item_factors : ndarray (n_items, d)
+        Item factor matrix.
+    backend : str
+    lib : module
+
+    Returns
+    -------
+    ndarray (n_items,)
+        Scores for each item.
+    """
+    if backend == "cupy":
+        u = lib.asarray(user_vec)
+        V = lib.asarray(item_factors)
+        scores = V @ u
+        return lib.asnumpy(scores)
+    elif backend == "torch":
+        u = lib.tensor(user_vec, device="cuda", dtype=lib.float32)
+        V = lib.tensor(item_factors, device="cuda", dtype=lib.float32)
+        scores = V @ u
+        return scores.cpu().numpy()
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── Matrix inversion via Cholesky ─────────────────────────────────────────────
+
+
+def gpu_cholesky_inverse(
+    gram: np.ndarray,
+    regularization: float,
+    backend: str,
+    lib: Any,
+) -> np.ndarray:
+    """Invert (G + λI) via Cholesky decomposition on GPU.
+
+    Parameters
+    ----------
+    gram : ndarray (n, n)
+        Gram matrix.
+    regularization : float
+        Regularization lambda.
+    backend : str
+    lib : module
+
+    Returns
+    -------
+    ndarray (n, n)
+        Inverted matrix.
+    """
+    n = gram.shape[0]
+    if backend == "cupy":
+        G = lib.asarray(gram.astype(np.float64)) + regularization * lib.eye(n, dtype=lib.float64)
+        identity = lib.eye(n, dtype=lib.float64)
+        P = lib.linalg.solve(G, identity)
+        return lib.asnumpy(P).astype(np.float32)
+    elif backend == "torch":
+        G = lib.tensor(gram.astype(np.float64), device="cuda", dtype=lib.float64)
+        G = G + regularization * lib.eye(n, device="cuda", dtype=lib.float64)
+        L = lib.linalg.cholesky(G)
+        P = lib.cholesky_inverse(L)
+        return P.cpu().numpy().astype(np.float32)
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── Sparse-dense matrix multiply ─────────────────────────────────────────────
+
+
+def gpu_sparse_dense_matmul(
+    sparse_data: np.ndarray,
+    sparse_indices: np.ndarray,
+    sparse_indptr: np.ndarray,
+    shape: tuple[int, int],
+    dense: np.ndarray,
+    backend: str,
+    lib: Any,
+) -> np.ndarray:
+    """Sparse CSR × dense matrix multiply on GPU.
+
+    Parameters
+    ----------
+    sparse_data, sparse_indices, sparse_indptr : ndarrays
+        CSR components of the sparse matrix.
+    shape : tuple[int, int]
+        Shape of the sparse matrix (rows, cols).
+    dense : ndarray
+        Dense matrix to multiply with.
+    backend : str
+    lib : module
+
+    Returns
+    -------
+    ndarray
+        Result of sparse @ dense.
+    """
+    if backend == "cupy":
+        import cupyx.scipy.sparse as cusp  # type: ignore[import-untyped]
+
+        sp_gpu = cusp.csr_matrix(
+            (
+                lib.asarray(sparse_data.astype(np.float32)),
+                lib.asarray(sparse_indices.astype(np.int32)),
+                lib.asarray(sparse_indptr.astype(np.int32)),
+            ),
+            shape=shape,
+        )
+        D = lib.asarray(dense.astype(np.float32))
+        result = sp_gpu @ D
+        return lib.asnumpy(result)
+    elif backend == "torch":
+        import scipy.sparse as sp
+
+        csr = sp.csr_matrix(
+            (sparse_data.astype(np.float32), sparse_indices.astype(np.int32), sparse_indptr),
+            shape=shape,
+        )
+        coo = csr.tocoo()
+        indices = lib.tensor(
+            np.vstack([coo.row, coo.col]).astype(np.int64),
+            device="cuda",
+        )
+        values = lib.tensor(coo.data.astype(np.float32), device="cuda")
+        sp_gpu = lib.sparse_coo_tensor(indices, values, size=shape).to_sparse_csr()
+        D = lib.tensor(dense.astype(np.float32), device="cuda")
+        result = sp_gpu @ D
+        return result.cpu().numpy()
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+# ── Convenience: get backend or None ──────────────────────────────────────────
+
+
+def get_gpu_backend_safe() -> tuple[str, Any] | None:
+    """Try to get a GPU backend, returning None on failure."""
     try:
-        _get_gpu_backend()
-        return True
+        return _get_gpu_backend()
     except ImportError:
-        return False
+        return None

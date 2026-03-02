@@ -1,4 +1,4 @@
-"""Content-based recommender using TF-IDF and cosine similarity."""
+"""Content-based recommender using TF-IDF and cosine similarity (Rust-accelerated)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from . import _rusket as _rust  # type: ignore
 from .model import BaseModel
 
 
@@ -111,7 +112,7 @@ class ContentBased(BaseModel):
     # ── fit ────────────────────────────────────────────────────────────
 
     def fit(self) -> ContentBased:  # type: ignore[override]
-        """Compute TF-IDF vectors and the pairwise cosine similarity matrix.
+        """Compute TF-IDF vectors and the pairwise cosine similarity matrix (Rust-accelerated).
 
         Returns
         -------
@@ -124,20 +125,12 @@ class ContentBased(BaseModel):
         if self.fitted:
             raise RuntimeError("Model is already fitted. Create a new instance to refit.")
 
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
-
-        vectorizer = TfidfVectorizer(
-            max_features=self.max_features,
-            ngram_range=self.ngram_range,
-            stop_words="english",
+        self._similarity_matrix = _rust.tfidf_cosine_similarity(
+            self._texts,
+            self.max_features,
+            self.ngram_range[0],
+            self.ngram_range[1],
         )
-        self._tfidf_matrix = vectorizer.fit_transform(self._texts)
-        sim = cosine_similarity(self._tfidf_matrix).astype(np.float32)
-
-        # Zero the diagonal so an item doesn't recommend itself
-        np.fill_diagonal(sim, 0.0)
-        self._similarity_matrix = sim
 
         self.fitted = True
         return self

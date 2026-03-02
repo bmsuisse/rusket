@@ -6,6 +6,8 @@ use pyo3::prelude::*;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
+mod rng;
+mod simd;
 mod als;
 mod association_rules;
 mod bpr;
@@ -36,6 +38,7 @@ mod nn_descent;
 mod pacmap;
 mod cross_validate;
 mod nmf;
+mod content_based;
 
 #[pymodule]
 fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -63,6 +66,7 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(prefixspan::prefixspan_mine_py, m)?)?;
     m.add_function(wrap_pyfunction!(hupm::hupm_mine_py, m)?)?;
     m.add_function(wrap_pyfunction!(ease::ease_recommend_items, m)?)?;
+    m.add_function(wrap_pyfunction!(ease::ease_fit, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_top_k, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(user_knn::userknn_top_k, m)?)?;
@@ -99,5 +103,6 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cross_validate::cross_validate_als, m)?)?;
     m.add_function(wrap_pyfunction!(cross_validate::cross_validate_generic, m)?)?;
     m.add_function(wrap_pyfunction!(nmf::nmf_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(content_based::tfidf_cosine_similarity, m)?)?;
     Ok(())
 }

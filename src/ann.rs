@@ -5,26 +5,8 @@ use rayon::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-struct XorShift {
-    state: u64,
-}
+use crate::rng::XorShift64;
 
-impl XorShift {
-    fn new(seed: u64) -> Self {
-        Self { state: seed.max(1) }
-    }
-    fn next_u64(&mut self) -> u64 {
-        let mut x = self.state;
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        self.state = x;
-        x
-    }
-    fn next_choice(&mut self, max: usize) -> usize {
-        (self.next_u64() % (max as u64)) as usize
-    }
-}
 
 #[derive(Clone)]
 enum Node {
@@ -65,7 +47,7 @@ fn build_tree_recursive(
     data: &[f32],
     n_features: usize,
     leaf_size: usize,
-    rng: &mut XorShift,
+    rng: &mut XorShift64,
     nodes: &mut Vec<Node>,
     leaf_indices: &mut Vec<u32>,
 ) -> u32 {
@@ -78,11 +60,11 @@ fn build_tree_recursive(
         return node_idx;
     }
 
-    let p1_local = rng.next_choice(indices.len());
-    let mut p2_local = rng.next_choice(indices.len());
+    let p1_local = rng.next_usize(indices.len());
+    let mut p2_local = rng.next_usize(indices.len());
     let mut attempts = 0;
     while p1_local == p2_local && attempts < 5 {
-        p2_local = rng.next_choice(indices.len());
+        p2_local = rng.next_usize(indices.len());
         attempts += 1;
     }
 
@@ -210,7 +192,7 @@ impl AnnIndex {
         let trees: Vec<(Vec<Node>, Vec<u32>, u32)> = (0..n_trees)
             .into_par_iter()
             .map(|i| {
-                let mut rng = XorShift::new(seed + i as u64);
+                let mut rng = XorShift64::new(seed + i as u64);
                 let mut point_indices: Vec<u32> = (0..n_samples as u32).collect();
                 let mut local_nodes = Vec::new();
                 let mut local_indices = Vec::new();

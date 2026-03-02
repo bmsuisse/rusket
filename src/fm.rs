@@ -2,41 +2,8 @@ use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1, PyReadonlyArra
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-struct XorShift64 {
-    state: u64,
-}
+use crate::rng::{random_factors_flat, XorShift64};
 
-impl XorShift64 {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: if seed == 0 { 0xbad5eed } else { seed },
-        }
-    }
-
-    #[inline(always)]
-    fn next(&mut self) -> u64 {
-        self.state ^= self.state << 13;
-        self.state ^= self.state >> 7;
-        self.state ^= self.state << 17;
-        self.state
-    }
-
-    #[inline(always)]
-    fn next_float(&mut self) -> f32 {
-        let v = self.next() & 0xFFFFFF;
-        v as f32 / 0xFFFFFF as f32
-    }
-}
-
-fn random_factors(size: usize, seed: u64) -> Vec<f32> {
-    let mut rng = XorShift64::new(seed);
-    let scale = 0.01;
-    let mut out = vec![0.0f32; size];
-    for v in out.iter_mut() {
-        *v = (rng.next_float() * 2.0 - 1.0) * scale;
-    }
-    out
-}
 
 #[inline(always)]
 fn sigmoid(x: f32) -> f32 {
@@ -66,7 +33,7 @@ fn fm_train(
 ) -> (f32, Vec<f32>, Vec<f32>) {
     let mut w0 = 0.0f32;
     let mut w = vec![0.0f32; n_features];
-    let mut v = random_factors(n_features * k, seed);
+    let mut v = random_factors_flat(n_features * k, seed);
 
     let num_threads = rayon::current_num_threads();
     let w0_ptr_raw = &mut w0 as *mut f32 as usize;

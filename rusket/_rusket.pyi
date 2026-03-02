@@ -395,3 +395,28 @@ def cross_validate_generic(
     fold_seed: int,
     verbose: bool,
 ) -> tuple[int, float, list[list[float]], list[list[float]], list[list[list[float]]]]: ...
+def nmf_fit(
+    indptr: npt.NDArray[np.int64],
+    indices: npt.NDArray[np.int32],
+    data: npt.NDArray[np.float64],
+    n_users: int,
+    n_items: int,
+    factors: int,
+    iterations: int,
+    regularization: float,
+    seed: int,
+    verbose: bool,
+) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]: ...
+def ease_fit(
+    indptr: npt.NDArray[np.int64],
+    indices: npt.NDArray[np.int32],
+    data: npt.NDArray[np.float32],
+    n_items: int,
+    regularization: float,
+) -> npt.NDArray[np.float32]: ...
+def tfidf_cosine_similarity(
+    texts: list[str],
+    max_features: int,
+    ngram_min: int,
+    ngram_max: int,
+) -> npt.NDArray[np.float32]: ...

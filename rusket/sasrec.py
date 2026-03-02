@@ -40,6 +40,9 @@ class SASRec(SequentialRecommender):
         Maximum number of time bins (e.g. days) to consider for time-awareness.
     verbose : int
         Print epoch progress.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -54,6 +57,7 @@ class SASRec(SequentialRecommender):
         time_aware: bool = False,
         max_time_steps: int = 256,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -67,6 +71,7 @@ class SASRec(SequentialRecommender):
         self.time_aware = time_aware
         self.max_time_steps = max_time_steps
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self._item_emb: np.ndarray | None = None
         self._time_emb: np.ndarray | None = None

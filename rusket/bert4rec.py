@@ -43,6 +43,9 @@ class BERT4Rec(SequentialRecommender):
         Seed for reproducible training.
     verbose : int
         Print training progress.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -56,6 +59,7 @@ class BERT4Rec(SequentialRecommender):
         iterations: int = 20,
         seed: int | None = None,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -68,6 +72,7 @@ class BERT4Rec(SequentialRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         self._item_factors: np.ndarray | None = None
         self._item_map: dict[Any, int] = {}

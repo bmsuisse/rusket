@@ -29,6 +29,9 @@ class FPMC(SequentialRecommender):
         Random seed for sampling (default: 42).
     verbose : bool
         Whether to print training progress (default: False).
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
     """
 
     def __init__(
@@ -41,6 +44,7 @@ class FPMC(SequentialRecommender):
         time_aware: bool = False,
         max_time_steps: int = 256,
         verbose: int = 0,
+        use_gpu: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -52,6 +56,7 @@ class FPMC(SequentialRecommender):
         self.time_aware = time_aware
         self.max_time_steps = max_time_steps
         self.verbose = verbose
+        self.use_gpu = use_gpu
 
         # Vu, Viu, Vil, Vli, Vtime
         self._vu: Any = None
