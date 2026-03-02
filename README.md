@@ -706,15 +706,29 @@ Integrate natively with the modern GenAI/LLM stack:
 
 ---
 
-### 🔬 Hyperparameter Tuning (Optuna + MLflow)
+### 🔬 MLOps: MLflow Tracking & Hyperparameter Tuning
 
-Built-in Bayesian hyperparameter optimisation using [Optuna](https://optuna.org)'s TPE sampler. For **ALS/eALS** models, each trial runs the Rust-native cross-validation backend — making the entire search blazingly fast.
+`rusket` has built-in support for [MLflow](https://mlflow.org/) experiment tracking, `mlflow.pyfunc` packaging, and Bayesian hyperparameter optimisation using [Optuna](https://optuna.org/)'s TPE sampler. For **ALS/eALS** models, each Optuna trial runs the Rust-native cross-validation backend — making the entire search blazingly fast.
 
 ```python
 import rusket
+import rusket.mlflow
 from rusket import OptunaSearchSpace
 
-# ── Quick search with sensible defaults ──────────────────────────────
+# ── 1. Enable MLflow Autologging ─────────────────────────────────────
+rusket.mlflow.autolog()
+
+# ── 2. Train a single model with automatic tracking ──────────────────
+# Hyperparameters (factors, iterations) and training_duration_seconds are logged!
+import mlflow
+with mlflow.start_run():
+    model = rusket.ALS(factors=64, iterations=15).fit(df)
+
+# Save/Load models as native MLflow pyfunc artifacts for easy deployment
+rusket.mlflow.save_model(model, "my_als_model")
+loaded_model = mlflow.pyfunc.load_model("my_als_model")  # Has a .predict(df) method
+
+# ── 3. Quick hyperparameter search with sensible defaults ───────────
 result = rusket.optuna_optimize(
     rusket.ALS,
     df,
