@@ -580,6 +580,15 @@
           "returns": "Any",
           "doc": "Top-N items for all users efficiently computed in parallel."
         },
+        "build_ann_index": {
+          "parameters": {
+            "backend": "str",
+            "index_type": "str",
+            "kwargs": "Any"
+          },
+          "returns": "Any",
+          "doc": "Build an Approximate Nearest Neighbor index from item factors."
+        },
         "fit": {
           "parameters": {
             "interactions": "Any"

@@ -992,6 +992,32 @@ ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 
 
 ---
 
+#### `ALS.build_ann_index`
+
+Build an Approximate Nearest Neighbor index from item factors.
+
+```python
+from rusket.als import ALS.build_ann_index
+
+ALS.build_ann_index(backend: 'str' = 'native', index_type: 'str' = 'hnsw', **kwargs: 'Any') -> 'Any'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| backend | str | ``"native"`` uses the built-in Rust random-projection forest (:class:`~rusket.ApproximateNearestNeighbors`). ``"faiss"`` uses FAISS (requires ``pip install faiss-cpu``). |
+| index_type | str | For ``"faiss"`` backend: ``"flat"``, ``"hnsw"``, ``"ivfflat"``, ``"ivfpq"``. Ignored for ``"native"`` backend. |
+| **kwargs |  | Additional arguments passed to the index builder. |
+
+**Returns**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| index |  | A fitted ANN index with a ``query()`` / ``kneighbors()`` method. |
+
+---
+
 #### `ALS.fit`
 
 Fit the model to the user-item interaction matrix.
@@ -2715,9 +2741,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 🚀 Features
 
 - add item popularity weighting in eALS and user/item bias terms
+- add FAISS ANN index export and build_ann_index() on ALS
 
 ### 📦 Miscellaneous
 
