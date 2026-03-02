@@ -1202,6 +1202,7 @@
           "parameters": {
             "retrieve": "Any | list[Any] | None",
             "rerank": "Any | None",
+            "rules": "Any | list[Any] | None",
             "filter": "Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None",
             "merge_strategy": "Literal['max', 'mean', 'sum']"
           },
