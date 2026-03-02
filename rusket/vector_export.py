@@ -11,6 +11,11 @@ Supported backends:
 - **ChromaDB** — ``pip install chromadb``
 - **Pinecone** — ``pip install pinecone-client``
 - **Weaviate** — ``pip install weaviate-client``
+- **Milvus** — ``pip install pymilvus``
+- **Elasticsearch / OpenSearch** — ``pip install elasticsearch`` (or ``opensearch-py``)
+- **MongoDB Atlas** — ``pip install pymongo``
+- **LanceDB** — ``pip install lancedb``
+- **Typesense** — ``pip install typesense``
 """
 
 from __future__ import annotations
@@ -48,6 +53,11 @@ def export_vectors(
         - ``chromadb.Client`` / ``chromadb.PersistentClient``
         - ``pinecone.Index``
         - ``weaviate.Client`` / ``weaviate.WeaviateClient``
+        - ``pymilvus.Collection``
+        - ``elasticsearch.Elasticsearch`` / ``opensearchpy.OpenSearch``
+        - ``pymongo.database.Database`` (MongoDB Atlas)
+        - ``lancedb.DBConnection``
+        - ``typesense.Client``
     collection_name : str
         Target collection/index/table name.
     ids : list or ndarray, optional
@@ -104,6 +114,11 @@ def export_vectors(
         "chromadb": _export_chromadb,
         "pinecone": _export_pinecone,
         "weaviate": _export_weaviate,
+        "milvus": _export_milvus,
+        "elasticsearch": _export_elasticsearch,
+        "mongodb": _export_mongodb,
+        "lancedb": _export_lancedb,
+        "typesense": _export_typesense,
     }
 
     fn = dispatch[backend]
@@ -136,15 +151,30 @@ def _detect_backend(client: Any) -> str:
         return "pinecone"
     if "weaviate" in client_mod:
         return "weaviate"
+    if "pymilvus" in client_mod:
+        return "milvus"
+    if "elasticsearch" in client_mod or "opensearchpy" in client_mod:
+        return "elasticsearch"
+    if "pymongo" in client_mod:
+        return "mongodb"
+    if "lancedb" in client_mod:
+        return "lancedb"
+    if "typesense" in client_mod:
+        return "typesense"
 
     # Fallback: check for common attribute patterns
     if hasattr(client, "cursor") and hasattr(client, "commit"):
-        return "pgvector"  # DB-API 2.0 connection (psycopg2, asyncpg, etc.)
+        return "pgvector"  # DB-API 2.0 connection
 
+    supported = (
+        "QdrantClient, meilisearch.Client, psycopg2 connection, "
+        "chromadb.Client, pinecone.Index, weaviate.Client, "
+        "pymilvus.Collection, elasticsearch.Elasticsearch, "
+        "pymongo.database.Database, lancedb.DBConnection, typesense.Client"
+    )
     raise TypeError(
         f"Unsupported client type: {client_name} (module: {client_mod}). "
-        "Supported: QdrantClient, meilisearch.Client, psycopg2 connection, "
-        "chromadb.Client, pinecone.Index, weaviate.Client."
+        f"Supported: {supported}."
     )
 
 
@@ -387,4 +417,210 @@ def _export_weaviate(
                     vector=factors[i].tolist(),
                     uuid=str(ids[i]),
                 )
+    return n
+
+
+# ---------------------------------------------------------------------------
+# Milvus
+# ---------------------------------------------------------------------------
+
+
+def _export_milvus(
+    factors: np.ndarray,
+    collection: Any,
+    _collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    _recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export to a pymilvus Collection object (must already be created)."""
+    n = factors.shape[0]
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        data = [
+            [ids[i] for i in range(start, end)],
+            factors[start:end].tolist(),
+        ]
+        if payloads:
+            import json
+            data.append([json.dumps(payloads[i]) for i in range(start, end)])
+        collection.insert(data)
+    collection.flush()
+    return n
+
+
+# ---------------------------------------------------------------------------
+# Elasticsearch / OpenSearch
+# ---------------------------------------------------------------------------
+
+
+def _export_elasticsearch(
+    factors: np.ndarray,
+    client: Any,
+    index_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export to Elasticsearch or OpenSearch using kNN dense_vector fields."""
+    n, d = factors.shape
+
+    if recreate:
+        try:
+            client.indices.delete(index=index_name)
+        except Exception:
+            pass
+        client.indices.create(
+            index=index_name,
+            body={
+                "mappings": {
+                    "properties": {
+                        "embedding": {
+                            "type": "dense_vector",
+                            "dims": d,
+                            "index": True,
+                            "similarity": "dot_product",
+                        },
+                        "payload": {"type": "object", "enabled": False},
+                    }
+                }
+            },
+        )
+
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        body: list[Any] = []
+        for i in range(start, end):
+            body.append({"index": {"_index": index_name, "_id": str(ids[i])}})
+            doc: dict[str, Any] = {"embedding": factors[i].tolist()}
+            if payloads and i < len(payloads):
+                doc["payload"] = payloads[i]
+            body.append(doc)
+        client.bulk(body=body)
+    return n
+
+
+# ---------------------------------------------------------------------------
+# MongoDB Atlas Vector Search
+# ---------------------------------------------------------------------------
+
+
+def _export_mongodb(
+    factors: np.ndarray,
+    db: Any,
+    collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export to MongoDB Atlas (expects a pymongo.database.Database)."""
+    if recreate:
+        db.drop_collection(collection_name)
+
+    col = db[collection_name]
+    n = factors.shape[0]
+
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        docs = []
+        for i in range(start, end):
+            doc: dict[str, Any] = {
+                "_id": ids[i],
+                "embedding": factors[i].tolist(),
+            }
+            if payloads and i < len(payloads):
+                doc["payload"] = payloads[i]
+            docs.append(doc)
+        col.insert_many(docs, ordered=False)
+    return n
+
+
+# ---------------------------------------------------------------------------
+# LanceDB
+# ---------------------------------------------------------------------------
+
+
+def _export_lancedb(
+    factors: np.ndarray,
+    db: Any,
+    table_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    _batch_size: int,
+    recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export to LanceDB (expects a lancedb.DBConnection)."""
+    import pyarrow as pa  # type: ignore[import-untyped]
+
+    n, d = factors.shape
+    data = {
+        "id": [str(x) for x in ids],
+        "vector": [factors[i].tolist() for i in range(n)],
+    }
+    if payloads:
+        import json
+        data["payload"] = [json.dumps(payloads[i]) if i < len(payloads) else "{}" for i in range(n)]
+
+    table = pa.table(data)
+
+    if recreate:
+        try:
+            db.drop_table(table_name)
+        except Exception:
+            pass
+    db.create_table(table_name, table)
+    return n
+
+
+# ---------------------------------------------------------------------------
+# Typesense
+# ---------------------------------------------------------------------------
+
+
+def _export_typesense(
+    factors: np.ndarray,
+    client: Any,
+    collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export to Typesense (expects a typesense.Client)."""
+    n, d = factors.shape
+
+    if recreate:
+        try:
+            client.collections[collection_name].delete()
+        except Exception:
+            pass
+        client.collections.create({
+            "name": collection_name,
+            "fields": [
+                {"name": "id", "type": "string"},
+                {"name": "vec", "type": "float[]", "num_dim": d},
+                {"name": "payload", "type": "object", "optional": True},
+            ]
+        })
+
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        docs = []
+        for i in range(start, end):
+            doc: dict[str, Any] = {
+                "id": str(ids[i]),
+                "vec": factors[i].tolist(),
+            }
+            if payloads and i < len(payloads):
+                doc["payload"] = payloads[i]
+            docs.append(doc)
+        client.collections[collection_name].documents.import_(docs, {"action": "upsert"})
     return n
