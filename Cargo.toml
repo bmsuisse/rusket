@@ -1,6 +1,6 @@
 [package]
 name = "rusket"
-version = "0.1.74"
+version = "0.1.75"
 edition = "2021"
 license = "MIT"
 exclude = [
@@ -41,6 +41,7 @@ mimalloc = { version = "0.1", default-features = false }
 tempfile = "3.10"
 faer = "0.21.2"
 rand = "0.10.0"
+indicatif = { version = "0.18.4", features = ["rayon"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cblas = "0.4"

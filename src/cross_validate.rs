@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -123,6 +124,7 @@ struct AlsConfig {
 
 /// Run cross-validation for a single config, returning per-fold metric arrays.
 fn cv_one_config(
+    pb: &ProgressBar,
     config: &AlsConfig,
     folds: &[(Vec<i32>, Vec<i32>, Vec<f32>, Vec<i32>, Vec<i32>, Vec<f32>)],
     n_users: usize,
@@ -185,7 +187,7 @@ fn cv_one_config(
                 config.factors, config.alpha, config.regularization,
                 config.iterations, config.use_eals
             );
-            println!(
+            pb.println(format!(
                 "  [{}/{}] {}  fold {}/{}  {}@{}={:.4}  {}@{}={:.4}  {}@{}={:.4}  {}@{}={:.4}",
                 config_idx + 1,
                 n_configs,
@@ -196,7 +198,7 @@ fn cv_one_config(
                 metric_names[1], k, metrics[1],
                 metric_names[2], k, metrics[2],
                 metric_names[3], k, metrics[3],
-            );
+            ));
         }
 
         fold_metrics.push(metrics);
@@ -338,14 +340,29 @@ pub fn cross_validate_als(
 
     // ── Run CV in parallel across configs ──────────────────────────
     // Release the GIL so Python threads aren't blocked
+    
+    let pb = if verbose {
+        let style = ProgressStyle::default_bar()
+            .template("{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap()
+            .progress_chars("#>-");
+        ProgressBar::new(n_configs as u64)
+            .with_style(style)
+            .with_message("Cross-validation (ALS)")
+    } else {
+        ProgressBar::hidden()
+    };
+
     let results: Vec<Vec<[f32; 4]>> = py.detach(|| {
-        configs
+        let res: Vec<Vec<[f32; 4]>> = configs
             .par_iter()
             .enumerate()
+            .progress_with(pb.clone())
             .map(|(ci, config)| {
-                cv_one_config(config, &folds, n_users, n_items, k, verbose, ci, n_configs)
+                cv_one_config(&pb, config, &folds, n_users, n_items, k, verbose, ci, n_configs)
             })
-            .collect()
+            .collect();
+        pb.finish_and_clear();
+        res
     });
 
     // ── Aggregate results ──────────────────────────────────────────
@@ -490,6 +507,7 @@ fn train_model(
 
 /// Run cross-validation for one config using the generic train_model dispatch.
 fn cv_one_config_generic(
+    pb: &ProgressBar,
     kind: &str,
     config: &GenericConfig,
     folds: &[(Vec<i32>, Vec<i32>, Vec<f32>, Vec<i32>, Vec<i32>, Vec<f32>)],
@@ -516,13 +534,13 @@ fn cv_one_config_generic(
         );
 
         if verbose {
-            println!(
+            pb.println(format!(
                 "  [{}/{}] kind={} factors={} reg={} iter={} lr={}  fold {}/{}  p@{}={:.4}  r@{}={:.4}  n@{}={:.4}  h@{}={:.4}",
                 config_idx + 1, n_configs, kind,
                 config.factors, config.regularization, config.iterations, config.learning_rate,
                 fi + 1, n_folds,
                 k, metrics[0], k, metrics[1], k, metrics[2], k, metrics[3],
-            );
+            ));
         }
 
         fold_metrics.push(metrics);
@@ -538,7 +556,6 @@ fn cv_one_config_generic(
     n_users, n_items,
     factors_list, regularization_list, iterations_list, seed_list,
     alpha_list, use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
-    learning_rate_list, k_layers_list,
     n_folds, k, metric, fold_seed, verbose
 ))]
 #[allow(clippy::too_many_arguments)]
@@ -676,14 +693,28 @@ pub fn cross_validate_generic(
         .collect();
 
     // ── Run CV in parallel across configs ──────────────────────────
+    let pb = if verbose {
+        let style = ProgressStyle::default_bar()
+            .template("{msg} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap()
+            .progress_chars("#>-");
+        ProgressBar::new(n_configs as u64)
+            .with_style(style)
+            .with_message(format!("Cross-validation ({})", kind))
+    } else {
+        ProgressBar::hidden()
+    };
+    
     let results: Vec<Vec<[f32; 4]>> = py.detach(|| {
-        configs
+        let res: Vec<Vec<[f32; 4]>> = configs
             .par_iter()
             .enumerate()
+            .progress_with(pb.clone())
             .map(|(ci, config)| {
-                cv_one_config_generic(&kind, config, &folds, n_users, n_items, k, verbose, ci, n_configs)
+                cv_one_config_generic(&pb, &kind, config, &folds, n_users, n_items, k, verbose, ci, n_configs)
             })
-            .collect()
+            .collect();
+        pb.finish_and_clear();
+        res
     });
 
     // ── Aggregate results ──────────────────────────────────────────

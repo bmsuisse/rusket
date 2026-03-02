@@ -69,7 +69,7 @@ If we pass it our `als_model`, we can instantly ask for the top 5 next best prod
 
 
 ```
-nba = NextBestAction(als_model=als_model)
+nba = NextBestAction(model=als_model)
 
 # Target users from our CRM
 target_users = pd.DataFrame({"customer_id": [1, 5, 25, 42]})
@@ -89,7 +89,7 @@ We can use the `score_potential` API to predict their exact likelihood of intera
 ```
 user_histories = df.groupby("user_id")["item_id"].apply(list).tolist()
 
-potential_scores = score_potential(user_history=user_histories, als_model=als_model, target_categories=[10, 50, 100])
+potential_scores = score_potential(user_history=user_histories, model=als_model, target_categories=[10, 50, 100])
 
 print("Top 5 user scores for Movie ID 10:")
 # Get users with the highest probability to interact with Movie 10

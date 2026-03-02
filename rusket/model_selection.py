@@ -4,12 +4,70 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 if TYPE_CHECKING:
+    import optuna
     import pandas as pd
 
 from . import _rusket
+
+# ---------------------------------------------------------------------------
+# Callbacks
+# ---------------------------------------------------------------------------
+
+
+class PruningCallback(Protocol):
+    """Protocol for early stopping mechanisms during training iterations."""
+
+    def __call__(self, epoch: int, metric_score: float) -> bool:
+        """Called by the rust backend every `report_interval` epochs.
+
+        Parameters
+        ----------
+        epoch : int
+            Current training epoch.
+        metric_score : float
+            Evaluation metric score.
+
+        Returns
+        -------
+        bool
+            `True` if trial should be pruned (aborted), `False` otherwise.
+        """
+        ...
+
+
+class OptunaPruningCallback:
+    """Optuna callback to prune unpromising trials during training.
+
+    This callback reports the validation score to Optuna and raises
+    `optuna.TrialPruned` if the trial is deemed unpromising.
+
+    Parameters
+    ----------
+    trial : optuna.trial.Trial
+        A :class:`~optuna.trial.Trial` corresponding to the current evaluation.
+    report_interval : int, default=50
+        How often (in epochs) the Rust backend should run a validation pass.
+        Since validation is expensive, computing it every epoch is slow.
+    """
+
+    def __init__(self, trial: optuna.Trial, report_interval: int = 50) -> None:
+        import optuna
+
+        # Use an internal flag for Optuna's trial to save the exception instance
+        self._trial = trial
+        self._optuna_pruned_exc_class = optuna.TrialPruned
+        self.report_interval = report_interval
+
+    def __call__(self, epoch: int, metric_score: float) -> bool:
+        """Report intermediate score to Optuna. Returns `True` if trial should be pruned."""
+        self._trial.report(metric_score, step=epoch)
+        if self._trial.should_prune():
+            return True
+        return False
+
 
 # ---------------------------------------------------------------------------
 # Data splitting helpers
@@ -254,6 +312,7 @@ def cross_validate(
     k: int = 10,
     metric: str = "precision",
     metrics: list[str] | None = None,
+    callbacks: list[PruningCallback] | None = None,
     refit_best: bool = False,
     verbose: bool = True,
     seed: int = 42,
@@ -299,6 +358,9 @@ def cross_validate(
     metrics : list[str] or None
         All metrics to compute per fold.  Defaults to
         ``["precision", "recall", "ndcg", "hr"]``.
+    callbacks : list[PruningCallback] or None
+        List of callbacks to run during training. Useful for early stopping
+        (e.g., pruning trials in Optuna).
     refit_best : bool, default=False
         If ``True``, retrain the best configuration on the entire dataset
         and store it in :attr:`CrossValidationResult.best_model`.
@@ -356,7 +418,6 @@ def cross_validate(
             param_combinations=param_combinations,
             n_folds=n_folds,
             k=k,
-            metric=metric,
             metrics=metrics,
             refit_best=refit_best,
             verbose=verbose,
@@ -392,7 +453,6 @@ def cross_validate(
         param_combinations=param_combinations,
         n_folds=n_folds,
         k=k,
-        metric=metric,
         metrics=metrics,
         refit_best=refit_best,
         verbose=verbose,
@@ -537,7 +597,6 @@ def _cross_validate_rust_generic(
         learning_rate_list,
         k_layers_list,
         n_folds,
-        k,
         metric,
         seed,
         verbose,
@@ -797,6 +856,9 @@ def _cross_validate_python(
             if rating_col is not None:
                 from_kw["rating_col"] = rating_col
 
+            # --- Note: Pure python train path currently does not natively support
+            # calling the PruningCallback during `fit()`, but we pass it anyway
+            # for future-proofing when we add a `callbacks` parameter to `fit`.
             model = model_class.from_transactions(train_df, **from_kw).fit()
 
             eval_df = test_df.rename(columns={user_col: "user", item_col: "item"})
@@ -823,7 +885,17 @@ def _cross_validate_python(
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {pool.submit(_eval_one_config, (ci, params)): ci for ci, params in enumerate(param_combinations)}
-        for future in as_completed(futures):
+
+        gen = as_completed(futures)
+        if verbose:
+            try:
+                from tqdm.auto import tqdm
+
+                gen = tqdm(gen, total=n_configs, desc="Cross-validation", unit="config")
+            except ImportError:
+                pass
+
+        for future in gen:
             ci = futures[future]
             all_results[ci] = future.result()
 
@@ -1098,7 +1170,12 @@ def optuna_optimize(
             optuna.logging.set_verbosity(optuna.logging.WARNING)
         study = optuna.create_study(direction="maximize", **study_kwargs)
 
-    study.optimize(_objective, n_trials=n_trials, callbacks=all_callbacks or None)
+    study.optimize(
+        _objective,
+        n_trials=n_trials,
+        callbacks=all_callbacks or None,
+        show_progress_bar=verbose,
+    )
 
     best_params = study.best_trial.params
     best_score = study.best_trial.value or 0.0
