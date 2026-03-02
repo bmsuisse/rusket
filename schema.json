@@ -637,6 +637,7 @@
             "iterations": "int",
             "seed": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -671,6 +672,7 @@
             "iterations": "int",
             "seed": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -797,6 +799,7 @@
           "parameters": {
             "regularization": "float",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -807,7 +810,7 @@
             "interactions": "Any"
           },
           "returns": "EASE",
-          "doc": "Fit the model to the user-item interaction matrix."
+          "doc": "Fit the model to the user-item interaction matrix (Rust-accelerated)."
         },
         "recommend_items": {
           "parameters": {
@@ -830,6 +833,7 @@
             "bm25_k1": "float",
             "bm25_b": "float",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "Any",
@@ -866,6 +870,7 @@
             "time_aware": "bool",
             "max_time_steps": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -915,6 +920,7 @@
             "iterations": "int",
             "seed": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -978,6 +984,7 @@
             "iterations": "int",
             "seed": "int | None",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -1027,6 +1034,7 @@
             "time_aware": "bool",
             "max_time_steps": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",
@@ -1107,7 +1115,7 @@
         "fit": {
           "parameters": {},
           "returns": "ContentBased",
-          "doc": "Compute TF-IDF vectors and the pairwise cosine similarity matrix."
+          "doc": "Compute TF-IDF vectors and the pairwise cosine similarity matrix (Rust-accelerated)."
         },
         "from_dataframe": {
           "parameters": {
@@ -1176,6 +1184,7 @@
             "regularization": "float",
             "seed": "int",
             "verbose": "int",
+            "use_gpu": "bool",
             "kwargs": "Any"
           },
           "returns": "None",

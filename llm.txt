@@ -418,7 +418,7 @@ evaluate(model: 'Any', test_interactions: 'Any', k: 'int' = 10, metrics: 'list[M
 Split interactions into random train and test sets.
 
 ```python
-from rusket.model_selection import train_test_split
+from rusket.splitting import train_test_split
 
 train_test_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
@@ -449,7 +449,7 @@ If a timestamp column is provided, the latest interaction is left out.
 If no timestamp is provided, a random interaction is chosen.
 
 ```python
-from rusket.model_selection import leave_one_out_split
+from rusket.splitting import leave_one_out_split
 
 leave_one_out_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
@@ -1144,7 +1144,7 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 ```python
 from rusket.bpr import BPR
 
-BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1156,6 +1156,7 @@ BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' 
 | regularization | float | L2 regularization weight (default: 0.01). |
 | iterations | int | Number of passes over the entire interaction dataset (default: 150). |
 | seed | int | Random seed for Hogwild! SGD sampling (default: 42). |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `BPR.fit`
 
@@ -1207,7 +1208,7 @@ Each row is a sample consisting of User, Item, and Context features.
 ```python
 from rusket.fm import FM
 
-FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1220,6 +1221,7 @@ FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 
 | iterations | int | Number of training epochs (default: 100). |
 | seed | int | Random seed for SGD sampling (default: 42). |
 | verbose | bool | Whether to print training progress (default: False). |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `FM.fit`
 
@@ -1404,7 +1406,7 @@ inference, particularly on datasets with strong item-item correlations.
 ```python
 from rusket.ease import EASE
 
-EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1412,10 +1414,11 @@ EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, **kwargs: 'Any') -> 'N
 | Parameter | Type | Description |
 | --- | --- | --- |
 | regularization | float | L2 regularization weight (lambda). Higher values encourage smaller weights and reduce overfitting. Default is 500.0. |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `EASE.fit`
 
-Fit the model to the user-item interaction matrix.
+Fit the model to the user-item interaction matrix (Rust-accelerated).
 
 ```python
 from rusket.ease import EASE.fit
@@ -1455,7 +1458,7 @@ per item. Similarity methods include BM25, TF-IDF, Cosine, or unweighted Count.
 ```python
 from rusket.item_knn import ItemKNN
 
-ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, **kwargs: 'Any')
+ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any')
 ```
 
 #### `ItemKNN.fit`
@@ -1521,7 +1524,7 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 ```python
 from rusket.fpmc import FPMC
 
-FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1534,6 +1537,7 @@ FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float'
 | iterations | int | Number of passes over the transitions (default: 150). |
 | seed | int | Random seed for sampling (default: 42). |
 | verbose | bool | Whether to print training progress (default: False). |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `FPMC.fit`
 
@@ -1579,7 +1583,7 @@ Biased matrix factorization trained with SGD:
 ```python
 from rusket.svd import SVD
 
-SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1592,6 +1596,7 @@ SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float'
 | iterations | int | Number of SGD epochs. |
 | seed | int | Random seed for reproducibility. |
 | verbose | int | Verbosity level (0 = silent, 1+ = progress). |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation scoring. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `SVD.batch_recommend`
 
@@ -1720,7 +1725,7 @@ Typical training time on ml-100k: < 0.5s/epoch.
 ```python
 from rusket.lightgcn import LightGCN
 
-LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1734,6 +1739,7 @@ LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.00
 | iterations | int | Number of training epochs. |
 | seed | int or None | Seed for reproducible training. |
 | verbose | int | Print training progress. |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `LightGCN.fit`
 
@@ -1798,7 +1804,7 @@ on long sequences.
 ```python
 from rusket.sasrec import SASRec
 
-SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1815,6 +1821,7 @@ SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_r
 | time_aware | bool | If true, incorporates timestamp deltas into sequential modeling. |
 | max_time_steps | int | Maximum number of time bins (e.g. days) to consider for time-awareness. |
 | verbose | int | Print epoch progress. |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `SASRec.fit`
 
@@ -1949,7 +1956,7 @@ ContentBased(max_features: 'int' = 5000, ngram_range: 'tuple[int, int]' = (1, 2)
 
 #### `ContentBased.fit`
 
-Compute TF-IDF vectors and the pairwise cosine similarity matrix.
+Compute TF-IDF vectors and the pairwise cosine similarity matrix (Rust-accelerated).
 
 ```python
 from rusket.content_based import ContentBased.fit
@@ -2067,7 +2074,7 @@ without a projection step.
 ```python
 from rusket.nmf import NMF
 
-NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
+NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool' = False, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -2079,6 +2086,7 @@ NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01
 | regularization | float, default=0.01 | L2 regularisation penalty applied to both W and H. |
 | seed | int, default=42 | Random seed for initialisation. |
 | verbose | int, default=0 | Verbosity level. |
+| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `NMF.fit`
 
@@ -2744,6 +2752,22 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 📦 Miscellaneous
+
+- bump version to 0.1.85
+
+### 🔧 Refactoring
+
+- split Python modules — extract EmbeddingMixin, splitting, optuna
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- move NMF/EASE/ContentBased heavy computation to Rust
 
 ### 🚀 Features
 
