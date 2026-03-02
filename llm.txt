@@ -2721,6 +2721,20 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- release v0.1.72 with MLflow, Metrics, and Splitters
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- Bump `rusket` package version to 0.1.70 and delete `test_nxr.py`.
+- bump version to 0.1.70 and YOLO release optimizations
+
+### 🚀 Features
+
+- wip release 0.1.71
+
 ### 📖 Documentation
 
 - add Hyperparameter Tuning section to README
