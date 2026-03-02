@@ -80,3 +80,6 @@ test_colnames.py
 
 # Hypothesis
 .hypothesis/
+
+# MLflow
+mlflow.db
