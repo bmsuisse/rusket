@@ -871,6 +871,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nearest-neighbor-collaborative-filtering-itemknn-userknn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nearest-Neighbor Collaborative Filtering — ItemKNN &amp; UserKNN
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nearest-Neighbor Collaborative Filtering — ItemKNN &amp; UserKNN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#itemknn-customers-who-bought-x-also-bought-y" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ItemKNN — "Customers who bought X also bought Y"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#userknn-users-similar-to-you-enjoyed-these" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UserKNN — "Users similar to you enjoyed these"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weighting-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weighting methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#item-to-item-similarity-you-may-also-like" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1403,6 +1453,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nearest-neighbor-collaborative-filtering-itemknn-userknn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nearest-Neighbor Collaborative Filtering — ItemKNN &amp; UserKNN
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nearest-Neighbor Collaborative Filtering — ItemKNN &amp; UserKNN">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#itemknn-customers-who-bought-x-also-bought-y" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ItemKNN — "Customers who bought X also bought Y"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#userknn-users-similar-to-you-enjoyed-these" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UserKNN — "Users similar to you enjoyed these"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weighting-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weighting methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#item-to-item-similarity-you-may-also-like" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1523,6 +1623,11 @@
 <td><code>ALS</code> / <code>BPR</code></td>
 </tr>
 <tr>
+<td><strong>Nearest Neighbors</strong></td>
+<td>Simple, strong baselines</td>
+<td><code>ItemKNN</code> / <code>UserKNN</code></td>
+</tr>
+<tr>
 <td><strong>Hybrid</strong></td>
 <td>Blend both signals</td>
 <td><code>Recommender</code></td>
@@ -1622,11 +1727,75 @@
 </span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">item_factors_df</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">saveAsTable</span><span class="p">(</span><span class="s2">&quot;silver_layer.item_embeddings&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
-<h2 id="item-to-item-similarity-you-may-also-like">Item-to-Item Similarity — "You May Also Like"<a class="headerlink" href="#item-to-item-similarity-you-may-also-like" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
+<h2 id="nearest-neighbor-collaborative-filtering-itemknn-userknn">Nearest-Neighbor Collaborative Filtering — ItemKNN &amp; UserKNN<a class="headerlink" href="#nearest-neighbor-collaborative-filtering-itemknn-userknn" title="Permanent link">&para;</a></h2>
+<p>Two complementary memory-based methods that consistently rank among the <strong>top performers</strong> in academic benchmarks (<a href="https://arxiv.org/abs/2203.01155">Anelli et al. 2022</a>).</p>
+<ul>
+<li><strong>ItemKNN</strong> — Finds items similar to what the user already liked. Computes item-item similarity via <code>X^T · X</code>.</li>
+<li><strong>UserKNN</strong> — Finds users similar to the target and recommends what they liked. Computes user-user similarity via <code>X · X^T</code>.</li>
+</ul>
+<p>Both support <strong>BM25</strong>, <strong>TF-IDF</strong>, <strong>Cosine</strong>, and raw <strong>Count</strong> weighting. The top-K neighbor pruning runs in parallel Rust.</p>
+<h3 id="itemknn-customers-who-bought-x-also-bought-y">ItemKNN — "Customers who bought X also bought Y"<a class="headerlink" href="#itemknn-customers-who-bought-x-also-bought-y" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ItemKNN</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">similar_skus</span><span class="p">,</span> <span class="n">similarity_scores</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">similar_items</span><span class="p">(</span><span class="n">item_id</span><span class="o">=</span><span class="s2">&quot;B22&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">item_knn</span> <span class="o">=</span> <span class="n">ItemKNN</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">purchases</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;bm25&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">item_knn</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="userknn-users-similar-to-you-enjoyed-these">UserKNN — "Users similar to you enjoyed these"<a class="headerlink" href="#userknn-users-similar-to-you-enjoyed-these" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserKNN</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">user_knn</span> <span class="o">=</span> <span class="n">UserKNN</span><span class="o">.</span><span class="n">from_transactions</span><span class="p">(</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">purchases</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="n">item_col</span><span class="o">=</span><span class="s2">&quot;item_id&quot;</span><span class="p">,</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cosine&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">items</span><span class="p">,</span> <span class="n">scores</span> <span class="o">=</span> <span class="n">user_knn</span><span class="o">.</span><span class="n">recommend_items</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">exclude_seen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="weighting-methods">Weighting methods<a class="headerlink" href="#weighting-methods" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"bm25"</code></td>
+<td>BM25 term-frequency saturation + IDF</td>
+<td>Long-tail catalogs (e-commerce)</td>
+</tr>
+<tr>
+<td><code>"tfidf"</code></td>
+<td>Standard TF-IDF weighting</td>
+<td>General purpose</td>
+</tr>
+<tr>
+<td><code>"cosine"</code></td>
+<td>Row-normalized for cosine similarity</td>
+<td>Dense datasets</td>
+</tr>
+<tr>
+<td><code>"count"</code></td>
+<td>Raw interaction counts (no weighting)</td>
+<td>Quick baseline</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Which to choose?</p>
+<p>Start with <code>ItemKNN(method="bm25")</code> — it's fast and robust. Switch to <code>UserKNN</code> for denser datasets or more diverse results. Evaluate both with <code>rusket.evaluate()</code>.</p>
+</div>
+<hr />
+<h2 id="item-to-item-similarity-you-may-also-like">Item-to-Item Similarity — "You May Also Like"<a class="headerlink" href="#item-to-item-similarity-you-may-also-like" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALS</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">als</span> <span class="o">=</span> <span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">similar_skus</span><span class="p">,</span> <span class="n">similarity_scores</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">similar_items</span><span class="p">(</span><span class="n">item_id</span><span class="o">=</span><span class="s2">&quot;B22&quot;</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Latent-space similarity</p>
@@ -1634,44 +1803,44 @@
 </div>
 <hr />
 <h2 id="cross-selling-potential-scoring">Cross-Selling Potential Scoring<a class="headerlink" href="#cross-selling-potential-scoring" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">potential</span> <span class="o">=</span> <span class="n">score_potential</span><span class="p">(</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">user_history</span><span class="o">=</span><span class="n">purchase_histories</span><span class="p">,</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">target_categories</span><span class="o">=</span><span class="n">accessory_skus</span><span class="p">,</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">score_potential</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">potential</span> <span class="o">=</span> <span class="n">score_potential</span><span class="p">(</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">user_history</span><span class="o">=</span><span class="n">purchase_histories</span><span class="p">,</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">model</span><span class="o">=</span><span class="n">als</span><span class="p">,</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">target_categories</span><span class="o">=</span><span class="n">accessory_skus</span><span class="p">,</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="analytics-helpers">Analytics Helpers<a class="headerlink" href="#analytics-helpers" title="Permanent link">&para;</a></h2>
 <h3 id="substitute-cannibalising-products">Substitute / Cannibalising Products<a class="headerlink" href="#substitute-cannibalising-products" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_substitutes</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">subs</span> <span class="o">=</span> <span class="n">find_substitutes</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">max_lift</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_substitutes</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">subs</span> <span class="o">=</span> <span class="n">find_substitutes</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">max_lift</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="customer-saturation">Customer Saturation<a class="headerlink" href="#customer-saturation" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_saturation</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">saturation</span> <span class="o">=</span> <span class="n">customer_saturation</span><span class="p">(</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">purchases_df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span> <span class="n">category_col</span><span class="o">=</span><span class="s2">&quot;category_id&quot;</span><span class="p">,</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket</span><span class="w"> </span><span class="kn">import</span> <span class="n">customer_saturation</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">saturation</span> <span class="o">=</span> <span class="n">customer_saturation</span><span class="p">(</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">purchases_df</span><span class="p">,</span> <span class="n">user_col</span><span class="o">=</span><span class="s2">&quot;customer_id&quot;</span><span class="p">,</span> <span class="n">category_col</span><span class="o">=</span><span class="s2">&quot;category_id&quot;</span><span class="p">,</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="vector-db-export">Vector DB Export<a class="headerlink" href="#vector-db-export" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">df_vectors</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_item_factors</span><span class="p">(</span><span class="n">include_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lancedb</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">db</span>    <span class="o">=</span> <span class="n">lancedb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;./product_vectors&quot;</span><span class="p">)</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">table</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_table</span><span class="p">(</span><span class="s2">&quot;skus&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df_vectors</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">df_vectors</span> <span class="o">=</span> <span class="n">als</span><span class="o">.</span><span class="n">export_item_factors</span><span class="p">(</span><span class="n">include_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">lancedb</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">db</span>    <span class="o">=</span> <span class="n">lancedb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;./product_vectors&quot;</span><span class="p">)</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">table</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_table</span><span class="p">(</span><span class="s2">&quot;skus&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df_vectors</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;overwrite&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="graph-analytics-product-community-detection">Graph Analytics — Product Community Detection<a class="headerlink" href="#graph-analytics-product-community-detection" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_networkx</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">G</span> <span class="o">=</span> <span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">centrality</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">pagerank</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">top_gateway</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">centrality</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">centrality</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_networkx</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">G</span> <span class="o">=</span> <span class="n">to_networkx</span><span class="p">(</span><span class="n">rules_df</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">centrality</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">pagerank</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;lift&quot;</span><span class="p">)</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">top_gateway</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">centrality</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">centrality</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]</span>
 </span></code></pre></div>
 
 
