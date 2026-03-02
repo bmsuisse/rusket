@@ -559,3 +559,36 @@ def test_als_bias_recommendations_work() -> None:
     uids, uscores = model.recommend_users(0, n=5)
     assert len(uids) == 5
     assert np.isfinite(uscores).all()
+
+
+# ---------------------------------------------------------------------------
+# ANN index integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_build_ann_index_native() -> None:
+    """build_ann_index('native') returns a working ANN index."""
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, iterations=5, seed=42)
+    model.fit(mat)
+    idx = model.build_ann_index(backend="native")
+    # Query with user factors → should return item neighbors
+    neighbors, distances = idx.kneighbors(model.user_factors[:1], n_neighbors=5)
+    assert neighbors.shape == (1, 5)
+    assert distances.shape == (1, 5)
+
+
+def test_build_ann_index_not_fitted() -> None:
+    """build_ann_index raises if model not fitted."""
+    model = rusket.ALS(factors=8)
+    with pytest.raises(RuntimeError, match="not been fitted"):
+        model.build_ann_index()
+
+
+def test_build_ann_index_invalid_backend() -> None:
+    """build_ann_index raises on unknown backend."""
+    mat = get_checker_board(20)
+    model = rusket.ALS(factors=8, iterations=5, seed=42)
+    model.fit(mat)
+    with pytest.raises(ValueError, match="Unknown backend"):
+        model.build_ann_index(backend="unknown")

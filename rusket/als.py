@@ -434,6 +434,48 @@ class ALS(ImplicitRecommender):
         self._check_fitted()
         return self._item_biases
 
+    def build_ann_index(
+        self,
+        backend: str = "native",
+        index_type: str = "hnsw",
+        **kwargs: Any,
+    ) -> Any:
+        """Build an Approximate Nearest Neighbor index from item factors.
+
+        Parameters
+        ----------
+        backend : str
+            ``"native"`` uses the built-in Rust random-projection forest
+            (:class:`~rusket.ApproximateNearestNeighbors`).
+            ``"faiss"`` uses FAISS (requires ``pip install faiss-cpu``).
+        index_type : str
+            For ``"faiss"`` backend: ``"flat"``, ``"hnsw"``, ``"ivfflat"``, ``"ivfpq"``.
+            Ignored for ``"native"`` backend.
+        **kwargs
+            Additional arguments passed to the index builder.
+
+        Returns
+        -------
+        index
+            A fitted ANN index with a ``query()`` / ``kneighbors()`` method.
+        """
+        self._check_fitted()
+
+        if backend == "native":
+            from .ann import ApproximateNearestNeighbors
+
+            n_trees = kwargs.pop("n_trees", 10)
+            leaf_size = kwargs.pop("leaf_size", 30)
+            seed = kwargs.pop("seed", 42)
+            idx = ApproximateNearestNeighbors(n_trees=n_trees, leaf_size=leaf_size, seed=seed)
+            return idx.fit(self._item_factors)
+        elif backend == "faiss":
+            from .faiss_ann import FAISSIndex
+
+            return FAISSIndex(index_type=index_type, **kwargs).build(self._item_factors)
+        else:
+            raise ValueError(f"Unknown backend: '{backend}'. Must be 'native' or 'faiss'.")
+
     def _check_fitted(self) -> None:
         if self._user_factors is None:
             raise RuntimeError("Model has not been fitted yet. Call .fit() first.")

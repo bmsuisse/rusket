@@ -1,3 +1,5 @@
+from typing import Any
+
 from . import mlflow, viz
 from .als import ALS, eALS
 from .analytics import customer_saturation, find_substitutes
@@ -133,4 +135,17 @@ __all__ = [
     "pacmap3",
     "mlflow",
     "RuleBasedRecommender",
+    "FAISSIndex",
+    "build_faiss_index",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Lazy imports for optional dependency modules."""
+    if name in ("FAISSIndex", "build_faiss_index"):
+        from .faiss_ann import FAISSIndex, build_faiss_index
+
+        if name == "FAISSIndex":
+            return FAISSIndex
+        return build_faiss_index
+    raise AttributeError(f"module 'rusket' has no attribute {name!r}")
