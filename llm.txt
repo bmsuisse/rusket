@@ -2721,6 +2721,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+- fixes typing errors for YOLO release
+
 ### 📖 Documentation
 
 - comprehensive MLOps & Optuna documentation
