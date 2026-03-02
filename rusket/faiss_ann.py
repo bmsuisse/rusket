@@ -111,8 +111,7 @@ class FAISSIndex:
             self._index.train(factors)
         else:
             raise ValueError(
-                f"Unknown index_type: '{self.index_type}'. "
-                "Must be one of: 'flat', 'hnsw', 'ivfflat', 'ivfpq'."
+                f"Unknown index_type: '{self.index_type}'. Must be one of: 'flat', 'hnsw', 'ivfflat', 'ivfpq'."
             )
 
         # Normalize for inner product search (FAISS METRIC_INNER_PRODUCT)

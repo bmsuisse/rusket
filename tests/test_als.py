@@ -644,4 +644,3 @@ def test_vals_views_affect_results() -> None:
     m2 = rusket.ALS(factors=8, iterations=10, seed=42, alpha_view=15.0, view_target=0.5)
     m2.fit(purchases, view_matrix=views)
     assert not np.allclose(m1.user_factors, m2.user_factors, rtol=1e-3)
-

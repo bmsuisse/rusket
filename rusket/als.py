@@ -186,9 +186,7 @@ class ALS(ImplicitRecommender):
             else:
                 raise TypeError(f"Expected sparse matrix or ndarray for view_matrix, got {type(view_matrix)}")
             if view_csr.shape != csr.shape:
-                raise ValueError(
-                    f"view_matrix shape {view_csr.shape} != interactions shape {csr.shape}"
-                )
+                raise ValueError(f"view_matrix shape {view_csr.shape} != interactions shape {csr.shape}")
             # Scale purchase entries: data encodes confidence. We use 1.0 for purchases.
             # Scale view entries: use (alpha_view / alpha) * view_target as the data value,
             # so that confidence = 1 + alpha * data = 1 + alpha_view * view_target
