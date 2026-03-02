@@ -197,25 +197,27 @@ class ALS(ImplicitRecommender):
             # Ensure minimum weight so rare items aren't zeroed out
             item_pop_weights = np.maximum(item_pop_weights, 1e-6)
 
-        self._user_factors, self._item_factors, self._global_bias, self._user_biases, self._item_biases = _rust.als_fit_implicit(
-            indptr,
-            indices,
-            data,
-            n_users,
-            n_items,
-            self.factors,
-            self.regularization,
-            self.alpha,
-            self.iterations,
-            self.seed,
-            bool(self.verbose),
-            self.cg_iters,
-            self.use_cholesky,
-            self.anderson_m,
-            self.use_eals,
-            self.eals_iters,
-            item_pop_weights,
-            self.use_biases,
+        self._user_factors, self._item_factors, self._global_bias, self._user_biases, self._item_biases = (
+            _rust.als_fit_implicit(
+                indptr,
+                indices,
+                data,
+                n_users,
+                n_items,
+                self.factors,
+                self.regularization,
+                self.alpha,
+                self.iterations,
+                self.seed,
+                bool(self.verbose),
+                self.cg_iters,
+                self.use_cholesky,
+                self.anderson_m,
+                self.use_eals,
+                self.eals_iters,
+                item_pop_weights,
+                self.use_biases,
+            )
         )
         self._n_users = n_users
         self._n_items = n_items

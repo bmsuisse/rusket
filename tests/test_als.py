@@ -482,7 +482,12 @@ def test_eals_popularity_weighting_differs_from_uniform(weighting: str) -> None:
     for u in range(n_users):
         # Popular items (0-5) appear much more often than tail items (20-29)
         n_interactions = rng.randint(3, 10)
-        items = rng.choice(n_items, size=n_interactions, replace=False, p=np.arange(n_items, 0, -1, dtype=float) / sum(range(1, n_items + 1)))
+        items = rng.choice(
+            n_items,
+            size=n_interactions,
+            replace=False,
+            p=np.arange(n_items, 0, -1, dtype=float) / sum(range(1, n_items + 1)),
+        )
         for i in items:
             rows.append(u)
             cols.append(i)
@@ -554,4 +559,3 @@ def test_als_bias_recommendations_work() -> None:
     uids, uscores = model.recommend_users(0, n=5)
     assert len(uids) == 5
     assert np.isfinite(uscores).all()
-

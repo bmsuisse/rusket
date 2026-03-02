@@ -52,7 +52,7 @@ def als_fit_implicit(
 ) -> tuple[
     npt.NDArray[np.float32],  # user_factors
     npt.NDArray[np.float32],  # item_factors
-    float,                     # global_bias
+    float,  # global_bias
     npt.NDArray[np.float32],  # user_biases
     npt.NDArray[np.float32],  # item_biases
 ]: ...
