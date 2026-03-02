@@ -216,7 +216,7 @@ fn cv_one_config(
     factors_list, regularization_list, alpha_list, iterations_list,
     use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
     seed_list,
-    n_folds, k, metric, fold_seed, verbose, cb=None
+    n_folds, k, metric, fold_seed, verbose, cb_obj=None
 ))]
 #[allow(clippy::too_many_arguments)]
 pub fn cross_validate_als(
@@ -242,7 +242,7 @@ pub fn cross_validate_als(
     metric: String,
     fold_seed: u64,
     verbose: bool,
-    cb: Option<Py<PyAny>>,
+    cb_obj: Option<pyo3::Py<pyo3::PyAny>>,
 ) -> PyResult<(
     usize,                // best_config_idx
     f32,                  // best_mean_score (for primary metric)
@@ -558,7 +558,7 @@ fn cv_one_config_generic(
     factors_list, regularization_list, iterations_list, seed_list,
     alpha_list, use_eals_list, eals_iters_list, cg_iters_list, use_cholesky_list,
     learning_rate_list, k_layers_list,
-    n_folds, k, metric, fold_seed, verbose, cb=None
+    n_folds, k, metric, fold_seed, verbose, cb_obj=None
 ))]
 #[allow(clippy::too_many_arguments)]
 pub fn cross_validate_generic(
@@ -590,7 +590,7 @@ pub fn cross_validate_generic(
     metric: String,
     fold_seed: u64,
     verbose: bool,
-    cb: Option<Py<PyAny>>,
+    cb_obj: Option<pyo3::Py<pyo3::PyAny>>,
 ) -> PyResult<(
     usize,                // best_config_idx
     f32,                  // best_mean_score

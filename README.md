@@ -157,40 +157,6 @@ ohe = FPGrowth.from_transactions([["HDPHONES", "USB_DAC"], ["HDPHONES", "CARRY_C
 
 ---
 
-### ⚡ Eclat — Large SKU Catalogues
-
-`eclat` uses vertical bitset representation + hardware `popcnt` for fast support counting. Ideal for **large SKU catalogues** where baskets contain only a handful of items out of thousands (low density, typically < 0.15).
-
-```python
-import pandas as pd
-from rusket import Eclat
-
-# Fashion e-tailer: 5 receipts, basket contains only a subset of the catalogue
-baskets = pd.DataFrame({
-    "jeans":    [True, True, False, True, True],
-    "t_shirt":  [True, False, True,  True, False],
-    "sneakers": [True, True, True,  False, True],
-    "belt":     [False, True, True,  False, True],
-})
-
-# Eclat — same API as FPGrowth, typically faster on sparse catalogues
-model = Eclat(baskets, min_support=0.4)
-freq  = model.mine(use_colnames=True)
-rules = model.association_rules(min_threshold=0.6)
-print(rules)
-```
-
-#### When to use which?
-
-You almost always want to use `FPGrowth`. This evaluates the density of your dataset `nnz / (rows * cols)` using the [Borgelt heuristic (2003)](https://borgelt.net/doc/eclat/eclat.html) to pick the best algorithm under the hood:
-
-| Scenario | Algorithm chosen by `FPGrowth` |
-|---|---|
-| Large SKU catalogue, small basket size (density < 0.15) | `Eclat` (bitset/SIMD intersections) |
-| Smaller catalogue, dense baskets (density > 0.15) | `FPGrowth` (FP-tree traversals) |
-
----
-
 ### 🐻‍❄️ Polars Input — Reading from Data Lake Parquet
 
 For teams running a modern data stack with Parquet files on S3/GCS/Azure Blob, `rusket` natively accepts [Polars](https://pola.rs/) DataFrames. Data is transferred via Arrow zero-copy buffers — **no conversion overhead**.

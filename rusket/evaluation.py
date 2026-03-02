@@ -148,22 +148,11 @@ def evaluate(
     # Batch: collect predictions for all users
     all_actual: list[list[int]] = []
     all_pred: list[list[int]] = []
-    failed_users = 0
 
     for u in unique_users:
-        try:
-            r_items, _r_scores = model.recommend_items(u, n=k, exclude_seen=True)
-            all_pred.append(r_items.tolist())
-            all_actual.append(user_test_items[u])
-        except Exception:
-            failed_users += 1
-            continue
-
-    if failed_users > 0:
-        warnings.warn(
-            f"evaluate: recommend_items failed for {failed_users}/{len(unique_users)} users.",
-            stacklevel=2,
-        )
+        r_items, _r_scores = model.recommend_items(u, n=k, exclude_seen=True)
+        all_pred.append(r_items.tolist())
+        all_actual.append(user_test_items[u])
 
     n_users = len(all_actual)
     if n_users == 0:

@@ -184,10 +184,7 @@ class RuleMinerMixin:
             # Spark
             is_empty = rules_df.isEmpty()
         else:
-            try:
-                is_empty = len(rules_df) == 0
-            except Exception:
-                pass
+            is_empty = len(rules_df) == 0
 
         if is_empty:
             return []
@@ -198,13 +195,10 @@ class RuleMinerMixin:
         pd = import_optional_dependency("pandas")
 
         if not isinstance(rules_df, pd.DataFrame):
-            try:
-                if hasattr(rules_df, "to_pandas"):
-                    rules_df = rules_df.to_pandas()
-                else:
-                    rules_df = rules_df.toPandas()
-            except Exception:
-                pass
+            if hasattr(rules_df, "to_pandas"):
+                rules_df = rules_df.to_pandas()
+            else:
+                rules_df = rules_df.toPandas()
 
         cart_set = set(items)
         valid_rules = rules_df[rules_df["antecedents"].apply(lambda ant: set(ant).issubset(cart_set))].sort_values(
