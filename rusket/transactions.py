@@ -198,6 +198,79 @@ def from_transactions(
     raise TypeError(f"Expected a Pandas/Polars/Spark/PyArrow DataFrame or list of lists, got {type(data)}")
 
 
+@overload
+def from_ratings(
+    data: pd.DataFrame,
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pd.DataFrame: ...
+
+
+@overload
+def from_ratings(
+    data: pl.DataFrame,
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pl.DataFrame: ...
+
+
+@overload
+def from_ratings(
+    data: SparkDataFrame,
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> SparkDataFrame: ...
+
+
+@overload
+def from_ratings(
+    data: pa.Table,
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pa.Table: ...
+
+
+@overload
+def from_ratings(
+    data: Sequence[Sequence[str | int]],
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> pd.DataFrame: ...
+
+
+def from_ratings(
+    data: DataFrame | Sequence[Sequence[str | int]] | Any,
+    user_col: str | None = None,
+    item_col: str | None = None,
+    rating_col: str | None = None,
+    min_item_count: int = 1,
+    verbose: int = 0,
+) -> Any:
+    """Alias for :func:`from_transactions`. Conveinent for implicit/explicit models."""
+    return from_transactions(
+        data=data,
+        transaction_col=user_col,
+        item_col=item_col,
+        min_item_count=min_item_count,
+        verbose=verbose,
+    )
+
+
 def from_pandas(
     df: pd.DataFrame,
     transaction_col: str | None = None,

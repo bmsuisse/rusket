@@ -176,3 +176,38 @@ def test_evaluate_with_large_realistic_ids():
     for name, val in metrics.items():
         assert 0.0 <= val <= 1.0, f"Metric {name}={val} out of range"
     assert any(v > 0.0 for v in metrics.values()), f"All metrics zero — label-to-index mapping broken: {metrics}"
+
+
+def test_coverage_at_k():
+    from rusket import coverage_at_k
+
+    all_pred = [[1, 2, 3], [2, 3, 4], [1, 5]]
+    # Unique recommended items: {1, 2, 3, 4, 5} -> 5
+    # n_unique_items = 10
+    score = coverage_at_k(all_pred, 10)
+    assert score == 0.5
+
+    assert coverage_at_k([], 10) == 0.0
+    assert coverage_at_k(all_pred, 0) == 0.0
+
+
+def test_novelty_at_k():
+    from rusket import novelty_at_k
+
+    all_pred = [[1, 2], [3]]
+    item_popularity = {
+        1: 9,  # p = 10/10 = 1.0 (very popular) -> -log2(1) = 0
+        2: 1,  # p = 2/10 = 0.2 (rare) -> -log2(0.2) = 2.32192809
+        3: 1,  # p = 2/10 = 0.2 -> 2.32192809
+    }
+    total_users = 9  # plus 1 smoothing = 10
+
+    # User 0 novelty: (0 + 2.321928) / 2 = 1.160964
+    # User 1 novelty: 2.321928 / 1 = 2.321928
+    # Mean novelty = (1.160964 + 2.321928) / 2 = 1.741446
+
+    score = novelty_at_k(all_pred, item_popularity, total_users)
+    assert np.isclose(score, 1.7414, atol=1e-3)
+
+    assert novelty_at_k([], item_popularity, total_users) == 0.0
+    assert novelty_at_k(all_pred, item_popularity, 0) == 0.0

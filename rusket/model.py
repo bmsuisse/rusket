@@ -254,6 +254,28 @@ class BaseModel(ABC):
         """
         pass
 
+    @classmethod
+    def from_ratings(
+        cls,
+        data: Any,
+        user_col: str | None = None,
+        item_col: str | None = None,
+        rating_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> Self:
+        """Alias for from_transactions, specifically meant for Recommenders."""
+        if "transaction_col" not in kwargs:
+            kwargs["transaction_col"] = user_col
+        if rating_col is not None:
+            kwargs["rating_col"] = rating_col
+        return cls.from_transactions(
+            data,
+            item_col=item_col,
+            verbose=verbose,
+            **kwargs,
+        )
+
     def __dir__(self) -> list[str]:
         """Provides a clean public API surface for AI code assistants and REPLs.
         Filters out internal properties starting with underscores.
