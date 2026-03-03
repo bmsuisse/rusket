@@ -43,16 +43,17 @@ class NMF(ImplicitRecommender):
         regularization: float = 0.01,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(**kwargs)
         self.factors = factors
         self.iterations = iterations
         self.regularization = float(regularization)
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
         self.seed = seed
         self.verbose = verbose
 
@@ -168,10 +169,10 @@ class NMF(ImplicitRecommender):
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
 
-        if self.use_gpu:
-            from .gpu import get_gpu_backend_safe, gpu_score_user
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_score_user
 
-            gpu = get_gpu_backend_safe()
+            gpu = get_cuda_backend_safe()
             if gpu is not None:
                 backend, lib = gpu
                 scores = gpu_score_user(

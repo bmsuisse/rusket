@@ -1,4 +1,4 @@
-"""Tests for GPU acceleration and vector DB export modules."""
+"""Tests for CUDA acceleration and vector DB export modules."""
 
 from __future__ import annotations
 
@@ -9,15 +9,17 @@ import pytest
 from scipy.sparse import csr_matrix
 
 import rusket
-from rusket.gpu import (
-    check_gpu_available,
+from rusket._config import disable_cuda
+from rusket.cuda import (
+    check_cuda_available,
     gpu_batch_recommend,
     gpu_gramian,
+    gpu_score_user,
     gpu_solve_cholesky,
 )
 
 # ---------------------------------------------------------------------------
-# GPU operations (tested with mock CuPy)
+# CUDA operations (tested with mock CuPy)
 # ---------------------------------------------------------------------------
 
 
@@ -35,7 +37,7 @@ def _make_mock_cupy() -> MagicMock:
     return mock_cp
 
 
-class TestGPUGramian:
+class TestCUDAGramian:
     def test_cupy_gramian_matches_numpy(self) -> None:
         rng = np.random.RandomState(42)
         Y = rng.randn(50, 8).astype(np.float32)
@@ -48,7 +50,7 @@ class TestGPUGramian:
             gpu_gramian(np.ones((5, 3), dtype=np.float32), backend="xla", lib=MagicMock())
 
 
-class TestGPUSolveCholesky:
+class TestCUDASolveCholesky:
     def test_cupy_solve_identity(self) -> None:
         k = 4
         gramian = np.eye(k, dtype=np.float32)
@@ -59,7 +61,7 @@ class TestGPUSolveCholesky:
         np.testing.assert_allclose(result, expected, rtol=1e-5)
 
 
-class TestGPUBatchRecommend:
+class TestCUDABatchRecommend:
     def test_cupy_topk(self) -> None:
         users = np.eye(5, 3, dtype=np.float32)
         items = np.eye(10, 3, dtype=np.float32)
@@ -69,29 +71,97 @@ class TestGPUBatchRecommend:
         assert ids.dtype == np.int32
 
 
-class TestGPUAvailability:
-    def test_no_gpu_returns_false(self) -> None:
+class TestCUDAScoreUser:
+    def test_cupy_score_matches_numpy(self) -> None:
+        rng = np.random.RandomState(42)
+        user_vec = rng.randn(8).astype(np.float32)
+        item_factors = rng.randn(20, 8).astype(np.float32)
+        expected = item_factors @ user_vec
+        result = gpu_score_user(user_vec, item_factors, backend="cupy", lib=_make_mock_cupy())
+        np.testing.assert_allclose(result, expected, rtol=1e-5)
+
+
+class TestCUDAAvailability:
+    def test_no_cuda_returns_false(self) -> None:
         with patch.dict("sys.modules", {"cupy": None, "torch": None}):
-            assert check_gpu_available() is False
+            assert check_cuda_available() is False
 
 
 # ---------------------------------------------------------------------------
-# ALS use_gpu parameter
+# ALS use_cuda parameter
 # ---------------------------------------------------------------------------
 
 
-class TestALSGPUParam:
-    def test_use_gpu_default_false(self) -> None:
-        assert rusket.ALS(factors=8).use_gpu is False
+class TestALSCUDAParam:
+    def test_use_cuda_default(self) -> None:
+        disable_cuda()
+        assert rusket.ALS(factors=8).use_cuda is False
 
-    def test_use_gpu_accepted(self) -> None:
-        assert rusket.ALS(factors=8, use_gpu=True).use_gpu is True
+    def test_use_cuda_accepted(self) -> None:
+        disable_cuda()
+        assert rusket.ALS(factors=8, use_cuda=True).use_cuda is True
 
-    def test_use_gpu_fits_normally_when_false(self) -> None:
+    def test_use_cuda_fits_normally_when_false(self) -> None:
+        disable_cuda()
         mat = csr_matrix(np.random.randint(0, 2, (10, 15)).astype(np.float32))
-        model = rusket.ALS(factors=4, iterations=3, seed=42, use_gpu=False)
+        model = rusket.ALS(factors=4, iterations=3, seed=42, use_cuda=False)
         model.fit(mat)
         assert model.user_factors is not None
+
+
+# ---------------------------------------------------------------------------
+# CUDA codepath tests (mock backend)
+# ---------------------------------------------------------------------------
+
+
+class TestModelCUDACodepaths:
+    """Test CUDA codepaths for models using mocked CuPy backend."""
+
+    @staticmethod
+    def _patch_cuda_backend():
+        """Patch the CUDA backend detection to return mock CuPy."""
+        return patch("rusket.cuda._get_cuda_backend", return_value=("cupy", _make_mock_cupy()))
+
+    def test_als_cuda_recommend(self) -> None:
+        disable_cuda()
+        mat = csr_matrix(np.random.randint(0, 2, (10, 15)).astype(np.float32))
+        model = rusket.ALS(factors=4, iterations=3, seed=42, use_cuda=True)
+        model.fit(mat)
+        with self._patch_cuda_backend():
+            ids, scores = model.recommend_items(0, n=5)
+            assert len(ids) == 5
+            assert len(scores) == 5
+
+    def test_bpr_cuda_recommend(self) -> None:
+        disable_cuda()
+        mat = csr_matrix(np.random.randint(0, 2, (10, 15)).astype(np.float32))
+        model = rusket.BPR(factors=4, iterations=3, seed=42, use_cuda=True)
+        model.fit(mat)
+        with self._patch_cuda_backend():
+            ids, scores = model.recommend_items(0, n=5)
+            assert len(ids) == 5
+            assert len(scores) == 5
+
+    def test_svd_cuda_recommend(self) -> None:
+        disable_cuda()
+        rng = np.random.RandomState(42)
+        mat = csr_matrix(rng.rand(10, 15).astype(np.float32))
+        model = rusket.SVD(factors=4, iterations=3, seed=42, use_cuda=True)
+        model.fit(mat)
+        with self._patch_cuda_backend():
+            ids, scores = model.recommend_items(0, n=5)
+            assert len(ids) == 5
+            assert len(scores) == 5
+
+    def test_nmf_cuda_recommend(self) -> None:
+        disable_cuda()
+        mat = csr_matrix(np.random.rand(10, 15).astype(np.float32))
+        model = rusket.NMF(factors=4, iterations=3, seed=42, use_cuda=True)
+        model.fit(mat)
+        with self._patch_cuda_backend():
+            ids, scores = model.recommend_items(0, n=5)
+            assert len(ids) == 5
+            assert len(scores) == 5
 
 
 # ---------------------------------------------------------------------------

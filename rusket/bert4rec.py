@@ -59,9 +59,10 @@ class BERT4Rec(SequentialRecommender):
         iterations: int = 20,
         seed: int | None = None,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(**kwargs)
         self.factors = factors
         self.n_layers = n_layers
@@ -72,9 +73,9 @@ class BERT4Rec(SequentialRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
 
         self._item_factors: np.ndarray | None = None
         self._item_map: dict[Any, int] = {}

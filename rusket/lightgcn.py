@@ -57,9 +57,10 @@ class LightGCN(ImplicitRecommender):
         iterations: int = 20,
         seed: int | None = None,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(**kwargs)
         self.factors = factors
         self.k_layers = k_layers
@@ -71,9 +72,9 @@ class LightGCN(ImplicitRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
 
         self._user_factors: np.ndarray | None = None
         self._item_factors: np.ndarray | None = None
@@ -287,10 +288,10 @@ class LightGCN(ImplicitRecommender):
         if uid is None:
             return np.array([], dtype=np.int64), np.array([], dtype=np.float32)
 
-        if self.use_gpu:
-            from .gpu import get_gpu_backend_safe, gpu_score_user
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_score_user
 
-            gpu = get_gpu_backend_safe()
+            gpu = get_cuda_backend_safe()
             if gpu is not None:
                 backend, lib = gpu
                 scores = gpu_score_user(

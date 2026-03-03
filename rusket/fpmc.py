@@ -44,9 +44,10 @@ class FPMC(SequentialRecommender):
         time_aware: bool = False,
         max_time_steps: int = 256,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(data=None, **kwargs)
         self.factors = factors
         self.learning_rate = float(learning_rate)
@@ -56,9 +57,9 @@ class FPMC(SequentialRecommender):
         self.time_aware = time_aware
         self.max_time_steps = max_time_steps
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
 
         # Vu, Viu, Vil, Vli, Vtime
         self._vu: Any = None
@@ -183,9 +184,36 @@ class FPMC(SequentialRecommender):
         prev_item = self._user_last_items.get(user_id, -1)
         prev_ts = self._user_last_timestamps.get(user_id) if self._user_last_timestamps else None
 
-        # Calculate scores: x_{u,l,i} = dot(V_u, V_iu) + dot(V_il, V_li) if prev_item >= 0 else dot(V_u, V_iu)
         v_u = self._vu[user_id]
 
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_score_user
+
+            gpu = get_cuda_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                # MF term: V_iu @ v_u
+                scores = gpu_score_user(v_u, self._viu, backend, lib)
+                # Markov Chain term
+                if prev_item >= 0:
+                    v_l = self._vli[prev_item].copy()
+                    if self.time_aware and self._vtime is not None:
+                        if timestamp is not None and prev_ts is not None:
+                            time_diff = max(0, timestamp - prev_ts)
+                            days_diff = int(time_diff // 86400)
+                            t_diff_adjusted = min(days_diff, self.max_time_steps - 1)
+                            v_l = v_l + self._vtime[t_diff_adjusted]
+                    scores += gpu_score_user(v_l, self._vil, backend, lib)
+                # Top-N selection
+                if exclude_seen:
+                    seen_items = self._user_seen_items.get(user_id)
+                    if seen_items is not None:
+                        scores[seen_items] = -np.inf
+                idx = np.argpartition(scores, -min(n, len(scores)))[-min(n, len(scores)) :]
+                sorted_idx = idx[np.argsort(scores[idx])[::-1]]
+                return sorted_idx, scores[sorted_idx]
+
+        # CPU fallback
         # MF term
         scores = np.dot(self._viu, v_u)
 

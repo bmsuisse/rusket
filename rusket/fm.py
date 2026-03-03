@@ -43,9 +43,10 @@ class FM(BaseModel):
         iterations: int = 100,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__()
         self.factors = factors
         self.learning_rate = float(learning_rate)
@@ -53,9 +54,9 @@ class FM(BaseModel):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
 
         self.w0_: float | None = None
         self.w_: Any = None

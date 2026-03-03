@@ -31,15 +31,16 @@ class EASE(ImplicitRecommender):
         self,
         regularization: float = 500.0,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(data=None, **kwargs)
         self.regularization = float(regularization)
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
 
         self.item_weights: Any = None
         self._n_users: int = 0
@@ -124,6 +125,33 @@ class EASE(ImplicitRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
+
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_sparse_dense_matmul
+
+            gpu = get_cuda_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                # User's interaction row (sparse) @ item_weights (dense)
+                start = self._fit_indptr[user_id]
+                end = self._fit_indptr[user_id + 1]
+                user_indices = self._fit_indices[start:end]
+                user_data = self._fit_data[start:end]
+                # Build single-row CSR
+                row_indptr = np.array([0, len(user_indices)], dtype=np.int64)
+                scores = gpu_sparse_dense_matmul(
+                    user_data,
+                    user_indices,
+                    row_indptr,
+                    (1, self._n_items),
+                    self.item_weights,
+                    backend,
+                    lib,
+                ).ravel()
+                if exclude_seen:
+                    scores[user_indices] = -np.inf
+                top_n = np.argsort(scores)[::-1][:n]
+                return top_n.astype(np.int32), scores[top_n].astype(np.float32)
 
         if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr

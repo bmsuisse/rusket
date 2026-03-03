@@ -68,9 +68,9 @@ class ALS(ImplicitRecommender):
     view_target : float
         Target value for view interactions (between 0.0 and 1.0).
         Purchases always target 1.0. Default 0.5.
-    use_gpu : bool
-        If True, use GPU acceleration (CuPy or PyTorch) for batch
-        recommendation. Falls back to CPU if no GPU backend found.
+    use_cuda : bool
+        If True, use CUDA acceleration (CuPy or PyTorch) for batch
+        recommendation. Falls back to CPU if no CUDA backend found.
         Default False.
 
     Examples
@@ -104,9 +104,10 @@ class ALS(ImplicitRecommender):
         use_biases: bool = False,
         alpha_view: float = 10.0,
         view_target: float = 0.5,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(data=None, **kwargs)
         self.factors = factors
         self.regularization = float(regularization)
@@ -123,9 +124,9 @@ class ALS(ImplicitRecommender):
         self.use_biases = use_biases
         self.alpha_view = float(alpha_view)
         self.view_target = float(view_target)
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -333,6 +334,29 @@ class ALS(ImplicitRecommender):
         self._check_fitted()
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
+
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_score_user
+
+            gpu = get_cuda_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                scores = gpu_score_user(
+                    self._user_factors[user_id],
+                    self._item_factors,
+                    backend,
+                    lib,
+                )
+                # Add biases
+                scores = scores + self._global_bias + self._user_biases[user_id] + self._item_biases
+                if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+                    start = self._fit_indptr[user_id]
+                    end = self._fit_indptr[user_id + 1]
+                    seen = self._fit_indices[start:end]
+                    scores[seen] = -np.inf
+                top_n = np.argsort(scores)[::-1][:n]
+                return top_n.astype(np.int32), scores[top_n].astype(np.float32)
+
         if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices

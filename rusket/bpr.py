@@ -28,9 +28,9 @@ class BPR(ImplicitRecommender):
         Number of passes over the entire interaction dataset (default: 150).
     seed : int
         Random seed for Hogwild! SGD sampling (default: 42).
-    use_gpu : bool
-        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
-        Falls back to CPU if no GPU backend found. Default False.
+    use_cuda : bool
+        If True, use CUDA acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no CUDA backend found. Default False.
     """
 
     def __init__(
@@ -41,9 +41,10 @@ class BPR(ImplicitRecommender):
         iterations: int = 150,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool | None = None,
+        use_cuda: bool | None = None,
         **kwargs: Any,
     ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
         super().__init__(data=None, **kwargs)
         self.factors = factors
         self.learning_rate = float(learning_rate)
@@ -51,9 +52,9 @@ class BPR(ImplicitRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        from ._config import _resolve_gpu
+        from ._config import _resolve_cuda
 
-        self.use_gpu = _resolve_gpu(use_gpu)
+        self.use_cuda = _resolve_cuda(_use_cuda)
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0
@@ -143,10 +144,10 @@ class BPR(ImplicitRecommender):
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
 
-        if self.use_gpu:
-            from .gpu import get_gpu_backend_safe, gpu_score_user
+        if self.use_cuda:
+            from .cuda import get_cuda_backend_safe, gpu_score_user
 
-            gpu = get_gpu_backend_safe()
+            gpu = get_cuda_backend_safe()
             if gpu is not None:
                 backend, lib = gpu
                 scores = gpu_score_user(
