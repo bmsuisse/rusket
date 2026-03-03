@@ -392,6 +392,616 @@ def get_recommendations(user_id: int, n: int = 10) -> list[dict]:
 
 ---
 
+## Serving Recommendations from Vector Databases
+
+Once you've exported embeddings, you need to **retrieve recommendations at serving time**. This section shows production-ready patterns using the **native SDKs** of Qdrant, Meilisearch, and PostgreSQL (pgvector).
+
+### Qdrant — Full Recommendation Serving
+
+#### Personalised "For You" Recommendations
+
+```python
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+import rusket
+
+# ── Setup (one-time) ──────────────────────────────────────────────
+als = rusket.ALS(factors=64, iterations=15).from_transactions(
+    purchases, user_col="user_id", item_col="item_id"
+).fit()
+
+client = QdrantClient("localhost", port=6333)
+rusket.export_vectors(als.item_factors, client=client, collection_name="items")
+
+# ── Recommend for a user ──────────────────────────────────────────
+def recommend_for_user(
+    user_id: int, n: int = 10, category: str | None = None
+) -> list[dict]:
+    """Get top-N recommendations for a user, optionally filtered by category."""
+    user_vector = als.user_factors[user_id].tolist()
+
+    # Build optional filters
+    filters = []
+    if category:
+        filters.append(
+            FieldCondition(key="category", match=MatchValue(value=category))
+        )
+
+    results = client.query_points(
+        collection_name="items",
+        query=user_vector,
+        query_filter=Filter(must=filters) if filters else None,
+        limit=n,
+        with_payload=True,
+    )
+    return [
+        {"id": r.id, "score": r.score, **r.payload}
+        for r in results.points
+    ]
+
+# Usage
+recs = recommend_for_user(user_id=42, n=10, category="Electronics")
+```
+
+#### "Similar Items" (Item-to-Item)
+
+```python
+def similar_items(item_id: int, n: int = 10) -> list[dict]:
+    """Find items similar to a given item using its embedding."""
+    item_vector = als.item_factors[item_id].tolist()
+
+    results = client.query_points(
+        collection_name="items",
+        query=item_vector,
+        limit=n + 1,  # +1 to exclude the item itself
+        with_payload=True,
+    )
+    # Filter out the query item
+    return [
+        {"id": r.id, "score": r.score, **r.payload}
+        for r in results.points if r.id != item_id
+    ][:n]
+
+similar = similar_items(item_id=101, n=5)
+# → [{"id": 104, "score": 0.95, "name": "Monitor", ...}, ...]
+```
+
+#### Hybrid Named Vector Search (CF + Semantic)
+
+```python
+from qdrant_client.models import Prefetch, FusionQuery, Fusion
+
+def hybrid_recommend(
+    user_id: int, query_text: str, n: int = 10
+) -> list[dict]:
+    """Combine CF and semantic signals at query time using Qdrant's fusion."""
+    user_cf_vector = als.user_factors[user_id].tolist()
+    text_vector = encoder.encode(query_text).tolist()
+
+    # Reciprocal Rank Fusion across both vector spaces
+    results = client.query_points(
+        collection_name="hybrid_items",
+        prefetch=[
+            Prefetch(query=user_cf_vector, using="cf", limit=50),
+            Prefetch(query=text_vector, using="semantic", limit=50),
+        ],
+        query=FusionQuery(fusion=Fusion.RRF),  # Reciprocal Rank Fusion
+        limit=n,
+        with_payload=True,
+    )
+    return [{"id": r.id, "score": r.score, **r.payload} for r in results.points]
+
+# "Show me laptops this user would like"
+recs = hybrid_recommend(user_id=42, query_text="lightweight laptop for travel")
+```
+
+#### FastAPI Integration
+
+```python
+from fastapi import FastAPI, Query
+from qdrant_client import QdrantClient
+import rusket
+
+app = FastAPI()
+client = QdrantClient("localhost")
+model = rusket.load_model("trained_als.pkl")
+
+@app.get("/recommendations/{user_id}")
+async def get_recommendations(
+    user_id: int,
+    n: int = Query(default=10, le=100),
+    category: str | None = None,
+):
+    user_vector = model.user_factors[user_id].tolist()
+
+    filters = []
+    if category:
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        filters.append(FieldCondition(key="category", match=MatchValue(value=category)))
+
+    results = client.query_points(
+        collection_name="product_embeddings",
+        query=user_vector,
+        query_filter=Filter(must=filters) if filters else None,
+        limit=n,
+        with_payload=True,
+    )
+    return {
+        "user_id": user_id,
+        "recommendations": [
+            {"item_id": r.id, "score": round(r.score, 4), **r.payload}
+            for r in results.points
+        ],
+    }
+
+@app.get("/similar/{item_id}")
+async def get_similar(item_id: int, n: int = Query(default=5, le=50)):
+    item_vector = model.item_factors[item_id].tolist()
+    results = client.query_points(
+        collection_name="product_embeddings",
+        query=item_vector,
+        limit=n + 1,
+        with_payload=True,
+    )
+    return {
+        "item_id": item_id,
+        "similar": [
+            {"item_id": r.id, "score": round(r.score, 4), **r.payload}
+            for r in results.points if r.id != item_id
+        ][:n],
+    }
+```
+
+---
+
+### Meilisearch — Hybrid Search Recommendations
+
+Meilisearch excels at combining **keyword search with vector similarity** in a single query — perfect for e-commerce where users type product queries and you want to boost results with collaborative filtering signals.
+
+#### Setup: Export with Product Metadata
+
+```python
+import rusket
+import meilisearch
+from rusket import MeilisearchVectorStore
+
+als = rusket.ALS(factors=64).fit(interactions)
+client = meilisearch.Client("http://localhost:7700", "masterKey")
+
+# Configure searchable and filterable attributes
+index = client.index("products")
+index.update_settings({
+    "searchableAttributes": ["name", "description", "category"],
+    "filterableAttributes": ["category", "price", "in_stock"],
+    "sortableAttributes": ["price", "popularity"],
+})
+
+# Export with rich metadata
+store = MeilisearchVectorStore(client)
+store.upload(
+    als.item_factors,
+    collection_name="products",
+    ids=product_ids,
+    payloads=[
+        {
+            "name": row["name"],
+            "description": row["description"],
+            "category": row["category"],
+            "price": row["price"],
+            "in_stock": row["in_stock"],
+            "popularity": row["sales_count"],
+        }
+        for _, row in catalog.iterrows()
+    ],
+)
+```
+
+#### Personalised Recommendations (Pure Vector)
+
+```python
+def recommend_for_user(user_id: int, n: int = 10, category: str | None = None):
+    """Pure vector search — find items closest to user's taste."""
+    user_vector = als.user_factors[user_id].tolist()
+
+    index = client.index("products")
+    results = index.search(
+        "",  # empty query = pure vector search
+        opt_params={
+            "vector": user_vector,
+            "limit": n,
+            "filter": f'category = "{category}"' if category else None,
+            "attributesToRetrieve": ["name", "price", "category"],
+        },
+    )
+    return results["hits"]
+
+recs = recommend_for_user(42, category="Electronics")
+# → [{"name": "Laptop Pro", "price": 1299, "_rankingScore": 0.95}, ...]
+```
+
+#### Hybrid Search: Keyword + CF Embeddings
+
+```python
+def hybrid_search(
+    user_id: int, query: str, n: int = 10, category: str | None = None
+):
+    """Combine text search with CF vector for relevance + personalisation."""
+    user_vector = als.user_factors[user_id].tolist()
+
+    index = client.index("products")
+    results = index.search(
+        query,  # keyword query ("wireless mouse", "laptop bag", etc.)
+        opt_params={
+            "vector": user_vector,  # personalisation signal
+            "hybrid": {
+                "semanticRatio": 0.5,  # 50% keyword, 50% vector
+            },
+            "limit": n,
+            "filter": f'in_stock = true AND category = "{category}"' if category else "in_stock = true",
+            "attributesToRetrieve": ["name", "price", "category", "description"],
+        },
+    )
+    return results["hits"]
+
+# User 42 searches "wireless keyboard" → results personalised to their taste
+hits = hybrid_search(42, "wireless keyboard", category="Accessories")
+```
+
+#### Multi-Embedder Search (CF + Semantic)
+
+```python
+from sentence_transformers import SentenceTransformer
+
+encoder = SentenceTransformer("all-MiniLM-L6-v2")
+
+# ── Export multi-vector (done once) ───────────────────────────────
+hybrid = rusket.HybridEmbeddingIndex(
+    cf_embeddings=als.item_factors,
+    semantic_embeddings=text_vectors,
+)
+hybrid.export_vectors(client, mode="multi", collection_name="products_multi")
+
+# ── Query with specific embedder ─────────────────────────────────
+def search_by_description(query_text: str, n: int = 10):
+    """Search using semantic similarity to product descriptions."""
+    query_vector = encoder.encode(query_text).tolist()
+
+    index = client.index("products_multi")
+    results = index.search(
+        "",
+        opt_params={
+            "vector": query_vector,
+            "hybridEmbedder": "semantic",  # use the semantic embedder
+            "limit": n,
+        },
+    )
+    return results["hits"]
+
+def recommend_collaborative(user_id: int, n: int = 10):
+    """Recommend using pure CF signal."""
+    user_vector = als.user_factors[user_id].tolist()
+
+    index = client.index("products_multi")
+    results = index.search(
+        "",
+        opt_params={
+            "vector": user_vector,
+            "hybridEmbedder": "cf",  # use the CF embedder
+            "limit": n,
+        },
+    )
+    return results["hits"]
+```
+
+#### Faceted Recommendations with Meilisearch
+
+```python
+def recommend_with_facets(user_id: int, n: int = 20):
+    """Get recommendations grouped by category for a discovery page."""
+    user_vector = als.user_factors[user_id].tolist()
+
+    index = client.index("products")
+    results = index.search(
+        "",
+        opt_params={
+            "vector": user_vector,
+            "limit": n,
+            "facets": ["category"],
+            "filter": "in_stock = true",
+            "attributesToRetrieve": ["name", "price", "category"],
+        },
+    )
+
+    # Group by category
+    from collections import defaultdict
+    by_category = defaultdict(list)
+    for hit in results["hits"]:
+        by_category[hit["category"]].append(hit)
+
+    return {
+        "facets": results.get("facetDistribution", {}),
+        "by_category": dict(by_category),
+    }
+
+# Returns: {"facets": {"category": {"Electronics": 8, "Accessories": 12}},
+#           "by_category": {"Electronics": [...], "Accessories": [...]}}
+```
+
+---
+
+### PostgreSQL (pgvector) — SQL-Native Recommendations
+
+pgvector lets you serve recommendations using plain SQL — no extra infrastructure, no client libraries, just your existing PostgreSQL database.
+
+#### Setup: Create the Embeddings Table
+
+```python
+import rusket
+import psycopg2
+
+als = rusket.ALS(factors=64).fit(interactions)
+
+conn = psycopg2.connect(
+    host="localhost", dbname="myapp", user="api_user", password="secret"
+)
+
+# rusket's export handles this automatically, but here's the manual SQL:
+cursor = conn.cursor()
+cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS item_embeddings (
+        id          INTEGER PRIMARY KEY,
+        embedding   vector(64),
+        name        TEXT,
+        category    TEXT,
+        price       NUMERIC(10,2),
+        in_stock    BOOLEAN DEFAULT TRUE
+    )
+""")
+
+# Create an IVFFlat index for fast approximate search
+cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_items_embedding
+    ON item_embeddings
+    USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100)
+""")
+conn.commit()
+
+# Export embeddings
+from rusket import PgVectorStore
+store = PgVectorStore(conn)
+store.upload(als.item_factors, collection_name="item_embeddings", ids=item_ids)
+```
+
+#### Personalised Recommendations (SQL)
+
+```python
+def recommend_for_user(
+    conn, user_id: int, n: int = 10, category: str | None = None
+) -> list[dict]:
+    """Get top-N recommendations using cosine distance."""
+    user_vec = als.user_factors[user_id].tolist()
+    cursor = conn.cursor()
+
+    if category:
+        cursor.execute("""
+            SELECT id, name, category, price,
+                   1 - (embedding <=> %s::vector) AS score
+            FROM item_embeddings
+            WHERE in_stock = TRUE AND category = %s
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """, (user_vec, category, user_vec, n))
+    else:
+        cursor.execute("""
+            SELECT id, name, category, price,
+                   1 - (embedding <=> %s::vector) AS score
+            FROM item_embeddings
+            WHERE in_stock = TRUE
+            ORDER BY embedding <=> %s::vector
+            LIMIT %s
+        """, (user_vec, user_vec, n))
+
+    columns = ["id", "name", "category", "price", "score"]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+recs = recommend_for_user(conn, user_id=42, category="Electronics")
+```
+
+#### Similar Items (SQL)
+
+```python
+def similar_items(conn, item_id: int, n: int = 10) -> list[dict]:
+    """Find similar items using item embedding similarity."""
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH target AS (
+            SELECT embedding FROM item_embeddings WHERE id = %s
+        )
+        SELECT ie.id, ie.name, ie.category, ie.price,
+               1 - (ie.embedding <=> t.embedding) AS similarity
+        FROM item_embeddings ie, target t
+        WHERE ie.id != %s AND ie.in_stock = TRUE
+        ORDER BY ie.embedding <=> t.embedding
+        LIMIT %s
+    """, (item_id, item_id, n))
+
+    columns = ["id", "name", "category", "price", "similarity"]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+similar = similar_items(conn, item_id=101, n=5)
+# → [{"id": 104, "name": "Monitor", "similarity": 0.93, ...}]
+```
+
+#### "Customers Who Bought X Also Bought Y" (SQL)
+
+```python
+def also_bought(conn, cart_item_ids: list[int], n: int = 5) -> list[dict]:
+    """Average the embeddings of items in cart, find nearest neighbours."""
+    cursor = conn.cursor()
+
+    # Average the embeddings of cart items to create a "session vector"
+    cursor.execute("""
+        WITH cart_avg AS (
+            SELECT AVG(embedding) AS centroid
+            FROM item_embeddings
+            WHERE id = ANY(%s)
+        )
+        SELECT ie.id, ie.name, ie.category, ie.price,
+               1 - (ie.embedding <=> ca.centroid) AS relevance
+        FROM item_embeddings ie, cart_avg ca
+        WHERE ie.id != ALL(%s) AND ie.in_stock = TRUE
+        ORDER BY ie.embedding <=> ca.centroid
+        LIMIT %s
+    """, (cart_item_ids, cart_item_ids, n))
+
+    columns = ["id", "name", "category", "price", "relevance"]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+# User has Laptop + Mouse in cart
+cross_sells = also_bought(conn, cart_item_ids=[101, 102], n=3)
+# → [{"id": 103, "name": "Keyboard", "relevance": 0.87}, ...]
+```
+
+#### Category-Scoped Diversity (SQL)
+
+```python
+def diverse_recommendations(
+    conn, user_id: int, per_category: int = 3, max_categories: int = 5
+) -> list[dict]:
+    """Get top-N per category for a discovery feed — avoids category bubbles."""
+    user_vec = als.user_factors[user_id].tolist()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH ranked AS (
+            SELECT id, name, category, price,
+                   1 - (embedding <=> %s::vector) AS score,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY category
+                       ORDER BY embedding <=> %s::vector
+                   ) AS rank_in_cat
+            FROM item_embeddings
+            WHERE in_stock = TRUE
+        )
+        SELECT id, name, category, price, score
+        FROM ranked
+        WHERE rank_in_cat <= %s
+        ORDER BY score DESC
+        LIMIT %s
+    """, (user_vec, user_vec, per_category, per_category * max_categories))
+
+    columns = ["id", "name", "category", "price", "score"]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+# Returns top-3 items from each of the 5 best-matching categories
+diverse = diverse_recommendations(conn, user_id=42)
+```
+
+#### FastAPI + pgvector
+
+```python
+from fastapi import FastAPI, Depends, Query
+import psycopg2
+from psycopg2.pool import ThreadedConnectionPool
+
+app = FastAPI()
+pool = ThreadedConnectionPool(
+    minconn=2, maxconn=10,
+    host="localhost", dbname="myapp", user="api_user", password="secret"
+)
+model = rusket.load_model("trained_als.pkl")
+
+def get_db():
+    conn = pool.getconn()
+    try:
+        yield conn
+    finally:
+        pool.putconn(conn)
+
+@app.get("/api/recommendations/{user_id}")
+async def recommendations(
+    user_id: int,
+    n: int = Query(default=10, le=100),
+    category: str | None = None,
+    conn=Depends(get_db),
+):
+    user_vec = model.user_factors[user_id].tolist()
+    cursor = conn.cursor()
+
+    sql = """
+        SELECT id, name, category, price,
+               1 - (embedding <=> %s::vector) AS score
+        FROM item_embeddings
+        WHERE in_stock = TRUE
+    """
+    params = [user_vec]
+
+    if category:
+        sql += " AND category = %s"
+        params.append(category)
+
+    sql += " ORDER BY embedding <=> %s::vector LIMIT %s"
+    params.extend([user_vec, n])
+
+    cursor.execute(sql, params)
+    columns = ["id", "name", "category", "price", "score"]
+
+    return {
+        "user_id": user_id,
+        "recommendations": [dict(zip(columns, row)) for row in cursor.fetchall()],
+    }
+
+@app.get("/api/similar/{item_id}")
+async def similar(
+    item_id: int,
+    n: int = Query(default=5, le=50),
+    conn=Depends(get_db),
+):
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH target AS (SELECT embedding FROM item_embeddings WHERE id = %s)
+        SELECT ie.id, ie.name, ie.category, ie.price,
+               1 - (ie.embedding <=> t.embedding) AS similarity
+        FROM item_embeddings ie, target t
+        WHERE ie.id != %s AND ie.in_stock = TRUE
+        ORDER BY ie.embedding <=> t.embedding
+        LIMIT %s
+    """, (item_id, item_id, n))
+
+    columns = ["id", "name", "category", "price", "similarity"]
+    return {
+        "item_id": item_id,
+        "similar": [dict(zip(columns, row)) for row in cursor.fetchall()],
+    }
+```
+
+!!! tip "pgvector distance operators"
+    | Operator | Distance | Best for |
+    |---|---|---|
+    | `<=>` | Cosine distance | L2-normalised embeddings (default) |
+    | `<->` | L2 (Euclidean) distance | Raw embeddings |
+    | `<#>` | Inner product (negative) | When magnitude matters |
+
+    Use `<=>` (cosine) for rusket embeddings — `HybridEmbeddingIndex` returns L2-normalised vectors automatically.
+
+!!! tip "pgvector index types"
+    | Index | Speed | Recall | Build time | Best for |
+    |---|---|---|---|---|
+    | **IVFFlat** | Fast | ~95% | Minutes | < 1M vectors |
+    | **HNSW** | Fastest | ~99% | Slower | Any scale, production |
+
+    ```sql
+    -- IVFFlat (faster to build, good for smaller datasets)
+    CREATE INDEX ON item_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+    -- HNSW (better recall, recommended for production)
+    CREATE INDEX ON item_embeddings USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 200);
+    ```
+
+---
+
 ## Multi-Vector Export
 
 Databases like Qdrant, Meilisearch, and Weaviate support **multiple vectors per document**. This lets the database handle fusion at query time instead of pre-computing a single fused vector.
