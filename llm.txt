@@ -2760,6 +2760,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 🚀 Features
 
 - introduce and document Hybrid Embedding Fusion for combining collaborative filtering and semantic embeddings.
+- multi-vector export, VectorStore ABC with 11 backends for DB-side hybrid fusion
 
 ### 📖 Documentation
 
