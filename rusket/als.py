@@ -104,7 +104,7 @@ class ALS(ImplicitRecommender):
         use_biases: bool = False,
         alpha_view: float = 10.0,
         view_target: float = 0.5,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -123,7 +123,9 @@ class ALS(ImplicitRecommender):
         self.use_biases = use_biases
         self.alpha_view = float(alpha_view)
         self.view_target = float(view_target)
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0

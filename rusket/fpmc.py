@@ -44,7 +44,7 @@ class FPMC(SequentialRecommender):
         time_aware: bool = False,
         max_time_steps: int = 256,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -56,7 +56,9 @@ class FPMC(SequentialRecommender):
         self.time_aware = time_aware
         self.max_time_steps = max_time_steps
         self.verbose = verbose
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
 
         # Vu, Viu, Vil, Vli, Vtime
         self._vu: Any = None

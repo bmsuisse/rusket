@@ -43,7 +43,7 @@ class FM(BaseModel):
         iterations: int = 100,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -53,7 +53,9 @@ class FM(BaseModel):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
 
         self.w0_: float | None = None
         self.w_: Any = None

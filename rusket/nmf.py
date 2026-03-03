@@ -43,14 +43,16 @@ class NMF(ImplicitRecommender):
         regularization: float = 0.01,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.factors = factors
         self.iterations = iterations
         self.regularization = float(regularization)
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
         self.seed = seed
         self.verbose = verbose
 

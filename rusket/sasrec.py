@@ -57,7 +57,7 @@ class SASRec(SequentialRecommender):
         time_aware: bool = False,
         max_time_steps: int = 256,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -71,7 +71,9 @@ class SASRec(SequentialRecommender):
         self.time_aware = time_aware
         self.max_time_steps = max_time_steps
         self.verbose = verbose
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
 
         self._item_emb: np.ndarray | None = None
         self._time_emb: np.ndarray | None = None

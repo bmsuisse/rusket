@@ -41,7 +41,7 @@ class BPR(ImplicitRecommender):
         iterations: int = 150,
         seed: int = 42,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
@@ -51,7 +51,9 @@ class BPR(ImplicitRecommender):
         self.iterations = iterations
         self.seed = seed
         self.verbose = verbose
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
         self._user_factors: Any = None
         self._item_factors: Any = None
         self._n_users: int = 0

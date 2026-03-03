@@ -31,13 +31,15 @@ class EASE(ImplicitRecommender):
         self,
         regularization: float = 500.0,
         verbose: int = 0,
-        use_gpu: bool = False,
+        use_gpu: bool | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(data=None, **kwargs)
         self.regularization = float(regularization)
         self.verbose = verbose
-        self.use_gpu = use_gpu
+        from ._config import _resolve_gpu
+
+        self.use_gpu = _resolve_gpu(use_gpu)
 
         self.item_weights: Any = None
         self._n_users: int = 0

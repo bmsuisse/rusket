@@ -1,6 +1,7 @@
 from typing import Any
 
 from . import mlflow, viz
+from ._config import disable_gpu, enable_gpu, is_gpu_enabled
 from .als import ALS, eALS
 from .analytics import customer_saturation, find_substitutes
 from .ann import ApproximateNearestNeighbors
@@ -139,6 +140,9 @@ __all__ = [
     "build_faiss_index",
     "export_vectors",
     "check_gpu_available",
+    "enable_gpu",
+    "disable_gpu",
+    "is_gpu_enabled",
 ]
 
 
