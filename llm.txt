@@ -931,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -952,7 +952,7 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | use_biases | bool | If True, learn global bias (μ), user biases (b_u), and item biases (b_i) so that prediction becomes ``μ + b_u + b_i + w_u · h_i``. |
 | alpha_view | float | Confidence scaling for **view** interactions in VALS mode. Pass ``view_matrix`` to ``fit()`` to enable. Default 10.0. |
 | view_target | float | Target value for view interactions (between 0.0 and 1.0). Purchases always target 1.0. Default 0.5. |
-| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for batch recommendation. Falls back to CPU if no GPU backend found. Default False. |
+| use_cuda | bool | If True, use CUDA acceleration (CuPy or PyTorch) for batch recommendation. Falls back to CPU if no CUDA backend found. Default False. |
 
 **Examples**
 
@@ -1144,7 +1144,7 @@ they haven't, and adjusting latent factors to ensure the positive item scores hi
 ```python
 from rusket.bpr import BPR
 
-BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1156,7 +1156,7 @@ BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' 
 | regularization | float | L2 regularization weight (default: 0.01). |
 | iterations | int | Number of passes over the entire interaction dataset (default: 150). |
 | seed | int | Random seed for Hogwild! SGD sampling (default: 42). |
-| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
+| use_cuda | bool | If True, use CUDA acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no CUDA backend found. Default False. |
 
 #### `BPR.fit`
 
@@ -1208,7 +1208,7 @@ Each row is a sample consisting of User, Item, and Context features.
 ```python
 from rusket.fm import FM
 
-FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1406,7 +1406,7 @@ inference, particularly on datasets with strong item-item correlations.
 ```python
 from rusket.ease import EASE
 
-EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1458,7 +1458,7 @@ per item. Similarity methods include BM25, TF-IDF, Cosine, or unweighted Count.
 ```python
 from rusket.item_knn import ItemKNN
 
-ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any')
+ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any')
 ```
 
 #### `ItemKNN.fit`
@@ -1524,7 +1524,7 @@ where both personal taste and sequential behavior matter (e.g., next-basket deli
 ```python
 from rusket.fpmc import FPMC
 
-FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1583,7 +1583,7 @@ Biased matrix factorization trained with SGD:
 ```python
 from rusket.svd import SVD
 
-SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1596,7 +1596,7 @@ SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float'
 | iterations | int | Number of SGD epochs. |
 | seed | int | Random seed for reproducibility. |
 | verbose | int | Verbosity level (0 = silent, 1+ = progress). |
-| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation scoring. Falls back to CPU if no GPU backend found. Default False. |
+| use_cuda | bool | If True, use CUDA acceleration (CuPy or PyTorch) for recommendation scoring. Falls back to CPU if no CUDA backend found. Default False. |
 
 #### `SVD.batch_recommend`
 
@@ -1725,7 +1725,7 @@ Typical training time on ml-100k: < 0.5s/epoch.
 ```python
 from rusket.lightgcn import LightGCN
 
-LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1804,7 +1804,7 @@ on long sequences.
 ```python
 from rusket.sasrec import SASRec
 
-SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -1821,7 +1821,7 @@ SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_r
 | time_aware | bool | If true, incorporates timestamp deltas into sequential modeling. |
 | max_time_steps | int | Maximum number of time bins (e.g. days) to consider for time-awareness. |
 | verbose | int | Print epoch progress. |
-| use_gpu | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
+| use_cuda | bool | If True, use GPU acceleration (CuPy or PyTorch) for recommendation. Falls back to CPU if no GPU backend found. Default False. |
 
 #### `SASRec.fit`
 
@@ -2074,7 +2074,7 @@ without a projection step.
 ```python
 from rusket.nmf import NMF
 
-NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, use_gpu: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -2756,6 +2756,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📖 Documentation
 
 - add GPU acceleration documentation
+
+### 🚀 Features
+
+- rename GPU → CUDA, auto-detect CUDA on import, add CUDA codepaths to all models
 
 ### 📦 Miscellaneous
 
