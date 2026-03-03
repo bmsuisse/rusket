@@ -1,4 +1,4 @@
-"""Tests for multi-vector export and VectorStore abstract interface."""
+"""Tests for multi-vector export and HybridEmbeddingIndex multi-mode."""
 
 from __future__ import annotations
 
@@ -9,12 +9,6 @@ import pytest
 
 from rusket.hybrid_embedding import HybridEmbeddingIndex
 from rusket.vector_export import export_multi_vectors
-from rusket.vector_store import (
-    MeilisearchVectorStore,
-    QdrantVectorStore,
-    VectorStore,
-    WeaviateVectorStore,
-)
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -137,156 +131,6 @@ class TestExportMultiVectors:
             collection_name="items",
         )
         assert n == 3
-
-
-# =====================================================================
-# VectorStore ABC
-# =====================================================================
-
-
-class TestVectorStoreABC:
-    """Tests for the VectorStore abstract interface."""
-
-    def test_cannot_instantiate_directly(self) -> None:
-        with pytest.raises(TypeError):
-            VectorStore(MagicMock())  # type: ignore[abstract]
-
-    def test_supports_multi_vector_default_false(self) -> None:
-        """Concrete subclass without override returns False."""
-
-        class MinimalStore(VectorStore):
-            def upload(self, vectors: np.ndarray, collection_name: str = "", **kw: object) -> int:
-                return 0
-
-        store = MinimalStore(MagicMock())
-        assert store.supports_multi_vector is False
-        with pytest.raises(NotImplementedError):
-            store.upload_multi({"a": _cf()})
-
-    def test_repr(self) -> None:
-        class MinimalStore(VectorStore):
-            def upload(self, vectors: np.ndarray, collection_name: str = "", **kw: object) -> int:
-                return 0
-
-        store = MinimalStore(MagicMock())
-        assert "MinimalStore" in repr(store)
-
-    def test_prepare_ids_none(self) -> None:
-        ids = VectorStore._prepare_ids(5, None)
-        assert ids == [0, 1, 2, 3, 4]
-
-    def test_prepare_ids_ndarray(self) -> None:
-        ids = VectorStore._prepare_ids(3, np.array([10, 20, 30]))
-        assert ids == [10, 20, 30]
-
-    def test_prepare_ids_list(self) -> None:
-        ids = VectorStore._prepare_ids(2, ["a", "b"])
-        assert ids == ["a", "b"]
-
-
-# =====================================================================
-# QdrantVectorStore
-# =====================================================================
-
-
-class TestQdrantVectorStore:
-    def test_upload(self) -> None:
-        client = _mock_qdrant_client()
-        store = QdrantVectorStore(client)
-        with patch.dict("sys.modules", _qdrant_models_patch()):
-            n = store.upload(_cf(5, 4), collection_name="test")
-        assert n == 5
-        client.recreate_collection.assert_called_once()
-        client.upsert.assert_called_once()
-
-    def test_upload_multi(self) -> None:
-        client = _mock_qdrant_client()
-        store = QdrantVectorStore(client)
-        assert store.supports_multi_vector is True
-        with patch.dict("sys.modules", _qdrant_models_patch()):
-            n = store.upload_multi(
-                {"cf": _cf(5, 4), "semantic": _sem(5, 6)},
-                collection_name="hybrid",
-            )
-        assert n == 5
-        # vectors_config should be a dict
-        call_kwargs = client.recreate_collection.call_args
-        vectors_config = call_kwargs.kwargs.get(
-            "vectors_config",
-            call_kwargs[1].get("vectors_config") if len(call_kwargs) > 1 else None,
-        )
-        assert isinstance(vectors_config, dict)
-        assert set(vectors_config.keys()) == {"cf", "semantic"}
-
-    def test_client_property(self) -> None:
-        client = _mock_qdrant_client()
-        store = QdrantVectorStore(client)
-        assert store.client is client
-
-
-# =====================================================================
-# MeilisearchVectorStore
-# =====================================================================
-
-
-class TestMeilisearchVectorStore:
-    def test_upload(self) -> None:
-        client = _mock_meilisearch_client()
-        store = MeilisearchVectorStore(client)
-        n = store.upload(_cf(3, 4), collection_name="items")
-        assert n == 3
-        docs = client.index.return_value.add_documents.call_args[0][0]
-        assert "_vectors" in docs[0]
-        assert "default" in docs[0]["_vectors"]
-
-    def test_upload_multi(self) -> None:
-        client = _mock_meilisearch_client()
-        store = MeilisearchVectorStore(client)
-        assert store.supports_multi_vector is True
-        n = store.upload_multi(
-            {"cf": _cf(3, 4), "semantic": _sem(3, 6)},
-            collection_name="items",
-        )
-        assert n == 3
-        docs = client.index.return_value.add_documents.call_args[0][0]
-        assert set(docs[0]["_vectors"].keys()) == {"cf", "semantic"}
-
-
-# =====================================================================
-# WeaviateVectorStore
-# =====================================================================
-
-
-class TestWeaviateVectorStore:
-    def test_upload_v4(self) -> None:
-        client = _mock_weaviate_v4_client()
-        store = WeaviateVectorStore(client)
-        n = store.upload(_cf(3, 4), collection_name="items")
-        assert n == 3
-
-    def test_supports_multi_vector_v4(self) -> None:
-        client = _mock_weaviate_v4_client()
-        store = WeaviateVectorStore(client)
-        assert store.supports_multi_vector is True
-
-    def test_upload_multi_v4(self) -> None:
-        client = _mock_weaviate_v4_client()
-        store = WeaviateVectorStore(client)
-        n = store.upload_multi(
-            {"cf": _cf(3, 4), "semantic": _sem(3, 6)},
-            collection_name="items",
-        )
-        assert n == 3
-
-    def test_upload_multi_v3_raises(self) -> None:
-        client = MagicMock()
-        client.__class__.__module__ = "weaviate.client"
-        # No 'collections' attribute → v3
-        del client.collections
-        store = WeaviateVectorStore(client)
-        assert store.supports_multi_vector is False
-        with pytest.raises(NotImplementedError, match="Weaviate v4"):
-            store.upload_multi({"cf": _cf()}, collection_name="items")
 
 
 # =====================================================================

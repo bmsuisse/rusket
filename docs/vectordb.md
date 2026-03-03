@@ -2,56 +2,45 @@
 
 Export trained recommendation embeddings to production vector databases for real-time retrieval, similarity search, and hybrid fusion.
 
-`rusket` supports **11 vector database backends** through two APIs:
+`rusket` provides two functions that auto-detect the database backend from the client object you pass:
 
-1. **Functional API** — `export_vectors()` / `export_multi_vectors()` with auto-detection
-2. **Class API** — `VectorStore` subclasses with `upload()` / `upload_multi()`
+- **`export_vectors()`** — export a single embedding matrix
+- **`export_multi_vectors()`** — export multiple named embedding matrices (for Qdrant, Meilisearch, Weaviate)
 
 ---
 
 ## Quick Start
 
-### Functional API (auto-detect)
-
 ```python
 import rusket
+from qdrant_client import QdrantClient
 
 model = rusket.ALS(factors=64, iterations=15).fit(interactions)
 
 # Auto-detect backend from client object
-from qdrant_client import QdrantClient
-client = QdrantClient(":memory:")
-
+client = QdrantClient("localhost", port=6333)
 rusket.export_vectors(model.item_factors, client=client, collection_name="items")
-```
-
-### Class API (VectorStore)
-
-```python
-from rusket import QdrantVectorStore
-from qdrant_client import QdrantClient
-
-store = QdrantVectorStore(QdrantClient(":memory:"))
-store.upload(model.item_factors, collection_name="items")
 ```
 
 ---
 
 ## Supported Backends
 
-| VectorStore class | Multi-vector? | Client library | Install |
+`export_vectors()` auto-detects backends from these client libraries:
+
+| Backend | Multi-vector? | Client library | Install |
 |---|:---:|---|---|
-| `QdrantVectorStore` | ✅ | `qdrant-client` | `pip install qdrant-client` |
-| `MeilisearchVectorStore` | ✅ | `meilisearch` | `pip install meilisearch` |
-| `WeaviateVectorStore` | ✅ | `weaviate-client` | `pip install weaviate-client` |
-| `PgVectorStore` | — | `psycopg2` | `pip install psycopg2-binary` |
-| `ChromaVectorStore` | — | `chromadb` | `pip install chromadb` |
-| `PineconeVectorStore` | — | `pinecone-client` | `pip install pinecone-client` |
-| `MilvusVectorStore` | — | `pymilvus` | `pip install pymilvus` |
-| `ElasticsearchVectorStore` | — | `elasticsearch` | `pip install elasticsearch` |
-| `MongoDBVectorStore` | — | `pymongo` | `pip install pymongo` |
-| `LanceDBVectorStore` | — | `lancedb` | `pip install lancedb` |
-| `TypesenseVectorStore` | — | `typesense` | `pip install typesense` |
+| Qdrant | ✅ | `qdrant-client` | `pip install qdrant-client` |
+| Meilisearch | ✅ | `meilisearch` | `pip install meilisearch` |
+| Weaviate (v4) | ✅ | `weaviate-client` | `pip install weaviate-client` |
+| PostgreSQL (pgvector) | — | `psycopg2` | `pip install psycopg2-binary` |
+| ChromaDB | — | `chromadb` | `pip install chromadb` |
+| Pinecone | — | `pinecone-client` | `pip install pinecone-client` |
+| Milvus | — | `pymilvus` | `pip install pymilvus` |
+| Elasticsearch | — | `elasticsearch` | `pip install elasticsearch` |
+| MongoDB Atlas | — | `pymongo` | `pip install pymongo` |
+| LanceDB | — | `lancedb` | `pip install lancedb` |
+| Typesense | — | `typesense` | `pip install typesense` |
 
 All backends are **optional** — install only the ones you need.
 
@@ -67,7 +56,6 @@ Serve personalised "For You" recommendations from an ALS model via Qdrant's high
 import rusket
 import pandas as pd
 from qdrant_client import QdrantClient
-from rusket import QdrantVectorStore
 
 # ── Train the recommender ──────────────────────────────────────────
 purchases = pd.DataFrame({
@@ -80,24 +68,12 @@ als = rusket.ALS(factors=64, iterations=15).from_transactions(
 ).fit()
 
 # ── Export item embeddings to Qdrant ───────────────────────────────
-store = QdrantVectorStore(QdrantClient("localhost", port=6333))
-store.upload(
-    als.item_factors,
-    collection_name="product_embeddings",
-    ids=[101, 102, 103, 104],           # use real product IDs
-    payloads=[                            # attach metadata
-        {"name": "Laptop",      "category": "Electronics"},
-        {"name": "Mouse",       "category": "Accessories"},
-        {"name": "Keyboard",    "category": "Accessories"},
-        {"name": "Monitor",     "category": "Electronics"},
-    ],
-    distance="Cosine",
-)
+client = QdrantClient("localhost", port=6333)
+rusket.export_vectors(als.item_factors, client=client, collection_name="product_embeddings")
 
-# ── Query at serving time ──────────────────────────────────────────
-# Get the user's embedding and search for similar items
+# ── Query at serving time with native SDK ──────────────────────────
 user_vector = als.user_factors[0].tolist()
-results = store.client.query_points(
+results = client.query_points(
     collection_name="product_embeddings",
     query=user_vector,
     limit=5,
@@ -112,12 +88,11 @@ Let Meilisearch handle the fusion of collaborative filtering and semantic embedd
 ```python
 import rusket
 import meilisearch
-from rusket import MeilisearchVectorStore
+from sentence_transformers import SentenceTransformer
 
 # ── Train ALS + get semantic embeddings ────────────────────────────
 als = rusket.ALS(factors=64, iterations=15).fit(interactions)
 
-from sentence_transformers import SentenceTransformer
 encoder = SentenceTransformer("all-MiniLM-L6-v2")
 text_vectors = encoder.encode(product_descriptions)  # (n_items, 384)
 
@@ -129,17 +104,8 @@ hybrid = rusket.HybridEmbeddingIndex(
 
 # ── Export as separate named vectors to Meilisearch ───────────────
 client = meilisearch.Client("http://localhost:7700", "masterKey")
-store = MeilisearchVectorStore(client)
 
-# Multi-vector upload: each document gets _vectors.cf and _vectors.semantic
-store.upload_multi(
-    hybrid.named_embeddings,
-    collection_name="products",
-    ids=product_ids,
-    payloads=[{"name": n, "price": p} for n, p in zip(names, prices)],
-)
-
-# Or equivalently via the HybridEmbeddingIndex directly:
+# Multi-vector: each document gets _vectors.cf and _vectors.semantic
 hybrid.export_vectors(client, mode="multi", collection_name="products")
 ```
 
@@ -155,7 +121,6 @@ Qdrant's named vectors let you store multiple embedding spaces per point and que
 ```python
 import rusket
 from qdrant_client import QdrantClient
-from rusket import QdrantVectorStore
 
 # ── Build hybrid embeddings ────────────────────────────────────────
 als = rusket.ALS(factors=64).fit(interactions)
@@ -167,27 +132,23 @@ hybrid = rusket.HybridEmbeddingIndex(
 )
 
 # ── Export as named vectors ────────────────────────────────────────
-store = QdrantVectorStore(QdrantClient("localhost"))
+client = QdrantClient("localhost")
 
 # Each point gets two vectors: "cf" (64-d) and "semantic" (384-d)
-store.upload_multi(
-    hybrid.named_embeddings,
-    collection_name="hybrid_products",
-    distance="Cosine",
-)
+hybrid.export_vectors(client, mode="multi", collection_name="hybrid_products")
 
-# ── Query with different strategies ───────────────────────────────
+# ── Query with different strategies using native Qdrant SDK ───────
 from qdrant_client.models import NamedVector
 
 # Query CF space only (behavioural similarity)
-cf_results = store.client.query_points(
+cf_results = client.query_points(
     collection_name="hybrid_products",
     query=NamedVector(name="cf", vector=user_cf_vector),
     limit=10,
 )
 
 # Query semantic space only (content similarity)
-sem_results = store.client.query_points(
+sem_results = client.query_points(
     collection_name="hybrid_products",
     query=NamedVector(name="semantic", vector=query_text_vector),
     limit=10,
@@ -201,7 +162,6 @@ For teams already running PostgreSQL, `pgvector` lets you add vector search with
 ```python
 import rusket
 import psycopg2
-from rusket import PgVectorStore
 
 # ── Connect to your existing PostgreSQL database ──────────────────
 conn = psycopg2.connect(
@@ -210,13 +170,7 @@ conn = psycopg2.connect(
 
 # ── Train and export ──────────────────────────────────────────────
 model = rusket.ALS(factors=32).fit(interactions)
-
-store = PgVectorStore(conn)
-store.upload(
-    model.item_factors,
-    collection_name="item_embeddings",
-    ids=item_ids,
-)
+rusket.export_vectors(model.item_factors, client=conn, collection_name="item_embeddings")
 
 # ── Query with SQL! ───────────────────────────────────────────────
 cursor = conn.cursor()
@@ -230,40 +184,34 @@ cursor.execute("""
 results = cursor.fetchall()
 ```
 
-### 5. Serverless Search → ChromaDB (Local Dev / Prototyping)
+### 5. ChromaDB (Local Dev / Prototyping)
 
 ChromaDB is perfect for local development and prototyping — zero infrastructure needed.
 
 ```python
 import rusket
 import chromadb
-from rusket import ChromaVectorStore
 
 # ── In-memory for development ─────────────────────────────────────
 client = chromadb.Client()
-store = ChromaVectorStore(client)
-
 model = rusket.BPR(factors=64).fit(interactions)
-store.upload(
-    model.item_factors,
-    collection_name="recommendations",
-    ids=[str(i) for i in range(model.item_factors.shape[0])],
-)
+rusket.export_vectors(model.item_factors, client=client, collection_name="recommendations")
 
-# ── Persistent for staging ────────────────────────────────────────
-client = chromadb.PersistentClient(path="./chroma_db")
-store = ChromaVectorStore(client)
-store.upload(model.item_factors, collection_name="recommendations")
+# ── Query with native ChromaDB SDK ────────────────────────────────
+collection = client.get_collection("recommendations")
+results = collection.query(
+    query_embeddings=[model.user_factors[0].tolist()],
+    n_results=10,
+)
 ```
 
-### 6. Real-Time Weaviate with Named Vectors (v4)
+### 6. Weaviate Named Vectors (v4)
 
 Weaviate v4's named vector support enables multi-modal search across different embedding spaces.
 
 ```python
 import rusket
 import weaviate
-from rusket import WeaviateVectorStore
 
 # ── Connect to Weaviate ───────────────────────────────────────────
 client = weaviate.connect_to_local()  # or weaviate.connect_to_wcs(...)
@@ -273,28 +221,18 @@ hybrid = rusket.HybridEmbeddingIndex(
     cf_embeddings=als.item_factors,
     semantic_embeddings=text_vectors,
 )
-
-store = WeaviateVectorStore(client)
-store.upload_multi(
-    hybrid.named_embeddings,
-    collection_name="Products",
-)
-
-# Check capabilities at runtime
-assert store.supports_multi_vector  # True for v4 clients
+hybrid.export_vectors(client, mode="multi", collection_name="Products")
 ```
 
-### 7. Batch Export with Metadata
+### 7. Batch Export with Metadata (Qdrant)
 
-All stores support `payloads` for attaching rich metadata to each vector:
+`export_vectors()` supports `payloads` for attaching rich metadata to each vector:
 
 ```python
 import rusket
 import pandas as pd
-from rusket import QdrantVectorStore
 from qdrant_client import QdrantClient
 
-# ── Prepare metadata from your product catalog ───────────────────
 catalog = pd.DataFrame({
     "item_id": [1, 2, 3, 4, 5],
     "name":    ["Laptop", "Mouse", "Keyboard", "Monitor", "Webcam"],
@@ -303,22 +241,21 @@ catalog = pd.DataFrame({
     "in_stock": [True, True, False, True, True],
 })
 
-# ── Train and export with metadata ────────────────────────────────
 model = rusket.ALS(factors=64).fit(interactions)
+client = QdrantClient("localhost")
 
-store = QdrantVectorStore(QdrantClient("localhost"))
-store.upload(
+rusket.export_vectors(
     model.item_factors,
+    client=client,
     collection_name="products",
     ids=catalog["item_id"].tolist(),
     payloads=catalog.drop(columns="item_id").to_dict("records"),
-    batch_size=500,   # control upload batch size
 )
 
-# ── Filter at query time using metadata ───────────────────────────
+# ── Filter at query time using native Qdrant SDK ─────────────────
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
-results = store.client.query_points(
+results = client.query_points(
     collection_name="products",
     query=user_vector,
     query_filter=Filter(
@@ -1035,53 +972,6 @@ rusket.export_multi_vectors(
 )
 ```
 
-**Via `VectorStore.upload_multi()`:**
-
-```python
-store = QdrantVectorStore(client)
-store.upload_multi(
-    {"cf": als.item_factors, "semantic": text_vectors},
-    collection_name="items",
-)
-```
-
----
-
-## VectorStore ABC
-
-All concrete stores inherit from `VectorStore`:
-
-```python
-from rusket import VectorStore
-
-class VectorStore(ABC):
-    def __init__(self, client: Any) -> None: ...
-
-    @property
-    def client(self) -> Any: ...
-
-    @property
-    def supports_multi_vector(self) -> bool: ...
-
-    @abstractmethod
-    def upload(self, vectors, collection_name, *, ids, payloads, ...) -> int: ...
-
-    def upload_multi(self, named_vectors, collection_name, ...) -> int: ...
-```
-
-You can subclass `VectorStore` to add your own backend:
-
-```python
-from rusket import VectorStore
-
-class MyCustomStore(VectorStore):
-    def upload(self, vectors, collection_name="items", **kwargs) -> int:
-        # Your custom upload logic
-        for i, vec in enumerate(vectors):
-            self.client.insert(collection_name, id=i, vector=vec.tolist())
-        return len(vectors)
-```
-
 ---
 
 ## Tips & Best Practices
@@ -1095,15 +985,6 @@ class MyCustomStore(VectorStore):
     The default `batch_size=1000` is good for most cases. For very large exports
     (millions of vectors), increase to 5000–10000 to reduce HTTP round-trips.
 
-!!! tip "Runtime capability check"
-    ```python
-    store = QdrantVectorStore(client)
-    if store.supports_multi_vector:
-        store.upload_multi(hybrid.named_embeddings, ...)
-    else:
-        store.upload(hybrid.fused_embeddings, ...)
-    ```
-
 !!! warning "Multi-vector compatibility"
     Only Qdrant, Meilisearch, and Weaviate (v4) support multi-vector storage.
-    Other backends will raise `NotImplementedError` if you call `upload_multi()`.
+    Other backends will raise `NotImplementedError` if you call `export_multi_vectors()`.
