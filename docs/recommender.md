@@ -10,6 +10,7 @@ Three complementary recommendation strategies: cart add-ons, personalised "For Y
 | **"For You" (Personalised)** | Homepage, email, loyalty | `ALS` / `BPR` |
 | **Nearest Neighbors** | Simple, strong baselines | `ItemKNN` / `UserKNN` |
 | **Hybrid** | Blend both signals | `Recommender` |
+| **Hybrid Embedding Fusion** | CF + semantic text in one vector space | `HybridEmbeddingIndex` |
 
 ---
 
@@ -128,6 +129,88 @@ item_factors_df = als.export_factors(normalize=True, format="spark")
 # Save to Delta
 user_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.user_embeddings")
 item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_layer.item_embeddings")
+```
+
+---
+
+## Hybrid Embedding Fusion — CF + Semantic in One Vector Space
+
+The `Recommender` above blends signals at **scoring time**. For deeper fusion — building a single ANN index, exporting to a vector DB, or clustering items — use `HybridEmbeddingIndex` to fuse CF and semantic embedding spaces at the **vector level**.
+
+### Why fuse embeddings?
+
+- **CF embeddings** (from ALS, BPR, etc.) capture behavioral patterns — *who bought what*
+- **Semantic embeddings** (from sentence-transformers, OpenAI, TF-IDF) capture content meaning — *what the product is about*
+- **Cold-start items** with few interactions but rich descriptions benefit from semantic signal
+- **Single ANN index** for sub-ms retrieval instead of querying two separate spaces
+
+### Quick start
+
+```python
+import rusket
+
+# 1. Train ALS
+als = rusket.ALS(factors=64, iterations=15).fit(interactions)
+
+# 2. Get semantic embeddings (e.g. from sentence-transformers)
+from sentence_transformers import SentenceTransformer
+encoder = SentenceTransformer("all-MiniLM-L6-v2")
+text_vectors = encoder.encode(product_descriptions)  # (n_items, 384)
+
+# 3. Fuse into a single hybrid vector space
+hybrid = rusket.HybridEmbeddingIndex(
+    cf_embeddings=als.item_factors,       # (n_items, 64)
+    semantic_embeddings=text_vectors,      # (n_items, 384)
+    strategy="weighted_concat",            # default
+    alpha=0.6,                             # 60% CF, 40% semantic
+)
+
+# 4. Query: similar items via cosine on fused space
+ids, scores = hybrid.query(item_id=42, n=10)
+```
+
+### Fusion strategies
+
+| Strategy | Description | Output dim | Use case |
+|---|---|---|---|
+| `"concat"` | L2-normalise each, concatenate | `d_cf + d_sem` | Equal importance, no tuning |
+| `"weighted_concat"` | Scale by `α` / `1−α`, concat | `d_cf + d_sem` | **Default** — tune `alpha` |
+| `"projection"` | Concat + PCA down | `projection_dim` | Compact vectors for production |
+
+!!! tip "Choosing alpha"
+    Start with `alpha=0.5` (equal blend). Increase toward `1.0` if you have dense interaction data; decrease toward `0.0` for catalogs with rich text but sparse interactions (cold-start heavy).
+
+### Build an ANN index
+
+```python
+# Native Rust random-projection forest (zero dependencies)
+ann = hybrid.build_ann_index(backend="native")
+neighbors, dists = ann.kneighbors(hybrid.fused_embeddings[[42]], n_neighbors=10)
+
+# Or FAISS HNSW (requires faiss-cpu / faiss-gpu)
+ann = hybrid.build_ann_index(backend="faiss", index_type="hnsw")
+```
+
+### Export to a vector DB
+
+```python
+# Exports the fused vectors to any supported backend
+hybrid.export_vectors(qdrant_client, collection_name="hybrid_items")
+hybrid.export_vectors(pg_conn, table_name="hybrid_items")  # pgvector
+```
+
+### Standalone function
+
+If you only need the fused matrix (no index or query methods):
+
+```python
+fused = rusket.fuse_embeddings(
+    cf_embeddings=als.item_factors,
+    semantic_embeddings=text_vectors,
+    strategy="weighted_concat",
+    alpha=0.6,
+)
+# fused.shape → (n_items, 64 + 384) = (n_items, 448)
 ```
 
 ---

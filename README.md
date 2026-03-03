@@ -440,6 +440,7 @@ Every algorithm in `rusket` exposes a **class-based API** in addition to the fun
 | `FM` | `BaseModel` | Factorization Machines (CTR prediction) |
 | `FPMC` | `SequentialRecommender` | Factorizing Personalized Markov Chains |
 | `SASRec` | `SequentialRecommender` | Self-Attentive Sequential Recommendation |
+| `HybridEmbeddingIndex` | — | CF + semantic embedding fusion |
 
 All classes share the following data-ingestion class methods inherited from `BaseModel`:
 
@@ -578,6 +579,49 @@ add_ons = rec.recommend_for_cart(["USB_DAC", "AUX_CABLE"], n=3)
 # Overnight batch — score all customers, write to CRM
 batch_df = rec.predict_next_chunk(user_history_df, user_col="customer_id", k=5)
 ```
+
+### 🧬 Hybrid Embedding Fusion — CF + Semantic in One Vector Space
+
+Collaborative filtering embeddings capture *behavioral* signals (who bought what); semantic text embeddings capture *content* meaning (product descriptions). Fusing them into a **single vector space** lets you do ANN retrieval, vector DB export, and clustering in one shot.
+
+```python
+import rusket
+
+# 1. Train ALS on implicit feedback
+als = rusket.ALS(factors=64, iterations=15).fit(interactions)
+
+# 2. Get semantic embeddings (e.g. from sentence-transformers)
+from sentence_transformers import SentenceTransformer
+encoder = SentenceTransformer("all-MiniLM-L6-v2")
+text_vectors = encoder.encode(product_descriptions)  # (n_items, 384)
+
+# 3. Fuse into a single hybrid vector space
+hybrid = rusket.HybridEmbeddingIndex(
+    cf_embeddings=als.item_factors,       # (n_items, 64)
+    semantic_embeddings=text_vectors,      # (n_items, 384)
+    strategy="weighted_concat",            # "concat" | "weighted_concat" | "projection"
+    alpha=0.6,                             # 60% CF, 40% semantic
+)
+
+# 4. Similar items via cosine on the fused space
+ids, scores = hybrid.query(item_id=42, n=10)
+
+# 5. Build an ANN index for sub-millisecond retrieval
+ann = hybrid.build_ann_index(backend="native")  # or "faiss"
+
+# 6. Export to a vector DB for production serving
+hybrid.export_vectors(qdrant_client, collection_name="hybrid_items")
+```
+
+Three fusion strategies:
+
+| Strategy | Description | Use Case |
+|---|---|---|
+| `"concat"` | L2-normalise each space, concatenate | Equal importance, no tuning |
+| `"weighted_concat"` | Scale by `α` / `1−α`, then concat | **Default** — tune `alpha` to balance CF vs semantic |
+| `"projection"` | Concat + PCA to `projection_dim` | Compact vectors for large-scale deployment |
+
+> **Standalone function:** If you just need the fused matrix without an index, use `rusket.fuse_embeddings(cf, sem, strategy="weighted_concat", alpha=0.6)`.
 
 ### 🎯 Multi-Stage Recommendation Pipeline
 
