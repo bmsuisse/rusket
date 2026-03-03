@@ -2753,6 +2753,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🚀 Features
+
+- introduce and document Hybrid Embedding Fusion for combining collaborative filtering and semantic embeddings.
+
 ### 📖 Documentation
 
 - add GPU acceleration documentation
