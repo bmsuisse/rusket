@@ -2753,6 +2753,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 📖 Documentation
+
+- add comprehensive Vector Database guide with 8 real-world examples
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
