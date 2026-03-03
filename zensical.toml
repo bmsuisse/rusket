@@ -24,6 +24,7 @@ nav = [
     { "Recommender Workflows" = "recommender.md" },
     { "Pipeline API" = "pipeline.md" },
     { "MLOps & Tracking" = "mlops.md" },
+    { "GPU Acceleration" = "gpu.md" },
     { "Streaming & Big Data" = "streaming.md" },
     { "PySpark Integration" = "spark.md" },
     { "Polars Support" = "polars.md" },

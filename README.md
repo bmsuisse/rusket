@@ -792,6 +792,61 @@ result = rusket.optuna_optimize(
     callbacks=[my_custom_callback],  # any Optuna-compatible callback
 )
 ```
+---
+
+### 🚀 GPU Acceleration (CUDA)
+
+`rusket` supports optional GPU acceleration via **CuPy** or **PyTorch CUDA** for models that benefit from large matrix operations. Enable it globally with a single call — no need to pass `use_gpu=True` to every model.
+
+```python
+import rusket
+
+# Enable GPU globally — every model created after this uses CUDA
+rusket.enable_gpu()
+
+# All models now default to GPU
+als = rusket.ALS(factors=128, iterations=20).fit(interactions)
+ease = rusket.EASE(regularization=500).fit(interactions)
+bpr = rusket.BPR(factors=64).fit(interactions)
+
+# Per-model override: force a specific model to CPU
+small_model = rusket.SVD(factors=16, use_gpu=False)
+
+# Turn it off globally
+rusket.disable_gpu()
+
+# Check the current state
+rusket.is_gpu_enabled()  # → False
+```
+
+#### Supported Models
+
+All 12 recommender models respect the global GPU flag:
+
+| Model | GPU-accelerated operations |
+|-------|--------------------------|
+| **ALS / eALS** | Gramian, Cholesky solve, batch scoring |
+| **BPR** | SGD updates, batch recommend |
+| **SVD** | Factor updates, batch scoring |
+| **EASE** | Gram matrix inversion |
+| **ItemKNN / UserKNN** | Similarity scoring |
+| **LightGCN** | Graph convolution, scoring |
+| **FM** | Prediction |
+| **FPMC** | Factor updates |
+| **SASRec / BERT4Rec** | Attention forward pass |
+| **NMF** | Multiplicative updates |
+
+#### Installation
+
+```bash
+# CuPy (recommended — fastest)
+pip install cupy-cuda12x
+
+# Or PyTorch
+pip install torch
+```
+
+> **No GPU? No problem.** `rusket` auto-detects whether a GPU backend is available. If neither CuPy nor PyTorch CUDA is installed, `enable_gpu()` will still succeed but models will raise an `ImportError` at fit-time. Use `rusket.check_gpu_available()` to test beforehand.
 
 ---
 
