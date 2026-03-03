@@ -2756,6 +2756,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📖 Documentation
 
 - add comprehensive Vector Database guide with 8 real-world examples
+- add comprehensive recommendation serving guide for Qdrant, Meilisearch, and pgvector
 
 ### 📦 Miscellaneous
 
