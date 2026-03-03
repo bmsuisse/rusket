@@ -2753,21 +2753,22 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-### 📦 Miscellaneous
+### 📖 Documentation
 
-- auto-format code with Ruff [skip ci]
-
-### 🚀 Features
-
-- add rusket.enable_gpu() global CUDA toggle
+- add GPU acceleration documentation
 
 ### 📦 Miscellaneous
 
 - bump version to 0.1.85
+- auto-format code with Ruff [skip ci]
 
 ### 🔧 Refactoring
 
 - split Python modules — extract EmbeddingMixin, splitting, optuna
+
+### 🚀 Features
+
+- add rusket.enable_gpu() global CUDA toggle
 
 ### 📦 Miscellaneous
 

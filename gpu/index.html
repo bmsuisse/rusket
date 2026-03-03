@@ -10,30 +10,36 @@
       
       
       
+        <link rel="canonical" href="https://bmsuisse.github.io/rusket/gpu/">
       
+      
+        <link rel="prev" href="../mlops/">
+      
+      
+        <link rel="next" href="../streaming/">
       
       
         
       
       
-      <link rel="icon" href="/rusket/assets/logo_single.svg">
+      <link rel="icon" href="../assets/logo_single.svg">
       <meta name="generator" content="zensical-0.0.23">
     
     
       
-        <title>rusket</title>
+        <title>GPU Acceleration - rusket</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="/rusket/assets/stylesheets/modern/main.1e989742.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.1e989742.min.css">
       
         
           
         
-        <link rel="stylesheet" href="/rusket/assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -52,7 +58,7 @@
       
     
     
-    <script>__md_scope=new URL("/rusket",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{try{a.setItem(_.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -76,6 +82,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#gpu-acceleration" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -88,7 +99,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/rusket/" title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-header__button md-logo" aria-label="rusket" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
@@ -108,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              GPU Acceleration
             
           </span>
         </div>
@@ -187,7 +198,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/rusket/" title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
+    <a href="./.." title="rusket" class="md-nav__button md-logo" aria-label="rusket" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-shopping-basket" viewBox="0 0 24 24"><path d="m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9"/></svg>
@@ -252,7 +263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/" class="md-nav__link">
+      <a href="./.." class="md-nav__link">
         
   
   
@@ -280,7 +291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -312,18 +323,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -344,7 +357,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -362,7 +375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/api-reference/" class="md-nav__link">
+      <a href="../api-reference/" class="md-nav__link">
         
   
   
@@ -437,7 +450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/cookbook/" class="md-nav__link">
+      <a href="../cookbook/" class="md-nav__link">
         
   
   
@@ -465,7 +478,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/databricks_cookbook/" class="md-nav__link">
+      <a href="../databricks_cookbook/" class="md-nav__link">
         
   
   
@@ -493,7 +506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
+      <a href="../notebooks/1_online_retail_basket_analysis/" class="md-nav__link">
         
   
   
@@ -521,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/2_movielens_recommendations/" class="md-nav__link">
+      <a href="../notebooks/2_movielens_recommendations/" class="md-nav__link">
         
   
   
@@ -549,7 +562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
+      <a href="../notebooks/3_ecommerce_lifecycle_mining/" class="md-nav__link">
         
   
   
@@ -577,7 +590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/4_lightgcn_ecommerce_recommendations/" class="md-nav__link">
+      <a href="../notebooks/4_lightgcn_ecommerce_recommendations/" class="md-nav__link">
         
   
   
@@ -605,7 +618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/5_sasrec_next_best_product/" class="md-nav__link">
+      <a href="../notebooks/5_sasrec_next_best_product/" class="md-nav__link">
         
   
   
@@ -633,7 +646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/6_optuna_tuning/" class="md-nav__link">
+      <a href="../notebooks/6_optuna_tuning/" class="md-nav__link">
         
   
   
@@ -661,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/notebooks/7_next_item_prediction_combined/" class="md-nav__link">
+      <a href="../notebooks/7_next_item_prediction_combined/" class="md-nav__link">
         
   
   
@@ -697,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/recommender/" class="md-nav__link">
+      <a href="../recommender/" class="md-nav__link">
         
   
   
@@ -725,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/pipeline/" class="md-nav__link">
+      <a href="../pipeline/" class="md-nav__link">
         
   
   
@@ -753,7 +766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/mlops/" class="md-nav__link">
+      <a href="../mlops/" class="md-nav__link">
         
   
   
@@ -778,10 +791,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/rusket/gpu/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPU Acceleration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
         
   
   
@@ -797,6 +837,82 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-enabledisable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Enable/Disable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-model-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Model Override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Availability
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -809,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/streaming/" class="md-nav__link">
+      <a href="../streaming/" class="md-nav__link">
         
   
   
@@ -837,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/spark/" class="md-nav__link">
+      <a href="../spark/" class="md-nav__link">
         
   
   
@@ -865,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/polars/" class="md-nav__link">
+      <a href="../polars/" class="md-nav__link">
         
   
   
@@ -893,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/benchmarks/" class="md-nav__link">
+      <a href="../benchmarks/" class="md-nav__link">
         
   
   
@@ -921,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/1b-challenge/" class="md-nav__link">
+      <a href="../1b-challenge/" class="md-nav__link">
         
   
   
@@ -949,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1031,7 +1147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/rusket/changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1077,6 +1193,71 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-enabledisable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Enable/Disable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-model-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Model Override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-availability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Availability
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1089,8 +1270,116 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+<h1 id="gpu-acceleration">GPU Acceleration<a class="headerlink" href="#gpu-acceleration" title="Permanent link">&para;</a></h1>
+<p><code>rusket</code> supports optional GPU acceleration via <strong>CuPy</strong> or <strong>PyTorch CUDA</strong> for models that benefit from large-scale matrix operations (Gramians, Cholesky solves, batch scoring, attention layers).</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># CuPy — recommended, fastest</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span>cupy-cuda12x
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Or PyTorch</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pip<span class="w"> </span>install<span class="w"> </span>torch
+</span></code></pre></div>
+<h2 id="global-enabledisable">Global Enable/Disable<a class="headerlink" href="#global-enabledisable" title="Permanent link">&para;</a></h2>
+<p>Instead of passing <code>use_gpu=True</code> to every model, enable CUDA once:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">rusket</span><span class="o">.</span><span class="n">enable_gpu</span><span class="p">()</span>   <span class="c1"># all models now default to GPU</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">rusket</span><span class="o">.</span><span class="n">disable_gpu</span><span class="p">()</span>  <span class="c1"># back to CPU (the default)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">rusket</span><span class="o">.</span><span class="n">is_gpu_enabled</span><span class="p">()</span>  <span class="c1"># check current state</span>
+</span></code></pre></div>
+<h2 id="per-model-override">Per-Model Override<a class="headerlink" href="#per-model-override" title="Permanent link">&para;</a></h2>
+<p>An explicit <code>use_gpu</code> on a model always wins over the global setting:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">rusket</span><span class="o">.</span><span class="n">enable_gpu</span><span class="p">()</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">als</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">ALS</span><span class="p">(</span><span class="n">factors</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>              <span class="c1"># → GPU (from global)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">ease</span> <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">EASE</span><span class="p">(</span><span class="n">use_gpu</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>           <span class="c1"># → CPU (explicit override)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">bpr</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">BPR</span><span class="p">(</span><span class="n">use_gpu</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>            <span class="c1"># → GPU (explicit)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">rusket</span><span class="o">.</span><span class="n">disable_gpu</span><span class="p">()</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">svd</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">SVD</span><span class="p">()</span>                         <span class="c1"># → CPU (from global)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">knn</span>  <span class="o">=</span> <span class="n">rusket</span><span class="o">.</span><span class="n">ItemKNN</span><span class="p">(</span><span class="n">use_gpu</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># → GPU (explicit override)</span>
+</span></code></pre></div>
+<h2 id="supported-models">Supported Models<a class="headerlink" href="#supported-models" title="Permanent link">&para;</a></h2>
+<p>All 12 recommender models respect the global GPU flag:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>GPU-accelerated operations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ALS / eALS</strong></td>
+<td>Gramian computation, Cholesky factor solve, batch recommendation scoring</td>
+</tr>
+<tr>
+<td><strong>BPR</strong></td>
+<td>SGD factor updates, batch recommend</td>
+</tr>
+<tr>
+<td><strong>SVD</strong></td>
+<td>Factor updates, batch scoring</td>
+</tr>
+<tr>
+<td><strong>EASE</strong></td>
+<td>Gram matrix inversion (Cholesky)</td>
+</tr>
+<tr>
+<td><strong>ItemKNN / UserKNN</strong></td>
+<td>Similarity computation and scoring</td>
+</tr>
+<tr>
+<td><strong>LightGCN</strong></td>
+<td>Graph convolution layers, scoring</td>
+</tr>
+<tr>
+<td><strong>FM</strong></td>
+<td>Prediction scores</td>
+</tr>
+<tr>
+<td><strong>FPMC</strong></td>
+<td>Factor updates</td>
+</tr>
+<tr>
+<td><strong>SASRec / BERT4Rec</strong></td>
+<td>Self-attention forward pass, scoring</td>
+</tr>
+<tr>
+<td><strong>NMF</strong></td>
+<td>Multiplicative update rules</td>
+</tr>
+</tbody>
+</table>
+<h2 id="checking-availability">Checking Availability<a class="headerlink" href="#checking-availability" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">rusket</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">if</span> <span class="n">rusket</span><span class="o">.</span><span class="n">check_gpu_available</span><span class="p">():</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">rusket</span><span class="o">.</span><span class="n">enable_gpu</span><span class="p">()</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GPU backend active&quot;</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">else</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No GPU — using Rust CPU backend (still fast!)&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<blockquote>
+<p><strong>No GPU? No problem.</strong> The Rust CPU backend (Rayon multi-threading, SIMD) is already highly optimised. GPU acceleration helps most for very large factor dimensions (≥256) or batch scoring millions of users simultaneously.</p>
+</blockquote>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1155,10 +1444,10 @@
       
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"/rusket","features":[],"search":"/rusket/assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":[],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="/rusket/assets/javascripts/bundle.5fcf0de6.min.js"></script>
+      <script src="../assets/javascripts/bundle.5fcf0de6.min.js"></script>
       
     
   </body>
