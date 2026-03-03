@@ -4,6 +4,10 @@ Provides :class:`HybridEmbeddingIndex` for building a single ANN-searchable
 vector space from collaborative-filtering item factors (ALS, BPR, …) and
 external semantic embeddings (e.g. sentence-transformers, OpenAI, TF-IDF).
 
+The index can either fuse embeddings client-side into a single dense vector
+or export each embedding space as a **separate named vector** to databases
+that support multi-vector storage (Qdrant, Meilisearch, Weaviate).
+
 Three fusion strategies are available:
 
 * ``"concat"`` — L2-normalise each space, then concatenate ``[cf; sem]``.
@@ -30,7 +34,7 @@ Example
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -209,6 +213,23 @@ class HybridEmbeddingIndex:
         """Number of items in the index."""
         return self._n_items
 
+    @property
+    def named_embeddings(self) -> dict[str, npt.NDArray[np.float32]]:
+        """L2-normalised CF and semantic matrices as a named dict.
+
+        Useful for multi-vector export where each embedding space is
+        stored separately in the vector database.
+
+        Returns
+        -------
+        dict[str, ndarray]
+            ``{"cf": cf_normed, "semantic": sem_normed}``.
+        """
+        return {
+            "cf": _l2_normalise(self._cf),
+            "semantic": _l2_normalise(self._sem),
+        }
+
     # ── query ────────────────────────────────────────────────────────
 
     def query(
@@ -319,23 +340,50 @@ class HybridEmbeddingIndex:
 
     # ── export ───────────────────────────────────────────────────────
 
-    def export_vectors(self, client: Any, **kwargs: Any) -> int:
-        """Export fused embeddings to a vector database.
-
-        Delegates to :func:`rusket.export_vectors` with the fused matrix.
+    def export_vectors(
+        self,
+        client: Any,
+        *,
+        mode: Literal["fused", "multi"] = "fused",
+        **kwargs: Any,
+    ) -> int:
+        """Export embeddings to a vector database.
 
         Parameters
         ----------
         client : Any
             A vector DB client (Qdrant, pgvector, ChromaDB, Pinecone, …).
+        mode : {"fused", "multi"}, default="fused"
+            - ``"fused"`` — export the single fused embedding matrix
+              (default, backward-compatible).
+            - ``"multi"`` — export CF and semantic embeddings as
+              **separate named vectors** so the database handles
+              fusion at query time.  Requires a backend that supports
+              multi-vector storage (Qdrant, Meilisearch, Weaviate).
         **kwargs
-            Extra arguments forwarded to ``export_vectors``.
+            Extra arguments forwarded to the export function.
 
         Returns
         -------
         int
             Number of vectors exported.
+
+        Examples
+        --------
+        Fused (single vector, any backend)::
+
+            hybrid.export_vectors(qdrant_client, collection_name="items")
+
+        Multi-vector (DB-side fusion)::
+
+            hybrid.export_vectors(qdrant_client, mode="multi",
+                                  collection_name="items")
         """
+        if mode == "multi":
+            from .vector_export import export_multi_vectors
+
+            return export_multi_vectors(self.named_embeddings, client=client, **kwargs)
+
         from .vector_export import export_vectors
 
         return export_vectors(self._fused, client=client, **kwargs)

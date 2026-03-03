@@ -611,6 +611,10 @@ ann = hybrid.build_ann_index(backend="native")  # or "faiss"
 
 # 6. Export to a vector DB for production serving
 hybrid.export_vectors(qdrant_client, collection_name="hybrid_items")
+
+# 7. Or export as separate named vectors for DB-side fusion
+hybrid.export_vectors(qdrant_client, mode="multi", collection_name="hybrid_items")
+# → Qdrant/Meilisearch/Weaviate store "cf" and "semantic" as separate named vectors
 ```
 
 Three fusion strategies:
@@ -622,6 +626,43 @@ Three fusion strategies:
 | `"projection"` | Concat + PCA to `projection_dim` | Compact vectors for large-scale deployment |
 
 > **Standalone function:** If you just need the fused matrix without an index, use `rusket.fuse_embeddings(cf, sem, strategy="weighted_concat", alpha=0.6)`.
+
+#### 🗄️ VectorStore Class API
+
+For a clean OOP interface to vector databases, use the `VectorStore` classes. They wrap client libraries with a uniform `upload()` / `upload_multi()` API:
+
+```python
+from rusket import QdrantVectorStore, MeilisearchVectorStore
+from qdrant_client import QdrantClient
+
+# Single-vector upload
+store = QdrantVectorStore(QdrantClient(":memory:"))
+store.upload(model.item_factors, collection_name="items")
+
+# Multi-vector upload (DB-side fusion)
+store.upload_multi(
+    {"cf": model.item_factors, "semantic": text_vectors},
+    collection_name="hybrid_items",
+)
+```
+
+**11 vector database backends**, 3 with multi-vector support:
+
+| VectorStore class | Multi-vector? | Client library |
+|---|:---:|---|
+| `QdrantVectorStore` | ✅ | `qdrant-client` |
+| `MeilisearchVectorStore` | ✅ | `meilisearch` |
+| `WeaviateVectorStore` | ✅ | `weaviate-client` (v4) |
+| `PgVectorStore` | — | `psycopg2` |
+| `ChromaVectorStore` | — | `chromadb` |
+| `PineconeVectorStore` | — | `pinecone-client` |
+| `MilvusVectorStore` | — | `pymilvus` |
+| `ElasticsearchVectorStore` | — | `elasticsearch` |
+| `MongoDBVectorStore` | — | `pymongo` |
+| `LanceDBVectorStore` | — | `lancedb` |
+| `TypesenseVectorStore` | — | `typesense` |
+
+All stores inherit from `VectorStore` (abstract base class) and implement `upload()`. Check `store.supports_multi_vector` to verify multi-vector capability at runtime.
 
 ### 🎯 Multi-Stage Recommendation Pipeline
 

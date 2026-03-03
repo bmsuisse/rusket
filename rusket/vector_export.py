@@ -134,6 +134,248 @@ def export_vectors(
     )
 
 
+# ---------------------------------------------------------------------------
+# Multi-vector export (DB-side fusion)
+# ---------------------------------------------------------------------------
+
+_MULTI_VECTOR_BACKENDS = frozenset({"qdrant", "meilisearch", "weaviate"})
+
+
+def export_multi_vectors(
+    named_vectors: dict[str, np.ndarray],
+    client: Any,
+    collection_name: str = "item_factors",
+    *,
+    ids: list[Any] | np.ndarray | None = None,
+    payloads: list[dict[str, Any]] | None = None,
+    batch_size: int = 1000,
+    recreate: bool = True,
+    **kwargs: Any,
+) -> int:
+    """Upload multiple named vector spaces to a vector database.
+
+    Instead of fusing embeddings client-side, this exports each embedding
+    space as a separate named vector, allowing the database to handle
+    fusion / re-ranking at query time.
+
+    Parameters
+    ----------
+    named_vectors : dict[str, ndarray]
+        Mapping of vector space name → (n, d) embedding matrix.
+        Example: ``{"cf": cf_factors, "semantic": text_vectors}``.
+        All matrices must have the same number of rows.
+    client
+        An initialized vector DB client.  Only backends that natively
+        support multiple vectors per point are accepted:
+
+        - ``qdrant_client.QdrantClient`` (named vectors)
+        - ``meilisearch.Client`` (multiple embedders)
+        - ``weaviate.WeaviateClient`` (named vectors, v4)
+    collection_name : str
+        Target collection / index name.
+    ids : list or ndarray, optional
+        Point / document IDs.  Defaults to ``range(n)``.
+    payloads : list[dict], optional
+        Optional metadata per vector.
+    batch_size : int
+        Upload batch size.
+    recreate : bool
+        If True, drop and recreate the collection.
+    **kwargs
+        Backend-specific options (e.g. ``distance="Cosine"`` for Qdrant).
+
+    Returns
+    -------
+    int
+        Number of points uploaded.
+
+    Raises
+    ------
+    ValueError
+        If *named_vectors* is empty or matrices have mismatched row counts.
+    NotImplementedError
+        If the detected backend does not support multi-vector storage.
+
+    Examples
+    --------
+    Qdrant named vectors::
+
+        from qdrant_client import QdrantClient
+        rusket.export_multi_vectors(
+            {"cf": model.item_factors, "semantic": text_vectors},
+            QdrantClient("localhost"),
+            "hybrid_items",
+        )
+
+    Meilisearch multi-embedder::
+
+        import meilisearch
+        rusket.export_multi_vectors(
+            {"cf": model.item_factors, "semantic": text_vectors},
+            meilisearch.Client("http://localhost:7700"),
+            "items",
+        )
+    """
+    if not named_vectors:
+        raise ValueError("named_vectors must be a non-empty dict.")
+
+    # Validate & coerce
+    coerced: dict[str, np.ndarray] = {}
+    n: int | None = None
+    for name, mat in named_vectors.items():
+        mat = np.ascontiguousarray(mat, dtype=np.float32)
+        if mat.ndim != 2:
+            raise ValueError(f"Vector matrix '{name}' must be 2-D, got ndim={mat.ndim}.")
+        if n is None:
+            n = mat.shape[0]
+        elif mat.shape[0] != n:
+            raise ValueError(f"Row count mismatch: first matrix has {n} rows, '{name}' has {mat.shape[0]} rows.")
+        coerced[name] = mat
+
+    assert n is not None  # guaranteed by non-empty check
+
+    if ids is None:
+        ids_list = list(range(n))
+    elif isinstance(ids, np.ndarray):
+        ids_list = ids.tolist()
+    else:
+        ids_list = list(ids)
+
+    backend = _detect_backend(client)
+
+    if backend not in _MULTI_VECTOR_BACKENDS:
+        raise NotImplementedError(
+            f"Backend '{backend}' does not support multi-vector storage. "
+            f"Supported backends for multi-vector export: {sorted(_MULTI_VECTOR_BACKENDS)}."
+        )
+
+    dispatch = {
+        "qdrant": _export_qdrant_multi,
+        "meilisearch": _export_meilisearch_multi,
+        "weaviate": _export_weaviate_multi,
+    }
+
+    return dispatch[backend](
+        coerced,
+        client,
+        collection_name,
+        ids_list,
+        payloads,
+        batch_size,
+        recreate,
+        **kwargs,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Multi-vector backends
+# ---------------------------------------------------------------------------
+
+
+def _export_qdrant_multi(
+    named_vectors: dict[str, np.ndarray],
+    client: Any,
+    collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    recreate: bool,
+    distance: str = "Dot",
+    **_kw: Any,
+) -> int:
+    """Export named vectors to Qdrant (one vector space per embedding type)."""
+    from qdrant_client.models import (  # type: ignore[import-untyped]
+        Distance,
+        PointStruct,
+        VectorParams,
+    )
+
+    n = next(iter(named_vectors.values())).shape[0]
+    dist_map = {"Dot": Distance.DOT, "Cosine": Distance.COSINE, "Euclid": Distance.EUCLID}
+    if distance not in dist_map:
+        raise ValueError(f"Unknown distance '{distance}'. Must be one of {list(dist_map)}")
+
+    if recreate:
+        vectors_config = {
+            name: VectorParams(size=mat.shape[1], distance=dist_map[distance]) for name, mat in named_vectors.items()
+        }
+        client.recreate_collection(
+            collection_name=collection_name,
+            vectors_config=vectors_config,
+        )
+
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        points = [
+            PointStruct(
+                id=ids[i],
+                vector={name: mat[i].tolist() for name, mat in named_vectors.items()},
+                payload=payloads[i] if payloads else {},
+            )
+            for i in range(start, end)
+        ]
+        client.upsert(collection_name=collection_name, points=points)
+    return n
+
+
+def _export_meilisearch_multi(
+    named_vectors: dict[str, np.ndarray],
+    client: Any,
+    collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    batch_size: int,
+    _recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export multiple named embedders to Meilisearch."""
+    n = next(iter(named_vectors.values())).shape[0]
+    index = client.index(collection_name)
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        batch = []
+        for i in range(start, end):
+            doc = dict(payloads[i]) if payloads and i < len(payloads) else {}
+            doc["id"] = ids[i]
+            doc["_vectors"] = {name: mat[i].tolist() for name, mat in named_vectors.items()}
+            batch.append(doc)
+        index.add_documents(batch)
+    return n
+
+
+def _export_weaviate_multi(
+    named_vectors: dict[str, np.ndarray],
+    client: Any,
+    collection_name: str,
+    ids: list[Any],
+    payloads: list[dict[str, Any]] | None,
+    _batch_size: int,
+    recreate: bool,
+    **_kw: Any,
+) -> int:
+    """Export named vectors to Weaviate v4."""
+    n = next(iter(named_vectors.values())).shape[0]
+
+    if not hasattr(client, "collections"):
+        raise NotImplementedError("Multi-vector export requires Weaviate v4 client (with client.collections API).")
+
+    if recreate:
+        try:
+            client.collections.delete(collection_name)
+        except Exception:
+            pass
+    col = client.collections.create(name=collection_name)
+    with col.batch.dynamic() as batch:
+        for i in range(n):
+            props = payloads[i] if payloads and i < len(payloads) else {}
+            batch.add_object(
+                properties=props,
+                vector={name: mat[i].tolist() for name, mat in named_vectors.items()},
+                uuid=str(ids[i]),
+            )
+    return n
+
+
 def _detect_backend(client: Any) -> str:
     """Auto-detect which vector DB the client belongs to."""
     client_mod = type(client).__module__
