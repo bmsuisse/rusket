@@ -20,6 +20,7 @@ nav = [
       { "5. SASRec Next Best Product" = "notebooks/5_sasrec_next_best_product.md" },
       { "6. Optuna Hyperparameter Tuning" = "notebooks/6_optuna_tuning.md" },
       { "7. Next-Item Prediction" = "notebooks/7_next_item_prediction_combined.md" },
+      { "8. E-Shop Vector Recommendations" = "notebooks/8_eshop_vector_recommendations.md" },
     ]},
     { "Recommender Workflows" = "recommender.md" },
     { "Pipeline API" = "pipeline.md" },
