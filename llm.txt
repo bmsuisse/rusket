@@ -2755,6 +2755,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### 📖 Documentation
 
+- add e-shop vector recommendations tutorial (v0.1.89)
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 📖 Documentation
+
 - add comprehensive Vector Database guide with 8 real-world examples
 - add comprehensive recommendation serving guide for Qdrant, Meilisearch, and pgvector
 
