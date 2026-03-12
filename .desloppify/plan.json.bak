@@ -1,16 +1,10 @@
 {
   "version": 8,
   "created": "2026-03-12T19:47:58+00:00",
-  "updated": "2026-03-12T20:24:06+00:00",
+  "updated": "2026-03-12T20:38:48+00:00",
   "queue_order": [
     "workflow::communicate-score",
     "workflow::create-plan",
-    "triage::observe",
-    "triage::reflect",
-    "triage::organize",
-    "triage::enrich",
-    "triage::sense-check",
-    "triage::commit",
     "subjective::abstraction_fitness",
     "subjective::ai_generated_debt",
     "subjective::api_surface_coherence",
@@ -30,25 +24,25 @@
     "subjective::package_organization",
     "subjective::test_strategy",
     "subjective::type_safety",
-    "review::.::holistic::abstraction_fitness::string_type_detection",
-    "review::.::holistic::ai_generated_debt::model_py_size",
-    "review::.::holistic::api_surface_coherence::recommend_items_overloaded_naming",
-    "review::.::holistic::contract_coherence::implicit_result_attribute",
-    "review::.::holistic::convention_outlier::import_inside_try_blocks",
-    "review::.::holistic::cross_module_architecture::circular_import_risk",
-    "review::.::holistic::dependency_health::optional_dep_version_bounds",
-    "review::.::holistic::design_coherence::mixed_pandas_polars_returns",
-    "review::.::holistic::error_consistency::silent_exception_handling",
-    "review::.::holistic::high_level_elegance::model_class_coupling",
-    "review::.::holistic::incomplete_migration::deprecated_recommend_items_miner",
-    "review::.::holistic::initialization_coupling::many_init_params",
-    "review::.::holistic::logic_clarity::nested_type_coercion_branches",
-    "review::.::holistic::low_level_elegance::repeated_polars_try_import",
-    "review::.::holistic::mid_level_elegance::prepare_vs_fit_transactions",
-    "review::.::holistic::naming_quality::terse_variable_names",
-    "review::.::holistic::package_organization::flat_model_hierarchy",
-    "review::.::holistic::test_strategy::optional_module_test_gaps",
-    "review::.::holistic::type_safety::any_typed_data_params"
+    "review::.::holistic::abstraction_fitness::string_type_detection_compat",
+    "review::.::holistic::ai_generated_debt::remaining_duplication",
+    "review::.::holistic::api_surface_coherence::recommend_items_dual_meaning",
+    "review::.::holistic::contract_coherence::some_broad_any_params",
+    "review::.::holistic::convention_outlier::inline_import_dependency",
+    "review::.::holistic::cross_module_architecture::lazy_imports_documentation",
+    "review::.::holistic::dependency_health::optional_dep_bounds",
+    "review::.::holistic::design_coherence::mixed_default_formats",
+    "review::.::holistic::error_consistency::silent_import_fallback",
+    "review::.::holistic::high_level_elegance::recommender_prep_overlap",
+    "review::.::holistic::incomplete_migration::fit_transactions_deprecated",
+    "review::.::holistic::initialization_coupling::als_many_params",
+    "review::.::holistic::logic_clarity::dispatch_chain_miner",
+    "review::.::holistic::low_level_elegance::polars_try_import_repeats",
+    "review::.::holistic::mid_level_elegance::mine_grouped_complexity",
+    "review::.::holistic::naming_quality::abbreviated_private_vars",
+    "review::.::holistic::package_organization::type_utils_location",
+    "review::.::holistic::test_strategy::optional_module_coverage",
+    "review::.::holistic::type_safety::any_data_param"
   ],
   "deferred": [],
   "skipped": {},
@@ -58,193 +52,193 @@
       "issue_id": "test_coverage::rusket/grouped.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/05_large_scale.py::untested_module": {
       "issue_id": "test_coverage::examples/05_large_scale.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/08_spark_guide_translation.py::untested_module": {
       "issue_id": "test_coverage::examples/08_spark_guide_translation.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::scripts/gen_api_reference.py::untested_critical": {
       "issue_id": "test_coverage::scripts/gen_api_reference.py::untested_critical",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/optuna.py::transitive_only": {
       "issue_id": "test_coverage::rusket/optuna.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/_core.py::transitive_only": {
       "issue_id": "test_coverage::rusket/_core.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::scripts/gen_llm_txt.py::untested_module": {
       "issue_id": "test_coverage::scripts/gen_llm_txt.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/15_time_aware_sequences.py::untested_module": {
       "issue_id": "test_coverage::examples/15_time_aware_sequences.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/splitting.py::transitive_only": {
       "issue_id": "test_coverage::rusket/splitting.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/07_als_pca_visualization.py::untested_module": {
       "issue_id": "test_coverage::examples/07_als_pca_visualization.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/10_online_retail_hupm_profit.py::untested_module": {
       "issue_id": "test_coverage::examples/10_online_retail_hupm_profit.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/viz.py::transitive_only": {
       "issue_id": "test_coverage::rusket/viz.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::scripts/sync_changelog.py::untested_module": {
       "issue_id": "test_coverage::scripts/sync_changelog.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/_dependencies.py::transitive_only": {
       "issue_id": "test_coverage::rusket/_dependencies.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/_compat.py::transitive_only": {
       "issue_id": "test_coverage::rusket/_compat.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/typing.py::transitive_only": {
       "issue_id": "test_coverage::rusket/typing.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/09_online_retail_basket_analysis.py::untested_module": {
       "issue_id": "test_coverage::examples/09_online_retail_basket_analysis.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/_embedding_mixin.py::transitive_only": {
       "issue_id": "test_coverage::rusket/_embedding_mixin.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/export.py::transitive_only": {
       "issue_id": "test_coverage::rusket/export.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/incremental_pca.py::untested_module": {
       "issue_id": "test_coverage::rusket/incremental_pca.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/faiss_ann.py::transitive_only": {
       "issue_id": "test_coverage::rusket/faiss_ann.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/12_faker_recommender.py::untested_module": {
       "issue_id": "test_coverage::examples/12_faker_recommender.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/02_market_basket_faker.py::untested_module": {
       "issue_id": "test_coverage::examples/02_market_basket_faker.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/_validation.py::transitive_only": {
       "issue_id": "test_coverage::rusket/_validation.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::rusket/lightgcn.py::transitive_only": {
       "issue_id": "test_coverage::rusket/lightgcn.py::transitive_only",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::scripts/eval_doc_snippets.py::untested_module": {
       "issue_id": "test_coverage::scripts/eval_doc_snippets.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::examples/11_instacart_recommender.py::untested_critical": {
       "issue_id": "test_coverage::examples/11_instacart_recommender.py::untested_critical",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::scripts/notebook_source.py::untested_module": {
       "issue_id": "test_coverage::scripts/notebook_source.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::fix_pyright.py::untested_module": {
       "issue_id": "test_coverage::fix_pyright.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "test_coverage::patch_mlflow.py::untested_module": {
       "issue_id": "test_coverage::patch_mlflow.py::untested_module",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchdata/andi_eclat.py::security::B101::benchdata/andi_eclat.py::140": {
       "issue_id": "security::benchdata/andi_eclat.py::security::B101::benchdata/andi_eclat.py::140",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_als.py::security::B310::benchmarks/bench_als.py::84": {
       "issue_id": "security::benchmarks/bench_als.py::security::B310::benchmarks/bench_als.py::84",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_als.py::security::B202::benchmarks/bench_als.py::91": {
       "issue_id": "security::benchmarks/bench_als.py::security::B202::benchmarks/bench_als.py::91",
@@ -256,217 +250,217 @@
       "issue_id": "security::benchmarks/bench_als.py::security::B202::benchmarks/bench_als.py::94",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_als_sweep.py::security::B310::benchmarks/bench_als_sweep.py::51": {
       "issue_id": "security::benchmarks/bench_als_sweep.py::security::B310::benchmarks/bench_als_sweep.py::51",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_anderson.py::security::B310::benchmarks/bench_anderson.py::33": {
       "issue_id": "security::benchmarks/bench_anderson.py::security::B310::benchmarks/bench_anderson.py::33",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_andi2.py::security::B310::benchmarks/bench_andi2.py::32": {
       "issue_id": "security::benchmarks/bench_andi2.py::security::B310::benchmarks/bench_andi2.py::32",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B404::benchmarks/bench_fpgrowth_vs_armrs.py::14": {
       "issue_id": "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B404::benchmarks/bench_fpgrowth_vs_armrs.py::14",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B306::benchmarks/bench_fpgrowth_vs_armrs.py::72": {
       "issue_id": "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B306::benchmarks/bench_fpgrowth_vs_armrs.py::72",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B306::benchmarks/bench_fpgrowth_vs_armrs.py::116": {
       "issue_id": "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B306::benchmarks/bench_fpgrowth_vs_armrs.py::116",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B603::benchmarks/bench_fpgrowth_vs_armrs.py::127": {
       "issue_id": "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B603::benchmarks/bench_fpgrowth_vs_armrs.py::127",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B603::benchmarks/bench_fpgrowth_vs_armrs.py::131": {
       "issue_id": "security::benchmarks/bench_fpgrowth_vs_armrs.py::security::B603::benchmarks/bench_fpgrowth_vs_armrs.py::131",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_fpminer_realistic.py::security::B310::benchmarks/bench_fpminer_realistic.py::47": {
       "issue_id": "security::benchmarks/bench_fpminer_realistic.py::security::B310::benchmarks/bench_fpminer_realistic.py::47",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_mining_algos.py::security::B310::benchmarks/bench_mining_algos.py::23": {
       "issue_id": "security::benchmarks/bench_mining_algos.py::security::B310::benchmarks/bench_mining_algos.py::23",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_pytest_librecommender.py::security::B310::benchmarks/bench_pytest_librecommender.py::35": {
       "issue_id": "security::benchmarks/bench_pytest_librecommender.py::security::B310::benchmarks/bench_pytest_librecommender.py::35",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_pytest_librecommender.py::security::B110::benchmarks/bench_pytest_librecommender.py::115": {
       "issue_id": "security::benchmarks/bench_pytest_librecommender.py::security::B110::benchmarks/bench_pytest_librecommender.py::115",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_realworld.py::security::B310::benchmarks/bench_realworld.py::104": {
       "issue_id": "security::benchmarks/bench_realworld.py::security::B310::benchmarks/bench_realworld.py::104",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_vs_librecommender.py::security::B310::benchmarks/bench_vs_librecommender.py::34": {
       "issue_id": "security::benchmarks/bench_vs_librecommender.py::security::B310::benchmarks/bench_vs_librecommender.py::34",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::benchmarks/bench_vs_recbole.py::security::B310::benchmarks/bench_vs_recbole.py::48": {
       "issue_id": "security::benchmarks/bench_vs_recbole.py::security::B310::benchmarks/bench_vs_recbole.py::48",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/06_recommender_hybrid.py::security::B101::examples/06_recommender_hybrid.py::69": {
       "issue_id": "security::examples/06_recommender_hybrid.py::security::B101::examples/06_recommender_hybrid.py::69",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/07_als_pca_visualization.py::security::B310::examples/07_als_pca_visualization.py::33": {
       "issue_id": "security::examples/07_als_pca_visualization.py::security::B310::examples/07_als_pca_visualization.py::33",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/08_spark_guide_translation.py::security::B310::examples/08_spark_guide_translation.py::34": {
       "issue_id": "security::examples/08_spark_guide_translation.py::security::B310::examples/08_spark_guide_translation.py::34",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/09_online_retail_basket_analysis.py::security::B310::examples/09_online_retail_basket_analysis.py::48": {
       "issue_id": "security::examples/09_online_retail_basket_analysis.py::security::B310::examples/09_online_retail_basket_analysis.py::48",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/09_online_retail_basket_analysis.py::security::B110::examples/09_online_retail_basket_analysis.py::84": {
       "issue_id": "security::examples/09_online_retail_basket_analysis.py::security::B110::examples/09_online_retail_basket_analysis.py::84",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::examples/10_online_retail_hupm_profit.py::security::B110::examples/10_online_retail_hupm_profit.py::56": {
       "issue_id": "security::examples/10_online_retail_hupm_profit.py::security::B110::examples/10_online_retail_hupm_profit.py::56",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/_config.py::security::B110::rusket/_config.py::61": {
       "issue_id": "security::rusket/_config.py::security::B110::rusket/_config.py::61",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/_config.py::security::B110::rusket/_config.py::70": {
       "issue_id": "security::rusket/_config.py::security::B110::rusket/_config.py::70",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/analytics.py::security::B101::rusket/analytics.py::67": {
       "issue_id": "security::rusket/analytics.py::security::B101::rusket/analytics.py::67",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/bert4rec.py::security::B101::rusket/bert4rec.py::236": {
       "issue_id": "security::rusket/bert4rec.py::security::B101::rusket/bert4rec.py::236",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/content_based.py::security::B101::rusket/content_based.py::160": {
       "issue_id": "security::rusket/content_based.py::security::B101::rusket/content_based.py::160",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/content_based.py::security::B101::rusket/content_based.py::161": {
       "issue_id": "security::rusket/content_based.py::security::B101::rusket/content_based.py::161",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/content_based.py::security::B101::rusket/content_based.py::162": {
       "issue_id": "security::rusket/content_based.py::security::B101::rusket/content_based.py::162",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/content_based.py::security::B101::rusket/content_based.py::183": {
       "issue_id": "security::rusket/content_based.py::security::B101::rusket/content_based.py::183",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/fm.py::security::B101::rusket/fm.py::148": {
       "issue_id": "security::rusket/fm.py::security::B101::rusket/fm.py::148",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/fm.py::security::B101::rusket/fm.py::149": {
       "issue_id": "security::rusket/fm.py::security::B101::rusket/fm.py::149",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/fm.py::security::B101::rusket/fm.py::150": {
       "issue_id": "security::rusket/fm.py::security::B101::rusket/fm.py::150",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/hybrid.py::security::B112::rusket/hybrid.py::115": {
       "issue_id": "security::rusket/hybrid.py::security::B112::rusket/hybrid.py::115",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/lightgcn.py::security::B101::rusket/lightgcn.py::284": {
       "issue_id": "security::rusket/lightgcn.py::security::B101::rusket/lightgcn.py::284",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/lightgcn.py::security::B101::rusket/lightgcn.py::285": {
       "issue_id": "security::rusket/lightgcn.py::security::B101::rusket/lightgcn.py::285",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B110::rusket/model.py::71": {
       "issue_id": "security::rusket/model.py::security::B110::rusket/model.py::71",
@@ -478,433 +472,433 @@
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::351",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B403::rusket/model.py::383": {
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::383",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B301::rusket/model.py::387": {
       "issue_id": "security::rusket/model.py::security::B301::rusket/model.py::387",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B403::rusket/model.py::430": {
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::430",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B301::rusket/model.py::434": {
       "issue_id": "security::rusket/model.py::security::B301::rusket/model.py::434",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/nmf.py::security::B101::rusket/nmf.py::166": {
       "issue_id": "security::rusket/nmf.py::security::B101::rusket/nmf.py::166",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/nmf.py::security::B101::rusket/nmf.py::167": {
       "issue_id": "security::rusket/nmf.py::security::B101::rusket/nmf.py::167",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/nmf.py::security::B101::rusket/nmf.py::213": {
       "issue_id": "security::rusket/nmf.py::security::B101::rusket/nmf.py::213",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/nmf.py::security::B101::rusket/nmf.py::220": {
       "issue_id": "security::rusket/nmf.py::security::B101::rusket/nmf.py::220",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pacmap.py::security::B101::rusket/pacmap.py::124": {
       "issue_id": "security::rusket/pacmap.py::security::B101::rusket/pacmap.py::124",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pacmap.py::security::B101::rusket/pacmap.py::144": {
       "issue_id": "security::rusket/pacmap.py::security::B101::rusket/pacmap.py::144",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::132": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::132",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::139": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::139",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::146": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::146",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::153": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::153",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::160": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::160",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pca.py::security::B101::rusket/pca.py::167": {
       "issue_id": "security::rusket/pca.py::security::B101::rusket/pca.py::167",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pipeline.py::security::B112::rusket/pipeline.py::416": {
       "issue_id": "security::rusket/pipeline.py::security::B112::rusket/pipeline.py::416",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/pipeline.py::security::B112::rusket/pipeline.py::504": {
       "issue_id": "security::rusket/pipeline.py::security::B112::rusket/pipeline.py::504",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/popularity.py::security::B101::rusket/popularity.py::116": {
       "issue_id": "security::rusket/popularity.py::security::B101::rusket/popularity.py::116",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/popularity.py::security::B101::rusket/popularity.py::142": {
       "issue_id": "security::rusket/popularity.py::security::B101::rusket/popularity.py::142",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/sasrec.py::security::B101::rusket/sasrec.py::247": {
       "issue_id": "security::rusket/sasrec.py::security::B101::rusket/sasrec.py::247",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B101::rusket/vector_export.py::235": {
       "issue_id": "security::rusket/vector_export.py::security::B101::rusket/vector_export.py::235",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::365": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::365",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B608::rusket/vector_export.py::543": {
       "issue_id": "security::rusket/vector_export.py::security::B608::rusket/vector_export.py::543",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::569": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::569",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::641": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::641",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::715": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::715",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::817": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::817",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::844": {
       "issue_id": "security::rusket/vector_export.py::security::B110::rusket/vector_export.py::844",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::scripts/eval_doc_snippets.py::security::B102::scripts/eval_doc_snippets.py::74": {
       "issue_id": "security::scripts/eval_doc_snippets.py::security::B102::scripts/eval_doc_snippets.py::74",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::scripts/sync_changelog.py::security::B404::scripts/sync_changelog.py::13": {
       "issue_id": "security::scripts/sync_changelog.py::security::B404::scripts/sync_changelog.py::13",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::scripts/sync_changelog.py::security::B603::scripts/sync_changelog.py::35": {
       "issue_id": "security::scripts/sync_changelog.py::security::B603::scripts/sync_changelog.py::35",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::149": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::149",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::161": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::161",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::173": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::173",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::185": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::185",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::242": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::242",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::254": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::254",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::266": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::266",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::278": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::278",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::295": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::295",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::307": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::307",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::319": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::319",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::331": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::331",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::350": {
       "issue_id": "security::tests/benchmarks/test_bench_all.py::security::B101::tests/benchmarks/test_bench_all.py::350",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::99": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::99",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::111": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::111",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::123": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::123",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::138": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::138",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::145": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::145",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::163": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::163",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::176": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::176",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::193": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::193",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::205": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::205",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::217": {
       "issue_id": "security::tests/benchmarks/test_bench_als_scoring.py::security::B101::tests/benchmarks/test_bench_als_scoring.py::217",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::71": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::71",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::72": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::72",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::101": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::101",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::102": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::102",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::132": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::132",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::133": {
       "issue_id": "security::tests/benchmarks/test_bench_cross_validate.py::security::B101::tests/benchmarks/test_bench_cross_validate.py::133",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::43": {
       "issue_id": "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::43",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::55": {
       "issue_id": "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::55",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::67": {
       "issue_id": "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::67",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::.cache::.cache": {
       "issue_id": "stale_exclude::.cache::.cache",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::.hypothesis::.hypothesis": {
       "issue_id": "stale_exclude::.hypothesis::.hypothesis",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::recbole_data::recbole_data": {
       "issue_id": "stale_exclude::recbole_data::recbole_data",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::log_tensorboard::log_tensorboard": {
       "issue_id": "stale_exclude::log_tensorboard::log_tensorboard",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::profile_als.dSYM::profile_als.dSYM": {
       "issue_id": "stale_exclude::profile_als.dSYM::profile_als.dSYM",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::.benchmarks::.benchmarks": {
       "issue_id": "stale_exclude::.benchmarks::.benchmarks",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "stale_exclude::.cargo::.cargo": {
       "issue_id": "stale_exclude::.cargo::.cargo",
       "created_at": "2026-03-12T19:47:58+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "subjective::abstraction_fitness": {
       "issue_id": "subjective::abstraction_fitness",
@@ -1060,37 +1054,67 @@
       "issue_id": "test_coverage::rusket/_type_utils.py::transitive_only",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/test_coverage",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B403::rusket/model.py::325": {
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::325",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B403::rusket/model.py::357": {
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::357",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B301::rusket/model.py::361": {
       "issue_id": "security::rusket/model.py::security::B301::rusket/model.py::361",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B403::rusket/model.py::404": {
       "issue_id": "security::rusket/model.py::security::B403::rusket/model.py::404",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
     },
     "security::rusket/model.py::security::B301::rusket/model.py::408": {
       "issue_id": "security::rusket/model.py::security::B301::rusket/model.py::408",
       "created_at": "2026-03-12T20:19:22+00:00",
       "cluster": "auto/security",
-      "updated_at": "2026-03-12T20:20:54+00:00"
+      "updated_at": "2026-03-12T20:38:48+00:00"
+    },
+    "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::132": {
+      "issue_id": "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::132",
+      "created_at": "2026-03-12T20:37:01+00:00",
+      "cluster": "auto/security",
+      "updated_at": "2026-03-12T20:38:48+00:00"
+    },
+    "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::164": {
+      "issue_id": "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::164",
+      "created_at": "2026-03-12T20:37:01+00:00",
+      "cluster": "auto/security",
+      "updated_at": "2026-03-12T20:38:48+00:00"
+    },
+    "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::168": {
+      "issue_id": "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::168",
+      "created_at": "2026-03-12T20:37:01+00:00",
+      "cluster": "auto/security",
+      "updated_at": "2026-03-12T20:38:48+00:00"
+    },
+    "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::211": {
+      "issue_id": "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::211",
+      "created_at": "2026-03-12T20:37:01+00:00",
+      "cluster": "auto/security",
+      "updated_at": "2026-03-12T20:38:48+00:00"
+    },
+    "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::215": {
+      "issue_id": "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::215",
+      "created_at": "2026-03-12T20:37:01+00:00",
+      "cluster": "auto/security",
+      "updated_at": "2026-03-12T20:38:48+00:00"
     }
   },
   "clusters": {
@@ -1139,7 +1163,7 @@
     },
     "auto/security": {
       "name": "auto/security",
-      "description": "Fix 108 security issues",
+      "description": "Fix 113 security issues",
       "issue_ids": [
         "security::benchdata/andi_eclat.py::security::B101::benchdata/andi_eclat.py::140",
         "security::benchmarks/bench_als.py::security::B310::benchmarks/bench_als.py::84",
@@ -1248,10 +1272,15 @@
         "security::rusket/model.py::security::B403::rusket/model.py::357",
         "security::rusket/model.py::security::B301::rusket/model.py::361",
         "security::rusket/model.py::security::B403::rusket/model.py::404",
-        "security::rusket/model.py::security::B301::rusket/model.py::408"
+        "security::rusket/model.py::security::B301::rusket/model.py::408",
+        "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::132",
+        "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::164",
+        "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::168",
+        "security::rusket/model/_base.py::security::B403::rusket/model/_base.py::211",
+        "security::rusket/model/_base.py::security::B301::rusket/model/_base.py::215"
       ],
       "created_at": "2026-03-12T19:47:58+00:00",
-      "updated_at": "2026-03-12T20:19:22+00:00",
+      "updated_at": "2026-03-12T20:37:01+00:00",
       "auto": true,
       "cluster_key": "detector::security",
       "action": "review and fix security issues \u2014 prioritize by severity",
@@ -1390,10 +1419,10 @@
   },
   "promoted_ids": [],
   "plan_start_scores": {
-    "strict": 75.6,
-    "overall": 75.6,
-    "objective": 84.5,
-    "verified": 84.4
+    "strict": 79.6,
+    "overall": 79.6,
+    "objective": 84.6,
+    "verified": 84.6
   },
   "refresh_state": {
     "lifecycle_phase": "execute"
@@ -2572,39 +2601,217 @@
         "cited_ids": [],
         "reuse": false
       }
+    },
+    {
+      "timestamp": "2026-03-12T20:26:12+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:26:12+00:00",
+      "action": "sync_communicate_score",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:26:12+00:00",
+      "action": "sync_create_plan",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:34:49+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:34:49+00:00",
+      "action": "sync_communicate_score",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:34:49+00:00",
+      "action": "sync_create_plan",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "injected": true
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:37:01+00:00",
+      "action": "review_import_sync",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "trigger": "review_import",
+        "new_ids": [
+          "review::.::holistic::abstraction_fitness::string_type_detection_compat",
+          "review::.::holistic::ai_generated_debt::remaining_duplication",
+          "review::.::holistic::api_surface_coherence::recommend_items_dual_meaning",
+          "review::.::holistic::contract_coherence::some_broad_any_params",
+          "review::.::holistic::convention_outlier::inline_import_dependency",
+          "review::.::holistic::cross_module_architecture::lazy_imports_documentation",
+          "review::.::holistic::dependency_health::optional_dep_bounds",
+          "review::.::holistic::design_coherence::mixed_default_formats",
+          "review::.::holistic::error_consistency::silent_import_fallback",
+          "review::.::holistic::high_level_elegance::recommender_prep_overlap",
+          "review::.::holistic::incomplete_migration::fit_transactions_deprecated",
+          "review::.::holistic::initialization_coupling::als_many_params",
+          "review::.::holistic::logic_clarity::dispatch_chain_miner",
+          "review::.::holistic::low_level_elegance::polars_try_import_repeats",
+          "review::.::holistic::mid_level_elegance::mine_grouped_complexity",
+          "review::.::holistic::naming_quality::abbreviated_private_vars",
+          "review::.::holistic::package_organization::type_utils_location",
+          "review::.::holistic::test_strategy::optional_module_coverage",
+          "review::.::holistic::type_safety::any_data_param"
+        ],
+        "added_to_queue": [
+          "review::.::holistic::abstraction_fitness::string_type_detection_compat",
+          "review::.::holistic::ai_generated_debt::remaining_duplication",
+          "review::.::holistic::api_surface_coherence::recommend_items_dual_meaning",
+          "review::.::holistic::contract_coherence::some_broad_any_params",
+          "review::.::holistic::convention_outlier::inline_import_dependency",
+          "review::.::holistic::cross_module_architecture::lazy_imports_documentation",
+          "review::.::holistic::dependency_health::optional_dep_bounds",
+          "review::.::holistic::design_coherence::mixed_default_formats",
+          "review::.::holistic::error_consistency::silent_import_fallback",
+          "review::.::holistic::high_level_elegance::recommender_prep_overlap",
+          "review::.::holistic::incomplete_migration::fit_transactions_deprecated",
+          "review::.::holistic::initialization_coupling::als_many_params",
+          "review::.::holistic::logic_clarity::dispatch_chain_miner",
+          "review::.::holistic::low_level_elegance::polars_try_import_repeats",
+          "review::.::holistic::mid_level_elegance::mine_grouped_complexity",
+          "review::.::holistic::naming_quality::abbreviated_private_vars",
+          "review::.::holistic::package_organization::type_utils_location",
+          "review::.::holistic::test_strategy::optional_module_coverage",
+          "review::.::holistic::type_safety::any_data_param"
+        ],
+        "workflow_injected_ids": [],
+        "triage_injected": false,
+        "triage_injected_ids": [],
+        "triage_deferred": true,
+        "diff_new": 19,
+        "diff_reopened": 0,
+        "diff_auto_resolved": 39,
+        "stale_pruned_from_queue": [
+          "review::.::holistic::abstraction_fitness::string_type_detection",
+          "review::.::holistic::ai_generated_debt::model_py_size",
+          "review::.::holistic::api_surface_coherence::recommend_items_overloaded_naming",
+          "review::.::holistic::contract_coherence::implicit_result_attribute",
+          "review::.::holistic::convention_outlier::import_inside_try_blocks",
+          "review::.::holistic::cross_module_architecture::circular_import_risk",
+          "review::.::holistic::dependency_health::optional_dep_version_bounds",
+          "review::.::holistic::design_coherence::mixed_pandas_polars_returns",
+          "review::.::holistic::error_consistency::silent_exception_handling",
+          "review::.::holistic::high_level_elegance::model_class_coupling",
+          "review::.::holistic::incomplete_migration::deprecated_recommend_items_miner",
+          "review::.::holistic::initialization_coupling::many_init_params",
+          "review::.::holistic::logic_clarity::nested_type_coercion_branches",
+          "review::.::holistic::low_level_elegance::repeated_polars_try_import",
+          "review::.::holistic::mid_level_elegance::prepare_vs_fit_transactions",
+          "review::.::holistic::naming_quality::terse_variable_names",
+          "review::.::holistic::package_organization::flat_model_hierarchy",
+          "review::.::holistic::test_strategy::optional_module_test_gaps",
+          "review::.::holistic::type_safety::any_typed_data_params"
+        ],
+        "covered_subjective": [
+          "subjective::abstraction_fitness",
+          "subjective::ai_generated_debt",
+          "subjective::api_surface_coherence",
+          "subjective::authorization_consistency",
+          "subjective::contract_coherence",
+          "subjective::convention_outlier",
+          "subjective::cross_module_architecture",
+          "subjective::dependency_health",
+          "subjective::design_coherence",
+          "subjective::error_consistency",
+          "subjective::high_level_elegance",
+          "subjective::incomplete_migration",
+          "subjective::initialization_coupling",
+          "subjective::logic_clarity",
+          "subjective::low_level_elegance",
+          "subjective::mid_level_elegance",
+          "subjective::naming_quality",
+          "subjective::package_organization",
+          "subjective::test_strategy",
+          "subjective::type_safety"
+        ],
+        "stale_sync_injected": [],
+        "stale_sync_pruned": [],
+        "auto_cluster_changes": 1
+      }
+    },
+    {
+      "timestamp": "2026-03-12T20:38:48+00:00",
+      "action": "seed_start_scores",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {}
     }
   ],
   "epic_triage_meta": {
     "triage_defer_state": {
       "deferred_review_ids": [
-        "review::.::holistic::abstraction_fitness::type_detection_string_comparison",
-        "review::.::holistic::ai_generated_debt::duplicated_is_empty_check",
-        "review::.::holistic::ai_generated_debt::repeated_import_optional_dependency",
-        "review::.::holistic::api_surface_coherence::mixed_return_types_batch_recommend",
-        "review::.::holistic::contract_coherence::implicit_result_contract",
-        "review::.::holistic::convention_outlier::inconsistent_dependency_import_pattern",
-        "review::.::holistic::cross_module_architecture::import_cycle_risk",
-        "review::.::holistic::dependency_health::scipy_implicit_required",
-        "review::.::holistic::design_coherence::convert_to_orig_type_duplication",
-        "review::.::holistic::error_consistency::bare_except_pass",
-        "review::.::holistic::high_level_elegance::model_py_too_large",
-        "review::.::holistic::incomplete_migration::deprecated_recommend_items",
-        "review::.::holistic::initialization_coupling::import_time_side_effect",
-        "review::.::holistic::logic_clarity::mine_grouped_three_paths",
-        "review::.::holistic::low_level_elegance::duplicate_col_names_computation",
-        "review::.::holistic::low_level_elegance::duplicate_tuple_isinstance",
-        "review::.::holistic::low_level_elegance::redundant_time_import",
-        "review::.::holistic::mid_level_elegance::type_coercion_scattered",
-        "review::.::holistic::naming_quality::generic_helper_names",
-        "review::.::holistic::package_organization::flat_package_structure",
-        "review::.::holistic::test_strategy::benchmark_mixed_with_unit_tests",
-        "review::.::holistic::type_safety::any_escape_hatches"
+        "review::.::holistic::abstraction_fitness::string_type_detection_compat",
+        "review::.::holistic::ai_generated_debt::remaining_duplication",
+        "review::.::holistic::api_surface_coherence::recommend_items_dual_meaning",
+        "review::.::holistic::contract_coherence::some_broad_any_params",
+        "review::.::holistic::convention_outlier::inline_import_dependency",
+        "review::.::holistic::cross_module_architecture::lazy_imports_documentation",
+        "review::.::holistic::dependency_health::optional_dep_bounds",
+        "review::.::holistic::design_coherence::mixed_default_formats",
+        "review::.::holistic::error_consistency::silent_import_fallback",
+        "review::.::holistic::high_level_elegance::recommender_prep_overlap",
+        "review::.::holistic::incomplete_migration::fit_transactions_deprecated",
+        "review::.::holistic::initialization_coupling::als_many_params",
+        "review::.::holistic::logic_clarity::dispatch_chain_miner",
+        "review::.::holistic::low_level_elegance::polars_try_import_repeats",
+        "review::.::holistic::mid_level_elegance::mine_grouped_complexity",
+        "review::.::holistic::naming_quality::abbreviated_private_vars",
+        "review::.::holistic::package_organization::type_utils_location",
+        "review::.::holistic::test_strategy::optional_module_coverage",
+        "review::.::holistic::type_safety::any_data_param"
       ],
-      "last_deferred_scan": 4,
-      "last_deferred_at": "2026-03-12T20:14:00+00:00",
+      "last_deferred_scan": 10,
+      "last_deferred_at": "2026-03-12T20:38:47+00:00",
       "defer_count": 2,
-      "first_deferred_scan": 2,
-      "first_deferred_at": "2026-03-12T19:53:10+00:00"
+      "first_deferred_scan": 9,
+      "first_deferred_at": "2026-03-12T20:37:01+00:00"
     },
     "triage_stages": {
       "observe": {
@@ -2640,7 +2847,7 @@
       "review::.::holistic::test_strategy::benchmark_mixed_with_unit_tests",
       "review::.::holistic::type_safety::any_escape_hatches"
     ],
-    "triage_force_visible": true
+    "triage_recommended": true
   },
   "commit_log": [],
   "uncommitted_issues": [
@@ -2788,5 +2995,5 @@
     "security::tests/benchmarks/test_bench_svd.py::security::B101::tests/benchmarks/test_bench_svd.py::67"
   ],
   "commit_tracking_branch": null,
-  "scan_count_at_plan_start": 6
+  "scan_count_at_plan_start": 10
 }

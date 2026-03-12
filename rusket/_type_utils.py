@@ -48,3 +48,46 @@ def to_list_if_collection(x: Any) -> Any:
     if isinstance(x, (tuple, set)):
         return list(x)
     return x
+
+
+def detect_dataframe_type(data: Any) -> str:
+    """Detect the DataFrame flavour of *data*.
+
+    Parameters
+    ----------
+    data : Any
+        A DataFrame-like object.
+
+    Returns
+    -------
+    str
+        One of ``"pyarrow"``, ``"spark"``, ``"polars"``, or ``"pandas"`` (the default).
+    """
+    _type = type(data)
+    _name = _type.__name__
+    _module = getattr(_type, "__module__", "")
+    if _name == "Table" and _module.startswith("pyarrow"):
+        return "pyarrow"
+    if _name == "DataFrame":
+        if _module.startswith("pyspark"):
+            return "spark"
+        if _module.startswith("polars"):
+            return "polars"
+    return "pandas"
+
+
+def try_import_polars() -> tuple[Any, bool]:
+    """Attempt to import Polars, returning ``(module | None, is_available)``.
+
+    Returns
+    -------
+    tuple[Any, bool]
+        ``(polars_module, True)`` if available, else ``(None, False)``.
+    """
+    try:
+        from rusket._dependencies import import_optional_dependency
+
+        pl = import_optional_dependency("polars")
+        return pl, True
+    except ImportError:
+        return None, False
