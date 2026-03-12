@@ -2753,6 +2753,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### 🚀 Features
+
+- Update rusket core, model, and transactions modules, and generate desloppify review artifacts.
+
 ### 📖 Documentation
 
 - add e-shop vector recommendations tutorial (v0.1.89)
