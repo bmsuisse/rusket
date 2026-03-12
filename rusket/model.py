@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 from ._embedding_mixin import EmbeddingMixin
+from ._type_utils import is_dataframe_empty, to_list_if_collection
 
 
 class RuleMinerMixin:
@@ -54,22 +55,7 @@ class RuleMinerMixin:
         # self.fit() / self.mine() must be implemented by the subclass
         df_freq = self.fit().predict()  # type: ignore
 
-        is_empty = False
-        if df_freq is None:
-            is_empty = True
-        elif hasattr(df_freq, "empty"):
-            is_empty = df_freq.empty
-        elif hasattr(df_freq, "is_empty"):
-            # Polars
-            is_empty = df_freq.is_empty()
-        elif hasattr(df_freq, "isEmpty"):
-            # Spark
-            is_empty = df_freq.isEmpty()
-        else:
-            try:
-                is_empty = len(df_freq) == 0
-            except TypeError:
-                pass
+        is_empty = is_dataframe_empty(df_freq)
 
         if is_empty:
             from rusket._dependencies import import_optional_dependency
@@ -174,19 +160,7 @@ class RuleMinerMixin:
 
         rules_df = self._rules_cache[cache_key]
 
-        is_empty = False
-        if rules_df is None:
-            is_empty = True
-        elif hasattr(rules_df, "empty"):
-            is_empty = rules_df.empty
-        elif hasattr(rules_df, "is_empty"):
-            # Polars
-            is_empty = rules_df.is_empty()
-        elif hasattr(rules_df, "isEmpty"):
-            # Spark
-            is_empty = rules_df.isEmpty()
-        else:
-            is_empty = len(rules_df) == 0
+        is_empty = is_dataframe_empty(rules_df)
 
         if is_empty:
             return []
@@ -508,6 +482,9 @@ class Miner(BaseModel):
             elif mod_name.startswith("polars"):
                 self._orig_df_type = "polars"
 
+        self._result: Any = None
+        self._grouped_result: Any = None
+
     def _convert_to_orig_type(self, df: pd.DataFrame) -> Any:
         """Helper to convert the resulting pandas DataFrame back to the input DataFrame type."""
         from rusket._dependencies import import_optional_dependency
@@ -518,14 +495,12 @@ class Miner(BaseModel):
             return df
 
         if self._orig_df_type == "pyarrow":
-            from rusket._dependencies import import_optional_dependency
-
             pa = import_optional_dependency("pyarrow")
 
             # Convert tuples to lists for Arrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
+                    df[col] = df[col].apply(to_list_if_collection)
             return pa.Table.from_pandas(df)
         elif self._orig_df_type == "polars":
             from rusket._dependencies import import_optional_dependency
@@ -535,7 +510,7 @@ class Miner(BaseModel):
             # Convert tuples to lists for pyarrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
+                    df[col] = df[col].apply(to_list_if_collection)
 
             return pl.from_pandas(df)
         elif self._orig_df_type == "spark":
@@ -549,7 +524,7 @@ class Miner(BaseModel):
                 # Convert tuples to lists for Spark schema compatibility
                 for col in ["antecedents", "consequents", "itemsets"]:
                     if col in df.columns:
-                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
+                        df[col] = df[col].apply(to_list_if_collection)
 
                 spark = SparkSession.getActiveSession()
                 if spark is not None:
@@ -660,7 +635,7 @@ class Miner(BaseModel):
         pd.DataFrame
             The frequent itemsets / patterns.
         """
-        if not hasattr(self, "_result") or self._result is None:
+        if self._result is None:
             self.fit(**kwargs)
         return self._result  # type: ignore[return-value]
 
@@ -735,7 +710,7 @@ class Miner(BaseModel):
                 )
                 if len(res_pd) == 0:
                     continue
-                res_pd["itemsets"] = res_pd["itemsets"].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
+                res_pd["itemsets"] = res_pd["itemsets"].apply(to_list_if_collection)
                 res_pd.insert(0, group_col, g)
                 frames.append(res_pd)
 
@@ -1016,7 +991,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         self,
         include_labels: bool = True,
         normalize: bool = False,
-        format: str = "pandas",
+        format: Literal["pandas", "polars", "spark"] = "pandas",
     ) -> Any:
         """Exports latent item factors as a DataFrame for Vector DBs.
 
@@ -1048,7 +1023,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         self,
         include_labels: bool = True,
         normalize: bool = False,
-        format: str = "pandas",
+        format: Literal["pandas", "polars", "spark"] = "pandas",
     ) -> Any:
         """Exports latent user factors as a DataFrame.
 

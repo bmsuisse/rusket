@@ -1,0 +1,20 @@
+{
+  "session_id": "ext_20260312_201439_dbd66086",
+  "status": "submitted",
+  "runner": "claude",
+  "created_at": "2026-03-12T20:14:39+00:00",
+  "expires_at": "2026-03-13T20:14:39+00:00",
+  "ttl_hours": 24,
+  "token": "c32bbd5d1a599f0c097ea786a194f9e0",
+  "attest": "I validated this review was completed without awareness of overall score and is unbiased.",
+  "packet_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/review_packets/holistic_packet_20260312_201439.json",
+  "blind_packet_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/review_packet_blind.json",
+  "packet_sha256": "ea160d40d8c77e2134532cddc41da264bf7c29116da81f5bdf746aa4ae3bd26b",
+  "template_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/review_result.template.json",
+  "launch_prompt_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/claude_launch_prompt.md",
+  "instructions_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/reviewer_instructions.md",
+  "expected_output_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/review_result.json",
+  "submitted_at": "2026-03-12T20:19:23+00:00",
+  "submitted_input_file": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/review_result.json",
+  "submitted_canonical_file": "/Users/dominikpeter/DevOps/rusket/.desloppify/external_review_sessions/ext_20260312_201439_dbd66086/canonical_import_20260312_201922.json"
+}

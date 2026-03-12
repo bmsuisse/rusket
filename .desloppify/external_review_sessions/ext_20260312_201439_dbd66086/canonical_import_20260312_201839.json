@@ -1,0 +1,275 @@
+{
+  "assessments": {
+    "naming_quality": 82,
+    "logic_clarity": 80,
+    "type_safety": 75,
+    "contract_coherence": 72,
+    "error_consistency": 78,
+    "abstraction_fitness": 70,
+    "ai_generated_debt": 65,
+    "high_level_elegance": 72,
+    "mid_level_elegance": 70,
+    "low_level_elegance": 68,
+    "cross_module_architecture": 75,
+    "initialization_coupling": 80,
+    "convention_outlier": 70,
+    "dependency_health": 86,
+    "test_strategy": 70,
+    "api_surface_coherence": 78,
+    "authorization_consistency": 100,
+    "incomplete_migration": 65,
+    "package_organization": 72,
+    "design_coherence": 75
+  },
+  "dimension_notes": {
+    "naming_quality": "Consistent naming conventions. NumPy-style docstrings on all public methods. Class names follow clear hierarchy: BaseModel > Miner > ImplicitRecommender. Minor deduction for 'col_names' vs 'column_names' inconsistency and some terse internal variable names.",
+    "logic_clarity": "Logic is generally clear with good separation. FP-Growth dispatch code in _core.py is well-structured. Minor: nested type detection in _compat.py uses string comparison rather than isinstance.",
+    "type_safety": "Strong typing with TYPE_CHECKING imports and Literal types for format params. Some methods still accept bare Any where more specific types would be better. from_transactions uses Any for data param.",
+    "contract_coherence": "Pre/post conditions documented. _check_fitted validates state. Minor: _result attribute implicitly created, some methods lack parameter validation.",
+    "error_consistency": "Error messages are clear and actionable. Uses specific exceptions (TypeError, ValueError, RuntimeError). Some paths silently catch Exception with pass.",
+    "abstraction_fitness": "Good use of mixins (RuleMinerMixin, EmbeddingMixin). _type_utils centralizes type checks. Type detection in _compat.py still uses __name__ string comparison instead of isinstance.",
+    "ai_generated_debt": "Recently improved: extracted is_dataframe_empty helper, consolidated duplicate import_optional_dependency calls, replaced inline lambdas with to_list_if_collection. Remaining: model.py still 1100+ lines with 5 classes that could potentially be split.",
+    "high_level_elegance": "Clear BaseModel > Miner / ImplicitRecommender / SequentialRecommender hierarchy. model.py houses all base classes which makes it a large file but keeps the hierarchy visible. Clean delegation to export.py, viz.py, similarity.py.",
+    "mid_level_elegance": "Well-structured method-level design. from_transactions pattern consistent across all classes. Minor: _prepare_transactions and _fit_transactions in ImplicitRecommender could be streamlined.",
+    "low_level_elegance": "Improved: removed redundant imports, duplicate computations, consolidated lambdas. Remaining: verbose timing pattern repeated in _core.py, try/except for optional polars import repeated.",
+    "cross_module_architecture": "Good module boundaries: _core.py for Rust dispatch, _compat.py for coercions, _dependencies.py for optional imports, _type_utils.py for type helpers. Lazy imports prevent circular dependencies.",
+    "initialization_coupling": "Factory pattern (from_transactions) cleanly separates construction from fitting. EmbeddingMixin decouples vector DB integration. Minor: some __init__ methods have many parameters.",
+    "convention_outlier": "Consistent use of: verbose:int not bool, seed:int not random_state, NumPy docstrings. Minor outlier: import_optional_dependency still imported inside try blocks in some places rather than at function top.",
+    "dependency_health": "Clean optional dependency management via import_optional_dependency. No pinned versions in pyproject.toml for optional deps. Strong separation of core (numpy/scipy) from optional (pandas/polars/spark).",
+    "test_strategy": "Comprehensive test suite (767+ tests). Good use of Hypothesis for property testing. Benchmark tests separate from unit tests. Minor: some optional dependency modules lack direct test coverage.",
+    "api_surface_coherence": "Consistent API across miners (mine/predict/association_rules) and recommenders (fit/recommend_items/recommend_users). Literal types added for format params. from_pandas/from_polars/from_spark aliases consistent.",
+    "authorization_consistency": "Not applicable \u2014 this is a computational library with no authentication or authorization.",
+    "incomplete_migration": "fit_transactions deprecated with proper DeprecationWarning. recommend_items on Miner properly documented as deprecated alias. Some old patterns (bare string format params) partially migrated.",
+    "package_organization": "Flat package structure appropriate for library size. _core.py, _compat.py, _dependencies.py, _type_utils.py provide clean internal utilities. Public modules (als.py, bpr.py, etc.) each contain one primary class.",
+    "design_coherence": "Unified design philosophy: Rust for compute, Python for API surface. Consistent pattern of validate-in-Python, process-in-Rust. Zero-copy data handling philosophy clear across Pandas/Polars/Arrow paths."
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "model_py_size",
+      "summary": "model.py at 1100+ lines contains 5 classes. Consider splitting into model/_base.py, model/_miner.py, model/_recommender.py",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "model.py contains RuleMinerMixin (160 lines), BaseModel (270 lines), Miner (350 lines), ImplicitRecommender (300 lines), SequentialRecommender (30 lines) \u2014 all in one file",
+      "suggestion": "Split into a model/ package with __init__.py re-exporting all classes for backward compatibility",
+      "confidence": "high"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "string_type_detection",
+      "summary": "_compat.py detects DataFrame types via __name__ string comparison instead of isinstance",
+      "related_files": [
+        "rusket/_compat.py"
+      ],
+      "evidence": "Lines 29 and 37: type(data).__name__ == 'Table' and type(data).__name__ == 'DataFrame' used instead of isinstance checks",
+      "suggestion": "Use try/except imports with isinstance for cleaner type detection",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "repeated_polars_try_import",
+      "summary": "Pattern of try: import polars except ImportError: is_polars = False repeated in model.py and _core.py",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/_core.py"
+      ],
+      "evidence": "model.py lines 851-858 and _core.py contain similar try/except blocks for optional polars detection",
+      "suggestion": "Create a helper like has_polars() in _dependencies.py or _type_utils.py",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "deprecated_recommend_items_miner",
+      "summary": "Miner.recommend_items is deprecated in favor of recommend_for_cart but still present without DeprecationWarning",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "recommend_items on Miner delegates to recommend_for_cart but may not emit DeprecationWarning consistently",
+      "suggestion": "Add explicit DeprecationWarning to Miner.recommend_items",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "any_typed_data_params",
+      "summary": "from_transactions and several methods accept data: Any instead of using the DataFrame type alias",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/als.py"
+      ],
+      "evidence": "from_transactions(data: Any, ...) could use DataFrame = Union[pd.DataFrame, pl.DataFrame, ...] from _compat.py",
+      "suggestion": "Use the existing DataFrame type alias from _compat.py for TYPE_CHECKING annotations",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "implicit_result_attribute",
+      "summary": "_result attribute implicitly created during predict/mine but not initialized in __init__",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "BaseModel and Miner rely on _result being set by predict() but it is not declared in __init__",
+      "suggestion": "Initialize self._result = None in BaseModel.__init__ or use __init_subclass__",
+      "confidence": "high"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "import_inside_try_blocks",
+      "summary": "import_optional_dependency imported inside try blocks rather than at function scope in some files",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "In _prepare_transactions, the import is inside a try block. Other functions import it at function top.",
+      "suggestion": "Move import to function top, wrap only the polars check in try/except",
+      "confidence": "low"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "optional_module_test_gaps",
+      "summary": "Optional modules like viz.py, optuna.py, grouped.py lack direct test coverage",
+      "related_files": [
+        "rusket/viz.py",
+        "rusket/optuna.py",
+        "rusket/grouped.py"
+      ],
+      "evidence": "These modules are only tested transitively through integration tests, not with dedicated unit tests",
+      "suggestion": "Add lightweight smoke tests that import and exercise basic API of each optional module",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "terse_variable_names",
+      "summary": "Some internal variables use abbreviated names like u_col, i_col, _pd, _pl that reduce readability",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/_core.py"
+      ],
+      "evidence": "model.py: u_col, i_col, u_data, i_data. _core.py: col_names abbreviated context. transactions.py: _pd, _pl for pandas/polars modules",
+      "suggestion": "Use descriptive names: user_col, item_col, user_data for public-facing code; short names acceptable in tight loops",
+      "confidence": "low"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "nested_type_coercion_branches",
+      "summary": "_convert_to_orig_type in Miner has deeply nested if/elif branches for type conversion",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "Miner._convert_to_orig_type checks _orig_df_type against 'pyarrow', 'polars', 'spark', 'pandas' in a long if/elif chain",
+      "suggestion": "Refactor to a dispatch dict mapping type strings to converter functions",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "silent_exception_handling",
+      "summary": "Some exception handlers silently swallow errors without logging or re-raising",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/_compat.py"
+      ],
+      "evidence": "_compat.py line 55: except Exception as e followed by warnings.warn but some paths in model.py catch broadly",
+      "suggestion": "Add logging.debug for caught exceptions to aid debugging, especially in framework coercion code",
+      "confidence": "low"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "model_class_coupling",
+      "summary": "model.py mixes mixin, ABC base, and concrete base patterns in one file making the hierarchy harder to navigate",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "RuleMinerMixin, BaseModel(ABC), Miner(BaseModel), ImplicitRecommender(BaseModel, EmbeddingMixin) all in one 1100-line file",
+      "suggestion": "Group related classes into sub-modules: mixins.py, base.py, miner.py, recommender.py",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "prepare_vs_fit_transactions",
+      "summary": "ImplicitRecommender has both _prepare_transactions and _fit_transactions which have overlapping responsibilities",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "_fit_transactions calls _prepare_transactions then .fit(). This two-step pattern is confusing compared to from_transactions",
+      "suggestion": "Deprecate _fit_transactions, make from_transactions + explicit .fit() the only path",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "circular_import_risk",
+      "summary": "Lazy imports in several modules prevent circular imports but make dependency flow less clear",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/_core.py",
+        "rusket/transactions.py"
+      ],
+      "evidence": "import_optional_dependency called inside methods rather than at module level; _compat import inside functions",
+      "suggestion": "Document the import dependency graph; consider using __init__.py lazy loading pattern more systematically",
+      "confidence": "low"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "many_init_params",
+      "summary": "ALS.__init__ accepts 15+ parameters which creates tight coupling to constructor",
+      "related_files": [
+        "rusket/als.py"
+      ],
+      "evidence": "ALS.__init__ takes factors, regularization, alpha, iterations, seed, verbose, cg_iters, use_cholesky, use_eals, eals_iters, alpha_view, view_target, use_biases, popularity_weighting",
+      "suggestion": "Group related params into dataclasses: SolverConfig, EalsConfig, BiasConfig",
+      "confidence": "low"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "recommend_items_overloaded_naming",
+      "summary": "recommend_items means different things on Miner (deprecated cart recommender) vs ImplicitRecommender (user recommendations)",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "Miner.recommend_items is a deprecated alias for recommend_for_cart. ImplicitRecommender.recommend_items is the primary recommendation method.",
+      "suggestion": "Fully deprecate Miner.recommend_items and ensure documentation clearly distinguishes the two semantics",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "flat_model_hierarchy",
+      "summary": "All base model classes in a single model.py file rather than a model/ package",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": "model.py contains 5 classes totaling 1100+ lines. Each concrete model (als.py, bpr.py) is separate but all bases share one file",
+      "suggestion": "Create rusket/model/ package with __init__.py re-exporting for backward compatibility",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "mixed_pandas_polars_returns",
+      "summary": "Some methods return Pandas DataFrames by default while others default to Polars",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/als.py"
+      ],
+      "evidence": "export_factors defaults to format='pandas', batch_recommend defaults to format='polars'. Inconsistent default return types.",
+      "suggestion": "Standardize on one default format or make it configurable at model construction time",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "optional_dep_version_bounds",
+      "summary": "Optional dependencies in pyproject.toml lack upper version bounds which could lead to breaking changes",
+      "related_files": [
+        "pyproject.toml"
+      ],
+      "evidence": "Optional deps like pandas, polars, pyarrow are listed without version constraints (e.g. 'pandas' instead of 'pandas>=1.4,<3')",
+      "suggestion": "Add minimum and maximum version bounds for optional dependencies based on tested compatibility",
+      "confidence": "low"
+    }
+  ],
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "session_id": "ext_20260312_201439_dbd66086",
+    "created_at": "2026-03-12T20:18:39+00:00",
+    "packet_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/review_packet_blind.json",
+    "packet_sha256": "ea160d40d8c77e2134532cddc41da264bf7c29116da81f5bdf746aa4ae3bd26b"
+  }
+}

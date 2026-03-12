@@ -38,8 +38,6 @@ def to_dataframe(data: Any) -> Any:
         from rusket._dependencies import import_optional_dependency
 
         pl = import_optional_dependency("polars")
-        from rusket._dependencies import import_optional_dependency
-
         pa = import_optional_dependency("pyarrow")
 
         # PySpark 3.4+ supports toArrow() zero-copy serialization

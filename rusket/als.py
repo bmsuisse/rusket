@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import typing
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     import numpy as np
@@ -380,7 +380,7 @@ class ALS(ImplicitRecommender):
         self,
         n: int = 10,
         exclude_seen: bool = True,
-        format: str = "polars",
+        format: Literal["pandas", "polars", "spark"] = "polars",
     ) -> Any:
         """Top-N items for all users efficiently computed in parallel.
 
