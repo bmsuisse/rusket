@@ -735,9 +735,7 @@ class Miner(BaseModel):
                 )
                 if len(res_pd) == 0:
                     continue
-                res_pd["itemsets"] = res_pd["itemsets"].apply(
-                    lambda x: list(x) if isinstance(x, (tuple, set)) else x
-                )
+                res_pd["itemsets"] = res_pd["itemsets"].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
                 res_pd.insert(0, group_col, g)
                 frames.append(res_pd)
 
