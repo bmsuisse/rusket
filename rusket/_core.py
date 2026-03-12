@@ -44,21 +44,15 @@ def _run_dense(
 
     t0 = 0.0
     if verbose:
-        import time
-
         print(f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array...")
         t0 = time.perf_counter()
     data = np.ascontiguousarray(df.values, dtype=np.uint8)
     if verbose:
-        import time
-
         t1 = time.perf_counter()
         print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_DENSE[method](data, min_count, max_len)
     if verbose:
-        import time
-
         print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
@@ -75,8 +69,6 @@ def _run_sparse(
 
     t0 = 0.0
     if verbose:
-        import time
-
         print(f"[{time.strftime('%X')}] Converting Pandas Sparse DataFrame to CSR array...")
         t0 = time.perf_counter()
     csr = df.sparse.to_coo().tocsr()
@@ -84,15 +76,11 @@ def _run_sparse(
     indptr = np.asarray(csr.indptr, dtype=np.int32)
     indices = np.asarray(csr.indices, dtype=np.int32)
     if verbose:
-        import time
-
         t1 = time.perf_counter()
         print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
         t0 = t1
     raw = _RUST_CSR[method](indptr, indices, n_cols, min_count, max_len)
     if verbose:
-        import time
-
         print(f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s.")
     return raw
 
@@ -107,8 +95,6 @@ def _build_result(
     from rusket._dependencies import import_optional_dependency
 
     pd = import_optional_dependency("pandas")
-    from rusket._dependencies import import_optional_dependency
-
     pa = import_optional_dependency("pyarrow")
 
     supports_arr, offsets_arr, items_arr = raw
@@ -168,8 +154,6 @@ def _run_polars(
 
     raw = _RUST_DENSE[method](arr, min_count, max_len)
     if verbose:
-        import time
-
         print(
             f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
         )
@@ -226,7 +210,6 @@ def dispatch(
             print(
                 f"[{time.strftime('%X')}] Rust mining completed in {time.perf_counter() - t0:.2f}s. Assembling DataFrame..."
             )
-        col_names = column_names or [str(i) for i in range(n_cols)]
         return _build_result(raw, n_rows, min_support, col_names, use_colnames)
 
     if t == "ndarray":

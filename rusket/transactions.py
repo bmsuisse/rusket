@@ -136,11 +136,7 @@ def from_transactions(
         from rusket._dependencies import import_optional_dependency
 
         _pd = import_optional_dependency("pandas")
-        from rusket._dependencies import import_optional_dependency
-
         _pl = import_optional_dependency("polars")
-        from rusket._dependencies import import_optional_dependency
-
         _pa = import_optional_dependency("pyarrow")
 
         pl_df = _pl.from_arrow(typing.cast("_pa.Table", data))
@@ -195,8 +191,6 @@ def from_transactions(
     from rusket._dependencies import import_optional_dependency
 
     _pd = import_optional_dependency("pandas")
-    from rusket._dependencies import import_optional_dependency
-
     _pl = import_optional_dependency("polars")
 
     # --- Polars ---
@@ -615,8 +609,6 @@ def _from_parquet_csr(
     from rusket._dependencies import import_optional_dependency
 
     pd = import_optional_dependency("pandas")
-    from rusket._dependencies import import_optional_dependency
-
     pq = import_optional_dependency("pyarrow.parquet", "pyarrow")
     from scipy import sparse as sp
 

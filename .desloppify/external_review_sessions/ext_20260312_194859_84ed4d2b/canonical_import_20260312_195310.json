@@ -1,0 +1,339 @@
+{
+  "assessments": {
+    "naming_quality": 72,
+    "logic_clarity": 68,
+    "type_safety": 70,
+    "contract_coherence": 65,
+    "error_consistency": 60,
+    "abstraction_fitness": 62,
+    "ai_generated_debt": 55,
+    "high_level_elegance": 70,
+    "mid_level_elegance": 65,
+    "low_level_elegance": 60,
+    "cross_module_architecture": 65,
+    "initialization_coupling": 58,
+    "convention_outlier": 62,
+    "dependency_health": 70,
+    "test_strategy": 60,
+    "api_surface_coherence": 72,
+    "authorization_consistency": 100,
+    "incomplete_migration": 55,
+    "package_organization": 68,
+    "design_coherence": 65
+  },
+  "dimension_notes": {
+    "authorization_consistency": "Not applicable \u2014 this is a library with no authentication or authorization code. Score reflects absence of this concern."
+  },
+  "findings": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "repeated_import_optional_dependency",
+      "summary": "Repeated consecutive import_optional_dependency calls in multiple files",
+      "related_files": [
+        "rusket/_core.py",
+        "rusket/model.py",
+        "rusket/transactions.py"
+      ],
+      "evidence": [
+        "_core.py lines 107-112: import_optional_dependency called twice consecutively",
+        "transactions.py lines 136-144: three consecutive import_optional_dependency calls"
+      ],
+      "suggestion": "Consolidate consecutive import_optional_dependency calls into single blocks.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "duplicated_is_empty_check",
+      "summary": "Identical is_empty check pattern duplicated across methods in model.py",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "Lines 57-72 and lines 177-189 contain identical is_empty checking logic"
+      ],
+      "suggestion": "Extract a shared _is_dataframe_empty(df) utility function.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "redundant_time_import",
+      "summary": "Module-level time import shadowed by repeated conditional imports in _core.py",
+      "related_files": [
+        "rusket/_core.py"
+      ],
+      "evidence": [
+        "time imported at line 4 but re-imported inside verbose blocks at lines 47, 53, 60, 78, 87, 94, 171"
+      ],
+      "suggestion": "Remove redundant import time statements inside verbose blocks.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "duplicate_col_names_computation",
+      "summary": "col_names computed twice in dispatch() for CSR path",
+      "related_files": [
+        "rusket/_core.py"
+      ],
+      "evidence": [
+        "Lines 223 and 229 both compute: col_names = column_names or [str(i) for i in range(n_cols)]"
+      ],
+      "suggestion": "Remove the duplicate col_names assignment at line 229.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "duplicate_tuple_isinstance",
+      "summary": "tuple listed twice in isinstance checks in _convert_to_orig_type",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "Line 538 and 552: isinstance(x, (tuple, set, tuple)) \u2014 tuple appears twice"
+      ],
+      "suggestion": "Fix isinstance checks to use (tuple, set) without the duplicate tuple entry.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "import_time_side_effect",
+      "summary": "_auto_detect_cuda() executes at import time causing side effects",
+      "related_files": [
+        "rusket/__init__.py",
+        "rusket/_config.py"
+      ],
+      "evidence": [
+        "__init__.py line 72: _auto_detect_cuda() called at module import time"
+      ],
+      "suggestion": "Defer CUDA detection to first use or make it opt-in.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "type_detection_string_comparison",
+      "summary": "DataFrame type detection relies on string comparison of class names",
+      "related_files": [
+        "rusket/_core.py",
+        "rusket/model.py",
+        "rusket/transactions.py"
+      ],
+      "evidence": [
+        "_core.py line 199: type detection via string matching __name__ and __module__"
+      ],
+      "suggestion": "Centralize type detection into a helper function.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "inconsistent_dependency_import_pattern",
+      "summary": "Some files import from rusket._dependencies with full path, others use relative imports",
+      "related_files": [
+        "rusket/_core.py",
+        "rusket/model.py",
+        "rusket/transactions.py"
+      ],
+      "evidence": [
+        "_core.py line 107 uses absolute 'from rusket._dependencies', line 8 uses relative 'from .'"
+      ],
+      "suggestion": "Standardize on relative imports throughout the rusket package.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "flat_package_structure",
+      "summary": "60 files in flat package structure without sub-packages",
+      "related_files": [
+        "rusket/"
+      ],
+      "evidence": [
+        "All 60 Python files in rusket/ root without grouping into sub-packages"
+      ],
+      "suggestion": "Consider grouping related modules into sub-packages.",
+      "confidence": "low"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "deprecated_recommend_items",
+      "summary": "RuleMinerMixin.recommend_items() is deprecated but still in the public API",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "Lines 222-231: recommend_items warns about deprecation but is still present"
+      ],
+      "suggestion": "Add removal version to deprecation warning message.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "benchmark_mixed_with_unit_tests",
+      "summary": "Benchmark tests colocated with unit tests in tests/ directory",
+      "related_files": [
+        "tests/test_benchmark.py",
+        "tests/test_benchmark_pca.py"
+      ],
+      "evidence": [
+        "4 benchmark test files in tests/ alongside unit tests without marker separation"
+      ],
+      "suggestion": "Tag benchmark tests with pytest markers for easy exclusion from CI.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "bare_except_pass",
+      "summary": "Bare except/pass block swallows all errors silently",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "Lines 69-72: except Exception: pass \u2014 silently swallows errors"
+      ],
+      "suggestion": "Catch a more specific exception type or log the error.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "generic_helper_names",
+      "summary": "Internal helpers use generic names that don't communicate domain intent",
+      "related_files": [
+        "rusket/_core.py"
+      ],
+      "evidence": [
+        "_run_dense, _run_sparse, _build_result are generic names that don't indicate they're for frequent pattern mining"
+      ],
+      "suggestion": "Rename to _mine_dense, _mine_sparse, _build_itemset_result to communicate mining purpose.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "mine_grouped_three_paths",
+      "summary": "mine_grouped has three separate code paths (Spark/Polars/Pandas) with duplicated logic",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "mine_grouped method spans ~100 lines with 3 near-identical processing paths for different DataFrame types"
+      ],
+      "suggestion": "Extract common mining loop logic and parameterize the DataFrame-specific parts.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "any_escape_hatches",
+      "summary": "Excessive use of Any type annotations where more specific types could be inferred",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/als.py"
+      ],
+      "evidence": [
+        "model.py: kwargs stored as dict with Any values, _user_factors/_item_factors typed as Any instead of np.ndarray"
+      ],
+      "suggestion": "Use np.ndarray or NDArray[np.float32] for factor arrays. Use TypeVar or Protocol for kwargs types.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "implicit_result_contract",
+      "summary": "predict() depends on implicit _result attribute being set by fit()",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "Lines 665-667: predict() checks hasattr(self, '_result') which is implicitly set by fit()"
+      ],
+      "suggestion": "Initialize _result = None in __init__ and check for None explicitly.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "import_cycle_risk",
+      "summary": "model.py imports from association_rules, spark, mine creating hub module dependency",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "model.py deferred-imports from association_rules (line 48-49), spark (line 135), mine (line 718), _dependencies, _compat"
+      ],
+      "suggestion": "Inject dependencies or use protocol-based abstractions to reduce model.py's coupling surface.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "scipy_implicit_required",
+      "summary": "scipy is used without being listed as explicitly required in several code paths",
+      "related_files": [
+        "rusket/transactions.py",
+        "rusket/als.py"
+      ],
+      "evidence": [
+        "transactions.py line 377, 452: from scipy import sparse used directly without import_optional_dependency guard"
+      ],
+      "suggestion": "Either document scipy as a hard dependency or wrap it with import_optional_dependency like other optional deps.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "model_py_too_large",
+      "summary": "model.py is 1131 lines containing 4 major classes and utility functions",
+      "related_files": [
+        "rusket/model.py"
+      ],
+      "evidence": [
+        "model.py contains RuleMinerMixin, BaseModel, Miner, ImplicitRecommender, load_model, SequentialRecommender \u2014 1131 lines"
+      ],
+      "suggestion": "Split model.py into separate files: base.py (BaseModel), miner.py (Miner, RuleMinerMixin), recommender.py (ImplicitRecommender, SequentialRecommender).",
+      "confidence": "high"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "type_coercion_scattered",
+      "summary": "DataFrame type coercion logic is scattered across multiple modules",
+      "related_files": [
+        "rusket/_core.py",
+        "rusket/model.py",
+        "rusket/transactions.py",
+        "rusket/_compat.py"
+      ],
+      "evidence": [
+        "Type detection and coercion code appears in _core.py dispatch(), model.py _convert_to_orig_type(), model.py from_transactions(), transactions.py from_transactions()"
+      ],
+      "suggestion": "Centralize all type detection and coercion in _compat.py with a clear API.",
+      "confidence": "high"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "mixed_return_types_batch_recommend",
+      "summary": "batch_recommend format parameter accepts string instead of enum/literal",
+      "related_files": [
+        "rusket/als.py"
+      ],
+      "evidence": [
+        "als.py line 383: format: str = 'polars' accepts any string, only validated at runtime"
+      ],
+      "suggestion": "Use Literal['pandas', 'polars', 'spark'] for the format parameter type.",
+      "confidence": "medium"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "convert_to_orig_type_duplication",
+      "summary": "_convert_to_orig_type pattern duplicates type coercion across model base and from_transactions",
+      "related_files": [
+        "rusket/model.py",
+        "rusket/transactions.py"
+      ],
+      "evidence": [
+        "model.py _convert_to_orig_type and transactions.py from_transactions both implement parallel type-routing logic for Pandas/Polars/Spark/Arrow"
+      ],
+      "suggestion": "Unify the output-type-routing pattern into a shared utility in _compat.py.",
+      "confidence": "high"
+    }
+  ],
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "claude",
+    "session_id": "ext_20260312_194859_84ed4d2b",
+    "created_at": "2026-03-12T19:53:10+00:00",
+    "packet_path": "/Users/dominikpeter/DevOps/rusket/.desloppify/review_packet_blind.json",
+    "packet_sha256": "8ccf6c7693abe907aec8b6034c4fbe14fa993169ed3ae0d0dc57a140b3f12b0d"
+  }
+}

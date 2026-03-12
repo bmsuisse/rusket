@@ -68,7 +68,7 @@ class RuleMinerMixin:
         else:
             try:
                 is_empty = len(df_freq) == 0
-            except Exception:
+            except TypeError:
                 pass
 
         if is_empty:
@@ -535,7 +535,7 @@ class Miner(BaseModel):
             # Convert tuples to lists for pyarrow compatibility
             for col in ["antecedents", "consequents", "itemsets"]:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x)
+                    df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
 
             return pl.from_pandas(df)
         elif self._orig_df_type == "spark":
@@ -549,7 +549,7 @@ class Miner(BaseModel):
                 # Convert tuples to lists for Spark schema compatibility
                 for col in ["antecedents", "consequents", "itemsets"]:
                     if col in df.columns:
-                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x)
+                        df[col] = df[col].apply(lambda x: list(x) if isinstance(x, (tuple, set)) else x)
 
                 spark = SparkSession.getActiveSession()
                 if spark is not None:
@@ -621,8 +621,6 @@ class Miner(BaseModel):
         from rusket._dependencies import import_optional_dependency
 
         _pd = import_optional_dependency("pandas")
-        from rusket._dependencies import import_optional_dependency
-
         _pl = import_optional_dependency("polars")
 
         if not isinstance(data, (_pd.DataFrame, _pl.DataFrame)):
@@ -738,7 +736,7 @@ class Miner(BaseModel):
                 if len(res_pd) == 0:
                     continue
                 res_pd["itemsets"] = res_pd["itemsets"].apply(
-                    lambda x: list(x) if isinstance(x, (tuple, set, tuple)) else x
+                    lambda x: list(x) if isinstance(x, (tuple, set)) else x
                 )
                 res_pd.insert(0, group_col, g)
                 frames.append(res_pd)

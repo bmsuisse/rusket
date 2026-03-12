@@ -88,10 +88,10 @@ def download_movielens(size: str, data_dir: Path) -> Path:
     extract_to.mkdir(parents=True, exist_ok=True)
     if is_tar:
         with tarfile.open(archive_path) as tf:
-            tf.extractall(extract_to)
+            tf.extractall(extract_to, filter="data")  # noqa: S202
     else:
         with zipfile.ZipFile(archive_path) as zf:
-            zf.extractall(extract_to)
+            zf.extractall(extract_to)  # noqa: S202
 
     for root, _dirs, files in os.walk(extract_to):
         if "ratings.csv" in files or "ratings.dat" in files:
