@@ -578,7 +578,7 @@
           "parameters": {
             "n": "int",
             "exclude_seen": "bool",
-            "format": "str"
+            "format": "Literal['pandas', 'polars', 'spark']"
           },
           "returns": "Any",
           "doc": "Top-N items for all users efficiently computed in parallel."

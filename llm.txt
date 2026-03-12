@@ -877,7 +877,7 @@ LCM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 Generate association rules from the mined frequent itemsets.
 
 ```python
-from rusket.model import RuleMinerMixin.association_rules
+from rusket.model._mixins import RuleMinerMixin.association_rules
 
 RuleMinerMixin.association_rules(metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, return_metrics: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
@@ -903,7 +903,7 @@ RuleMinerMixin.association_rules(metric: 'str' = 'confidence', min_threshold: 'f
 Deprecated: use :meth:`recommend_for_cart` instead.
 
 ```python
-from rusket.model import RuleMinerMixin.recommend_items
+from rusket.model._mixins import RuleMinerMixin.recommend_items
 
 RuleMinerMixin.recommend_items(items: 'list[Any]', n: 'int' = 5) -> 'list[Any]'
 ```
@@ -915,7 +915,7 @@ RuleMinerMixin.recommend_items(items: 'list[Any]', n: 'int' = 5) -> 'list[Any]'
 Clear the cached association rules (call after re-mining).
 
 ```python
-from rusket.model import RuleMinerMixin._invalidate_rules_cache
+from rusket.model._mixins import RuleMinerMixin._invalidate_rules_cache
 
 RuleMinerMixin._invalidate_rules_cache() -> 'None'
 ```
@@ -976,7 +976,7 @@ Top-N items for all users efficiently computed in parallel.
 ```python
 from rusket.als import ALS.batch_recommend
 
-ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars') -> 'Any'
+ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal['pandas', 'polars', 'spark']" = 'polars') -> 'Any'
 ```
 
 **Parameters**
@@ -2752,6 +2752,15 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🔧 Refactoring
+
+- centralize type-checking and coercion utilities into a new `_type_utils` module for reuse across the codebase.
+- split model.py monolith into model/ package with focused submodules
 
 ### 🚀 Features
 
