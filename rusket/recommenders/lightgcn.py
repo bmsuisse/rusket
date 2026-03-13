@@ -1,0 +1,338 @@
+"""LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+import numpy as np
+import scipy.sparse as sp
+
+from rusket._rusket import lightgcn_fit  # type: ignore[attr-defined]
+
+from ..model import ImplicitRecommender
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
+
+
+class LightGCN(ImplicitRecommender):
+    """LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation.
+
+    A state-of-the-art collaborative filtering model that propagates embeddings
+    over the user–item bipartite graph without non-linear transformations.
+
+    Typical training time on ml-100k: < 0.5s/epoch.
+
+    Parameters
+    ----------
+    factors : int
+        Embedding dimensionality (latent factors).
+    k_layers : int
+        Number of graph-propagation layers (1–4).
+    learning_rate : float
+        Adam learning rate.
+    lambda\\_ : float
+        L2 regularization coefficient.
+    iterations : int
+        Number of training epochs.
+    seed : int or None
+        Seed for reproducible training.
+    verbose : int
+        Print training progress.
+    use_gpu : bool
+        If True, use GPU acceleration (CuPy or PyTorch) for recommendation.
+        Falls back to CPU if no GPU backend found. Default False.
+    """
+
+    def __init__(
+        self,
+        factors: int = 64,
+        k_layers: int = 3,
+        learning_rate: float = 1e-3,
+        lambda_: float = 1e-4,
+        ssl_ratio: float = 0.0,
+        ssl_temp: float = 0.2,
+        ssl_weight: float = 0.1,
+        iterations: int = 20,
+        seed: int | None = None,
+        verbose: int = 0,
+        use_cuda: bool | None = None,
+        **kwargs: Any,
+    ) -> None:
+        _use_cuda = kwargs.pop("use_gpu", use_cuda)  # backward compat
+        super().__init__(**kwargs)
+        self.factors = factors
+        self.k_layers = k_layers
+        self.learning_rate = learning_rate
+        self.lambda_ = lambda_
+        self.ssl_ratio = ssl_ratio
+        self.ssl_temp = ssl_temp
+        self.ssl_weight = ssl_weight
+        self.iterations = iterations
+        self.seed = seed
+        self.verbose = verbose
+        from .._internal._config import _resolve_cuda
+
+        self.use_cuda = _resolve_cuda(_use_cuda)
+
+        self._user_factors: np.ndarray | None = None
+        self._item_factors: np.ndarray | None = None
+        self._user_map: dict[int, int] = {}
+        self._item_map: dict[int, int] = {}
+        self._rev_item_map: dict[int, int] = {}
+
+        self._fit_indptr: np.ndarray | None = None
+        self._fit_indices: np.ndarray | None = None
+        self._n_users: int = 0
+        self._n_items: int = 0
+        self.fitted: bool = False
+
+        # Pending data from from_transactions()
+        self._pending_df: Any = None
+        self._pending_user_col: str | None = None
+        self._pending_item_col: str | None = None
+
+    def __repr__(self) -> str:
+        return (
+            f"LightGCN(factors={self.factors}, k_layers={self.k_layers}, "
+            f"learning_rate={self.learning_rate}, iterations={self.iterations})"
+        )
+
+    @classmethod
+    def from_transactions(
+        cls,
+        data: pd.DataFrame | pl.DataFrame | Any,
+        transaction_col: str | None = None,
+        item_col: str | None = None,
+        verbose: int = 0,
+        **kwargs: Any,
+    ) -> LightGCN:
+        """Initialize the LightGCN model from a long-format DataFrame.
+
+        Prepares the data but does **not** fit the model.
+        Call ``.fit()`` explicitly to train.
+
+        Parameters
+        ----------
+        data : pd.DataFrame | pl.DataFrame | pyspark.sql.DataFrame
+            Event log containing user IDs and item IDs.
+        transaction_col : str, optional
+            Column name identifying the user ID (aliases ``user_col``).
+        item_col : str, optional
+            Column name identifying the item ID.
+        verbose : int, default=0
+            Verbosity level.
+        **kwargs
+            Model hyperparameters (e.g., ``factors``, ``k_layers``).
+
+        Returns
+        -------
+        LightGCN
+            The configured (unfitted) model.
+        """
+        user_col = kwargs.pop("user_col", transaction_col)
+        model = cls(verbose=verbose, **kwargs)
+        model._pending_df = data
+        model._pending_user_col = user_col
+        model._pending_item_col = item_col
+        return model
+
+    def fit(self, interactions: Any = None) -> LightGCN:
+        """Fit the model to a user-item interaction matrix.
+
+        Parameters
+        ----------
+        interactions : scipy.sparse.csr_matrix or numpy.ndarray, optional
+            A sparse or dense user-item interaction matrix.
+            If None, uses data prepared by ``from_transactions()``.
+
+        Returns
+        -------
+        LightGCN
+            The fitted model.
+        """
+        # If from_transactions() was used, fit from the stored DataFrame
+        pending_df = getattr(self, "_pending_df", None)
+        if interactions is None and pending_df is not None:
+            self._fit_from_df(pending_df, self._pending_user_col, self._pending_item_col)
+            self._pending_df = None
+            return self
+
+        if interactions is None:
+            interactions = getattr(self, "_prepared_interactions", None)
+            if interactions is None:
+                raise ValueError("No interactions provided. Pass a matrix or use from_transactions() first.")
+
+        if self.fitted:
+            raise RuntimeError("Model is already fitted. Create a new instance to refit.")
+
+        if sp.issparse(interactions):
+            csr = sp.csr_matrix(interactions, dtype=np.float32)
+        elif isinstance(interactions, np.ndarray):
+            csr = sp.csr_matrix(interactions.astype(np.float32))
+        else:
+            raise TypeError(f"Expected scipy sparse matrix or numpy array, got {type(interactions)}")
+
+        if not isinstance(csr, sp.csr_matrix):
+            csr = csr.tocsr()
+
+        csr.eliminate_zeros()
+        n_users, n_items = csr.shape
+
+        # Build CSR (user → items) and CSC-as-CSR (item → users)
+        ui_csr = csr
+        ui_csr.sort_indices()
+
+        iu_csr = ui_csr.T.tocsr()
+        iu_csr.sort_indices()
+
+        u_indptr = ui_csr.indptr.astype(np.int64)
+        u_indices = ui_csr.indices.astype(np.int32)
+        i_indptr = iu_csr.indptr.astype(np.int64)
+        i_indices = iu_csr.indices.astype(np.int32)
+
+        seed = self.seed if self.seed is not None else int(np.random.randint(1 << 31))
+
+        eu, ei = lightgcn_fit(
+            u_indptr,
+            u_indices,
+            i_indptr,
+            i_indices,
+            n_users,
+            n_items,
+            self.factors,
+            self.k_layers,
+            float(self.learning_rate),
+            float(self.lambda_),
+            float(self.ssl_ratio),
+            float(self.ssl_temp),
+            float(self.ssl_weight),
+            self.iterations,
+            int(seed),
+            bool(self.verbose),
+        )
+
+        self._user_factors = np.asarray(eu, dtype=np.float32)
+        self._item_factors = np.asarray(ei, dtype=np.float32)
+        self._n_users = n_users
+        self._n_items = n_items
+
+        self._fit_indptr = u_indptr
+        self._fit_indices = u_indices
+        self.fitted = True
+
+        return self
+
+    def _fit_from_df(
+        self,
+        data: pd.DataFrame | pl.DataFrame | Any,
+        user_col: str | None,
+        item_col: str | None,
+    ) -> None:
+        """Internal: fit from a DataFrame with user/item columns."""
+        if hasattr(data, "to_pandas"):
+            data = data.to_pandas()
+
+        user_col = user_col or str(data.columns[0])
+        item_col = item_col or str(data.columns[1])
+
+        users = np.asarray(data[user_col])
+        items = np.asarray(data[item_col])
+
+        unique_users = np.unique(users.astype(object))
+        unique_items = np.unique(items.astype(object))
+
+        self._user_map = {u: i for i, u in enumerate(unique_users)}
+        self._item_map = {it: i for i, it in enumerate(unique_items)}
+        self._rev_item_map = {i: it for it, i in self._item_map.items()}
+
+        u_idx = np.array([self._user_map[u] for u in users], dtype=np.int32)
+        i_idx = np.array([self._item_map[it] for it in items], dtype=np.int32)
+
+        n_users = len(unique_users)
+        n_items = len(unique_items)
+
+        csr = sp.csr_matrix(
+            (np.ones(len(u_idx)), (u_idx, i_idx)),
+            shape=(n_users, n_items),
+        )
+        self.fit(csr)
+
+        self._user_labels = [str(u) for u in unique_users]
+        self._item_labels = [str(it) for it in unique_items]
+        self.item_names = self._item_labels
+
+    def recommend_items(self, user_id: int, n: int = 10, exclude_seen: bool = True) -> tuple[np.ndarray, np.ndarray]:
+        """Top-N items for a user.
+
+        Parameters
+        ----------
+        user_id : int
+            Original user ID (before encoding).
+        n : int, default=10
+            Number of recommendations.
+        exclude_seen : bool, default=True
+            Whether to exclude items the user has already interacted with.
+
+        Returns
+        -------
+        tuple[np.ndarray, np.ndarray]
+            ``(item_ids, scores)`` sorted by descending score.
+        """
+        self._check_fitted()
+        assert self._user_factors is not None
+        assert self._item_factors is not None
+
+        uid = self._user_map.get(user_id)
+        if uid is None:
+            return np.array([], dtype=np.int64), np.array([], dtype=np.float32)
+
+        if self.use_cuda:
+            from ..integrations.cuda import get_cuda_backend_safe, gpu_score_user
+
+            gpu = get_cuda_backend_safe()
+            if gpu is not None:
+                backend, lib = gpu
+                scores = gpu_score_user(
+                    self._user_factors[uid],
+                    self._item_factors,
+                    backend,
+                    lib,
+                )
+                if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+                    start_idx = self._fit_indptr[uid]
+                    end_idx = self._fit_indptr[uid + 1]
+                    seen_items = self._fit_indices[start_idx:end_idx]
+                    scores[seen_items] = -np.inf
+                top_idx = np.argsort(scores)[::-1][:n]
+                original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)
+                return original_ids, scores[top_idx]
+
+        scores = self._user_factors[uid] @ self._item_factors.T
+
+        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+            start_idx = self._fit_indptr[uid]
+            end_idx = self._fit_indptr[uid + 1]
+            seen_items = self._fit_indices[start_idx:end_idx]
+            scores[seen_items] = -np.inf
+
+        top_idx = np.argsort(scores)[::-1][:n]
+        original_ids = np.array([self._rev_item_map[i] for i in top_idx], dtype=np.int64)
+        return original_ids, scores[top_idx]
+
+    @property
+    def user_factors(self) -> Any:
+        """User factor matrix (n_users, factors)."""
+        self._check_fitted()
+        return self._user_factors
+
+    @property
+    def item_factors(self) -> Any:
+        """Item factor matrix (n_items, factors)."""
+        self._check_fitted()
+        return self._item_factors
+
+    def _check_fitted(self) -> None:
+        if not self.fitted:
+            raise RuntimeError("Model has not been fitted yet. Call .fit() first.")

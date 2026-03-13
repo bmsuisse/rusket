@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 pytest.importorskip("mlflow")
-from rusket.mlflow import autolog, save_model
+from rusket.export.mlflow import autolog, save_model
 
 
 def test_autolog():

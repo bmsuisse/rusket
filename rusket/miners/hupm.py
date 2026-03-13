@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import pandas as pd
 
-from . import _rusket as _rust  # type: ignore
-from ._compat import to_dataframe
-from .model import Miner
+from .. import _rusket as _rust  # type: ignore
+from .._internal._compat import to_dataframe
+from ..model import Miner
 
 
 class HUPM(Miner):
@@ -173,7 +173,7 @@ class HUPM(Miner):
         pyspark.sql.DataFrame
             A PySpark DataFrame containing group_col, utility, and itemset.
         """
-        from .spark import hupm_grouped
+        from ..integrations.spark import hupm_grouped
 
         return hupm_grouped(
             df=df,
@@ -280,7 +280,7 @@ def mine_hupm(
 
     pd = import_optional_dependency("pandas")
 
-    from ._compat import to_dataframe
+    from .._internal._compat import to_dataframe
 
     data = to_dataframe(data)
 

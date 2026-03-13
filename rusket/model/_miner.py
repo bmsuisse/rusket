@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     import polars as pl
     from typing_extensions import Self
 
-from .._type_utils import detect_dataframe_type, to_list_if_collection, try_import_polars
+from .._internal._type_utils import detect_dataframe_type, to_list_if_collection, try_import_polars
 from ._base import BaseModel
 
 
@@ -135,8 +135,8 @@ class Miner(BaseModel):
         Miner
             Configured miner instance, ready to call ``.mine()``.
         """
-        from .._compat import to_dataframe
-        from ..transactions import _from_dataframe, _from_list
+        from .._internal._compat import to_dataframe
+        from ..miners.transactions import _from_dataframe, _from_list
 
         _orig_type = detect_dataframe_type(data)
 
@@ -232,7 +232,7 @@ class Miner(BaseModel):
 
         # ── Spark path ────────────────────────────────────────────────────────
         if getattr(type(df), "__module__", "").startswith("pyspark"):
-            from ..spark import mine_grouped as _spark_mine_grouped
+            from ..integrations.spark import mine_grouped as _spark_mine_grouped
 
             return _spark_mine_grouped(
                 df=df,
@@ -243,7 +243,7 @@ class Miner(BaseModel):
                 use_colnames=use_colnames,
             )
 
-        from ..mine import mine as _mine
+        from ..miners.mine import mine as _mine
 
         # ── Polars path ───────────────────────────────────────────────────────
         _pl, is_polars_available = try_import_polars()

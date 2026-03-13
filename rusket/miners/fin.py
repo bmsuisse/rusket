@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .model import Miner, RuleMinerMixin
+from ..model import Miner, RuleMinerMixin
 
 if TYPE_CHECKING:
     import numpy as np
@@ -10,11 +10,10 @@ if TYPE_CHECKING:
     import polars as pl
 
 
-class Eclat(Miner, RuleMinerMixin):
-    """Eclat frequent itemset miner.
+class FIN(Miner, RuleMinerMixin):
+    """FIN (Fast Itemset per Nodeset) frequent itemset miner.
 
-    Eclat is typically faster than FP-growth on dense datasets due to
-    efficient vertical bitset intersection logic.
+    This class wraps the fast core Rust FIN implementation.
     """
 
     def __init__(
@@ -28,12 +27,13 @@ class Eclat(Miner, RuleMinerMixin):
         verbose: int = 0,
         **kwargs: Any,
     ):
-        """Initialize the Eclat miner.
+        """Initialize the FIN miner.
 
         Parameters
         ----------
         data : pandas.DataFrame, polars.DataFrame, or numpy.ndarray
-            The input dataset containing transactions.
+            The input dataset containing transactions. Can be a dense matrix of 0s and 1s,
+            a scipy sparse matrix, or a boolean/integer DataFrame.
         item_names : list[str] | None, default=None
             Custom column names to use if input is a numpy array or scipy sparse matrix
             and `use_colnames=True`.
@@ -47,7 +47,7 @@ class Eclat(Miner, RuleMinerMixin):
         max_len : int | None, default=None
             Maximum length of the itemsets generated. If None, no limit is applied.
         verbose : int, default=0
-            If > 0, print progress details to standard output.
+            If > 0, print progress to standard output.
         """
         super().__init__(data=data, item_names=item_names, **kwargs)
         self.min_support = min_support
@@ -57,7 +57,7 @@ class Eclat(Miner, RuleMinerMixin):
         self.verbose = verbose
 
     def mine(self, **kwargs: Any) -> pd.DataFrame:
-        """Execute the Eclat algorithm on the stored data.
+        """Execute the FIN algorithm on the stored data.
 
         Returns
         -------
@@ -78,7 +78,7 @@ class Eclat(Miner, RuleMinerMixin):
                 f"`min_support` must be a positive number within the interval `(0, 1]`. Got {min_support}."
             )
 
-        from ._core import dispatch
+        from .._internal._core import dispatch
 
         result_df = dispatch(
             self.data,
@@ -86,32 +86,8 @@ class Eclat(Miner, RuleMinerMixin):
             null_values,
             use_colnames,
             max_len,
-            "eclat",
+            "fin",
             self.item_names,
             verbose,
         )  # type: ignore[arg-type]
         return self._convert_to_orig_type(result_df)
-
-
-def eclat(
-    df: pd.DataFrame | pl.DataFrame | np.ndarray | Any,
-    min_support: float = 0.5,
-    null_values: bool = False,
-    use_colnames: bool = True,
-    max_len: int | None = None,
-    verbose: int = 0,
-    column_names: list[str] | None = None,
-) -> pd.DataFrame:
-    """Find frequent itemsets using the Eclat algorithm.
-
-    This module-level function relies on the Object-Oriented APIs.
-    """
-    return Eclat(
-        data=df,
-        item_names=column_names,
-        min_support=min_support,
-        null_values=null_values,
-        use_colnames=use_colnames,
-        max_len=max_len,
-        verbose=verbose,
-    ).mine()

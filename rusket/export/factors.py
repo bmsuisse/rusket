@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     pass
 
-from .typing import SupportsItemFactors, SupportsUserFactors
+from .._internal.typing import SupportsItemFactors, SupportsUserFactors
 
 
 def export_item_factors(

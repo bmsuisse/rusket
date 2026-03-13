@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import pandas as pd
 
-from . import _rusket as _rust  # type: ignore
-from ._compat import to_dataframe
-from .model import Miner
+from .. import _rusket as _rust  # type: ignore
+from .._internal._compat import to_dataframe
+from ..model import Miner
 
 
 class PrefixSpan(Miner):
@@ -185,7 +185,7 @@ class PrefixSpan(Miner):
         pyspark.sql.DataFrame
             A PySpark DataFrame containing group_col, support, and sequence.
         """
-        from .spark import prefixspan_grouped
+        from ..integrations.spark import prefixspan_grouped
 
         return prefixspan_grouped(
             df=df,

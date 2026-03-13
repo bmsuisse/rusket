@@ -1,6 +1,6 @@
 import pandas as pd
 
-from rusket.prefixspan import sequences_from_event_log
+from rusket.miners.prefixspan import sequences_from_event_log
 
 
 def test_prefixspan_basic():
@@ -25,7 +25,7 @@ def test_prefixspan_basic():
     # B -> C appears in 2 (S1, S3)
     # A -> B -> C appears in 1 (S1)
 
-    from rusket.prefixspan import PrefixSpan
+    from rusket.miners.prefixspan import PrefixSpan
 
     df = PrefixSpan(sequences, min_support=2).mine()
 
@@ -100,7 +100,7 @@ from hypothesis import given, settings  # noqa: E402
 )
 @settings(max_examples=50, deadline=None)
 def test_prefixspan_invariants(sequences, min_support):
-    from rusket.prefixspan import PrefixSpan
+    from rusket.miners.prefixspan import PrefixSpan
 
     df = PrefixSpan(sequences, min_support=min_support).mine()
 

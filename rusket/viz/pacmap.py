@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from . import _rusket as _rust  # type: ignore
+from .. import _rusket as _rust  # type: ignore
 from .pca import ProjectedSpace
 
 

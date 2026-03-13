@@ -30,7 +30,7 @@ import scipy.sparse as sp
 import rusket._rusket as _rusket
 from rusket import ALS, SVD
 from rusket.bpr import BPR
-from rusket.eclat import Eclat
+from rusket.miners.eclat import Eclat
 
 # ════════════════════════════════════════════════════════════════════════════
 # Fixtures — rating matrices

@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-from .._embedding_mixin import EmbeddingMixin
-from .._type_utils import try_import_polars
+from .._internal._embedding_mixin import EmbeddingMixin
+from .._internal._type_utils import try_import_polars
 from ._base import BaseModel
 
 
@@ -86,7 +86,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         _pd = import_optional_dependency("pandas")
         from scipy import sparse as sp
 
-        from .._compat import to_dataframe
+        from .._internal._compat import to_dataframe
 
         data = to_dataframe(data)
 
@@ -224,7 +224,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         tuple[np.ndarray, np.ndarray]
             ``(item_ids, cosine_similarities)`` sorted in descending order.
         """
-        from ..similarity import similar_items
+        from .._internal.similarity import similar_items
 
         return similar_items(self, item_id, n)
 
@@ -251,7 +251,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
             A DataFrame with columns ``item_id``, optionally ``item_label``,
             and ``vector``.
         """
-        from ..export import export_item_factors
+        from ..export.factors import export_item_factors
 
         return export_item_factors(
             self,
@@ -283,7 +283,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
             A DataFrame with columns ``user_id``, optionally ``user_label``,
             and ``vector``.
         """
-        from ..export import export_user_factors
+        from ..export.factors import export_user_factors
 
         return export_user_factors(
             self,
@@ -308,7 +308,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         -------
         plotly.graph_objects.Figure
         """
-        from ..viz import visualize_latent_space
+        from ..viz.plots import visualize_latent_space
 
         return visualize_latent_space(self, labels=labels, n_items=n_items)
 

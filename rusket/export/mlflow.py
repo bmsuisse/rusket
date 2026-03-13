@@ -31,7 +31,7 @@ if HAS_MLFLOW:
         """PyFunc wrapper for rusket models."""
 
         def load_context(self, context: Any) -> None:
-            from .model import load_model
+            from ..model import load_model
 
             model_path = context.artifacts["model_path"]
             self.model = load_model(model_path)
@@ -187,16 +187,16 @@ def autolog(disable: bool = False) -> None:
     _AUTOLOG_ENABLED = not disable
 
     # Patch or unpatch models
-    from .als import ALS, eALS
-    from .bpr import BPR
-    from .ease import EASE
-    from .eclat import Eclat
-    from .fpgrowth import FPGrowth
-    from .item_knn import ItemKNN
-    from .lightgcn import LightGCN
-    from .prefixspan import PrefixSpan
-    from .sasrec import SASRec
-    from .svd import SVD
+    from ..recommenders.als import ALS, eALS
+    from ..recommenders.bpr import BPR
+    from ..recommenders.ease import EASE
+    from ..miners.eclat import Eclat
+    from ..miners.fpgrowth import FPGrowth
+    from ..recommenders.item_knn import ItemKNN
+    from ..recommenders.lightgcn import LightGCN
+    from ..miners.prefixspan import PrefixSpan
+    from ..sequential.sasrec import SASRec
+    from ..recommenders.svd import SVD
 
     models = [ALS, eALS, BPR, EASE, ItemKNN, LightGCN, SVD, SASRec, FPGrowth, Eclat, PrefixSpan]
 

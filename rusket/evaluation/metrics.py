@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     pass
 
-from . import _rusket
+from .. import _rusket
 
 MetricName = Literal["ndcg", "hr", "precision", "recall"]
 

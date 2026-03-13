@@ -17,9 +17,9 @@ import pandas as pd
 import polars as pl
 import pytest
 
-from rusket.eclat import Eclat
+from rusket.miners.eclat import Eclat
 from rusket.fin import FIN
-from rusket.fpgrowth import FPGrowth
+from rusket.miners.fpgrowth import FPGrowth
 from rusket.lcm import LCM
 
 # ---------------------------------------------------------------------------

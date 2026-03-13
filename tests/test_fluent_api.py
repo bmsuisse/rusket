@@ -14,7 +14,7 @@ def test_als_fluent_api():
     model = rusket.ALS(factors=8, iterations=5).from_pandas(data, "user_id", "item_id")
 
     # Check that pca() returns a ProjectedSpace object via direct import
-    from rusket.pca import ProjectedSpace
+    from rusket.viz.pca import ProjectedSpace
 
     proj = model.fit().pca(n_components=2)
     assert isinstance(proj, ProjectedSpace)
@@ -35,7 +35,7 @@ def test_fpmc_fluent_api():
     model = rusket.FPMC(factors=8, iterations=5)
 
     # Check that pca() returns a ProjectedSpace object
-    from rusket.pca import ProjectedSpace
+    from rusket.viz.pca import ProjectedSpace
 
     proj = model.fit(sequences).pca(n_components=2)
     assert isinstance(proj, ProjectedSpace)

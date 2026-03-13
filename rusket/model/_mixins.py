@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import pandas as pd
 
-from .._type_utils import is_dataframe_empty
+from .._internal._type_utils import is_dataframe_empty
 
 
 class RuleMinerMixin:
@@ -42,8 +42,8 @@ class RuleMinerMixin:
         pd.DataFrame
             DataFrame of strong association rules.
         """
-        from ..association_rules import _ALL_METRICS
-        from ..association_rules import association_rules as _assoc_rules
+        from ..miners.association_rules import _ALL_METRICS
+        from ..miners.association_rules import association_rules as _assoc_rules
 
         if return_metrics is None:
             return_metrics = _ALL_METRICS
@@ -114,7 +114,7 @@ class RuleMinerMixin:
         pyspark.sql.DataFrame
             A PySpark DataFrame containing association rules for each group.
         """
-        from ..spark import rules_grouped
+        from ..integrations.spark import rules_grouped
 
         if num_itemsets is None:
             num_itemsets = getattr(self, "_num_itemsets", 0)
