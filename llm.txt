@@ -23,7 +23,7 @@ Mine frequent itemsets using the specified algorithm.
 This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket.mine import mine
+from rusket.miners.mine import mine
 
 mine(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
@@ -37,7 +37,7 @@ Find frequent itemsets using the optimal algorithm (Eclat or FP-growth).
 This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket.fpgrowth import fpgrowth
+from rusket.miners.fpgrowth import fpgrowth
 
 fpgrowth(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
@@ -51,7 +51,7 @@ Find frequent itemsets using the Eclat algorithm.
 This module-level function relies on the Object-Oriented APIs.
 
 ```python
-from rusket.eclat import eclat
+from rusket.miners.eclat import eclat
 
 eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, column_names: 'list[str] | None' = None) -> 'pd.DataFrame'
 ```
@@ -61,7 +61,7 @@ eclat(df: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', min_support: 'float'
 ### `association_rules`
 
 ```python
-from rusket.association_rules import association_rules
+from rusket.miners.association_rules import association_rules
 
 association_rules(df: 'pd.DataFrame | Any', num_itemsets: 'int | None' = None, df_orig: 'pd.DataFrame | None' = None, null_values: 'bool' = False, metric: 'str' = 'confidence', min_threshold: 'float' = 0.8, support_only: 'bool' = False, return_metrics: 'list[str]' = ['antecedent support', 'consequent support', 'support', 'confidence', 'lift', 'representativity', 'leverage', 'conviction', 'zhangs_metric', 'jaccard', 'certainty', 'kulczynski']) -> 'pd.DataFrame'
 ```
@@ -77,7 +77,7 @@ Currently, this assumes sequences where each event consists of a single item
 (e.g., a sequence of page views or a sequence of individual products bought over time).
 
 ```python
-from rusket.prefixspan import prefixspan
+from rusket.miners.prefixspan import prefixspan
 
 prefixspan(sequences: 'list[list[int]]', min_support: 'int | float', max_len: 'int | None' = None) -> 'pd.DataFrame'
 ```
@@ -106,7 +106,7 @@ This function discovers combinations of items that generate a high total utility
 (e.g., profit) across all transactions, even if they aren't the most frequent.
 
 ```python
-from rusket.hupm import hupm
+from rusket.miners.hupm import hupm
 
 hupm(transactions: 'list[list[int]]', utilities: 'list[list[float]]', min_utility: 'float', max_len: 'int | None' = None) -> 'pd.DataFrame'
 ```
@@ -136,7 +136,7 @@ Accepts Pandas, Polars, or PySpark DataFrames. Data is grouped by `user_col`,
 ordered by `time_col`, and `item_col` values are collected into sequences.
 
 ```python
-from rusket.prefixspan import sequences_from_event_log
+from rusket.miners.prefixspan import sequences_from_event_log
 
 sequences_from_event_log(df: 'Any', user_col: 'str', time_col: 'str', item_col: 'str') -> 'tuple[list[list[int]], dict[int, Any]]'
 ```
@@ -166,7 +166,7 @@ Converts a Pandas or Polars DataFrame into the required list-of-lists format
 and runs the High-Utility Pattern Mining (HUPM) algorithm.
 
 ```python
-from rusket.hupm import mine_hupm
+from rusket.miners.hupm import mine_hupm
 
 mine_hupm(data: 'Any', transaction_col: 'str', item_col: 'str', utility_col: 'str', min_utility: 'float', max_len: 'int | None' = None) -> 'pd.DataFrame'
 ```
@@ -197,7 +197,7 @@ Stream directly from a DuckDB query via Arrow RecordBatches.
 This is extremely memory efficient, bypassing Pandas entirely.
 
 ```python
-from rusket.streaming import mine_duckdb
+from rusket.miners.streaming import mine_duckdb
 
 mine_duckdb(con: 'Any', query: 'str', n_items: 'int', txn_col: 'str', item_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, chunk_size: 'int' = 1000000) -> 'pd.DataFrame'
 ```
@@ -212,7 +212,7 @@ Uses `toLocalIterator()` to fetch Arrow chunks incrementally directly
 to the driver node, avoiding massive memory spikes.
 
 ```python
-from rusket.streaming import mine_spark
+from rusket.miners.streaming import mine_spark
 
 mine_spark(spark_df: 'Any', n_items: 'int', txn_col: 'str', item_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None) -> 'pd.DataFrame'
 ```
@@ -231,7 +231,7 @@ The return type mirrors the input type:
 - ``list[list[...]]``      → **Pandas** ``DataFrame``
 
 ```python
-from rusket.transactions import from_transactions
+from rusket.miners.transactions import from_transactions
 
 from_transactions(data: 'DataFrame | Sequence[Sequence[str | int]] | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'Any'
 ```
@@ -278,7 +278,7 @@ For billion-row datasets, this processes data in chunks of ``chunk_size``
 rows, keeping peak memory to one chunk + the running CSR.
 
 ```python
-from rusket.transactions import from_transactions_csr
+from rusket.miners.transactions import from_transactions_csr
 
 from_transactions_csr(data: 'DataFrame | str | Any', transaction_col: 'str | None' = None, item_col: 'str | None' = None, chunk_size: 'int' = 10000000) -> 'tuple[Any, list[str]]'
 ```
@@ -314,7 +314,7 @@ from_transactions_csr(data: 'DataFrame | str | Any', transaction_col: 'str | Non
 Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 
 ```python
-from rusket.transactions import from_pandas
+from rusket.miners.transactions import from_pandas
 
 from_pandas(df: 'pd.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
@@ -326,7 +326,7 @@ from_pandas(df: 'pd.DataFrame', transaction_col: 'str | None' = None, item_col: 
 Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 
 ```python
-from rusket.transactions import from_polars
+from rusket.miners.transactions import from_polars
 
 from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pl.DataFrame'
 ```
@@ -338,7 +338,7 @@ from_polars(df: 'pl.DataFrame', transaction_col: 'str | None' = None, item_col: 
 Shorthand for ``from_transactions(df, transaction_col, item_col)``.
 
 ```python
-from rusket.transactions import from_spark
+from rusket.miners.transactions import from_spark
 
 from_spark(df: 'SparkDataFrame', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'SparkDataFrame'
 ```
@@ -354,7 +354,7 @@ input table must have at least two columns: one for the transaction identifier a
 one for the item.  The returned table has boolean columns (one per unique item).
 
 ```python
-from rusket.transactions import from_arrow
+from rusket.miners.transactions import from_arrow
 
 from_arrow(table: 'pa.Table', transaction_col: 'str | None' = None, item_col: 'str | None' = None, min_item_count: 'int' = 1, verbose: 'int' = 0) -> 'pa.Table'
 ```
@@ -391,7 +391,7 @@ indices and the recommended item indices can be compared with the
 ground truth.
 
 ```python
-from rusket.evaluation import evaluate
+from rusket.evaluation.metrics import evaluate
 
 evaluate(model: 'Any', test_interactions: 'Any', k: 'int' = 10, metrics: 'list[MetricName] | None' = None) -> 'dict[str, float]'
 ```
@@ -418,7 +418,7 @@ evaluate(model: 'Any', test_interactions: 'Any', k: 'int' = 10, metrics: 'list[M
 Split interactions into random train and test sets.
 
 ```python
-from rusket.splitting import train_test_split
+from rusket.evaluation.splitting import train_test_split
 
 train_test_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', test_size: 'float' = 0.2, random_state: 'int | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
@@ -449,7 +449,7 @@ If a timestamp column is provided, the latest interaction is left out.
 If no timestamp is provided, a random interaction is chosen.
 
 ```python
-from rusket.splitting import leave_one_out_split
+from rusket.evaluation.splitting import leave_one_out_split
 
 leave_one_out_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', timestamp_col: 'str | None' = None) -> 'tuple[pd.DataFrame, pd.DataFrame]'
 ```
@@ -476,7 +476,7 @@ leave_one_out_split(df: 'pd.DataFrame', user_col: 'str', item_col: 'str', timest
 Project data into `n_components` dimensions using PCA.
 
 ```python
-from rusket.pca import pca
+from rusket.viz.pca import pca
 
 pca(x: 'npt.NDArray[Any]', n_components: 'int' = 2, svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
 ```
@@ -496,7 +496,7 @@ pca(x: 'npt.NDArray[Any]', n_components: 'int' = 2, svd_solver: 'str' = 'auto') 
 Project data into exactly 2 dimensions using PCA.
 
 ```python
-from rusket.pca import pca2
+from rusket.viz.pca import pca2
 
 pca2(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
 ```
@@ -508,7 +508,7 @@ pca2(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
 Project data into exactly 3 dimensions using PCA.
 
 ```python
-from rusket.pca import pca3
+from rusket.viz.pca import pca3
 
 pca3(x: 'npt.NDArray[Any]', svd_solver: 'str' = 'auto') -> 'ProjectedSpace'
 ```
@@ -526,7 +526,7 @@ FP-Growth frequent itemset miner.
 This class wraps the fast, core Rust FP-Growth implementation.
 
 ```python
-from rusket.fpgrowth import FPGrowth
+from rusket.miners.fpgrowth import FPGrowth
 
 FPGrowth(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
@@ -536,7 +536,7 @@ FPGrowth(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'li
 Execute the FP-growth algorithm on the stored data.
 
 ```python
-from rusket.fpgrowth import FPGrowth.mine
+from rusket.miners.fpgrowth import FPGrowth.mine
 
 FPGrowth.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -559,7 +559,7 @@ Eclat is typically faster than FP-growth on dense datasets due to
 efficient vertical bitset intersection logic.
 
 ```python
-from rusket.eclat import Eclat
+from rusket.miners.eclat import Eclat
 
 Eclat(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
@@ -569,7 +569,7 @@ Eclat(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[
 Execute the Eclat algorithm on the stored data.
 
 ```python
-from rusket.eclat import Eclat.mine
+from rusket.miners.eclat import Eclat.mine
 
 Eclat.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -591,7 +591,7 @@ Sequential Pattern Mining (PrefixSpan) model.
 This class discovers frequent sequences of items across multiple users/sessions.
 
 ```python
-from rusket.prefixspan import PrefixSpan
+from rusket.miners.prefixspan import PrefixSpan
 
 PrefixSpan(data: 'list[list[int]]', min_support: 'int | float', max_len: 'int | None' = None, item_mapping: 'dict[int, Any] | None' = None)
 ```
@@ -601,7 +601,7 @@ PrefixSpan(data: 'list[list[int]]', min_support: 'int | float', max_len: 'int | 
 Mine sequential patterns using PrefixSpan.
 
 ```python
-from rusket.prefixspan import PrefixSpan.mine
+from rusket.miners.prefixspan import PrefixSpan.mine
 
 PrefixSpan.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -624,7 +624,7 @@ This class discovers combinations of items that generate a high total utility
 (e.g., profit) across all transactions, even if they aren't the most frequent.
 
 ```python
-from rusket.hupm import HUPM
+from rusket.miners.hupm import HUPM
 
 HUPM(transactions: 'list[list[int]]', utilities: 'list[list[float]]', min_utility: 'float', max_len: 'int | None' = None)
 ```
@@ -634,7 +634,7 @@ HUPM(transactions: 'list[list[int]]', utilities: 'list[list[float]]', min_utilit
 Mine high-utility itemsets.
 
 ```python
-from rusket.hupm import HUPM.mine
+from rusket.miners.hupm import HUPM.mine
 
 HUPM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -658,7 +658,7 @@ time.  Rust accumulates per-transaction item lists in a
 ``HashMap<i64, Vec<i32>>``.  Peak **Python** memory = one chunk.
 
 ```python
-from rusket.streaming import FPMiner
+from rusket.miners.streaming import FPMiner
 
 FPMiner(n_items: 'int', max_ram_mb: 'int | None' = -1, hint_n_transactions: 'int | None' = None) -> 'None'
 ```
@@ -691,7 +691,7 @@ Feed a PyArrow RecordBatch directly into the miner.
 Zero-copy extraction is used if types match (Int64/Int32).
 
 ```python
-from rusket.streaming import FPMiner.add_arrow_batch
+from rusket.miners.streaming import FPMiner.add_arrow_batch
 
 FPMiner.add_arrow_batch(batch: 'Any', txn_col: 'str', item_col: 'str') -> 'FPMiner'
 ```
@@ -703,7 +703,7 @@ FPMiner.add_arrow_batch(batch: 'Any', txn_col: 'str', item_col: 'str') -> 'FPMin
 Feed a chunk of (transaction_id, item_id) pairs.
 
 ```python
-from rusket.streaming import FPMiner.add_chunk
+from rusket.miners.streaming import FPMiner.add_chunk
 
 FPMiner.add_chunk(txn_ids: 'np.ndarray', item_ids: 'np.ndarray') -> 'FPMiner'
 ```
@@ -728,7 +728,7 @@ FPMiner.add_chunk(txn_ids: 'np.ndarray', item_ids: 'np.ndarray') -> 'FPMiner'
 Sklearn-compatible alias for ``mine()``. Runs the mining algorithm.
 
 ```python
-from rusket.streaming import FPMiner.fit
+from rusket.miners.streaming import FPMiner.fit
 
 FPMiner.fit(**kwargs: 'Any') -> 'FPMiner'
 ```
@@ -746,7 +746,7 @@ FPMiner.fit(**kwargs: 'Any') -> 'FPMiner'
 Mine frequent itemsets from all accumulated transactions.
 
 ```python
-from rusket.streaming import FPMiner.mine
+from rusket.miners.streaming import FPMiner.mine
 
 FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colnames: 'bool' = True, column_names: 'list[str] | None' = None, method: "typing.Literal['fpgrowth', 'eclat']" = 'fpgrowth', verbose: 'int' = 0) -> 'pd.DataFrame'
 ```
@@ -775,7 +775,7 @@ FPMiner.mine(min_support: 'float' = 0.5, max_len: 'int | None' = None, use_colna
 Return the last mined result, or run ``fit()`` first.
 
 ```python
-from rusket.streaming import FPMiner.predict
+from rusket.miners.streaming import FPMiner.predict
 
 FPMiner.predict(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -793,7 +793,7 @@ FPMiner.predict(**kwargs: 'Any') -> 'pd.DataFrame'
 Free all accumulated data.
 
 ```python
-from rusket.streaming import FPMiner.reset
+from rusket.miners.streaming import FPMiner.reset
 
 FPMiner.reset() -> 'None'
 ```
@@ -809,7 +809,7 @@ FIN (Fast Itemset per Nodeset) frequent itemset miner.
 This class wraps the fast core Rust FIN implementation.
 
 ```python
-from rusket.fin import FIN
+from rusket.miners.fin import FIN
 
 FIN(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
@@ -819,7 +819,7 @@ FIN(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[st
 Execute the FIN algorithm on the stored data.
 
 ```python
-from rusket.fin import FIN.mine
+from rusket.miners.fin import FIN.mine
 
 FIN.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -843,7 +843,7 @@ It produces only *closed* frequent itemsets, offering massive memory savings
 and faster execution out-of-the-box compared to classic algorithms on dense datasets.
 
 ```python
-from rusket.lcm import LCM
+from rusket.miners.lcm import LCM
 
 LCM(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[str] | None' = None, min_support: 'float' = 0.5, null_values: 'bool' = False, use_colnames: 'bool' = True, max_len: 'int | None' = None, verbose: 'int' = 0, **kwargs: 'Any')
 ```
@@ -853,7 +853,7 @@ LCM(data: 'pd.DataFrame | pl.DataFrame | np.ndarray | Any', item_names: 'list[st
 Execute the LCM algorithm on the stored data to find closed itemsets.
 
 ```python
-from rusket.lcm import LCM.mine
+from rusket.miners.lcm import LCM.mine
 
 LCM.mine(**kwargs: 'Any') -> 'pd.DataFrame'
 ```
@@ -929,7 +929,7 @@ RuleMinerMixin._invalidate_rules_cache() -> 'None'
 Implicit ALS collaborative filtering model.
 
 ```python
-from rusket.als import ALS
+from rusket.recommenders.als import ALS
 
 ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -974,7 +974,7 @@ Fold in a new user without retraining the entire model matrix:
 Top-N items for all users efficiently computed in parallel.
 
 ```python
-from rusket.als import ALS.batch_recommend
+from rusket.recommenders.als import ALS.batch_recommend
 
 ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal['pandas', 'polars', 'spark']" = 'polars') -> 'Any'
 ```
@@ -1000,7 +1000,7 @@ ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal
 Build an Approximate Nearest Neighbor index from item factors.
 
 ```python
-from rusket.als import ALS.build_ann_index
+from rusket.recommenders.als import ALS.build_ann_index
 
 ALS.build_ann_index(backend: 'str' = 'native', index_type: 'str' = 'hnsw', **kwargs: 'Any') -> 'Any'
 ```
@@ -1026,7 +1026,7 @@ ALS.build_ann_index(backend: 'str' = 'native', index_type: 'str' = 'hnsw', **kwa
 Fit the model to the user-item interaction matrix.
 
 ```python
-from rusket.als import ALS.fit
+from rusket.recommenders.als import ALS.fit
 
 ALS.fit(interactions: 'Any' = None, *, view_matrix: 'Any' = None) -> 'ALS'
 ```
@@ -1052,7 +1052,7 @@ ALS.fit(interactions: 'Any' = None, *, view_matrix: 'Any' = None) -> 'ALS'
 Calculate the latent factors for a new or existing user given their interacted items.
 
 ```python
-from rusket.als import ALS.recalculate_user
+from rusket.recommenders.als import ALS.recalculate_user
 
 ALS.recalculate_user(user_items: 'Any') -> 'np.ndarray'
 ```
@@ -1083,7 +1083,7 @@ ALS.recalculate_user(user_items: 'Any') -> 'np.ndarray'
 Top-N items for a user. Set exclude_seen=False to include already-seen items.
 
 ```python
-from rusket.als import ALS.recommend_items
+from rusket.recommenders.als import ALS.recommend_items
 
 ALS.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1095,7 +1095,7 @@ ALS.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) 
 Top-N users for an item.
 
 ```python
-from rusket.als import ALS.recommend_users
+from rusket.recommenders.als import ALS.recommend_users
 
 ALS.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
 ```
@@ -1114,7 +1114,7 @@ is often faster and less memory-intensive for implicit datasets while yielding
 comparable or better recommendation quality.
 
 ```python
-from rusket.als import eALS
+from rusket.recommenders.als import eALS
 
 eALS(*args: 'Any', use_eals: 'bool' = True, **kwargs: 'Any') -> 'None'
 ```
@@ -1142,7 +1142,7 @@ It works by drawing positive items the user interacted with, and negative items
 they haven't, and adjusting latent factors to ensure the positive item scores higher.
 
 ```python
-from rusket.bpr import BPR
+from rusket.recommenders.bpr import BPR
 
 BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1163,7 +1163,7 @@ BPR(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' 
 Fit the BPR model to the user-item interaction matrix.
 
 ```python
-from rusket.bpr import BPR.fit
+from rusket.recommenders.bpr import BPR.fit
 
 BPR.fit(interactions: 'Any' = None) -> 'BPR'
 ```
@@ -1188,7 +1188,7 @@ BPR.fit(interactions: 'Any' = None) -> 'BPR'
 Top-N items for a user.
 
 ```python
-from rusket.bpr import BPR.recommend_items
+from rusket.recommenders.bpr import BPR.recommend_items
 
 BPR.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1206,7 +1206,7 @@ Inputs should be formatted as a scipy sparse CSR matrix where features are binar
 Each row is a sample consisting of User, Item, and Context features.
 
 ```python
-from rusket.fm import FM
+from rusket.recommenders.fm import FM
 
 FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 100, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1228,7 +1228,7 @@ FM(factors: 'int' = 8, learning_rate: 'float' = 0.05, regularization: 'float' = 
 Fit the FM model to Context-aware Data.
 
 ```python
-from rusket.fm import FM.fit
+from rusket.recommenders.fm import FM.fit
 
 FM.fit(X: 'Any', y: 'Any') -> 'FM'
 ```
@@ -1247,7 +1247,7 @@ FM.fit(X: 'Any', y: 'Any') -> 'FM'
 Alias for :meth:`predict_proba`.
 
 ```python
-from rusket.fm import FM.predict
+from rusket.recommenders.fm import FM.predict
 
 FM.predict(X: 'Any') -> 'Any'
 ```
@@ -1259,7 +1259,7 @@ FM.predict(X: 'Any') -> 'Any'
 Predict the probability (CTR) of interactions.
 
 ```python
-from rusket.fm import FM.predict_proba
+from rusket.recommenders.fm import FM.predict_proba
 
 FM.predict_proba(X: 'Any') -> 'Any'
 ```
@@ -1285,7 +1285,7 @@ FM.predict_proba(X: 'Any') -> 'Any'
 Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.
 
 ```python
-from rusket.recommend import Recommender
+from rusket.recommenders.recommend import Recommender
 
 Recommender(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
@@ -1295,7 +1295,7 @@ Recommender(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = None, 
 Batch-rank the next best products for every user in *user_history_df*.
 
 ```python
-from rusket.recommend import Recommender.predict_next_chunk
+from rusket.recommenders.recommend import Recommender.predict_next_chunk
 
 Recommender.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'pd.DataFrame'
 ```
@@ -1307,7 +1307,7 @@ Recommender.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'str' 
 Suggest items to add to an active cart using association rules.
 
 ```python
-from rusket.recommend import Recommender.recommend_for_cart
+from rusket.recommenders.recommend import Recommender.recommend_for_cart
 
 Recommender.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'list[int]'
 ```
@@ -1319,7 +1319,7 @@ Recommender.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'list[i
 Top-N recommendations for a user via Hybrid ALS + Semantic.
 
 ```python
-from rusket.recommend import Recommender.recommend_for_user
+from rusket.recommenders.recommend import Recommender.recommend_for_user
 
 Recommender.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' = 0.5, target_item_for_semantic: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -1342,7 +1342,7 @@ Recommender.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' = 0.
 Hybrid recommender combining ALS collaborative filtering, semantic similarities, and association rules.
 
 ```python
-from rusket.recommend import NextBestAction
+from rusket.recommenders.recommend import NextBestAction
 
 NextBestAction(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = None, item_embeddings: 'np.ndarray | None' = None)
 ```
@@ -1352,7 +1352,7 @@ NextBestAction(model: 'Any | None' = None, rules_df: 'pd.DataFrame | None' = Non
 Batch-rank the next best products for every user in *user_history_df*.
 
 ```python
-from rusket.recommend import NextBestAction.predict_next_chunk
+from rusket.recommenders.recommend import NextBestAction.predict_next_chunk
 
 NextBestAction.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'pd.DataFrame'
 ```
@@ -1364,7 +1364,7 @@ NextBestAction.predict_next_chunk(user_history_df: 'pd.DataFrame', user_col: 'st
 Suggest items to add to an active cart using association rules.
 
 ```python
-from rusket.recommend import NextBestAction.recommend_for_cart
+from rusket.recommenders.recommend import NextBestAction.recommend_for_cart
 
 NextBestAction.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'list[int]'
 ```
@@ -1376,7 +1376,7 @@ NextBestAction.recommend_for_cart(cart_items: 'list[int]', n: 'int' = 5) -> 'lis
 Top-N recommendations for a user via Hybrid ALS + Semantic.
 
 ```python
-from rusket.recommend import NextBestAction.recommend_for_user
+from rusket.recommenders.recommend import NextBestAction.recommend_for_user
 
 NextBestAction.recommend_for_user(user_id: 'int', n: 'int' = 5, alpha: 'float' = 0.5, target_item_for_semantic: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -1404,7 +1404,7 @@ often achieves state-of-the-art recommendation quality and very fast
 inference, particularly on datasets with strong item-item correlations.
 
 ```python
-from rusket.ease import EASE
+from rusket.recommenders.ease import EASE
 
 EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1421,7 +1421,7 @@ EASE(regularization: 'float' = 500.0, verbose: 'int' = 0, use_cuda: 'bool | None
 Fit the model to the user-item interaction matrix (Rust-accelerated).
 
 ```python
-from rusket.ease import EASE.fit
+from rusket.recommenders.ease import EASE.fit
 
 EASE.fit(interactions: 'Any' = None) -> 'EASE'
 ```
@@ -1439,7 +1439,7 @@ EASE.fit(interactions: 'Any' = None) -> 'EASE'
 Top-N items for a user. Set exclude_seen=False to include already-seen items.
 
 ```python
-from rusket.ease import EASE.recommend_items
+from rusket.recommenders.ease import EASE.recommend_items
 
 EASE.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1456,7 +1456,7 @@ Computes an item-item similarity matrix and only retains the top-K neighbors
 per item. Similarity methods include BM25, TF-IDF, Cosine, or unweighted Count.
 
 ```python
-from rusket.item_knn import ItemKNN
+from rusket.recommenders.item_knn import ItemKNN
 
 ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int' = 20, bm25_k1: 'float' = 1.2, bm25_b: 'float' = 0.75, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any')
 ```
@@ -1466,7 +1466,7 @@ ItemKNN(method: "Literal['bm25', 'tfidf', 'cosine', 'count']" = 'bm25', k: 'int'
 Fit the ItemKNN model.
 
 ```python
-from rusket.item_knn import ItemKNN.fit
+from rusket.recommenders.item_knn import ItemKNN.fit
 
 ItemKNN.fit(interactions: 'Any' = None) -> 'ItemKNN'
 ```
@@ -1490,7 +1490,7 @@ ItemKNN.fit(interactions: 'Any' = None) -> 'ItemKNN'
 Top-N items for a user.
 
 ```python
-from rusket.item_knn import ItemKNN.recommend_items
+from rusket.recommenders.item_knn import ItemKNN.recommend_items
 
 ItemKNN.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1522,7 +1522,7 @@ FPMC combines Matrix Factorization (modeling user preferences) and Markov Chains
 where both personal taste and sequential behavior matter (e.g., next-basket delivery).
 
 ```python
-from rusket.fpmc import FPMC
+from rusket.sequential.fpmc import FPMC
 
 FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float' = 0.01, iterations: 'int' = 150, seed: 'int' = 42, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1544,7 +1544,7 @@ FPMC(factors: 'int' = 64, learning_rate: 'float' = 0.05, regularization: 'float'
 Fit the FPMC model to a list of sequential interactions.
 
 ```python
-from rusket.fpmc import FPMC.fit
+from rusket.sequential.fpmc import FPMC.fit
 
 FPMC.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[int]] | None' = None, n_items: 'int | None' = None) -> 'FPMC'
 ```
@@ -1564,7 +1564,7 @@ FPMC.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[int]
 Top-N sequential items for a user.
 
 ```python
-from rusket.fpmc import FPMC.recommend_items
+from rusket.sequential.fpmc import FPMC.recommend_items
 
 FPMC.recommend_items(user_id: 'int', timestamp: 'int | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1581,7 +1581,7 @@ Biased matrix factorization trained with SGD:
     r̂_ui = μ + b_u + b_i + p_u · q_i
 
 ```python
-from rusket.svd import SVD
+from rusket.recommenders.svd import SVD
 
 SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float' = 0.02, iterations: 'int' = 20, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1603,7 +1603,7 @@ SVD(factors: 'int' = 64, learning_rate: 'float' = 0.005, regularization: 'float'
 Top-N items for all users efficiently computed in parallel.
 
 ```python
-from rusket.svd import SVD.batch_recommend
+from rusket.recommenders.svd import SVD.batch_recommend
 
 SVD.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars') -> 'Any'
 ```
@@ -1629,7 +1629,7 @@ SVD.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 
 Fit the model to the user-item interaction matrix.
 
 ```python
-from rusket.svd import SVD.fit
+from rusket.recommenders.svd import SVD.fit
 
 SVD.fit(interactions: 'Any' = None) -> 'SVD'
 ```
@@ -1653,7 +1653,7 @@ SVD.fit(interactions: 'Any' = None) -> 'SVD'
 Predict the rating for a user-item pair.
 
 ```python
-from rusket.svd import SVD.predict
+from rusket.recommenders.svd import SVD.predict
 
 SVD.predict(user_id: 'int', item_id: 'int') -> 'float'
 ```
@@ -1678,7 +1678,7 @@ SVD.predict(user_id: 'int', item_id: 'int') -> 'float'
 Top-N items for a user.
 
 ```python
-from rusket.svd import SVD.recommend_items
+from rusket.recommenders.svd import SVD.recommend_items
 
 SVD.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[Any, Any]'
 ```
@@ -1704,7 +1704,7 @@ SVD.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) 
 Top-N users for an item.
 
 ```python
-from rusket.svd import SVD.recommend_users
+from rusket.recommenders.svd import SVD.recommend_users
 
 SVD.recommend_users(item_id: 'int', n: 'int' = 10) -> 'tuple[Any, Any]'
 ```
@@ -1723,7 +1723,7 @@ over the user–item bipartite graph without non-linear transformations.
 Typical training time on ml-100k: < 0.5s/epoch.
 
 ```python
-from rusket.lightgcn import LightGCN
+from rusket.recommenders.lightgcn import LightGCN
 
 LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.001, lambda_: 'float' = 0.0001, ssl_ratio: 'float' = 0.0, ssl_temp: 'float' = 0.2, ssl_weight: 'float' = 0.1, iterations: 'int' = 20, seed: 'int | None' = None, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1746,7 +1746,7 @@ LightGCN(factors: 'int' = 64, k_layers: 'int' = 3, learning_rate: 'float' = 0.00
 Fit the model to a user-item interaction matrix.
 
 ```python
-from rusket.lightgcn import LightGCN.fit
+from rusket.recommenders.lightgcn import LightGCN.fit
 
 LightGCN.fit(interactions: 'Any' = None) -> 'LightGCN'
 ```
@@ -1770,7 +1770,7 @@ LightGCN.fit(interactions: 'Any' = None) -> 'LightGCN'
 Top-N items for a user.
 
 ```python
-from rusket.lightgcn import LightGCN.recommend_items
+from rusket.recommenders.lightgcn import LightGCN.recommend_items
 
 LightGCN.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -1802,7 +1802,7 @@ the next item. Significantly outperforms Markov-chain methods like FPMC
 on long sequences.
 
 ```python
-from rusket.sasrec import SASRec
+from rusket.sequential.sasrec import SASRec
 
 SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_rate: 'float' = 0.0005, lambda_: 'float' = 0.0001, iterations: 'int' = 20, seed: 'int | None' = None, time_aware: 'bool' = False, max_time_steps: 'int' = 256, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -1826,7 +1826,7 @@ SASRec(factors: 'int' = 64, n_layers: 'int' = 2, max_seq: 'int' = 50, learning_r
 #### `SASRec.fit`
 
 ```python
-from rusket.sasrec import SASRec.fit
+from rusket.sequential.sasrec import SASRec.fit
 
 SASRec.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[int]] | None' = None) -> 'SASRec'
 ```
@@ -1838,7 +1838,7 @@ SASRec.fit(sequences: 'list[list[int]] | None' = None, timestamps: 'list[list[in
 Top-N items for a user or an ad-hoc sequence.
 
 ```python
-from rusket.sasrec import SASRec.recommend_items
+from rusket.sequential.sasrec import SASRec.recommend_items
 
 SASRec.recommend_items(user_id: 'int | list[int]', timestamps: 'list[int] | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -1871,7 +1871,7 @@ of interactions it received.  Useful as a sanity-check baseline when
 evaluating more sophisticated models.
 
 ```python
-from rusket.popularity import PopularityRecommender
+from rusket.recommenders.popularity import PopularityRecommender
 
 PopularityRecommender(verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 ```
@@ -1887,7 +1887,7 @@ PopularityRecommender(verbose: 'int' = 0, **kwargs: 'Any') -> 'None'
 Fit the model by counting interactions per item.
 
 ```python
-from rusket.popularity import PopularityRecommender.fit
+from rusket.recommenders.popularity import PopularityRecommender.fit
 
 PopularityRecommender.fit(interactions: 'Any' = None) -> 'PopularityRecommender'
 ```
@@ -1911,7 +1911,7 @@ PopularityRecommender.fit(interactions: 'Any' = None) -> 'PopularityRecommender'
 Return the *n* most popular items for a user.
 
 ```python
-from rusket.popularity import PopularityRecommender.recommend_items
+from rusket.recommenders.popularity import PopularityRecommender.recommend_items
 
 PopularityRecommender.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -1942,7 +1942,7 @@ Recommends items similar to a given item based on textual features
 (descriptions, tags, genres, etc.).
 
 ```python
-from rusket.content_based import ContentBased
+from rusket.recommenders.content_based import ContentBased
 
 ContentBased(max_features: 'int' = 5000, ngram_range: 'tuple[int, int]' = (1, 2), **kwargs: 'Any') -> 'None'
 ```
@@ -1959,7 +1959,7 @@ ContentBased(max_features: 'int' = 5000, ngram_range: 'tuple[int, int]' = (1, 2)
 Compute TF-IDF vectors and the pairwise cosine similarity matrix (Rust-accelerated).
 
 ```python
-from rusket.content_based import ContentBased.fit
+from rusket.recommenders.content_based import ContentBased.fit
 
 ContentBased.fit() -> 'ContentBased'
 ```
@@ -1977,7 +1977,7 @@ ContentBased.fit() -> 'ContentBased'
 Find the *n* most similar items to a given item.
 
 ```python
-from rusket.content_based import ContentBased.recommend_similar
+from rusket.recommenders.content_based import ContentBased.recommend_similar
 
 ContentBased.recommend_similar(item: 'Any', n: 'int' = 10) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -2007,7 +2007,7 @@ Blends the output of several pre-fitted models by combining their
 ``recommend_items`` scores with configurable weights.
 
 ```python
-from rusket.hybrid import HybridRecommender
+from rusket.recommenders.hybrid import HybridRecommender
 
 HybridRecommender(models_and_weights: 'list[tuple[Any, float]]') -> 'None'
 ```
@@ -2023,7 +2023,7 @@ HybridRecommender(models_and_weights: 'list[tuple[Any, float]]') -> 'None'
 No-op — constituent models must be pre-fitted.
 
 ```python
-from rusket.hybrid import HybridRecommender.fit
+from rusket.recommenders.hybrid import HybridRecommender.fit
 
 HybridRecommender.fit() -> 'HybridRecommender'
 ```
@@ -2039,7 +2039,7 @@ scores into a shared score vector, applies the weight, and returns the
 top-*n* from the blended result.
 
 ```python
-from rusket.hybrid import HybridRecommender.recommend_items
+from rusket.recommenders.hybrid import HybridRecommender.recommend_items
 
 HybridRecommender.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -2072,7 +2072,7 @@ matrices **W** (users × factors) and **H** (factors × items) such that
 without a projection step.
 
 ```python
-from rusket.nmf import NMF
+from rusket.recommenders.nmf import NMF
 
 NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01, seed: 'int' = 42, verbose: 'int' = 0, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
@@ -2093,7 +2093,7 @@ NMF(factors: 'int' = 64, iterations: 'int' = 100, regularization: 'float' = 0.01
 Fit via multiplicative update rules (Rust-accelerated).
 
 ```python
-from rusket.nmf import NMF.fit
+from rusket.recommenders.nmf import NMF.fit
 
 NMF.fit(interactions: 'Any' = None) -> 'NMF'
 ```
@@ -2117,7 +2117,7 @@ NMF.fit(interactions: 'Any' = None) -> 'NMF'
 Top-N items for a user via W @ H^T.
 
 ```python
-from rusket.nmf import NMF.recommend_items
+from rusket.recommenders.nmf import NMF.recommend_items
 
 NMF.recommend_items(user_id: 'int', n: 'int' = 10, exclude_seen: 'bool' = True) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -2149,7 +2149,7 @@ Cross-selling potential scores — shape ``(n_users, n_items)`` or ``(n_users, l
 Items the user has already interacted with are masked to ``-inf``.
 
 ```python
-from rusket.recommend import score_potential
+from rusket.recommenders.recommend import score_potential
 
 score_potential(user_history: 'list[list[int]]', model: 'Any', target_categories: 'list[int] | None' = None) -> 'np.ndarray'
 ```
@@ -2164,7 +2164,7 @@ Computes cosine similarity between the specified item's latent vector
 and all other item vectors in the ``item_factors`` matrix.
 
 ```python
-from rusket.similarity import similar_items
+from rusket._internal.similarity import similar_items
 
 similar_items(model: 'SupportsItemFactors', item_id: 'int', n: 'int' = 5) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -2193,7 +2193,7 @@ Items with high individual support but low co-occurrence (lift < 1.0)
 likely cannibalize each other.
 
 ```python
-from rusket.analytics import find_substitutes
+from rusket._internal.analytics import find_substitutes
 
 find_substitutes(rules_df: 'pd.DataFrame', max_lift: 'float' = 0.8) -> 'pd.DataFrame'
 ```
@@ -2218,7 +2218,7 @@ find_substitutes(rules_df: 'pd.DataFrame', max_lift: 'float' = 0.8) -> 'pd.DataF
 Customer saturation by unique items/categories bought, split into deciles.
 
 ```python
-from rusket.analytics import customer_saturation
+from rusket._internal.analytics import customer_saturation
 
 customer_saturation(df: 'pd.DataFrame', user_col: 'str', category_col: 'str | None' = None, item_col: 'str | None' = None) -> 'pd.DataFrame'
 ```
@@ -2248,7 +2248,7 @@ This format is ideal for ingesting into FAISS, Pinecone, or Qdrant for
 Retrieval-Augmented Generation (RAG) and semantic search.
 
 ```python
-from rusket.export import export_item_factors
+from rusket.export.factors import export_item_factors
 
 export_item_factors(model: 'SupportsItemFactors', include_labels: 'bool' = True, normalize: 'bool' = False, format: 'str' = 'pandas') -> 'Any'
 ```
@@ -2287,7 +2287,7 @@ Linear dimensionality reduction using Singular Value Decomposition
 of the centred data, computed entirely in Rust via the ``faer`` crate.
 
 ```python
-from rusket.pca import PCA
+from rusket.viz.pca import PCA
 
 PCA(n_components: 'int' = 2, svd_solver: 'str' = 'auto') -> 'None'
 ```
@@ -2326,7 +2326,7 @@ PCA(n_components=3)
 Fit PCA on the data matrix ``X``.
 
 ```python
-from rusket.pca import PCA.fit
+from rusket.viz.pca import PCA.fit
 
 PCA.fit(X: 'npt.NDArray[Any]') -> 'PCA'
 ```
@@ -2350,7 +2350,7 @@ PCA.fit(X: 'npt.NDArray[Any]') -> 'PCA'
 Fit the model with ``X`` and apply dimensionality reduction.
 
 ```python
-from rusket.pca import PCA.fit_transform
+from rusket.viz.pca import PCA.fit_transform
 
 PCA.fit_transform(X: 'npt.NDArray[Any]') -> 'npt.NDArray[np.float32]'
 ```
@@ -2374,7 +2374,7 @@ PCA.fit_transform(X: 'npt.NDArray[Any]') -> 'npt.NDArray[np.float32]'
 Apply dimensionality reduction to ``X``.
 
 ```python
-from rusket.pca import PCA.transform
+from rusket.viz.pca import PCA.transform
 
 PCA.transform(X: 'npt.NDArray[Any]') -> 'npt.NDArray[np.float32]'
 ```
@@ -2404,7 +2404,7 @@ funnel, following the architecture used by production recommendation systems
 at Twitter/X, YouTube, and Spotify.
 
 ```python
-from rusket.pipeline import Pipeline
+from rusket.evaluation.pipeline import Pipeline
 
 Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None, rules: 'Any | list[Any] | None' = None, filter: 'Callable[[list[Any], list[float]], tuple[list[Any], list[float]]] | None' = None, merge_strategy: "Literal['max', 'mean', 'sum']" = 'max') -> 'None'
 ```
@@ -2439,7 +2439,7 @@ Pipeline(retrieve: 'Any | list[Any] | None' = None, rerank: 'Any | None' = None,
 Run the full pipeline for a single user.
 
 ```python
-from rusket.pipeline import Pipeline.recommend
+from rusket.evaluation.pipeline import Pipeline.recommend
 
 Pipeline.recommend(user_id: 'int | Any', n: 'int' = 10, exclude_seen: 'bool' = True, retrieve_k: 'int | None' = None) -> 'tuple[np.ndarray, np.ndarray]'
 ```
@@ -2470,7 +2470,7 @@ Uses the **Rust-accelerated** fast path when all models expose
 Falls back to the Python per-user loop otherwise.
 
 ```python
-from rusket.pipeline import Pipeline.recommend_batch
+from rusket.evaluation.pipeline import Pipeline.recommend_batch
 
 Pipeline.recommend_batch(user_ids: 'list[int | Any] | np.ndarray | None' = None, n: 'int' = 10, exclude_seen: 'bool' = True, retrieve_k: 'int | None' = None, format: 'str' = 'pandas') -> 'Any'
 ```
@@ -2512,7 +2512,7 @@ This is extremely useful for running community detection algorithms
 or for visualising cross-selling patterns as a force-directed graph.
 
 ```python
-from rusket.viz import rusket.viz.to_networkx
+from rusket.viz.plots import rusket.viz.to_networkx
 
 rusket.viz.to_networkx(rules_df: 'pd.DataFrame', source_col: 'str' = 'antecedents', target_col: 'str' = 'consequents', edge_attr: 'str' = 'lift') -> 'networkx.DiGraph'
 ```
@@ -2564,7 +2564,7 @@ It assumes the input PySpark DataFrame is formatted like a dense
 boolean matrix (One-Hot Encoded) per group, where rows are transactions.
 
 ```python
-from rusket.spark import rusket.spark.mine_grouped
+from rusket.integrations.spark import rusket.spark.mine_grouped
 
 rusket.spark.mine_grouped(df: 'Any', group_col: 'str', min_support: 'float' = 0.5, max_len: 'int | None' = None, method: 'str' = 'fpgrowth', use_colnames: 'bool' = True) -> 'Any'
 ```
@@ -2596,7 +2596,7 @@ This takes the frequent itemsets DataFrame (output of `mine_grouped`)
 and applies `association_rules` uniformly across the groups.
 
 ```python
-from rusket.spark import rusket.spark.rules_grouped
+from rusket.integrations.spark import rusket.spark.rules_grouped
 
 rusket.spark.rules_grouped(df: 'Any', group_col: 'str', num_itemsets: 'dict[Any, int] | int', metric: 'str' = 'confidence', min_threshold: 'float' = 0.8) -> 'Any'
 ```
@@ -2627,7 +2627,7 @@ This function groups a PySpark DataFrame by `group_col` and applies
 `PrefixSpan.from_transactions` to each group concurrently across the cluster.
 
 ```python
-from rusket.spark import rusket.spark.prefixspan_grouped
+from rusket.integrations.spark import rusket.spark.prefixspan_grouped
 
 rusket.spark.prefixspan_grouped(df: 'Any', group_col: 'str', user_col: 'str', time_col: 'str', item_col: 'str', min_support: 'int' = 1, max_len: 'int | None' = None) -> 'Any'
 ```
@@ -2660,7 +2660,7 @@ This function groups a PySpark DataFrame by `group_col` and applies
 `HUPM.from_transactions` to each group concurrently across the cluster.
 
 ```python
-from rusket.spark import rusket.spark.hupm_grouped
+from rusket.integrations.spark import rusket.spark.hupm_grouped
 
 rusket.spark.hupm_grouped(df: 'Any', group_col: 'str', transaction_col: 'str', item_col: 'str', utility_col: 'str', min_utility: 'float', max_len: 'int | None' = None) -> 'Any'
 ```
@@ -2693,7 +2693,7 @@ This function uses `mapInArrow` to process partitions of users concurrently,
 applying a pre-fitted `Recommender` (or `ALS`) to each chunk.
 
 ```python
-from rusket.spark import rusket.spark.recommend_batches
+from rusket.integrations.spark import rusket.spark.recommend_batches
 
 rusket.spark.recommend_batches(df: 'Any', model: 'Any', user_col: 'str' = 'user_id', k: 'int' = 5) -> 'Any'
 ```
@@ -2720,7 +2720,7 @@ rusket.spark.recommend_batches(df: 'Any', model: 'Any', user_col: 'str' = 'user_
 Convert a Pandas or Polars DataFrame into a PySpark DataFrame.
 
 ```python
-from rusket.spark import rusket.spark.to_spark
+from rusket.integrations.spark import rusket.spark.to_spark
 
 rusket.spark.to_spark(spark_session: 'Any', df: 'Any') -> 'Any'
 ```
@@ -2752,6 +2752,14 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### 🔧 Refactoring
+
+- reorganize rusket into subpackages
 
 ### 📦 Miscellaneous
 
