@@ -187,16 +187,16 @@ def autolog(disable: bool = False) -> None:
     _AUTOLOG_ENABLED = not disable
 
     # Patch or unpatch models
+    from ..miners.eclat import Eclat
+    from ..miners.fpgrowth import FPGrowth
+    from ..miners.prefixspan import PrefixSpan
     from ..recommenders.als import ALS, eALS
     from ..recommenders.bpr import BPR
     from ..recommenders.ease import EASE
-    from ..miners.eclat import Eclat
-    from ..miners.fpgrowth import FPGrowth
     from ..recommenders.item_knn import ItemKNN
     from ..recommenders.lightgcn import LightGCN
-    from ..miners.prefixspan import PrefixSpan
-    from ..sequential.sasrec import SASRec
     from ..recommenders.svd import SVD
+    from ..sequential.sasrec import SASRec
 
     models = [ALS, eALS, BPR, EASE, ItemKNN, LightGCN, SVD, SASRec, FPGrowth, Eclat, PrefixSpan]
 

@@ -35,4 +35,3 @@ if __name__ == "__main__":
     fpgrowth(DF_100k_2k, min_support=0.05)
     t1 = time.perf_counter()
     print(f"Rusket 100k Rows x 2,000 Cols: {t1 - t0:.3f} s")
-

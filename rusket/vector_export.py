@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket.export.vector_export``."""
+
 import importlib as _importlib
 import sys as _sys
 

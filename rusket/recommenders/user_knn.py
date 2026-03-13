@@ -8,8 +8,8 @@ if TYPE_CHECKING:
     import numpy as np
 
 from .. import _rusket as _rust  # type: ignore
-from .item_knn import _bm25_weight, _cosine_weight, _tfidf_weight
 from ..model import ImplicitRecommender
+from .item_knn import _bm25_weight, _cosine_weight, _tfidf_weight
 
 
 class UserKNN(ImplicitRecommender):

@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket.evaluation.pipeline``."""
+
 import importlib as _importlib
 import sys as _sys
 

@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket.miners.streaming``."""
+
 import importlib as _importlib
 import sys as _sys
 

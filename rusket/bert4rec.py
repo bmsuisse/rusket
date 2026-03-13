@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket.sequential.bert4rec``."""
+
 import importlib as _importlib
 import sys as _sys
 

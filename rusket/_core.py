@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket._internal._core``."""
+
 import importlib as _importlib
 import sys as _sys
 

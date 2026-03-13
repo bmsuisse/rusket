@@ -1,4 +1,5 @@
 """Backward-compatibility shim — canonical location: ``rusket.miners.association_rules``."""
+
 import importlib as _importlib
 import sys as _sys
 
