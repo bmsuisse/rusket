@@ -87,7 +87,7 @@ class TestFakerPrefixSpan:
     """PrefixSpan sequential pattern mining on Faker-generated event logs."""
 
     def test_sequences_from_event_log_pandas(self) -> None:
-        from rusket.prefixspan import sequences_from_event_log
+        from rusket.miners.prefixspan import sequences_from_event_log
 
         df = _make_event_log(n_users=30, n_products=15)
         seqs, mapping = sequences_from_event_log(df, "user", "timestamp", "product")
@@ -101,7 +101,7 @@ class TestFakerPrefixSpan:
 
     def test_sequences_from_event_log_polars(self) -> None:
         pl = pytest.importorskip("polars")
-        from rusket.prefixspan import sequences_from_event_log
+        from rusket.miners.prefixspan import sequences_from_event_log
 
         df = _make_event_log(n_users=20, n_products=10, seed=99)
         df_pl = pl.from_pandas(df)
@@ -110,7 +110,7 @@ class TestFakerPrefixSpan:
         assert len(mapping) > 0
 
     def test_prefixspan_mine(self) -> None:
-        from rusket.prefixspan import PrefixSpan, sequences_from_event_log
+        from rusket.miners.prefixspan import PrefixSpan, sequences_from_event_log
 
         df = _make_event_log(n_users=40, n_products=10, seed=77)
         seqs, mapping = sequences_from_event_log(df, "user", "timestamp", "product")
@@ -122,7 +122,7 @@ class TestFakerPrefixSpan:
         assert "support" in result.columns
 
     def test_prefixspan_high_support_subset(self) -> None:
-        from rusket.prefixspan import PrefixSpan, sequences_from_event_log
+        from rusket.miners.prefixspan import PrefixSpan, sequences_from_event_log
 
         df = _make_event_log(n_users=50, n_products=8, seed=33)
         seqs, _ = sequences_from_event_log(df, "user", "timestamp", "product")

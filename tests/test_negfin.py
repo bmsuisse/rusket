@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from rusket.mine import mine
+from rusket.miners.mine import mine
 from rusket.negfin import NegFIN
 
 # Simple dataset 1

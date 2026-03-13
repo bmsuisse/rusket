@@ -118,7 +118,7 @@ def test_spark_bpr(spark_session) -> None:
 
 
 def test_spark_prefixspan(spark_session) -> None:
-    from rusket.prefixspan import PrefixSpan, sequences_from_event_log
+    from rusket.miners.prefixspan import PrefixSpan, sequences_from_event_log
 
     df = pd.DataFrame(
         {
@@ -391,7 +391,7 @@ def test_als_grouped(spark_session) -> None:
 
 def test_oo_mine_grouped_and_rules_grouped(spark_session) -> None:
 
-    from rusket.fpgrowth import FPGrowth
+    from rusket.miners.fpgrowth import FPGrowth
 
     df = pd.DataFrame(
         {
@@ -416,7 +416,7 @@ def test_oo_mine_grouped_and_rules_grouped(spark_session) -> None:
 def test_oo_prefixspan_grouped(spark_session) -> None:
     import pyspark.sql
 
-    from rusket.prefixspan import PrefixSpan
+    from rusket.miners.prefixspan import PrefixSpan
 
     df = pd.DataFrame(
         {
@@ -443,7 +443,7 @@ def test_oo_prefixspan_grouped(spark_session) -> None:
 def test_oo_hupm_grouped(spark_session) -> None:
     import pyspark.sql
 
-    from rusket.hupm import HUPM
+    from rusket.miners.hupm import HUPM
 
     df = pd.DataFrame(
         {

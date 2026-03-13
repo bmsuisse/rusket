@@ -1,7 +1,7 @@
 from typing import Any
 
-from . import mlflow, viz
-from ._config import (
+from . import viz
+from ._internal._config import (
     _auto_detect_cuda,
     disable_cuda,
     disable_gpu,
@@ -10,30 +10,10 @@ from ._config import (
     is_cuda_enabled,
     is_gpu_enabled,
 )
-from .als import ALS, eALS
-from .analytics import customer_saturation, find_substitutes
-from .ann import ApproximateNearestNeighbors
-from .association_rules import association_rules
-from .bert4rec import BERT4Rec
-from .bpr import BPR
-from .content_based import ContentBased
-from .ease import EASE
-from .eclat import Eclat, eclat
-from .evaluation import coverage_at_k, evaluate, novelty_at_k
-from .export import export_item_factors
-from .fin import FIN
-from .fm import FM
-from .fpgrowth import FPGrowth, fpgrowth
-from .fpmc import FPMC
-from .hupm import HUPM, hupm, mine_hupm
-from .hybrid import HybridRecommender
-from .hybrid_embedding import HybridEmbeddingIndex, fuse_embeddings
-from .item_knn import ItemKNN
-from .lcm import LCM
-from .lightgcn import LightGCN
-from .mine import mine
-from .model import BaseModel, load_model
-from .model_selection import (
+from ._internal.analytics import customer_saturation, find_substitutes
+from ._internal.similarity import similar_items
+from .evaluation.metrics import coverage_at_k, evaluate, novelty_at_k
+from .evaluation.model_selection import (
     CrossValidationResult,
     OptunaSearchSpace,
     chronological_split,
@@ -43,20 +23,22 @@ from .model_selection import (
     train_test_split,
     user_stratified_split,
 )
-from .negfin import NegFIN
-from .nmf import NMF
-from .pacmap import PaCMAP, pacmap, pacmap2, pacmap3
-from .pca import PCA, pca, pca2, pca3
-from .pipeline import Pipeline
-from .popularity import PopularityRecommender
-from .prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
-from .recommend import NextBestAction, Recommender, score_potential
-from .rules import RuleBasedRecommender
-from .sasrec import SASRec
-from .similarity import similar_items
-from .streaming import FPMiner, mine_duckdb, mine_spark
-from .svd import SVD
-from .transactions import (
+from .evaluation.pipeline import Pipeline
+from .export import mlflow as mlflow
+from .export.ann import ApproximateNearestNeighbors
+from .export.factors import export_item_factors
+from .export.hybrid_embedding import HybridEmbeddingIndex, fuse_embeddings
+from .miners.association_rules import association_rules
+from .miners.eclat import Eclat, eclat
+from .miners.fin import FIN
+from .miners.fpgrowth import FPGrowth, fpgrowth
+from .miners.hupm import HUPM, hupm, mine_hupm
+from .miners.lcm import LCM
+from .miners.mine import mine
+from .miners.negfin import NegFIN
+from .miners.prefixspan import PrefixSpan, prefixspan, sequences_from_event_log
+from .miners.streaming import FPMiner, mine_duckdb, mine_spark
+from .miners.transactions import (
     from_arrow,
     from_pandas,
     from_polars,
@@ -65,8 +47,27 @@ from .transactions import (
     from_transactions,
     from_transactions_csr,
 )
-from .user_knn import UserKNN
-from .viz import to_networkx, to_networkxr
+from .model import BaseModel, load_model
+from .recommenders.als import ALS, eALS
+from .recommenders.bpr import BPR
+from .recommenders.content_based import ContentBased
+from .recommenders.ease import EASE
+from .recommenders.fm import FM
+from .recommenders.hybrid import HybridRecommender
+from .recommenders.item_knn import ItemKNN
+from .recommenders.lightgcn import LightGCN
+from .recommenders.nmf import NMF
+from .recommenders.popularity import PopularityRecommender
+from .recommenders.recommend import NextBestAction, Recommender, score_potential
+from .recommenders.rules import RuleBasedRecommender
+from .recommenders.svd import SVD
+from .recommenders.user_knn import UserKNN
+from .sequential.bert4rec import BERT4Rec
+from .sequential.fpmc import FPMC
+from .sequential.sasrec import SASRec
+from .viz.pacmap import PaCMAP, pacmap, pacmap2, pacmap3
+from .viz.pca import PCA, pca, pca2, pca3
+from .viz.plots import to_networkx, to_networkxr
 
 # Auto-detect CUDA on import
 _auto_detect_cuda()
@@ -168,12 +169,12 @@ __all__ = [
 
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
-    "FAISSIndex": (".faiss_ann", "FAISSIndex"),
-    "build_faiss_index": (".faiss_ann", "build_faiss_index"),
-    "export_vectors": (".vector_export", "export_vectors"),
-    "export_multi_vectors": (".vector_export", "export_multi_vectors"),
-    "check_cuda_available": (".cuda", "check_cuda_available"),
-    "check_gpu_available": (".cuda", "check_cuda_available"),
+    "FAISSIndex": (".export.faiss_ann", "FAISSIndex"),
+    "build_faiss_index": (".export.faiss_ann", "build_faiss_index"),
+    "export_vectors": (".export.vector_export", "export_vectors"),
+    "export_multi_vectors": (".export.vector_export", "export_multi_vectors"),
+    "check_cuda_available": (".integrations.cuda", "check_cuda_available"),
+    "check_gpu_available": (".integrations.cuda", "check_cuda_available"),
 }
 
 

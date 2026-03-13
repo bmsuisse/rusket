@@ -68,7 +68,7 @@ class TestOnlineRetailBasketAnalysis:
 
     def test_fpgrowth_oo_api_mine(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """FPGrowth.from_transactions → .mine() returns itemsets with valid support."""
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.fpgrowth import FPGrowth
 
         model = FPGrowth.from_transactions(
             online_retail_df,
@@ -84,7 +84,7 @@ class TestOnlineRetailBasketAnalysis:
 
     def test_association_rules_from_oo_api(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """FPGrowth.association_rules returns rules with correct metric columns."""
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.fpgrowth import FPGrowth
 
         model = FPGrowth.from_transactions(
             online_retail_df,
@@ -100,7 +100,7 @@ class TestOnlineRetailBasketAnalysis:
 
     def test_recommend_items_returns_unseen(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """recommend_items returns products NOT in the query cart."""
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.fpgrowth import FPGrowth
 
         model = FPGrowth.from_transactions(
             online_retail_df,
@@ -118,7 +118,7 @@ class TestOnlineRetailBasketAnalysis:
 
     def test_recommend_items_cache_is_consistent(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """Calling recommend_items twice returns identical results (cache hit)."""
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.fpgrowth import FPGrowth
 
         model = FPGrowth.from_transactions(
             online_retail_df,
@@ -135,7 +135,7 @@ class TestOnlineRetailBasketAnalysis:
     def test_find_substitutes_no_negative_lift(self, online_retail_df: pd.DataFrame) -> None:  # type: ignore[name-defined]
         """find_substitutes returns only pairs with lift < max_lift."""
         import rusket
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.fpgrowth import FPGrowth
 
         model = FPGrowth.from_transactions(
             online_retail_df,
@@ -165,8 +165,8 @@ class TestOnlineRetailBasketAnalysis:
 
     def test_eclat_matches_fpgrowth_support(self, online_retail_df: pd.DataFrame) -> None:
         """Eclat and FP-Growth must agree on support values for shared itemsets."""
-        from rusket.eclat import Eclat
-        from rusket.fpgrowth import FPGrowth
+        from rusket.miners.eclat import Eclat
+        from rusket.miners.fpgrowth import FPGrowth
 
         min_sup = 0.02
 
@@ -221,7 +221,7 @@ class TestOnlineRetailHUPM:
         """
         import pandas as pd
 
-        from rusket.hupm import HUPM
+        from rusket.miners.hupm import HUPM
 
         # Encode StockCode as integer IDs for HUPM
         df = online_retail_df.copy()
@@ -243,7 +243,7 @@ class TestOnlineRetailHUPM:
         """All HUPM utilities must be strictly positive."""
         import pandas as pd
 
-        from rusket.hupm import HUPM
+        from rusket.miners.hupm import HUPM
 
         df = online_retail_df.copy()
         df["item_id"] = pd.factorize(df["StockCode"])[0]
@@ -520,7 +520,7 @@ class TestInstacartALS:
 
     def test_prefixspan_grocery_sequences(self, instacart_df: pd.DataFrame) -> None:
         """PrefixSpan finds at least one frequent sequence on grocery data."""
-        from rusket.prefixspan import PrefixSpan
+        from rusket.miners.prefixspan import PrefixSpan
 
         top_users = instacart_df["user_id"].value_counts().head(500).index.tolist()
         sample = instacart_df[instacart_df["user_id"].isin(top_users)].copy()

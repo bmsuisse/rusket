@@ -32,7 +32,7 @@ def test_hupm_basic():
             data.append({"txn": tx_id, "item": item, "util": u})
     df_raw = pd.DataFrame(data)
 
-    from rusket.hupm import HUPM
+    from rusket.miners.hupm import HUPM
 
     df = HUPM.from_transactions(
         df_raw, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
@@ -64,7 +64,7 @@ def test_mine_hupm_pandas():
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
-    from rusket.hupm import HUPM
+    from rusket.miners.hupm import HUPM
 
     df = HUPM.from_transactions(
         data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
@@ -90,7 +90,7 @@ def test_mine_hupm_polars():
         {"txn": [1, 1, 1, 2, 2, 3, 3], "item": [1, 2, 3, 1, 3, 2, 3], "util": [5.0, 2.0, 1.0, 5.0, 1.0, 2.0, 1.0]}
     )
 
-    from rusket.hupm import HUPM
+    from rusket.miners.hupm import HUPM
 
     df = HUPM.from_transactions(
         data, transaction_col="txn", item_col="item", utility_col="util", min_utility=7.0
@@ -123,7 +123,7 @@ from hypothesis import given, settings  # noqa: E402
 )
 @settings(max_examples=50, deadline=None)
 def test_hupm_invariants(transactions_with_utils, min_utility):
-    from rusket.hupm import HUPM
+    from rusket.miners.hupm import HUPM
 
     data = []
     for tx_id, item_util_map in enumerate(transactions_with_utils):

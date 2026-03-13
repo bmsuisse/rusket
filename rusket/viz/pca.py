@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from . import _rusket as _rust  # type: ignore
+from .. import _rusket as _rust  # type: ignore
 
 
 class PCA:
@@ -219,7 +219,7 @@ class ProjectedSpace:
         -------
         plotly.graph_objects.Figure
         """
-        from .viz import plot_pca
+        from ..viz.plots import plot_pca
 
         return plot_pca(self.data, labels=self.labels, title=title, **kwargs)
 
