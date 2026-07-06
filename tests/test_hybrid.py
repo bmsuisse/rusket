@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
+from rusket.hybrid import HybridRecommender
 from scipy import sparse as sp
 
 from rusket import EASE, PopularityRecommender
-from rusket.hybrid import HybridRecommender
 
 
 def _make_interactions() -> sp.csr_matrix:

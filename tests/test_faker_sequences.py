@@ -172,9 +172,9 @@ class TestFakerAnalytics:
     def test_find_substitutes_faker(self) -> None:
         """Build rules from Faker data and check find_substitutes doesn't crash."""
         import numpy as np
+        from rusket.analytics import find_substitutes
 
         from rusket import fpgrowth
-        from rusket.analytics import find_substitutes
 
         fake = Faker()
         Faker.seed(123)

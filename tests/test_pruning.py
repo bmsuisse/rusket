@@ -43,7 +43,6 @@ def test_bpr_pruning_callback() -> None:
 
 def test_optuna_dummy_integration() -> None:
     import optuna
-
     from rusket.model_selection import OptunaPruningCallback
 
     study = optuna.create_study(pruner=optuna.pruners.MedianPruner(n_warmup_steps=0))

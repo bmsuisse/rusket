@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
-
 from rusket.item_knn import ItemKNN
 
 

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from .. import _rusket as _rust  # type: ignore
 from ._compat import to_dataframe
+from ._type_utils import detect_dataframe_type
 
 if TYPE_CHECKING:
     import numpy as np
@@ -180,7 +181,7 @@ def dispatch(
 
     t = type(df).__name__
 
-    if t == "DataFrame" and getattr(df, "__module__", "").startswith("polars"):
+    if t == "DataFrame" and detect_dataframe_type(df) == "polars":
         return _run_polars(
             typing.cast("pl.DataFrame", df),
             min_support,

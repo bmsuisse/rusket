@@ -26,10 +26,10 @@ import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
+from rusket.bpr import BPR
 
 import rusket._rusket as _rusket
 from rusket import ALS, SVD
-from rusket.bpr import BPR
 from rusket.miners.eclat import Eclat
 
 # ════════════════════════════════════════════════════════════════════════════

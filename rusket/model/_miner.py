@@ -57,7 +57,7 @@ class Miner(BaseModel):
 
     def _convert_to_orig_type(self, df: pd.DataFrame) -> Any:
         """Helper to convert the resulting pandas DataFrame back to the input DataFrame type."""
-        from rusket._dependencies import import_optional_dependency
+        from rusket._internal._dependencies import import_optional_dependency
 
         pd = import_optional_dependency("pandas")
 
@@ -148,7 +148,7 @@ class Miner(BaseModel):
             miner._orig_df_type = "pandas"
             return miner
 
-        from rusket._dependencies import import_optional_dependency
+        from rusket._internal._dependencies import import_optional_dependency
 
         _pd = import_optional_dependency("pandas")
         _pl = import_optional_dependency("polars")
@@ -213,7 +213,7 @@ class Miner(BaseModel):
             A DataFrame containing ``group_col``, ``support``, and ``itemsets``.
             The type mirrors the input ``data`` type.
         """
-        from rusket._dependencies import import_optional_dependency
+        from rusket._internal._dependencies import import_optional_dependency
 
         _pd = import_optional_dependency("pandas")
 

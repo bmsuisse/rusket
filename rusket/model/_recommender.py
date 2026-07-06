@@ -81,7 +81,7 @@ class ImplicitRecommender(BaseModel, EmbeddingMixin):
         """Prepare interaction matrix from a long-format DataFrame without fitting."""
         import numpy as np
 
-        from rusket._dependencies import import_optional_dependency
+        from rusket._internal._dependencies import import_optional_dependency
 
         _pd = import_optional_dependency("pandas")
         from scipy import sparse as sp

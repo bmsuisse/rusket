@@ -3,7 +3,6 @@
 import numpy as np
 import pytest
 import scipy.sparse as sp
-
 from rusket.als import ALS
 from rusket.hybrid_embedding import HybridEmbeddingIndex, fuse_embeddings
 

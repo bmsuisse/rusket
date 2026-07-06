@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
+from rusket.negfin import NegFIN
 from scipy import sparse
 
 from rusket.miners.mine import mine
-from rusket.negfin import NegFIN
 
 # Simple dataset 1
 TRANSACTIONS = [

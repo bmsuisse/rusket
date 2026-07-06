@@ -1,6 +1,5 @@
 """Tests for global CUDA enable/disable configuration."""
 
-import rusket
 from rusket._config import (
     _auto_detect_cuda,
     _resolve_cuda,
@@ -8,6 +7,8 @@ from rusket._config import (
     enable_cuda,
     is_cuda_enabled,
 )
+
+import rusket
 
 
 def test_default_without_cuda_hardware():

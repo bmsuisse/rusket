@@ -83,3 +83,6 @@ test_colnames.py
 
 # MLflow
 mlflow.db
+
+
+.cache

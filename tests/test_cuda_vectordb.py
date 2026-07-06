@@ -6,9 +6,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from scipy.sparse import csr_matrix
-
-import rusket
 from rusket._config import disable_cuda
 from rusket.cuda import (
     check_cuda_available,
@@ -17,6 +14,9 @@ from rusket.cuda import (
     gpu_score_user,
     gpu_solve_cholesky,
 )
+from scipy.sparse import csr_matrix
+
+import rusket
 
 # ---------------------------------------------------------------------------
 # CUDA operations (tested with mock CuPy)

@@ -16,9 +16,9 @@ from __future__ import annotations
 import pandas as pd
 import polars as pl
 import pytest
-
 from rusket.fin import FIN
 from rusket.lcm import LCM
+
 from rusket.miners.eclat import Eclat
 from rusket.miners.fpgrowth import FPGrowth
 

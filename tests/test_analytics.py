@@ -1,5 +1,4 @@
 import pandas as pd
-
 from rusket.analytics import customer_saturation, find_substitutes
 
 

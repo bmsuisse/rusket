@@ -8,11 +8,9 @@ from collections.abc import Callable
 from typing import Any
 
 try:
-    from rusket._dependencies import import_optional_dependency
+    from rusket._internal._dependencies import import_optional_dependency
 
     mlflow = import_optional_dependency("mlflow")
-    from rusket._dependencies import import_optional_dependency
-
     import_optional_dependency("mlflow.pyfunc", "mlflow")
 
     HAS_MLFLOW = True
@@ -41,7 +39,7 @@ if HAS_MLFLOW:
 
             Input dataframe should have a 'user' column (or user inputs directly).
             """
-            from rusket._dependencies import import_optional_dependency
+            from rusket._internal._dependencies import import_optional_dependency
 
             pd = import_optional_dependency("pandas")
 

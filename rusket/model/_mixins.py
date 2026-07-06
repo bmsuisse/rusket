@@ -54,7 +54,7 @@ class RuleMinerMixin:
         is_empty = is_dataframe_empty(df_freq)
 
         if is_empty:
-            from rusket._dependencies import import_optional_dependency
+            from rusket._internal._dependencies import import_optional_dependency
 
             pd = import_optional_dependency("pandas")
 
@@ -162,7 +162,7 @@ class RuleMinerMixin:
             return []
 
         # Ensure we are working with Pandas for recommend_for_cart logic since we use .apply()
-        from rusket._dependencies import import_optional_dependency
+        from rusket._internal._dependencies import import_optional_dependency
 
         pd = import_optional_dependency("pandas")
 

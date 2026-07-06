@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 from .._internal._compat import to_dataframe
+from .._internal._type_utils import detect_dataframe_type
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -127,10 +128,7 @@ def from_transactions(
     >>> freq = rusket.fpgrowth(ohe, min_support=0.5, use_colnames=True)
     """
     # --- PyArrow Table — zero-copy round-trip ---
-    _type = type(data)
-    _type_name = _type.__name__
-    _mod = getattr(_type, "__module__", "") or ""
-    _is_arrow = _type_name == "Table" and _mod.startswith("pyarrow")
+    _is_arrow = detect_dataframe_type(data) == "pyarrow"
 
     if _is_arrow:
         from rusket._dependencies import import_optional_dependency
@@ -147,7 +145,7 @@ def from_transactions(
         return _pa.Table.from_pandas(result_pd.astype(bool))
 
     # --- Spark Detection MUST happen before coercion to Polars in to_dataframe() ---
-    _is_spark = _type_name == "DataFrame" and _mod.startswith("pyspark")
+    _is_spark = detect_dataframe_type(data) == "spark"
 
     if _is_spark:
         if min_item_count > 1:
@@ -560,7 +558,7 @@ def from_transactions_csr(
     if isinstance(data, (str, Path)):
         return _from_parquet_csr(str(data), transaction_col, item_col, chunk_size)
 
-    if type(data).__name__ == "DataFrame" and getattr(data, "__module__", "").startswith("polars"):
+    if detect_dataframe_type(data) == "polars":
         data = data.to_pandas()  # type: ignore[union-attr]
 
     df = typing.cast("pd.DataFrame", data)

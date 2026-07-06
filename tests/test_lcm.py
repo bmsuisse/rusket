@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-
 from rusket.lcm import LCM
 
 

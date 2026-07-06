@@ -1,5 +1,4 @@
 import numpy as np
-
 from rusket.als import ALS
 from rusket.recommend import Recommender
 

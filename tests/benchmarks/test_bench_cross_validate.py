@@ -9,9 +9,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+from rusket.model_selection import _cross_validate_python, _cross_validate_rust
 
 from rusket import ALS, CrossValidationResult, eALS
-from rusket.model_selection import _cross_validate_python, _cross_validate_rust
 
 # ── Fixtures ────────────────────────────────────────────────────────
 

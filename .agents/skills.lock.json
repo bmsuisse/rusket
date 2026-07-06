@@ -1,0 +1,13 @@
+{
+  "repos": {
+    "mattpocock/skills": {
+      "skills": [
+        "improve-codebase-architecture"
+      ],
+      "source": "release",
+      "ref": "v1.0.1",
+      "commit": "2454c95dc305c158b21a0cdafeb728879dd0359a",
+      "tag": "v1.0.1"
+    }
+  }
+}

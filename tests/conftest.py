@@ -31,6 +31,23 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Reset the global CUDA config flag after every test
+# ---------------------------------------------------------------------------
+# rusket._internal._config._CUDA_ENABLED is a module-level global mutated by
+# enable_cuda()/disable_cuda(). Several tests flip it directly; without this
+# fixture a test that calls enable_cuda() (or fails before its own cleanup
+# runs) leaks CUDA-enabled state into every later test in the process.
+
+
+@pytest.fixture(autouse=True)
+def _reset_cuda_config():
+    yield
+    from rusket._internal import _config
+
+    _config._CUDA_ENABLED = False
+
+
+# ---------------------------------------------------------------------------
 # UCI Online Retail II  — no authentication required
 # Cached to tests/.dataset_cache/online_retail_II.parquet after first download
 # ---------------------------------------------------------------------------

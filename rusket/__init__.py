@@ -12,6 +12,7 @@ from ._internal._config import (
 )
 from ._internal.analytics import customer_saturation, find_substitutes
 from ._internal.similarity import similar_items
+from ._shims import install as _install_legacy_shims
 from .evaluation.metrics import coverage_at_k, evaluate, novelty_at_k
 from .evaluation.model_selection import (
     CrossValidationResult,
@@ -71,6 +72,10 @@ from .viz.plots import to_networkx, to_networkxr
 
 # Auto-detect CUDA on import
 _auto_detect_cuda()
+
+# Install backward-compatibility aliases for the old top-level module paths
+# (e.g. ``rusket.als`` -> ``rusket.recommenders.als``).
+_install_legacy_shims()
 
 __all__ = [
     "fpgrowth",

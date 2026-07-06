@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-
 from rusket.hybrid_embedding import HybridEmbeddingIndex
 from rusket.vector_export import export_multi_vectors
 

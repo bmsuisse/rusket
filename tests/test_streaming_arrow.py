@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import pyarrow as pa
-
 from rusket.streaming import FPMiner
 
 
