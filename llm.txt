@@ -2756,10 +2756,12 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 📦 Miscellaneous
 
 - auto-format code with Ruff [skip ci]
+- auto-format code with Ruff [skip ci]
 
 ### 🔧 Refactoring
 
 - reorganize rusket into subpackages
+- deepen dataframe-type detection, collapse compat shims, split BaseModel, isolate CUDA test state
 
 ### 📦 Miscellaneous
 
