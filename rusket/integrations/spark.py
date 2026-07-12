@@ -214,7 +214,7 @@ def prefixspan_grouped(
     )
 
     def _prefixspan_group(table: pa.Table) -> pa.Table:
-        from rusket.prefixspan import PrefixSpan
+        from rusket.miners.prefixspan import PrefixSpan
 
         group_id = str(table.column(group_col)[0].as_py())
 
@@ -264,7 +264,7 @@ def prefixspan_grouped(
     else:
 
         def _prefixspan_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
-            from rusket.prefixspan import PrefixSpan
+            from rusket.miners.prefixspan import PrefixSpan
 
             group_id = str(pdf[group_col].iloc[0])
 
