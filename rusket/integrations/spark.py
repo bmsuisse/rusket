@@ -342,7 +342,7 @@ def hupm_grouped(
     )
 
     def _hupm_group(table: pa.Table) -> pa.Table:
-        from rusket.hupm import HUPM
+        from rusket.miners.hupm import HUPM
 
         group_id = str(table.column(group_col)[0].as_py())
 
@@ -392,7 +392,7 @@ def hupm_grouped(
     else:
 
         def _hupm_group_pd(pdf: pd.DataFrame) -> pd.DataFrame:
-            from rusket.hupm import HUPM
+            from rusket.miners.hupm import HUPM
 
             group_id = str(pdf[group_col].iloc[0])
 
