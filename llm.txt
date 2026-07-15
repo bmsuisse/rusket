@@ -2756,9 +2756,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 ### 🐛 Bug Fixes
 
 - correct broken PrefixSpan import path in Spark integration
+- correct broken HUPM import path in Spark integration
 
 ### 📦 Miscellaneous
 
+- auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
 
 ### 📦 Miscellaneous
