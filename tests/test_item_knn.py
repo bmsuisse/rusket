@@ -125,8 +125,8 @@ def test_item_knn_fused_gram_matches_old_scipy_path(method: str) -> None:
     for row in range(n_items):
         os_, oe_ = old_ip[row], old_ip[row + 1]
         ns_, ne_ = new_ip[row], new_ip[row + 1]
-        old_pairs = dict(zip(old_ix[os_:oe_].tolist(), old_dt[os_:oe_].tolist()))
-        new_pairs = dict(zip(new_ix[ns_:ne_].tolist(), new_dt[ns_:ne_].tolist()))
+        old_pairs = dict(zip(old_ix[os_:oe_].tolist(), old_dt[os_:oe_].tolist(), strict=True))
+        new_pairs = dict(zip(new_ix[ns_:ne_].tolist(), new_dt[ns_:ne_].tolist(), strict=True))
         # The two paths can legitimately choose DIFFERENT tied neighbours for
         # the k-th slot: both use select_nth_unstable, and real Gram rows have
         # exact ties (e.g. a tfidf row here has four neighbours at 33.8629 for
