@@ -29,20 +29,16 @@ fn ease_top_n_items(
     let u_indices = &user_indices[u_start..u_end];
     let u_data = &user_data[u_start..u_end];
 
-    // CORRECTNESS FIX (was a perf-only task): the previous code computed
-    // score_i = Σ_j B[i,j] * u_j, i.e. (B · u)_i, by reading weights[i*n_items+j]
-    // for each of the user's nonzero items j. But EASE's B is NOT symmetric
-    // (see ease_compute_weights below: B = P / (-diag(P)) is normalized per row,
-    // an asymmetric operation), and both the EASE paper and the Python path
-    // (rusket/recommenders/ease.py recommend_items: `user_row @ item_weights`,
-    // and the CUDA path's gpu_sparse_dense_matmul(user_data, ..., item_weights))
-    // compute the OTHER orientation: score_i = Σ_j u_j * B[j,i], i.e. u · B.
-    // So this Rust path previously disagreed with the Python/CUDA paths whenever
-    // a user had more than one rated item.
+    // Scores the paper's way: s = u . B, where B[j,i] = -P_ji / P_ii is
+    // normalised by the target item's diagonal (see ease_compute_weights
+    // step 4). Streaming row j of B for each of the user's nonzero items j
+    // is both the correct orientation and contiguous (B is row-major).
     //
-    // Streaming rows of B indexed by the user's nonzero items (u_j * B[j,:]) gives
-    // both the correct u·B orientation AND contiguous reads (row j of B is stored
-    // contiguously, row-major) — a perf win and a correctness fix in one change.
+    // History: v0.1.96 flipped this from (B . u) to (u . B) to match the
+    // Python and CUDA paths, but at that time step 4 stored B^T, so `u . B`
+    // was the WRONG orientation and EASE rankings regressed. Step 4 now
+    // stores the real B, which makes this form correct here and in the
+    // Python/CUDA paths that already used it.
     let mut scores = vec![0.0f32; n_items];
     for (&j, &u_j) in u_indices.iter().zip(u_data.iter()) {
         let row = &weights[(j as usize) * n_items..(j as usize + 1) * n_items];
@@ -114,7 +110,8 @@ pub fn ease_recommend_items<'py>(
 /// 1. Build dense Gram matrix G = X^T X from CSR input
 /// 2. Add regularization to diagonal: G += λI
 /// 3. Invert G via Cholesky decomposition (using faer)
-/// 4. Compute B = P / (-diag(P)), zero the diagonal
+/// 4. Compute B[i,j] = -P_ij / P_jj (normalised by the target item's
+///    diagonal, per Steck 2019 eq. 8), zero the diagonal
 fn ease_compute_weights(
     indptr: &[i64],
     indices: &[i32],
@@ -240,11 +237,17 @@ fn ease_compute_weights(
 
     let mut b_col = vec![0.0f32; n_items * n_items];
     b_col.par_chunks_mut(n_items).enumerate().for_each(|(j, col)| {
+        let nd_j = neg_diag[j];
         for (i, slot) in col.iter_mut().enumerate() {
             *slot = if i == j {
                 0.0
             } else {
-                (p_mat[(i, j)] / neg_diag[i]) as f32
+                // B[i,j] = -P_ij / P_jj -- normalised by the TARGET item's
+                // diagonal (column j), per Steck 2019 eq. 8. Dividing by
+                // neg_diag[i] instead stores B^T, which makes the `u @ B`
+                // scoring used by the Rust, Python and CUDA paths compute
+                // `u @ B^T` and rank wrongly whenever diag(P) is not constant.
+                (p_mat[(i, j)] / nd_j) as f32
             };
         }
     });

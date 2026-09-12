@@ -168,12 +168,37 @@ fn solve_one_side_cg(
                 }
             };
 
-            xu.fill(0.0);
-            r.copy_from_slice(b);
-            p.copy_from_slice(b);
+            // A user with no interactions has no equation to solve. `xu` is the
+            // live factor matrix (seeded with random_factors), so it must be
+            // zeroed explicitly rather than left at its initial value.
+            if nnz_u == 0 {
+                xu.fill(0.0);
+                return;
+            }
+
+            // WARM START: `xu` still holds this entity's factors from the
+            // previous outer iteration, which is a far better starting point
+            // than zero — consecutive ALS iterations move the solution only
+            // slightly. Starting from zero threw that away and made every
+            // outer iteration pay the full CG budget from scratch. (This is
+            // why `implicit` gets good results with only ~3 CG steps.)
+            //
+            //   r = b - A*x0,  p = r     instead of     x0 = 0, r = p = b
+            apply_a(&xu[..], ap);
+            for j in 0..k {
+                r[j] = b[j] - ap[j];
+            }
+            p.copy_from_slice(r);
             let mut rsold = dot_f32(r, r);
 
-            if rsold < 1e-20 {
+            // Relative stopping criterion: once the residual is small next to
+            // the right-hand side this solve is converged, so later outer
+            // iterations exit after a step or two instead of always burning
+            // the whole budget. The old absolute 1e-20 test effectively never
+            // fired for a cold start.
+            // ponytail: fixed rtol, not user-tunable until someone needs it.
+            let rtol2 = 1e-10 * dot_f32(b, b);
+            if rsold <= rtol2 {
                 return;
             }
 
@@ -189,7 +214,7 @@ fn solve_one_side_cg(
                 axpy_f32(-ak, ap, r);
 
                 let rsnew = dot_f32(r, r);
-                if rsnew < 1e-20 {
+                if rsnew <= rtol2 || rsnew < 1e-20 {
                     break;
                 }
                 let beta = rsnew / rsold;
@@ -470,6 +495,10 @@ fn solve_one_side_cholesky(
         let nnz_u = end - start;
 
         if nnz_u == 0 {
+            // `out` is the live factor matrix (seeded with random_factors), not
+            // a fresh zeroed buffer as before the &mut out refactor — so a cold
+            // entity must be explicitly zeroed here, exactly as CG and eALS do.
+            xu.fill(0.0);
             return;
         }
 
@@ -524,6 +553,9 @@ fn solve_one_side_cholesky(
         }
 
         if b_buf.iter().all(|&v| v == 0.0) {
+            // Same as the nnz_u == 0 case: zero rather than leaving the
+            // random initialisation in place.
+            xu.fill(0.0);
             // Put vecs back
             SCRATCH_CHOL.with(|cell| {
                 *cell.borrow_mut() = (a_buf, b_buf, yi_buf, w_buf);

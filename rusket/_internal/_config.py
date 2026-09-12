@@ -18,18 +18,30 @@ def enable_cuda() -> None:
     >>> rusket.enable_cuda()
     >>> model = rusket.ALS(factors=64)  # uses CUDA automatically
     """
-    global _CUDA_ENABLED
+    global _CUDA_ENABLED, _CUDA_AUTODETECT_PENDING
     _CUDA_ENABLED = True
+    # An explicit call always wins over the deferred autodetect probe — cancel
+    # it so a later `_resolve_cuda(None)`/`is_cuda_enabled()` can't silently
+    # re-run it and flip the setting the caller just made.
+    _CUDA_AUTODETECT_PENDING = False
 
 
 def disable_cuda() -> None:
     """Disable CUDA acceleration globally (the default)."""
-    global _CUDA_ENABLED
+    global _CUDA_ENABLED, _CUDA_AUTODETECT_PENDING
     _CUDA_ENABLED = False
+    # ponytail: same cancellation as enable_cuda() — see comment there.
+    _CUDA_AUTODETECT_PENDING = False
 
 
 def is_cuda_enabled() -> bool:
-    """Return ``True`` if CUDA acceleration is globally enabled."""
+    """Return ``True`` if CUDA acceleration is globally enabled.
+
+    Resolves any still-pending autodetect probe first, so this reports the
+    true current state rather than the state before autodetection ran.
+    """
+    if _CUDA_AUTODETECT_PENDING:
+        _run_pending_cuda_autodetect()
     return _CUDA_ENABLED
 
 

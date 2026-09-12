@@ -116,6 +116,7 @@ pub fn hupm_simple(
 ) -> Vec<(f32, Vec<u32>)> {
     let mut pdb = Vec::with_capacity(transactions.len());
     let mut max_item: i64 = -1;
+    let mut distinct: ahash::AHashSet<u32> = ahash::AHashSet::new();
     for i in 0..transactions.len() {
         if !transactions[i].0.is_empty() {
             pdb.push((i, 0, 0.0));
@@ -123,6 +124,7 @@ pub fn hupm_simple(
                 if item as i64 > max_item {
                     max_item = item as i64;
                 }
+                distinct.insert(item);
             }
         }
     }
@@ -134,9 +136,37 @@ pub fn hupm_simple(
         return results;
     }
 
-    // Item ids are dense u32 with a known max at entry, so a flat Vec indexed
-    // by item id avoids rebuilding a HashMap<u32, f32> at every recursion node.
-    let size = max_item as usize + 1;
+    // Flat Vecs indexed by item id let the recursion reuse scratch buffers
+    // instead of rebuilding a HashMap<u32, f32> at every node. That indexing
+    // is only affordable when ids are dense: callers pass raw ids (SKUs,
+    // hashed ids, EANs), so a single transaction holding item id 4e9 would
+    // otherwise ask for ~36 GB. When the id space is sparse, remap to a dense
+    // 0..n_distinct range for the duration of the mine and map back on the way
+    // out.
+    let n_distinct = distinct.len();
+    let dense_span = max_item as usize + 1;
+    // ponytail: 4x slack, not a tuned ratio — dense-enough ids skip the remap
+    // entirely and keep the old zero-overhead path.
+    let remap = dense_span > 4 * n_distinct.max(1);
+
+    let (transactions_owned, id_of_dense);
+    let transactions: &[Transaction] = if remap {
+        let mut ids: Vec<u32> = distinct.into_iter().collect();
+        ids.sort_unstable();
+        let dense_of_id: ahash::AHashMap<u32, u32> =
+            ids.iter().enumerate().map(|(d, &orig)| (orig, d as u32)).collect();
+        transactions_owned = transactions
+            .iter()
+            .map(|t| (t.0.iter().map(|i| dense_of_id[i]).collect::<Vec<u32>>(), t.1.clone()))
+            .collect::<Vec<Transaction>>();
+        id_of_dense = ids;
+        &transactions_owned
+    } else {
+        id_of_dense = Vec::new();
+        transactions
+    };
+
+    let size = if remap { n_distinct } else { dense_span };
     let mut twu = vec![0.0f32; size];
     let mut exact = vec![0.0f32; size];
     let mut seen = vec![false; size];
@@ -154,6 +184,15 @@ pub fn hupm_simple(
         &mut seen,
         &mut touched,
     );
+
+    if remap {
+        // Patterns came back in dense ids; translate them to the caller's ids.
+        for (_, pattern) in results.iter_mut() {
+            for item in pattern.iter_mut() {
+                *item = id_of_dense[*item as usize];
+            }
+        }
+    }
 
     results
 }

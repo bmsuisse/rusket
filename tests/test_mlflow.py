@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 pytest.importorskip("mlflow")
+from rusket import ALS
 from rusket.export.mlflow import autolog, save_model
 
 
@@ -64,3 +65,33 @@ def test_save_load_model(tmp_path):
     assert "scores" in predictions.columns
     assert "items" in predictions.columns
     assert "user" in predictions.columns
+
+    # Regression: predict() used to call `scores.scores.tolist()` on an ndarray
+    # (no `.scores` attribute), and the resulting AttributeError was swallowed
+    # by a bare `except`, so every prediction silently came back empty.
+    row = predictions.loc[predictions["user"] == 1].iloc[0]
+    assert len(row["items"]) > 0
+    assert len(row["scores"]) > 0
+
+    # user 3 was never seen during fit — recommend_items rejects it as
+    # out-of-range, and that (specific, expected) failure should still come
+    # back as an empty recommendation instead of blowing up the whole batch.
+    unseen_row = predictions.loc[predictions["user"] == 3].iloc[0]
+    assert unseen_row["items"] == []
+    assert unseen_row["scores"] == []
+
+
+def test_predict_scores_call_does_not_raise_attribute_error():
+    """Direct regression test for the `scores.scores.tolist()` bug (no save/load roundtrip)."""
+    from rusket.export.mlflow import _get_rusket_wrapper_cls
+
+    df = pd.DataFrame({"user_id": [1, 1, 2], "item_id": [10, 20, 10]})
+    model = ALS.from_transactions(df, factors=4, iterations=1, seed=42).fit()
+
+    wrapper_cls = _get_rusket_wrapper_cls()
+    wrapper = wrapper_cls()
+    wrapper.model = model
+
+    predictions = wrapper.predict(None, pd.DataFrame({"user": [1]}))
+
+    assert len(predictions.loc[predictions["user"] == 1, "items"].iloc[0]) > 0

@@ -690,7 +690,10 @@ def als_grouped(
         A PySpark DataFrame containing:
         - `group_col`
         - `user_col`
-        - `recommended_items` (array of ints)
+        - `recommended_items` (array of strings — external item labels, stringified;
+          `batch_recommend` resolves internal indices through ``_item_labels``, and
+          those labels may be non-numeric or wider than int32, so they are carried
+          as strings rather than truncated/cast to an integer type)
     """
     from rusket._dependencies import import_optional_dependency
 
@@ -706,7 +709,7 @@ def als_grouped(
         [
             T.StructField(group_col, T.StringType(), True),
             T.StructField(user_col, T.StringType(), True),
-            T.StructField("recommended_items", T.ArrayType(T.IntegerType()), True),
+            T.StructField("recommended_items", T.ArrayType(T.StringType()), True),
         ]
     )
 
@@ -746,10 +749,10 @@ def als_grouped(
 
             bdf = model.batch_recommend(n=k, format="pandas")
             if bdf.empty:
-                recommended_by_user: dict[str, list[int]] = {}
+                recommended_by_user: dict[str, list[str]] = {}
             else:
                 recommended_by_user = {
-                    str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                    str(uid): [str(x) for x in items]
                     for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
                 }
 
@@ -770,7 +773,7 @@ def als_grouped(
                     [
                         (group_col, pa.string()),
                         (user_col, pa.string()),
-                        ("recommended_items", pa.list_(pa.int32())),
+                        ("recommended_items", pa.list_(pa.string())),
                     ]
                 ),
             )
@@ -782,7 +785,7 @@ def als_grouped(
             [
                 (group_col, pa.string()),
                 (user_col, pa.string()),
-                ("recommended_items", pa.list_(pa.int32())),
+                ("recommended_items", pa.list_(pa.string())),
             ]
         )
         return out_table.cast(expected_schema)
@@ -822,10 +825,10 @@ def als_grouped(
 
                 bdf = model.batch_recommend(n=k, format="pandas")
                 if bdf.empty:
-                    recommended_by_user: dict[str, list[int]] = {}
+                    recommended_by_user: dict[str, list[str]] = {}
                 else:
                     recommended_by_user = {
-                        str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                        str(uid): [str(x) for x in items]
                         for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
                     }
 

@@ -278,8 +278,17 @@ class SASRec(SequentialRecommender):
             n,
         )
 
-        original_ids = np.array([self._rev_item_map.get(int(i), int(i)) for i in out_ids[0]], dtype=np.int64)
-        return original_ids, out_scores[0]
+        top_ids = out_ids[0]
+        top_scores = out_scores[0]
+
+        # Rust pads short result rows with (id=0, score=-inf); 0 is not a real
+        # item (item map is 1-indexed), so mask it out like bert4rec does.
+        valid_mask = top_ids > 0
+        valid_ids = top_ids[valid_mask]
+        valid_scores = top_scores[valid_mask]
+
+        original_ids = np.array([self._rev_item_map.get(int(i), int(i)) for i in valid_ids], dtype=np.int64)
+        return original_ids, valid_scores
 
     def _check_fitted(self) -> None:
         if not self.fitted:

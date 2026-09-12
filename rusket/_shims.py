@@ -116,5 +116,27 @@ def install() -> None:
         _sys.modules.setdefault(canonical, module)
         spec.loader.exec_module(module)  # installs the lazy proxy, doesn't run the module yet
 
-        if rusket_pkg is not None and not hasattr(rusket_pkg, old_name):
+        # Registering modules directly in sys.modules (above) means Python's
+        # import system finds them there and skips its usual "bind submodule
+        # onto parent package" step. Without this, `rusket.<old_name>` (the
+        # legacy top-level alias) AND `rusket.integrations.grouped`-style
+        # attribute access on the real canonical parent package (as opposed to
+        # `import rusket.integrations.grouped`, which works either way) would
+        # raise AttributeError. Bind both ourselves, matching what a normal
+        # import statement would have done.
+        if rusket_pkg is not None:
             setattr(rusket_pkg, old_name, module)
+
+        canonical_parent_name, _, canonical_base = canonical.rpartition(".")
+        if canonical_parent_name:
+            canonical_parent = _sys.modules.get(canonical_parent_name)
+            if canonical_parent is None:
+                # The intermediate package (e.g. ``rusket.integrations``) hasn't
+                # been imported yet. These are thin, docstring-only ``__init__.py``
+                # files — importing them for real is cheap and does not pull in
+                # any heavy optional deps (unlike the leaf module itself, which
+                # stays lazy via the LazyLoader above).
+                import importlib as _importlib
+
+                canonical_parent = _importlib.import_module(canonical_parent_name)
+            setattr(canonical_parent, canonical_base, module)

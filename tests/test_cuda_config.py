@@ -111,3 +111,61 @@ def test_auto_detect_callable():
     """_auto_detect_cuda runs without error."""
     _auto_detect_cuda()
     disable_cuda()  # reset
+
+
+# ── Regression: deferred autodetect must not override an explicit call ──────
+
+
+def _stub_cupy_with_device(monkeypatch, device_count: int = 1):
+    """Install a fake ``cupy`` module reporting `device_count` CUDA devices."""
+    import importlib.machinery
+    import sys
+    import types
+
+    cupy = types.ModuleType("cupy")
+    cupy.__spec__ = importlib.machinery.ModuleSpec("cupy", loader=None)
+    cupy.cuda = types.SimpleNamespace(runtime=types.SimpleNamespace(getDeviceCount=lambda: device_count))
+    monkeypatch.setitem(sys.modules, "cupy", cupy)
+
+
+def test_is_cuda_enabled_runs_pending_probe(monkeypatch):
+    """is_cuda_enabled() must resolve a pending autodetect, not just read the stale flag."""
+    import rusket._internal._config as _config
+
+    _stub_cupy_with_device(monkeypatch, device_count=1)
+    monkeypatch.setattr(_config, "_CUDA_ENABLED", False)
+    monkeypatch.setattr(_config, "_CUDA_AUTODETECT_PENDING", True)
+
+    assert is_cuda_enabled() is True
+    disable_cuda()  # reset
+
+
+def test_explicit_disable_wins_over_pending_autodetect(monkeypatch):
+    """disable_cuda() must cancel a pending probe so it can't silently re-enable CUDA later."""
+    import rusket._internal._config as _config
+
+    _stub_cupy_with_device(monkeypatch, device_count=1)
+    monkeypatch.setattr(_config, "_CUDA_ENABLED", False)
+    monkeypatch.setattr(_config, "_CUDA_AUTODETECT_PENDING", True)
+
+    disable_cuda()
+
+    assert _config._CUDA_AUTODETECT_PENDING is False
+    assert is_cuda_enabled() is False
+    assert rusket.ALS(factors=8).use_cuda is False
+    disable_cuda()  # reset
+
+
+def test_explicit_enable_wins_over_pending_autodetect(monkeypatch):
+    """enable_cuda() must also cancel a pending probe, so it isn't re-run and doesn't disable CUDA."""
+    import rusket._internal._config as _config
+
+    _stub_cupy_with_device(monkeypatch, device_count=0)  # probe would find no device
+    monkeypatch.setattr(_config, "_CUDA_ENABLED", False)
+    monkeypatch.setattr(_config, "_CUDA_AUTODETECT_PENDING", True)
+
+    enable_cuda()
+
+    assert _config._CUDA_AUTODETECT_PENDING is False
+    assert is_cuda_enabled() is True
+    disable_cuda()  # reset

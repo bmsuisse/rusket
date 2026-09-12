@@ -68,8 +68,12 @@ def _get_rusket_wrapper_cls() -> type:
             for u in users:
                 try:
                     items, scores = self.model.recommend_items(u, n=10, exclude_seen=True)  # type: ignore
-                    results.append({"user": u, "items": items.tolist(), "scores": scores.scores.tolist()})
-                except Exception:
+                    results.append({"user": u, "items": items.tolist(), "scores": scores.tolist()})
+                except ValueError:
+                    # Unknown/out-of-range user id (e.g. cold-start) — recommend_items
+                    # raises ValueError for this; treat it as "no recommendations"
+                    # rather than a serving failure. Anything else (a genuine bug)
+                    # is intentionally left to propagate.
                     results.append({"user": u, "items": [], "scores": []})
 
             return pd.DataFrame(results)

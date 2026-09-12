@@ -313,7 +313,12 @@ def als_grouped(
     k: int = 10,
     **kwargs: Any,
 ) -> Any:
-    """Distribute ALS collaborative filtering across groups. Supports Polars, Pandas, and Spark."""
+    """Distribute ALS collaborative filtering across groups. Supports Polars, Pandas, and Spark.
+
+    ``recommended_items`` holds external item labels (stringified), not internal
+    indices — ``batch_recommend`` resolves the model's internal item ids through
+    ``_item_labels`` before this returns.
+    """
     if _is_spark(df):
         from .spark import als_grouped as spark_als_grouped
 
@@ -359,10 +364,10 @@ def als_grouped(
 
         bdf = model.batch_recommend(n=k, format="pandas")
         if bdf.empty:
-            recommended_by_user: dict[str, list[int]] = {}
+            recommended_by_user: dict[str, list[str]] = {}
         else:
             recommended_by_user = {
-                str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                str(uid): [str(x) for x in items]
                 for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
             }
 
@@ -390,7 +395,7 @@ def als_grouped(
                 res_dfs.append(pl.from_pandas(res_df))
         if res_dfs:
             return pl.concat(res_dfs)
-        return pl.DataFrame(schema={group_col: pl.Utf8, user_col: pl.Utf8, "recommended_items": pl.List(pl.Int32)})
+        return pl.DataFrame(schema={group_col: pl.Utf8, user_col: pl.Utf8, "recommended_items": pl.List(pl.Utf8)})
     else:
         for name, group_df in df.groupby(group_col):
             if isinstance(name, tuple):

@@ -3,6 +3,24 @@ import pandas as pd
 from rusket.sasrec import SASRec
 
 
+def test_sasrec_recommend_items_excludes_pad_id():
+    """BUG 2 regression: Rust pads short result rows with (id=0, score=-inf)
+    once exclude_seen has removed everything the user could be recommended.
+    Item id 0 is not a real item (the item map is 1-indexed) and must never
+    leak into recommend_items() output."""
+    data = pd.DataFrame({"user_id": [1, 1, 1], "item_id": [10, 20, 30]})
+    model = SASRec.from_transactions(
+        data, user_col="user_id", item_col="item_id", factors=8, iterations=2, seed=42
+    ).fit()
+
+    # User 0 has seen the entire (tiny) catalog, so with exclude_seen=True
+    # and n larger than the catalog, Rust must pad the result rows.
+    ids, scores = model.recommend_items(0, n=10, exclude_seen=True)
+
+    assert 0 not in ids
+    assert len(ids) == len(scores)
+
+
 def test_sasrec_time_aware_from_transactions():
     data = pd.DataFrame(
         {
