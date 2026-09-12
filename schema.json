@@ -578,7 +578,8 @@
           "parameters": {
             "n": "int",
             "exclude_seen": "bool",
-            "format": "Literal['pandas', 'polars', 'spark']"
+            "format": "Literal['pandas', 'polars', 'spark']",
+            "exclude": "Any"
           },
           "returns": "Any",
           "doc": "Top-N items for all users efficiently computed in parallel."
@@ -599,6 +600,19 @@
           },
           "returns": "ALS",
           "doc": "Fit the model to the user-item interaction matrix."
+        },
+        "from_factors": {
+          "parameters": {
+            "user_factors": "Any",
+            "item_factors": "Any",
+            "user_labels": "Any",
+            "item_labels": "Any",
+            "global_bias": "float",
+            "user_biases": "Any",
+            "item_biases": "Any"
+          },
+          "returns": "ALS",
+          "doc": "Build a scoring-only ALS from factor matrices computed elsewhere."
         },
         "recalculate_user": {
           "parameters": {

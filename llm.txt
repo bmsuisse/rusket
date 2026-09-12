@@ -976,7 +976,7 @@ Top-N items for all users efficiently computed in parallel.
 ```python
 from rusket.recommenders.als import ALS.batch_recommend
 
-ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal['pandas', 'polars', 'spark']" = 'polars') -> 'Any'
+ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal['pandas', 'polars', 'spark']" = 'polars', exclude: 'Any' = None) -> 'Any'
 ```
 
 **Parameters**
@@ -984,8 +984,9 @@ ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: "Literal
 | Parameter | Type | Description |
 | --- | --- | --- |
 | n | int, default=10 | The number of items to recommend per user. |
-| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with during training. |
 | format | str, default="polars" | The DataFrame format to return. One of "pandas", "polars", or "spark". |
+| exclude | sparse matrix, optional | Explicit ``(n_users, n_items)`` mask of items to exclude per user, in internal index space. Use this when the set to suppress is not the training matrix -- e.g. scoring cross-sell potential against "everything this customer has ever bought or been quoted", which is a wider set than what the model was fitted on. Takes precedence over ``exclude_seen``. |
 
 **Returns**
 
@@ -2752,6 +2753,14 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### ⚡ Performance
+
+- fuse the CG apply; feat: ALS.from_factors() and batch_recommend(exclude=)
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
 
 ### 🐛 Bug Fixes
 
