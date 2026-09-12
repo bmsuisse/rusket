@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import scipy.sparse as sp
 
 from rusket._rusket import lightgcn_fit  # type: ignore[attr-defined]
 
@@ -167,6 +166,8 @@ class LightGCN(ImplicitRecommender):
         if self.fitted:
             raise RuntimeError("Model is already fitted. Create a new instance to refit.")
 
+        import scipy.sparse as sp
+
         if sp.issparse(interactions):
             csr = sp.csr_matrix(interactions, dtype=np.float32)
         elif isinstance(interactions, np.ndarray):
@@ -231,6 +232,8 @@ class LightGCN(ImplicitRecommender):
         item_col: str | None,
     ) -> None:
         """Internal: fit from a DataFrame with user/item columns."""
+        import scipy.sparse as sp
+
         if hasattr(data, "to_pandas"):
             data = data.to_pandas()
 

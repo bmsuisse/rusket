@@ -29,6 +29,9 @@ pub(crate) fn lcm_mine(
 ) -> Vec<(u64, Vec<u32>)> {
     let mut results = Vec::new();
     let n_blocks = prefix_bs.blocks.len();
+    let mut scratch = BitSet {
+        blocks: vec![0u128; n_blocks],
+    };
 
     // Fast membership check for prefix.
     // Instead of passing a full boolean array, since prefix is small, we just check if 
@@ -51,12 +54,17 @@ pub(crate) fn lcm_mine(
     
     for i in (tail_idx + 1)..active_items.len() {
         let (item_i, bs_i) = &active_items[i];
-        let mut t_new = BitSet {
-            blocks: vec![0u128; n_blocks],
-        };
-        let c = prefix_bs.intersect_count_into(bs_i, &mut t_new, min_count);
-        
+        let c = prefix_bs.intersect_count_into(bs_i, &mut scratch, min_count);
+
         if c >= min_count {
+            // Swap scratch with a fresh buffer instead of allocating a new one
+            // every iteration; scratch is only reused once its old contents
+            // have been consumed (discarded when c < min_count above).
+            let mut t_new = BitSet {
+                blocks: vec![0u128; n_blocks],
+            };
+            std::mem::swap(&mut scratch, &mut t_new);
+
             // 1. Check PPC (Prefix-Preserving Closure) Pruning.
             let mut is_ppc = true;
             for j in 0..i {

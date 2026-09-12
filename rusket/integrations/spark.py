@@ -737,21 +737,28 @@ def als_grouped(
                 rating_col=rating_col,
             )
 
-            # Recommend for all unique users in this group partition.
-            # We iterate over internal model indices (0..n_users-1) and map back
-            # to external user IDs via model._user_labels.
+            # Recommend for all users in this group partition in one Rayon-parallel
+            # Rust call (instead of one Python->Rust FFI call per user). `format="pandas"`
+            # goes through the numpy/pandas path so Spark workers aren't forced to
+            # import polars.
             user_labels = model._user_labels or list(range(model._n_users))
-            records = []
-            for internal_idx in range(model._n_users):
-                item_ids, _ = model.recommend_items(user_id=internal_idx, n=k)
-                records.append(
-                    {
-                        user_col: str(user_labels[internal_idx]),
-                        "recommended_items": [int(x) for x in item_ids],
-                    }
-                )
+            all_user_ids = [str(u) for u in user_labels]
 
-            res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
+            bdf = model.batch_recommend(n=k, format="pandas")
+            if bdf.empty:
+                recommended_by_user: dict[str, list[int]] = {}
+            else:
+                recommended_by_user = {
+                    str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                    for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
+                }
+
+            res_df = pd.DataFrame(
+                {
+                    user_col: all_user_ids,
+                    "recommended_items": [recommended_by_user.get(uid, []) for uid in all_user_ids],
+                }
+            )  # type: ignore[reportArgumentType]
 
         except Exception as e:
             raise RuntimeError(f"als_grouped worker failed for group {group_id!r}: {e}") from e
@@ -807,19 +814,27 @@ def als_grouped(
                     rating_col=rating_col,
                 )
 
-                # Iterate internal 0-based indices, map to external IDs via _user_labels
+                # Recommend for all users in one Rayon-parallel Rust call instead of one
+                # Python->Rust FFI call per user. format="pandas" avoids forcing a polars
+                # import on the Spark worker.
                 user_labels = model._user_labels or list(range(model._n_users))
-                records = []
-                for internal_idx in range(model._n_users):
-                    item_ids, _ = model.recommend_items(user_id=internal_idx, n=k)
-                    records.append(
-                        {
-                            user_col: str(user_labels[internal_idx]),
-                            "recommended_items": [int(x) for x in item_ids],
-                        }
-                    )
+                all_user_ids = [str(u) for u in user_labels]
 
-                res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]
+                bdf = model.batch_recommend(n=k, format="pandas")
+                if bdf.empty:
+                    recommended_by_user: dict[str, list[int]] = {}
+                else:
+                    recommended_by_user = {
+                        str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                        for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
+                    }
+
+                res_df = pd.DataFrame(
+                    {
+                        user_col: all_user_ids,
+                        "recommended_items": [recommended_by_user.get(uid, []) for uid in all_user_ids],
+                    }
+                )  # type: ignore[reportArgumentType]
 
             except Exception:
                 res_df = pd.DataFrame(columns=[user_col, "recommended_items"])  # type: ignore[reportArgumentType]

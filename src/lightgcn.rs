@@ -91,20 +91,24 @@ fn compute_infonce_loss(
         .chunks(chunk_size)
         .map(|chunk| {
             let mut loss_sum = 0.0;
+            // Hoisted out of the per-i loop below: reused (cleared/filled) each
+            // iteration instead of reallocating.
+            let mut exp_scores = Vec::with_capacity(chunk.len());
+            let mut grad_v1_i = vec![0.0; k];
             for &i in &chunk {
                 let s_pos = dot(&v1[i * k..(i + 1) * k], &v2[i * k..(i + 1) * k]) / temp;
                 let mut sum_exp = 0.0;
-                let mut exp_scores = Vec::with_capacity(chunk.len());
+                exp_scores.clear();
                 for &j in &chunk {
                     let s = dot(&v1[i * k..(i + 1) * k], &v2[j * k..(j + 1) * k]) / temp;
                     let es = s.exp();
                     exp_scores.push(es);
                     sum_exp += es;
                 }
-                
-                loss_sum += -(s_pos.exp() / sum_exp).ln(); 
-                
-                let mut grad_v1_i = vec![0.0; k];
+
+                loss_sum += -(s_pos.exp() / sum_exp).ln();
+
+                grad_v1_i.fill(0.0);
                 let g1_p = g1_ptr as *mut f32;
                 let g2_p = g2_ptr as *mut f32;
                 
@@ -219,13 +223,9 @@ fn propagate(
                 }
             });
 
-        // Accumulate
-        for idx in 0..final_u.len() {
-            final_u[idx] += next_u[idx];
-        }
-        for idx in 0..final_i.len() {
-            final_i[idx] += next_i[idx];
-        }
+        // Accumulate (parallel: layer-accumulate is elementwise and independent)
+        final_u.par_iter_mut().zip(next_u.par_iter()).for_each(|(a, b)| *a += b);
+        final_i.par_iter_mut().zip(next_i.par_iter()).for_each(|(a, b)| *a += b);
 
         curr_u = next_u;
         curr_i = next_i;
@@ -427,12 +427,10 @@ pub(crate) fn lightgcn_train(
                 &v2_du, &v2_di, k_layers,
             );
 
-            for idx in 0..g_eu_ssl.len() {
-                g_eu_ssl[idx] = (g_eu_v1[idx] + g_eu_v2[idx]) * ssl_weight;
-            }
-            for idx in 0..g_ei_ssl.len() {
-                g_ei_ssl[idx] = (g_ei_v1[idx] + g_ei_v2[idx]) * ssl_weight;
-            }
+            g_eu_ssl.par_iter_mut().zip(g_eu_v1.par_iter()).zip(g_eu_v2.par_iter())
+                .for_each(|((g, v1), v2)| *g = (v1 + v2) * ssl_weight);
+            g_ei_ssl.par_iter_mut().zip(g_ei_v1.par_iter()).zip(g_ei_v2.par_iter())
+                .for_each(|((g, v1), v2)| *g = (v1 + v2) * ssl_weight);
         }
 
         // Back-propagate through graph layers to get BPR gradient w.r.t. e_u, e_i
@@ -446,18 +444,28 @@ pub(crate) fn lightgcn_train(
         let t = (iter + 1) as f32;
         let alpha = learning_rate * (1.0 - beta2.powf(t)).sqrt() / (1.0 - beta1.powf(t));
 
-        for idx in 0..e_u.len() {
-            let g = g_eu[idx] + g_eu_ssl[idx] + lambda * e_u[idx];
-            m_u[idx] = beta1 * m_u[idx] + (1.0 - beta1) * g;
-            v_u[idx] = beta2 * v_u[idx] + (1.0 - beta2) * g * g;
-            e_u[idx] -= alpha * m_u[idx] / (v_u[idx].sqrt() + eps);
-        }
-        for idx in 0..e_i.len() {
-            let g = g_ei[idx] + g_ei_ssl[idx] + lambda * e_i[idx];
-            m_i[idx] = beta1 * m_i[idx] + (1.0 - beta1) * g;
-            v_i[idx] = beta2 * v_i[idx] + (1.0 - beta2) * g * g;
-            e_i[idx] -= alpha * m_i[idx] / (v_i[idx].sqrt() + eps);
-        }
+        e_u.par_iter_mut()
+            .zip(m_u.par_iter_mut())
+            .zip(v_u.par_iter_mut())
+            .zip(g_eu.par_iter())
+            .zip(g_eu_ssl.par_iter())
+            .for_each(|((((e, m), v), &ge), &gs)| {
+                let g = ge + gs + lambda * *e;
+                *m = beta1 * *m + (1.0 - beta1) * g;
+                *v = beta2 * *v + (1.0 - beta2) * g * g;
+                *e -= alpha * *m / (v.sqrt() + eps);
+            });
+        e_i.par_iter_mut()
+            .zip(m_i.par_iter_mut())
+            .zip(v_i.par_iter_mut())
+            .zip(g_ei.par_iter())
+            .zip(g_ei_ssl.par_iter())
+            .for_each(|((((e, m), v), &ge), &gs)| {
+                let g = ge + gs + lambda * *e;
+                *m = beta1 * *m + (1.0 - beta1) * g;
+                *v = beta2 * *v + (1.0 - beta2) * g * g;
+                *e -= alpha * *m / (v.sqrt() + eps);
+            });
 
         if verbose {
             let bpr_loss_avg = total_loss / n_interactions as f32;

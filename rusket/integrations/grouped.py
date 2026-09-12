@@ -351,18 +351,27 @@ def als_grouped(
             rating_col=rating_col,
         )
 
+        # Recommend for all users in one Rayon-parallel Rust call instead of one
+        # Python->Rust FFI call per user. format="pandas" avoids forcing a polars
+        # import here purely to convert straight back to pandas.
         user_labels = model._user_labels or list(range(model._n_users))
-        records = []
-        for internal_idx in range(model._n_users):
-            item_ids, _ = model.recommend_items(user_id=internal_idx, n=k)
-            records.append(
-                {
-                    user_col: str(user_labels[internal_idx]),
-                    "recommended_items": [int(x) for x in item_ids],
-                }
-            )
+        all_user_ids = [str(u) for u in user_labels]
 
-        res_df = pd.DataFrame(records, columns=[user_col, "recommended_items"])
+        bdf = model.batch_recommend(n=k, format="pandas")
+        if bdf.empty:
+            recommended_by_user: dict[str, list[int]] = {}
+        else:
+            recommended_by_user = {
+                str(uid): [x.item() if hasattr(x, "item") else x for x in items]
+                for uid, items in bdf.groupby("user_id", sort=False)["item_id"].apply(list).items()
+            }
+
+        res_df = pd.DataFrame(
+            {
+                user_col: all_user_ids,
+                "recommended_items": [recommended_by_user.get(uid, []) for uid in all_user_ids],
+            }
+        )
         if not res_df.empty:
             res_df.insert(0, group_col, name)
             return res_df

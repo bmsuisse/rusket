@@ -2,28 +2,39 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import time
 from collections.abc import Callable
 from typing import Any
 
-try:
-    from rusket._internal._dependencies import import_optional_dependency
-
-    mlflow = import_optional_dependency("mlflow")
-    import_optional_dependency("mlflow.pyfunc", "mlflow")
-
-    HAS_MLFLOW = True
-except ImportError:
-    HAS_MLFLOW = False
+# Presence check ONLY — must not actually import mlflow at module scope, since
+# that pulls in the full mlflow package (and its own heavy deps) just from
+# ``import rusket``. The real import happens lazily inside the functions below.
+HAS_MLFLOW = importlib.util.find_spec("mlflow") is not None
 
 logger = logging.getLogger(__name__)
 
 _AUTOLOG_ENABLED = False
 _ORIG_FIT_METHODS: dict[Any, Callable[..., Any]] = {}
 
+_rusket_wrapper_cls: type | None = None
 
-if HAS_MLFLOW:
+
+def _get_rusket_wrapper_cls() -> type:
+    """Lazily build and memoize the ``_RusketWrapper`` PyFunc class.
+
+    Deferred because its base class (``mlflow.pyfunc.PythonModel``) requires
+    actually importing mlflow, which we avoid at module import time.
+    """
+    global _rusket_wrapper_cls
+    if _rusket_wrapper_cls is not None:
+        return _rusket_wrapper_cls
+
+    from rusket._internal._dependencies import import_optional_dependency
+
+    mlflow = import_optional_dependency("mlflow")
+    import_optional_dependency("mlflow.pyfunc", "mlflow")
 
     class _RusketWrapper(mlflow.pyfunc.PythonModel):  # type: ignore
         """PyFunc wrapper for rusket models."""
@@ -62,8 +73,9 @@ if HAS_MLFLOW:
                     results.append({"user": u, "items": [], "scores": []})
 
             return pd.DataFrame(results)
-else:
-    _RusketWrapper = None  # type: ignore
+
+    _rusket_wrapper_cls = _RusketWrapper
+    return _RusketWrapper
 
 
 def save_model(model: Any, path: str, **kwargs: Any) -> None:
@@ -74,13 +86,18 @@ def save_model(model: Any, path: str, **kwargs: Any) -> None:
     import os
     import tempfile
 
+    from rusket._internal._dependencies import import_optional_dependency
+
+    mlflow = import_optional_dependency("mlflow")
+    wrapper_cls = _get_rusket_wrapper_cls()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         local_model_path = os.path.join(tmpdir, "model.bin")
         model.save(local_model_path)
 
         artifacts = {"model_path": local_model_path}
 
-        mlflow.pyfunc.save_model(path=path, python_model=_RusketWrapper(), artifacts=artifacts, **kwargs)
+        mlflow.pyfunc.save_model(path=path, python_model=wrapper_cls(), artifacts=artifacts, **kwargs)
 
 
 def log_model(model: Any, artifact_path: str, **kwargs: Any) -> Any:
@@ -91,6 +108,11 @@ def log_model(model: Any, artifact_path: str, **kwargs: Any) -> Any:
     import os
     import tempfile
 
+    from rusket._internal._dependencies import import_optional_dependency
+
+    mlflow = import_optional_dependency("mlflow")
+    wrapper_cls = _get_rusket_wrapper_cls()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         local_model_path = os.path.join(tmpdir, "model.bin")
         model.save(local_model_path)
@@ -98,7 +120,7 @@ def log_model(model: Any, artifact_path: str, **kwargs: Any) -> Any:
         artifacts = {"model_path": local_model_path}
 
         return mlflow.pyfunc.log_model(
-            artifact_path=artifact_path, python_model=_RusketWrapper(), artifacts=artifacts, **kwargs
+            artifact_path=artifact_path, python_model=wrapper_cls(), artifacts=artifacts, **kwargs
         )
 
 
@@ -136,6 +158,10 @@ def _patch_fit(cls: type) -> None:
     def patched_fit(self: Any, *args: Any, **kwargs: Any) -> Any:
         if not _AUTOLOG_ENABLED:
             return orig_fit(self, *args, **kwargs)
+
+        from rusket._internal._dependencies import import_optional_dependency
+
+        mlflow = import_optional_dependency("mlflow")
 
         params = _get_hyperparameters(self)
 

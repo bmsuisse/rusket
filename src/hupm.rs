@@ -1,5 +1,4 @@
 use pyo3::prelude::*;
-use std::collections::HashMap;
 
 type Transaction = (Vec<u32>, Vec<f32>);
 type ProjectedDB = Vec<(usize, usize, f32)>;
@@ -11,6 +10,10 @@ fn hupm_mine_recursive(
     max_len: Option<usize>,
     current_pattern: &mut Vec<u32>,
     results: &mut Vec<(f32, Vec<u32>)>,
+    twu: &mut [f32],
+    exact: &mut [f32],
+    seen: &mut [bool],
+    touched: &mut Vec<u32>,
 ) {
     if let Some(ml) = max_len {
         if current_pattern.len() >= ml {
@@ -18,8 +21,7 @@ fn hupm_mine_recursive(
         }
     }
 
-    let mut item_twu: HashMap<u32, f32> = HashMap::new();
-    let mut item_exact_utility: HashMap<u32, f32> = HashMap::new();
+    touched.clear();
 
     for &(tx_idx, start_pos, prefix_util) in pdb {
         let (items, utils) = &transactions[tx_idx];
@@ -32,26 +34,45 @@ fn hupm_mine_recursive(
         let local_tu = prefix_util + remaining_util;
 
         for j in start_pos..items.len() {
-            let item = items[j];
+            let item = items[j] as usize;
             let item_u = utils[j];
 
-            *item_twu.entry(item).or_insert(0.0) += local_tu;
-            *item_exact_utility.entry(item).or_insert(0.0) += prefix_util + item_u;
+            if !seen[item] {
+                seen[item] = true;
+                touched.push(item as u32);
+            }
+            twu[item] += local_tu;
+            exact[item] += prefix_util + item_u;
         }
     }
 
-    let mut promising_items: Vec<u32> = item_twu
-        .into_iter()
-        .filter(|&(_, twu)| twu >= min_utility)
-        .map(|(item, _)| item)
+    // Capture (item, exact_utility) for promising items before resetting the
+    // shared buffers, since children reuse them (same pattern as prefixspan).
+    let mut promising_items: Vec<(u32, f32)> = touched
+        .iter()
+        .copied()
+        .filter_map(|item| {
+            let idx = item as usize;
+            if twu[idx] >= min_utility {
+                Some((item, exact[idx]))
+            } else {
+                None
+            }
+        })
         .collect();
 
-    promising_items.sort_unstable();
+    promising_items.sort_unstable_by_key(|&(item, _)| item);
 
-    for item in promising_items {
+    for &item in touched.iter() {
+        let idx = item as usize;
+        seen[idx] = false;
+        twu[idx] = 0.0;
+        exact[idx] = 0.0;
+    }
+
+    for (item, exact_u) in promising_items {
         current_pattern.push(item);
 
-        let exact_u = *item_exact_utility.get(&item).unwrap_or(&0.0);
         if exact_u >= min_utility {
             results.push((exact_u, current_pattern.clone()));
         }
@@ -77,6 +98,10 @@ fn hupm_mine_recursive(
                 max_len,
                 current_pattern,
                 results,
+                twu,
+                exact,
+                seen,
+                touched,
             );
         }
 
@@ -90,14 +115,32 @@ pub fn hupm_simple(
     max_len: Option<usize>,
 ) -> Vec<(f32, Vec<u32>)> {
     let mut pdb = Vec::with_capacity(transactions.len());
+    let mut max_item: i64 = -1;
     for i in 0..transactions.len() {
         if !transactions[i].0.is_empty() {
             pdb.push((i, 0, 0.0));
+            for &item in &transactions[i].0 {
+                if item as i64 > max_item {
+                    max_item = item as i64;
+                }
+            }
         }
     }
 
     let mut results = Vec::new();
     let mut current_pattern = Vec::new();
+
+    if max_item < 0 {
+        return results;
+    }
+
+    // Item ids are dense u32 with a known max at entry, so a flat Vec indexed
+    // by item id avoids rebuilding a HashMap<u32, f32> at every recursion node.
+    let size = max_item as usize + 1;
+    let mut twu = vec![0.0f32; size];
+    let mut exact = vec![0.0f32; size];
+    let mut seen = vec![false; size];
+    let mut touched: Vec<u32> = Vec::new();
 
     hupm_mine_recursive(
         transactions,
@@ -106,6 +149,10 @@ pub fn hupm_simple(
         max_len,
         &mut current_pattern,
         &mut results,
+        &mut twu,
+        &mut exact,
+        &mut seen,
+        &mut touched,
     );
 
     results

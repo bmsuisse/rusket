@@ -115,16 +115,19 @@ class UserKNN(ImplicitRecommender):
             W.indptr.astype(np.int64), W.indices.astype(np.int32), W.data.astype(np.float32), self.k
         )
 
+        # userknn_top_k already returns exact dtypes (int64/int32/float32); no cast needed.
         self.w_indptr = ip
         self.w_indices = ix
         self.w_data = dt
         self._n_users = interactions.shape[0]
         self._n_items = interactions.shape[1]
 
-        # Store fit interactions for recommendations and exclude_seen
-        self._fit_indptr = interactions.indptr
-        self._fit_indices = interactions.indices
-        self._fit_data = interactions.data
+        # Store fit interactions for recommendations and exclude_seen.
+        # Cast ONCE here (not per-call in recommend_items) to the exact dtypes Rust
+        # wants, so PyReadonlyArray1 is zero-copy on every recommend_items() call.
+        self._fit_indptr = interactions.indptr.astype(np.int64)
+        self._fit_indices = interactions.indices.astype(np.int32)
+        self._fit_data = interactions.data.astype(np.float32)
         self.fitted = True
 
         return self
@@ -162,33 +165,39 @@ class UserKNN(ImplicitRecommender):
         if user_id < 0 or user_id >= self._n_users:
             raise ValueError(f"user_id {user_id} is out of bounds for model with {self._n_users} users.")
 
-        if (
-            exclude_seen
-            and getattr(self, "_fit_indptr", None) is not None
-            and getattr(self, "_fit_indices", None) is not None
-        ):
-            exc_indptr = self._fit_indptr
-            exc_indices = self._fit_indices
+        fit_indptr = getattr(self, "_fit_indptr", None)
+        fit_indices = getattr(self, "_fit_indices", None)
+        if fit_indptr is None:
+            fit_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
+        if fit_indices is None:
+            fit_indices = np.array([], dtype=np.int32)
+
+        if exclude_seen and fit_indptr is not None and fit_indices is not None:
+            exc_indptr = fit_indptr
+            exc_indices = fit_indices
         else:
             exc_indptr = np.zeros(self._n_users + 1, dtype=np.int64)
             exc_indices = np.array([], dtype=np.int32)
 
-        if getattr(self, "_fit_data", None) is None:
-            user_data = np.ones_like(self._fit_indices, dtype=np.float32)
+        fit_data = getattr(self, "_fit_data", None)
+        if fit_data is None:
+            user_data = np.ones_like(fit_indices, dtype=np.float32)
         else:
-            user_data = self._fit_data
+            user_data = fit_data
 
+        # All arrays below were already cast to their exact Rust dtypes once in
+        # fit() (or constructed with those dtypes above), so this is zero-copy.
         ids, scores = _rust.userknn_recommend_items(  # type: ignore[attr-defined]
-            self.w_indptr.astype(np.int64),  # type: ignore[union-attr]
-            self.w_indices.astype(np.int32),  # type: ignore[union-attr]
-            self.w_data.astype(np.float32),  # type: ignore[union-attr]
-            getattr(self, "_fit_indptr", np.zeros(self._n_users + 1, dtype=np.int64)).astype(np.int64),
-            getattr(self, "_fit_indices", np.array([], dtype=np.int32)).astype(np.int32),
-            user_data.astype(np.float32),
+            self.w_indptr,  # type: ignore[union-attr]
+            self.w_indices,  # type: ignore[union-attr]
+            self.w_data,  # type: ignore[union-attr]
+            fit_indptr,
+            fit_indices,
+            user_data,
             user_id,
             n,
-            exc_indptr.astype(np.int64),
-            exc_indices.astype(np.int32),
+            exc_indptr,
+            exc_indices,
             self._n_items,
         )
         return np.asarray(ids), np.asarray(scores)

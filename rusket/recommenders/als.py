@@ -423,6 +423,23 @@ class ALS(ImplicitRecommender):
         i_ids_arr = np.asarray(i_ids)
         scores_arr = np.asarray(scores)
 
+        if format == "pandas":
+            # ponytail: build the pandas frame directly from numpy instead of
+            # round-tripping through polars — callers that only have pandas
+            # installed (e.g. Spark UDF workers) shouldn't be forced to import
+            # polars just to immediately call .to_pandas() on the result.
+            from rusket._dependencies import import_optional_dependency
+
+            pd = import_optional_dependency("pandas")
+
+            user_ids_out: np.ndarray = u_ids_arr
+            item_ids_out: np.ndarray = i_ids_arr
+            if self._user_labels is not None and len(self._user_labels) == self._n_users:
+                user_ids_out = np.asarray(self._user_labels, dtype=object)[u_ids_arr]
+            if self._item_labels is not None and len(self._item_labels) == self._n_items:
+                item_ids_out = np.asarray(self._item_labels, dtype=object)[i_ids_arr]
+            return pd.DataFrame({"user_id": user_ids_out, "item_id": item_ids_out, "score": scores_arr})
+
         from rusket._dependencies import import_optional_dependency
 
         pl = import_optional_dependency("polars")
@@ -439,8 +456,6 @@ class ALS(ImplicitRecommender):
 
         if format == "polars":
             return df
-        elif format == "pandas":
-            return df.to_pandas()
         elif format == "spark":
             from rusket._dependencies import import_optional_dependency
 

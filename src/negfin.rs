@@ -7,28 +7,28 @@ use crate::fpgrowth::{flatten_results, process_item_counts};
 
 pub(crate) fn negfin_mine(
     prefix: &[u32],
-    active_items: &[(u32, BitSet)],
+    active_items: &[(u32, u64, BitSet)],
     min_count: u64,
     max_len: Option<usize>,
 ) -> Vec<(u64, Vec<u32>)> {
     let mut results = Vec::new();
     let new_len = prefix.len() + 1;
-    let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
+    let n_blocks = active_items.first().map_or(0, |(_, _, bs)| bs.blocks.len());
     let mut scratch = BitSet {
         blocks: vec![0u128; n_blocks],
     };
 
-    for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
-        let count_a = bs_a.count_ones();
+    for (i, (item_a, count_a, bs_a)) in active_items.iter().enumerate() {
+        let count_a = *count_a;
         if count_a < min_count {
             continue;
         }
 
         let mut promoted = Vec::new();
-        let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+        let mut next_active: Vec<(u32, u64, BitSet)> = Vec::with_capacity(active_items.len() - i - 1);
 
         // Evaluate all extensions for PEP and next recursion
-        for (item_b, bs_b) in &active_items[i + 1..] {
+        for (item_b, _, bs_b) in &active_items[i + 1..] {
             let count_ab = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
             if count_ab >= min_count {
                 if count_ab == count_a {
@@ -40,7 +40,7 @@ pub(crate) fn negfin_mine(
                         blocks: vec![0u128; n_blocks],
                     };
                     std::mem::swap(&mut scratch, &mut fresh);
-                    next_active.push((*item_b, fresh));
+                    next_active.push((*item_b, count_ab, fresh));
                 }
             }
         }
@@ -192,7 +192,7 @@ pub fn negfin_from_dense(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                 }
@@ -341,7 +341,7 @@ pub fn negfin_from_csr(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                 }
@@ -475,7 +475,7 @@ pub(crate) fn _negfin_mine_csr(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                 }

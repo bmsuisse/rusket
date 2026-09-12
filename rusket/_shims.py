@@ -8,7 +8,7 @@ single table and installs it into :data:`sys.modules` once, from
 to ``rusket.recommenders.als`` with identical behavior.
 """
 
-import importlib as _importlib
+import importlib.util as _importlib_util
 import sys as _sys
 
 #: old top-level ``rusket.<name>`` -> canonical module path.
@@ -78,10 +78,43 @@ def install() -> None:
     ``import rusket.association_rules`` still resolves to the submodule
     while ``rusket.association_rules(...)`` keeps calling the function,
     exactly as before this consolidation.
+
+    Most canonical targets (``rusket.recommenders.als`` and friends) are
+    already imported eagerly by ``rusket/__init__.py`` itself, so aliasing
+    them here is free. A handful (``integrations.spark``, ``integrations.cuda``,
+    ``export.faiss_ann``, ``export.vector_export``, ``integrations.grouped``, …)
+    are NOT imported by ``__init__.py`` on purpose, since they pull in heavy
+    optional deps (pyspark, cupy/torch, faiss). For those we register an
+    ``importlib.util.LazyLoader`` instead of importing them for real, so
+    ``rusket.spark`` / ``import rusket.spark`` still resolve but the actual
+    module body (and its heavy imports) only runs on first attribute access.
     """
     rusket_pkg = _sys.modules.get("rusket")
     for old_name, canonical in LEGACY_MODULE_MAP.items():
-        real = _importlib.import_module(canonical)
-        _sys.modules[f"rusket.{old_name}"] = real
+        full_name = f"rusket.{old_name}"
+        if full_name in _sys.modules:
+            continue
+
+        already_loaded = _sys.modules.get(canonical)
+        if already_loaded is not None:
+            # Cheap case: __init__.py (or something it imported) already
+            # loaded the canonical module — just alias it, no extra work.
+            _sys.modules[full_name] = already_loaded
+            if rusket_pkg is not None and not hasattr(rusket_pkg, old_name):
+                setattr(rusket_pkg, old_name, already_loaded)
+            continue
+
+        # Not yet imported — defer via LazyLoader so `rusket.<old_name>` and
+        # `import rusket.<old_name>` resolve, but the real (possibly heavy)
+        # module body only executes on first attribute access.
+        spec = _importlib_util.find_spec(canonical)
+        if spec is None or spec.loader is None:
+            continue
+        spec.loader = _importlib_util.LazyLoader(spec.loader)
+        module = _importlib_util.module_from_spec(spec)
+        _sys.modules[full_name] = module
+        _sys.modules.setdefault(canonical, module)
+        spec.loader.exec_module(module)  # installs the lazy proxy, doesn't run the module yet
+
         if rusket_pkg is not None and not hasattr(rusket_pkg, old_name):
-            setattr(rusket_pkg, old_name, real)
+            setattr(rusket_pkg, old_name, module)

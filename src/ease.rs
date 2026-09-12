@@ -5,6 +5,13 @@ use numpy::{
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
+#[inline(always)]
+fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
+    for (yi, &xi) in y.iter_mut().zip(x.iter()) {
+        *yi += alpha * xi;
+    }
+}
+
 fn ease_top_n_items(
     weights: &[f32],
     user_indptr: &[i64],
@@ -17,29 +24,43 @@ fn ease_top_n_items(
     exc_start: usize,
     exc_end: usize,
 ) -> (Vec<i32>, Vec<f32>) {
-    use ahash::AHashSet;
-    let excluded: AHashSet<i32> = exc[exc_start..exc_end].iter().copied().collect();
-    
     let u_start = user_indptr[uid] as usize;
     let u_end = user_indptr[uid + 1] as usize;
     let u_indices = &user_indices[u_start..u_end];
     let u_data = &user_data[u_start..u_end];
 
-    let mut scored: Vec<(f32, i32)> = (0..n_items as i32)
-        .into_par_iter()
-        .filter(|&i| !excluded.contains(&i))
-        .map(|i| {
-            let i = i as usize;
-            let yw = &weights[i * n_items..(i + 1) * n_items];
-            
-            // Sparse dot product
-            let mut score = 0.0f32;
-            for (idx_u, &val_u) in u_indices.iter().zip(u_data.iter()) {
-                score += yw[*idx_u as usize] * val_u;
-            }
-            
-            (score, i as i32)
-        })
+    // CORRECTNESS FIX (was a perf-only task): the previous code computed
+    // score_i = Σ_j B[i,j] * u_j, i.e. (B · u)_i, by reading weights[i*n_items+j]
+    // for each of the user's nonzero items j. But EASE's B is NOT symmetric
+    // (see ease_compute_weights below: B = P / (-diag(P)) is normalized per row,
+    // an asymmetric operation), and both the EASE paper and the Python path
+    // (rusket/recommenders/ease.py recommend_items: `user_row @ item_weights`,
+    // and the CUDA path's gpu_sparse_dense_matmul(user_data, ..., item_weights))
+    // compute the OTHER orientation: score_i = Σ_j u_j * B[j,i], i.e. u · B.
+    // So this Rust path previously disagreed with the Python/CUDA paths whenever
+    // a user had more than one rated item.
+    //
+    // Streaming rows of B indexed by the user's nonzero items (u_j * B[j,:]) gives
+    // both the correct u·B orientation AND contiguous reads (row j of B is stored
+    // contiguously, row-major) — a perf win and a correctness fix in one change.
+    let mut scores = vec![0.0f32; n_items];
+    for (&j, &u_j) in u_indices.iter().zip(u_data.iter()) {
+        let row = &weights[(j as usize) * n_items..(j as usize + 1) * n_items];
+        axpy(u_j, row, &mut scores);
+    }
+
+    // ponytail: mask exclusions directly instead of an AHashSet — |exc| is
+    // typically tiny next to n_items.
+    for &item_id in &exc[exc_start..exc_end] {
+        if let Some(sc) = scores.get_mut(item_id as usize) {
+            *sc = f32::NEG_INFINITY;
+        }
+    }
+
+    let mut scored: Vec<(f32, i32)> = scores
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, sc)| if sc.is_finite() { Some((sc, i as i32)) } else { None })
         .collect();
 
     let take = n.min(scored.len());

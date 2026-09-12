@@ -1,5 +1,5 @@
+use ahash::AHashSet;
 use pyo3::prelude::*;
-use std::collections::HashSet;
 
 // ── Pure-Rust metric functions (no PyO3, take slices) ──────────────
 pub(crate) fn precision_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 {
@@ -10,7 +10,7 @@ pub(crate) fn precision_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 
     if k_actual == 0 {
         return 0.0;
     }
-    let actual_set: HashSet<i32> = actual.iter().copied().collect();
+    let actual_set: AHashSet<i32> = actual.iter().copied().collect();
     let hits = predicted[..k_actual].iter().filter(|i| actual_set.contains(i)).count();
     hits as f32 / k as f32
 }
@@ -23,7 +23,7 @@ pub(crate) fn recall_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 {
     if k_actual == 0 {
         return 0.0;
     }
-    let actual_set: HashSet<i32> = actual.iter().copied().collect();
+    let actual_set: AHashSet<i32> = actual.iter().copied().collect();
     let hits = predicted[..k_actual].iter().filter(|i| actual_set.contains(i)).count();
     hits as f32 / actual_set.len() as f32
 }
@@ -36,7 +36,7 @@ pub(crate) fn hit_rate_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 {
     if k_actual == 0 {
         return 0.0;
     }
-    let actual_set: HashSet<i32> = actual.iter().copied().collect();
+    let actual_set: AHashSet<i32> = actual.iter().copied().collect();
     if predicted[..k_actual].iter().any(|i| actual_set.contains(i)) { 1.0 } else { 0.0 }
 }
 
@@ -48,7 +48,7 @@ pub(crate) fn ndcg_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 {
     if k_actual == 0 {
         return 0.0;
     }
-    let actual_set: HashSet<i32> = actual.iter().copied().collect();
+    let actual_set: AHashSet<i32> = actual.iter().copied().collect();
     let mut dcg = 0.0f32;
     for i in 0..k_actual {
         if actual_set.contains(&predicted[i]) {

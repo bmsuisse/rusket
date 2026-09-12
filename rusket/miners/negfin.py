@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-# Removed
-import pandas as pd
+from typing import TYPE_CHECKING, Any
 
 from ..model import Miner
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class NegFIN(Miner):

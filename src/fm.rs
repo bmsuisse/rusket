@@ -63,19 +63,20 @@ fn fm_train(
             let v_ptr = v_ptr_raw as *mut f32;
             
             let mut sum_v = vec![0.0f32; k];
+            let mut sum_sq_v = vec![0.0f32; k];
             let mut local_loss = 0.0f32;
 
             for _ in 0..chunk_size {
                 let s = (rng.next() as usize) % n_samples;
                 let target = y[s];
-                
+
                 let start = indptr[s] as usize;
                 let end = indptr[s + 1] as usize;
                 let active_features = &indices[start..end];
-                
+
                 sum_v.fill(0.0);
-                let mut sum_sq_v = vec![0.0f32; k];
-                
+                sum_sq_v.fill(0.0);
+
                 unsafe {
                     let mut y_hat = *w0_ptr;
                     for &i in active_features {
@@ -191,14 +192,16 @@ pub fn fm_predict<'py>(
     let mut predictions = vec![0.0f32; n_samples];
 
     py.detach(|| {
-        predictions.par_iter_mut().enumerate().for_each(|(s, p)| {
+        predictions.par_iter_mut().enumerate().for_each_init(
+            || (vec![0.0f32; factors], vec![0.0f32; factors]),
+            |(sum_v, sum_sq_v), (s, p)| {
             let start = ip[s] as usize;
             let end = ip[s + 1] as usize;
             let active_features = &ix[start..end];
 
             let mut y_hat = w0;
-            let mut sum_v = vec![0.0f32; factors];
-            let mut sum_sq_v = vec![0.0f32; factors];
+            sum_v.fill(0.0);
+            sum_sq_v.fill(0.0);
 
             for &i in active_features {
                 let i_idx = i as usize;
@@ -216,7 +219,7 @@ pub fn fm_predict<'py>(
                 cross_term += sum_v[f] * sum_v[f] - sum_sq_v[f];
             }
             y_hat += 0.5 * cross_term;
-            
+
             *p = sigmoid(y_hat); // return probability
         });
     });

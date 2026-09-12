@@ -46,6 +46,8 @@ pub(crate) struct PPCTree {
     pub item_nodes: Vec<Vec<u32>>,
     pub original_items: Vec<u32>,
     pub single_path: bool,
+    // ponytail: O(1) root child lookup by item id, same rationale as FPTree.
+    root_children: Vec<u32>,
 }
 
 impl PPCTree {
@@ -59,11 +61,16 @@ impl PPCTree {
             item_nodes: vec![Vec::new(); num_items],
             original_items,
             single_path: true,
+            root_children: vec![u32::MAX; num_items],
         }
     }
 
     #[inline]
     fn find_child(&self, node_idx: u32, item: u32) -> Option<u32> {
+        if node_idx == 0 {
+            let v = self.root_children[item as usize];
+            return if v == u32::MAX { None } else { Some(v) };
+        }
         let node = &self.nodes[node_idx as usize];
         let start = node.children_start as usize;
         let end = node.children_end as usize;
@@ -78,6 +85,9 @@ impl PPCTree {
 
     #[inline]
     fn add_child(&mut self, parent_idx: u32, item: u32, child_idx: u32) {
+        if parent_idx == 0 {
+            self.root_children[item as usize] = child_idx;
+        }
         let parent = &self.nodes[parent_idx as usize];
         let n_children = parent.children_end - parent.children_start;
 
@@ -269,7 +279,7 @@ fn build_initial_nodesets(tree: &PPCTree) -> Vec<(u32, Nodeset)> {
         // It's important for the intersect algorithm that `ns_nodes` are sorted by `pre`.
         ns_nodes.sort_unstable_by_key(|n| n.pre);
 
-        active.push((local_id as u32, Nodeset {
+        active.push((tree.original_items[local_id], Nodeset {
             nodes: ns_nodes,
             support,
         }));
@@ -284,15 +294,12 @@ fn mine_itemsets_fin(
     min_count: u64,
     max_len: Option<usize>,
 ) -> PyResult<Vec<(u64, Vec<u32>)>> {
-    use ahash::AHashMap;
-    let mut basket_counts: AHashMap<Vec<u32>, u64> = AHashMap::with_capacity(itemsets.len());
-    for basket in itemsets {
-        *basket_counts.entry(basket).or_insert(0) += 1;
-    }
-    
+    // ponytail: the PPC-tree insert already merges identical prefixes/counts,
+    // so pre-hashing baskets into a dedup map before inserting is pure
+    // overhead — insert each basket directly with count 1.
     let mut tree = PPCTree::new(frequent_len, original_items.clone());
-    for (basket, count) in basket_counts {
-        tree.insert_itemset(&basket, count);
+    for basket in &itemsets {
+        tree.insert_itemset(basket, 1);
     }
     tree.compute_pre_post();
 
@@ -313,19 +320,18 @@ fn mine_itemsets_fin(
     let sub_results: Vec<Vec<(u64, Vec<u32>)>> = all_nodesets
         .par_iter()
         .enumerate()
-        .map(|(i, (local_id, ns_a))| {
+        .map(|(i, (orig_item, ns_a))| {
             let mut sub = Vec::new();
             if ns_a.support >= min_count {
-                let iset = vec![original_items[*local_id as usize]];
+                let iset = vec![*orig_item];
                 sub.push((ns_a.support, iset.clone()));
 
                 if max_len.is_none_or(|ml| ml > 1) {
-                    let mut next_active = Vec::with_capacity(all_nodesets.len() - i - 1);
-                    for (local_id_b, ns_b) in &all_nodesets[i + 1..] {
-                        next_active.push((original_items[*local_id_b as usize], ns_b.clone()));
-                    }
-                    if !next_active.is_empty() {
-                        sub.extend(fin_mine(&iset, ns_a, &next_active, min_count, max_len));
+                    // ponytail: pass a slice instead of cloning every remaining
+                    // Nodeset per top-level branch — fin_mine only needs a borrow.
+                    let remaining = &all_nodesets[i + 1..];
+                    if !remaining.is_empty() {
+                        sub.extend(fin_mine(&iset, ns_a, remaining, min_count, max_len));
                     }
                 }
             }

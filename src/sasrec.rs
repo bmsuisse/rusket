@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 
 use crate::rng::{randn_vec, XorShift64};
+use crate::simd::dot;
 
 
 // ─── Layer Norm ─────────────────────────────────────────────────────────────
@@ -35,12 +36,13 @@ fn causal_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32
     let compute_proj = |w: &[f32]| -> Vec<f32> {
         let mut out = vec![0.0_f32; seq_len * d];
         for i in 0..seq_len {
-            for j in 0..d {
-                let mut sum = 0.0_f32;
-                for k in 0..d {
-                    sum += x[i * d + k] * w[k * d + j];
+            let out_row = &mut out[i * d..(i + 1) * d];
+            for k in 0..d {
+                let x_ik = x[i * d + k];
+                let w_row = &w[k * d..(k + 1) * d];
+                for j in 0..d {
+                    out_row[j] += x_ik * w_row[j];
                 }
-                out[i * d + j] = sum;
             }
         }
         out
@@ -91,25 +93,27 @@ fn causal_attention(x: &[f32], d: usize, seq_len: usize, w_q: &[f32], w_k: &[f32
 
 // ─── FFN (2-layer, ReLU) ─────────────────────────────────────────────────────
 
-fn ffn(x: &[f32], d: usize, w1: &[f32], b1: &[f32], w2: &[f32], b2: &[f32]) -> Vec<f32> {
+fn ffn(x: &[f32], d: usize, w1: &[f32], b1: &[f32], w2: &[f32], b2: &[f32], h: &mut [f32], out: &mut [f32]) {
     let d_ff = w1.len() / d;
-    let mut h = vec![0.0_f32; d_ff];
-    for j in 0..d_ff {
-        let mut s = b1[j];
-        for k in 0..d {
-            s += x[k] * w1[k * d_ff + j];
+    h[..d_ff].copy_from_slice(&b1[..d_ff]);
+    for k in 0..d {
+        let x_k = x[k];
+        let w1_row = &w1[k * d_ff..(k + 1) * d_ff];
+        for j in 0..d_ff {
+            h[j] += x_k * w1_row[j];
         }
-        h[j] = s.max(0.0);
     }
-    let mut out = vec![0.0_f32; d];
-    for j in 0..d {
-        let mut s = b2[j];
-        for k in 0..d_ff {
-            s += h[k] * w2[k * d + j];
+    for v in h[..d_ff].iter_mut() {
+        *v = v.max(0.0);
+    }
+    out[..d].copy_from_slice(&b2[..d]);
+    for k in 0..d_ff {
+        let h_k = h[k];
+        let w2_row = &w2[k * d..(k + 1) * d];
+        for j in 0..d {
+            out[j] += h_k * w2_row[j];
         }
-        out[j] = s;
     }
-    out
 }
 
 // ─── Parameter struct ────────────────────────────────────────────────────────
@@ -234,22 +238,30 @@ impl SASRecParams {
             );
             let mut h2 = vec![0.0_f32; seq_len * d];
             for i in 0..seq_len {
-                let mut row: Vec<f32> = (0..d).map(|f| h[i * d + f] + attn_out[i * d + f]).collect();
-                layer_norm(&mut row, &self.ln1_g[l], &self.ln1_b[l]);
-                h2[i * d..(i + 1) * d].copy_from_slice(&row);
+                let row = &mut h2[i * d..(i + 1) * d];
+                for f in 0..d {
+                    row[f] = h[i * d + f] + attn_out[i * d + f];
+                }
+                layer_norm(row, &self.ln1_g[l], &self.ln1_b[l]);
             }
 
+            let d_ff = self.ffn_w1[l].len() / d;
+            let mut h_scratch = vec![0.0_f32; d_ff];
+            let mut ffn_scratch = vec![0.0_f32; d];
             let mut h3 = vec![0.0_f32; seq_len * d];
             for i in 0..seq_len {
                 let x_row = &h2[i * d..(i + 1) * d];
-                let ffn_out = ffn(
+                ffn(
                     x_row, d,
                     &self.ffn_w1[l], &self.ffn_b1[l],
                     &self.ffn_w2[l], &self.ffn_b2[l],
+                    &mut h_scratch, &mut ffn_scratch,
                 );
-                let mut row: Vec<f32> = (0..d).map(|f| h2[i * d + f] + ffn_out[f]).collect();
-                layer_norm(&mut row, &self.ln2_g[l], &self.ln2_b[l]);
-                h3[i * d..(i + 1) * d].copy_from_slice(&row);
+                let row = &mut h3[i * d..(i + 1) * d];
+                for f in 0..d {
+                    row[f] = h2[i * d + f] + ffn_scratch[f];
+                }
+                layer_norm(row, &self.ln2_g[l], &self.ln2_b[l]);
             }
             h = h3;
         }
@@ -306,10 +318,11 @@ fn sasrec_train(
                 let ctx_end = seq.len().min(max_seq + 1);
                 let ctx = &seq[..ctx_end.saturating_sub(1)];
                 let target_pos = seq[ctx_end - 1];
+                let seen: ahash::AHashSet<usize> = seq.iter().copied().collect();
                 let target_neg = {
                     let mut j = rng.next_usize(n_items) + 1;
                     for _ in 0..5 {
-                        if !seq.contains(&j) { break; }
+                        if !seen.contains(&j) { break; }
                         j = rng.next_usize(n_items) + 1;
                     }
                     j
@@ -518,34 +531,35 @@ pub fn sasrec_predict<'py>(
                 }
             }
 
-            let mut scores = vec![f32::NEG_INFINITY; n_items];
+            let excluded_seen: Option<std::collections::HashSet<usize>> = if exclude_seen {
+                Some(seq.iter().copied().filter(|&item| item > 0 && item <= n_items).collect())
+            } else {
+                None
+            };
 
-            for target in 1..=n_items {
-                let mut s = 0.0_f32;
-                for f in 0..d {
-                    s += item_emb[target * d + f] * seq_repr[f];
-                }
-                scores[target - 1] = s;
+            // ponytail: select_nth_unstable_by + truncate + sort matches src/ease.rs:49-53
+            // instead of a full O(n log n) sort over all n_items.
+            let mut scored: Vec<(f32, u32)> = (1..=n_items)
+                .filter(|target| excluded_seen.as_ref().map_or(true, |ex| !ex.contains(target)))
+                .map(|target| {
+                    let s = dot(&item_emb[target * d..(target + 1) * d], &seq_repr);
+                    (s, target as u32)
+                })
+                .collect();
+
+            let top_k = k.min(scored.len());
+            if top_k > 0 {
+                scored.select_nth_unstable_by(top_k - 1, |a, b| {
+                    b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
+                });
+                scored.truncate(top_k);
+                scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
             }
 
-            if exclude_seen {
-                for &item in seq {
-                    if item > 0 && item <= n_items {
-                        scores[item - 1] = f32::NEG_INFINITY;
-                    }
-                }
-            }
-
-            let mut indices: Vec<usize> = (1..=n_items).collect();
-            indices.sort_unstable_by(|&a, &b| {
-                scores[b - 1].partial_cmp(&scores[a - 1]).unwrap_or(std::cmp::Ordering::Equal)
-            });
-
-            let top_k = k.min(n_items);
             unsafe {
                 for act_k in 0..top_k {
-                    *out_ids_ptr.add(i * k + act_k) = indices[act_k] as i64;
-                    *out_scores_ptr.add(i * k + act_k) = scores[indices[act_k] - 1];
+                    *out_ids_ptr.add(i * k + act_k) = scored[act_k].1 as i64;
+                    *out_scores_ptr.add(i * k + act_k) = scored[act_k].0;
                 }
                 for act_k in top_k..k {
                     *out_ids_ptr.add(i * k + act_k) = 0;

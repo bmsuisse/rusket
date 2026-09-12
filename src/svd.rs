@@ -294,18 +294,23 @@ fn top_n_items(
     exc_start: usize,
     exc_end: usize,
 ) -> (Vec<i32>, Vec<f32>) {
-    use ahash::AHashSet;
     let u = &uf[uid * k..(uid + 1) * k];
     let bu = ub[uid];
-    let excluded: AHashSet<i32> = exc[exc_start..exc_end].iter().copied().collect();
     let mut scored: Vec<(f32, i32)> = (0..n_items as i32)
-        .filter(|i| !excluded.contains(i))
         .map(|i| {
             let y = &itf[(i as usize) * k..(i as usize + 1) * k];
             let score = global_mean + bu + ib[i as usize] + dot(u, y);
             (score, i)
         })
         .collect();
+    // ponytail: mask exclusions directly instead of an AHashSet + per-item lookup —
+    // |exc| is typically tiny next to n_items.
+    for &item_id in &exc[exc_start..exc_end] {
+        if let Some(entry) = scored.get_mut(item_id as usize) {
+            entry.0 = f32::NEG_INFINITY;
+        }
+    }
+    scored.retain(|&(sc, _)| sc.is_finite());
     let take = n.min(scored.len());
     if take == 0 {
         return (vec![], vec![]);

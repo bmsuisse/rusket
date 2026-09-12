@@ -61,24 +61,31 @@ fn hd_dist_sq(data: &[f32], i: usize, j: usize, d: usize) -> f32 {
     let a = &data[i * d..(i + 1) * d];
     let b = &data[j * d..(j + 1) * d];
     let mut sum = 0.0f32;
-    let chunks = d / 8;
-    let rem = d % 8;
-    for c in 0..chunks {
-        let base = c * 8;
-        let d0 = a[base] - b[base];
-        let d1 = a[base + 1] - b[base + 1];
-        let d2 = a[base + 2] - b[base + 2];
-        let d3 = a[base + 3] - b[base + 3];
-        let d4 = a[base + 4] - b[base + 4];
-        let d5 = a[base + 5] - b[base + 5];
-        let d6 = a[base + 6] - b[base + 6];
-        let d7 = a[base + 7] - b[base + 7];
+    // Fixed-size (8) array chunks: bounds are known at compile time, so LLVM
+    // can auto-vectorize without per-element bounds checks. Same 8-accumulator
+    // summation order as before, so results stay bit-identical.
+    let a_chunks = a.chunks_exact(8);
+    let b_chunks = b.chunks_exact(8);
+    let a_rem = a_chunks.remainder();
+    let b_rem = b_chunks.remainder();
+
+    for (ca, cb) in a_chunks.zip(b_chunks) {
+        let ca: [f32; 8] = ca.try_into().unwrap();
+        let cb: [f32; 8] = cb.try_into().unwrap();
+        let d0 = ca[0] - cb[0];
+        let d1 = ca[1] - cb[1];
+        let d2 = ca[2] - cb[2];
+        let d3 = ca[3] - cb[3];
+        let d4 = ca[4] - cb[4];
+        let d5 = ca[5] - cb[5];
+        let d6 = ca[6] - cb[6];
+        let d7 = ca[7] - cb[7];
         sum += d0 * d0 + d1 * d1 + d2 * d2 + d3 * d3
              + d4 * d4 + d5 * d5 + d6 * d6 + d7 * d7;
     }
-    let base = chunks * 8;
-    for c in 0..rem {
-        let d_val = a[base + c] - b[base + c];
+
+    for (x, y) in a_rem.iter().zip(b_rem.iter()) {
+        let d_val = x - y;
         sum += d_val * d_val;
     }
     sum

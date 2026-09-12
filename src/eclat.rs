@@ -37,18 +37,27 @@ impl BitSet {
         let other_blocks = &other.blocks;
         let out_blocks = &mut out.blocks;
 
-        for i in 0..n {
-            let v = unsafe { *self_blocks.get_unchecked(i) & *other_blocks.get_unchecked(i) };
-            unsafe { *out_blocks.get_unchecked_mut(i) = v; }
-            count += v.count_ones() as u64;
-            // Each remaining u128 block covers 128 transactions
-            let remaining_max = ((n - i - 1) * 128) as u64;
+        // ponytail: chunk size of 8 blocks is an untuned heuristic, not measured optimal.
+        const CHUNK: usize = 8;
+        let mut i = 0;
+        while i < n {
+            let end = (i + CHUNK).min(n);
+            let mut chunk_count = 0u64;
+            for j in i..end {
+                let v = unsafe { *self_blocks.get_unchecked(j) & *other_blocks.get_unchecked(j) };
+                unsafe { *out_blocks.get_unchecked_mut(j) = v; }
+                chunk_count += v.count_ones() as u64;
+            }
+            count += chunk_count;
+            // Each remaining u128 block covers 128 transactions.
+            // On early exit we deliberately leave `out` blocks beyond `end`
+            // untouched: the caller only reads `out` when count >= min_count,
+            // in which case every block was written (no early exit occurred).
+            let remaining_max = ((n - end) * 128) as u64;
             if count + remaining_max < min_count {
-                for j in (i + 1)..n {
-                    unsafe { *out_blocks.get_unchecked_mut(j) = 0; }
-                }
                 return 0;
             }
+            i = end;
         }
         count
     }
@@ -56,19 +65,19 @@ impl BitSet {
 
 pub(crate) fn eclat_mine(
     prefix: &[u32],
-    active_items: &[(u32, BitSet)],
+    active_items: &[(u32, u64, BitSet)],
     min_count: u64,
     max_len: Option<usize>,
 ) -> Vec<(u64, Vec<u32>)> {
     let mut results = Vec::new();
     let new_len = prefix.len() + 1;
-    let n_blocks = active_items.first().map_or(0, |(_, bs)| bs.blocks.len());
+    let n_blocks = active_items.first().map_or(0, |(_, _, bs)| bs.blocks.len());
     let mut scratch = BitSet {
         blocks: vec![0u128; n_blocks],
     };
 
-    for (i, (item_a, bs_a)) in active_items.iter().enumerate() {
-        let count = bs_a.count_ones();
+    for (i, (item_a, count, bs_a)) in active_items.iter().enumerate() {
+        let count = *count;
         if count < min_count {
             continue;
         }
@@ -80,9 +89,9 @@ pub(crate) fn eclat_mine(
             results.push((count, iset.clone()));
 
             if max_len.is_none_or(|ml| new_len < ml) {
-                let mut next_active: Vec<(u32, BitSet)> =
+                let mut next_active: Vec<(u32, u64, BitSet)> =
                     Vec::with_capacity(active_items.len() - i - 1);
-                for (item_b, bs_b) in &active_items[i + 1..] {
+                for (item_b, _, bs_b) in &active_items[i + 1..] {
                     let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
                     if c >= min_count {
                         // Swap scratch with a fresh buffer instead of cloning
@@ -90,7 +99,7 @@ pub(crate) fn eclat_mine(
                             blocks: vec![0u128; n_blocks],
                         };
                         std::mem::swap(&mut scratch, &mut fresh);
-                        next_active.push((*item_b, fresh));
+                        next_active.push((*item_b, c, fresh));
                     }
                 }
 
@@ -184,7 +193,7 @@ pub fn eclat_from_dense(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                     if !next_active.is_empty() {
@@ -284,7 +293,7 @@ pub fn eclat_from_csr(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                     if !next_active.is_empty() {
@@ -371,7 +380,7 @@ pub(crate) fn _eclat_mine_csr(
                                 blocks: vec![0u128; n_blocks],
                             };
                             std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, fresh));
+                            next_active.push((*item_b, c, fresh));
                         }
                     }
                     if !next_active.is_empty() {

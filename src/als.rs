@@ -110,14 +110,13 @@ fn solve_one_side_cg(
     data: &[f32],
     other: &[f32],
     gram: &[f32],
-    n: usize,
     k: usize,
     lambda: f32,
     alpha: f32,
     cg_iters: usize,
-) -> Vec<f32> {
+    out: &mut [f32],
+) {
     let eff_lambda = lambda.max(1e-6);
-    let mut out = vec![0.0f32; n * k];
 
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
@@ -239,13 +238,11 @@ fn solve_one_side_cg(
             }
         });
     });
-
-    out
 }
 
 thread_local! {
-    static SCRATCH_EALS: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
-        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
+    static SCRATCH_EALS: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_eals(
@@ -275,18 +272,23 @@ fn solve_one_side_eals(
 
         SCRATCH_EALS.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut r_hat, ref mut s_u, ref mut yi_cols, ref mut w_vec) = *borrow;
+            let (ref mut r_hat, ref mut s_u, ref mut yi_cols, ref mut w_vec, ref mut c0_vec) = *borrow;
 
             r_hat.clear();
             r_hat.resize(nnz_u, 0.0);
             s_u.clear();
             s_u.resize(k, 0.0);
-            
-            // Pre-allocate contiguous column-major memory for item vectors 
+
+            // Pre-allocate contiguous column-major memory for item vectors
             yi_cols.clear();
             yi_cols.resize(k * nnz_u, 0.0);
             w_vec.clear();
             w_vec.resize(nnz_u, 0.0);
+            // ponytail: c0_i (popularity weight) is invariant across `f` in 0..k and
+            // across eALS passes — gather it once here instead of k*eals_iters times
+            // in the hot loop below.
+            c0_vec.clear();
+            c0_vec.resize(nnz_u, 0.0);
 
             // Populate the contiguous memory buffer (column-major)
             // But we only actually need to store and iterate over items where weight != 0 or where r_hat affects the item!
@@ -322,6 +324,8 @@ fn solve_one_side_eals(
                 
                 // r_hat is pred for interacted items
                 r_hat[local] = dot_f32(xu, &other[i * k..(i + 1) * k]);
+
+                c0_vec[local] = item_pop_weights.map_or(1.0f32, |w| w[i]);
             }
 
             for _pass in 0..eals_iters {
@@ -348,6 +352,7 @@ fn solve_one_side_eals(
                         let w_ptr = w_vec.as_ptr();
                         let yi_ptr = yi_cols.as_ptr().add(yi_f_offset);
                         let r_hat_ptr = r_hat.as_ptr();
+                        let c0_ptr = c0_vec.as_ptr();
                         
                             let mut local = 0;
                             let local8 = nnz_u / 8 * 8;
@@ -356,7 +361,7 @@ fn solve_one_side_eals(
                                 let w0 = *w_ptr.add(local);
                                 let y_if0 = *yi_ptr.add(local);
                                 let r_hat_val0 = *r_hat_ptr.add(local);
-                                let c0_i0 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local) as usize] as usize]);
+                                let c0_i0 = *c0_ptr.add(local);
                                 let wy_if0 = w0 * y_if0;
                                 let wy20 = wy_if0 * y_if0;
                                 numer += c0_i0 * y_if0 + wy_if0 * (1.0 - r_hat_val0) + xu_f * (wy20 + (c0_i0 - 1.0) * y_if0 * y_if0);
@@ -365,7 +370,7 @@ fn solve_one_side_eals(
                                 let w1 = *w_ptr.add(local + 1);
                                 let y_if1 = *yi_ptr.add(local + 1);
                                 let r_hat_val1 = *r_hat_ptr.add(local + 1);
-                                let c0_i1 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 1) as usize] as usize]);
+                                let c0_i1 = *c0_ptr.add(local + 1);
                                 let wy_if1 = w1 * y_if1;
                                 let wy21 = wy_if1 * y_if1;
                                 numer += c0_i1 * y_if1 + wy_if1 * (1.0 - r_hat_val1) + xu_f * (wy21 + (c0_i1 - 1.0) * y_if1 * y_if1);
@@ -374,7 +379,7 @@ fn solve_one_side_eals(
                                 let w2 = *w_ptr.add(local + 2);
                                 let y_if2 = *yi_ptr.add(local + 2);
                                 let r_hat_val2 = *r_hat_ptr.add(local + 2);
-                                let c0_i2 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 2) as usize] as usize]);
+                                let c0_i2 = *c0_ptr.add(local + 2);
                                 let wy_if2 = w2 * y_if2;
                                 let wy22 = wy_if2 * y_if2;
                                 numer += c0_i2 * y_if2 + wy_if2 * (1.0 - r_hat_val2) + xu_f * (wy22 + (c0_i2 - 1.0) * y_if2 * y_if2);
@@ -383,7 +388,7 @@ fn solve_one_side_eals(
                                 let w3 = *w_ptr.add(local + 3);
                                 let y_if3 = *yi_ptr.add(local + 3);
                                 let r_hat_val3 = *r_hat_ptr.add(local + 3);
-                                let c0_i3 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 3) as usize] as usize]);
+                                let c0_i3 = *c0_ptr.add(local + 3);
                                 let wy_if3 = w3 * y_if3;
                                 let wy23 = wy_if3 * y_if3;
                                 numer += c0_i3 * y_if3 + wy_if3 * (1.0 - r_hat_val3) + xu_f * (wy23 + (c0_i3 - 1.0) * y_if3 * y_if3);
@@ -392,7 +397,7 @@ fn solve_one_side_eals(
                                 let w4 = *w_ptr.add(local + 4);
                                 let y_if4 = *yi_ptr.add(local + 4);
                                 let r_hat_val4 = *r_hat_ptr.add(local + 4);
-                                let c0_i4 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 4) as usize] as usize]);
+                                let c0_i4 = *c0_ptr.add(local + 4);
                                 let wy_if4 = w4 * y_if4;
                                 let wy24 = wy_if4 * y_if4;
                                 numer += c0_i4 * y_if4 + wy_if4 * (1.0 - r_hat_val4) + xu_f * (wy24 + (c0_i4 - 1.0) * y_if4 * y_if4);
@@ -401,7 +406,7 @@ fn solve_one_side_eals(
                                 let w5 = *w_ptr.add(local + 5);
                                 let y_if5 = *yi_ptr.add(local + 5);
                                 let r_hat_val5 = *r_hat_ptr.add(local + 5);
-                                let c0_i5 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 5) as usize] as usize]);
+                                let c0_i5 = *c0_ptr.add(local + 5);
                                 let wy_if5 = w5 * y_if5;
                                 let wy25 = wy_if5 * y_if5;
                                 numer += c0_i5 * y_if5 + wy_if5 * (1.0 - r_hat_val5) + xu_f * (wy25 + (c0_i5 - 1.0) * y_if5 * y_if5);
@@ -410,7 +415,7 @@ fn solve_one_side_eals(
                                 let w6 = *w_ptr.add(local + 6);
                                 let y_if6 = *yi_ptr.add(local + 6);
                                 let r_hat_val6 = *r_hat_ptr.add(local + 6);
-                                let c0_i6 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 6) as usize] as usize]);
+                                let c0_i6 = *c0_ptr.add(local + 6);
                                 let wy_if6 = w6 * y_if6;
                                 let wy26 = wy_if6 * y_if6;
                                 numer += c0_i6 * y_if6 + wy_if6 * (1.0 - r_hat_val6) + xu_f * (wy26 + (c0_i6 - 1.0) * y_if6 * y_if6);
@@ -419,7 +424,7 @@ fn solve_one_side_eals(
                                 let w7 = *w_ptr.add(local + 7);
                                 let y_if7 = *yi_ptr.add(local + 7);
                                 let r_hat_val7 = *r_hat_ptr.add(local + 7);
-                                let c0_i7 = item_pop_weights.map_or(1.0f32, |w| w[indices[(start + local + 7) as usize] as usize]);
+                                let c0_i7 = *c0_ptr.add(local + 7);
                                 let wy_if7 = w7 * y_if7;
                                 let wy27 = wy_if7 * y_if7;
                                 numer += c0_i7 * y_if7 + wy_if7 * (1.0 - r_hat_val7) + xu_f * (wy27 + (c0_i7 - 1.0) * y_if7 * y_if7);
@@ -433,7 +438,7 @@ fn solve_one_side_eals(
                                 let y_if = *yi_ptr.add(local);
                                 let r_hat_val = *r_hat_ptr.add(local);
                                 
-                                let c0_i = item_pop_weights.map_or(1.0f32, |pw| pw[indices[(start + local) as usize] as usize]);
+                                let c0_i = *c0_ptr.add(local);
                                 let wy_if = w * y_if;
                                 let wy2 = wy_if * y_if;
                                 numer += c0_i * y_if + wy_if * (1.0 - r_hat_val) + xu_f * (wy2 + (c0_i - 1.0) * y_if * y_if);
@@ -490,13 +495,12 @@ fn solve_one_side_cholesky(
     data: &[f32],
     other: &[f32],
     gram: &[f32],
-    n: usize,
     k: usize,
     lambda: f32,
     alpha: f32,
-) -> Vec<f32> {
+    out: &mut [f32],
+) {
     let eff_lambda = lambda.max(1e-6);
-    let mut out = vec![0.0f32; n * k];
 
     out.par_chunks_mut(k).enumerate().for_each(|(u, xu)| {
         let start = indptr[u] as usize;
@@ -581,8 +585,6 @@ fn solve_one_side_cholesky(
             *cell.borrow_mut() = (a_buf, b_buf, yi_buf, w_buf);
         });
     });
-
-    out
 }
 
 
@@ -807,11 +809,9 @@ pub(crate) fn als_train(
             if use_eals {
                 solve_one_side_eals(ip, ix, d, other, gram, out, k, lambda, alpha, eals_iters, ipw);
             } else if use_cholesky {
-                let res = solve_one_side_cholesky(ip, ix, d, other, gram, out.len() / k, k, lambda, alpha);
-                out.copy_from_slice(&res);
+                solve_one_side_cholesky(ip, ix, d, other, gram, k, lambda, alpha, out);
             } else {
-                let res = solve_one_side_cg(ip, ix, d, other, gram, out.len() / k, k, lambda, alpha, cg_iters);
-                out.copy_from_slice(&res);
+                solve_one_side_cg(ip, ix, d, other, gram, k, lambda, alpha, cg_iters, out);
             }
         };
 
@@ -873,7 +873,10 @@ pub(crate) fn als_train(
     if use_biases {
         // Final bias update after all iterations
         // b_u = Σ_i c_ui (r_ui - μ - b_i - x_u·y_i) / (Σ_i c_ui + λ)
-        for u in 0..n_users {
+        // ponytail: user pass is independent per-row (only reads item_biases, which
+        // is not touched here) so it parallelizes trivially; the item pass below
+        // must stay serialized after this one since it reads the finished user_biases.
+        user_biases.par_iter_mut().enumerate().for_each(|(u, bu)| {
             let s = indptr[u] as usize;
             let e = indptr[u + 1] as usize;
             let xu = &user_factors[u * k..(u + 1) * k];
@@ -887,10 +890,10 @@ pub(crate) fn als_train(
                 num += c * (r - pred);
                 den += c;
             }
-            user_biases[u] = num / den;
-        }
+            *bu = num / den;
+        });
         // b_i = Σ_u c_ui (r_ui - μ - b_u - x_u·y_i) / (Σ_u c_ui + λ)
-        for i in 0..n_items {
+        item_biases.par_iter_mut().enumerate().for_each(|(i, bi)| {
             let s = indptr_t[i] as usize;
             let e = indptr_t[i + 1] as usize;
             let yi = &item_factors[i * k..(i + 1) * k];
@@ -904,8 +907,8 @@ pub(crate) fn als_train(
                 num += c * (r - pred);
                 den += c;
             }
-            item_biases[i] = num / den;
-        }
+            *bi = num / den;
+        });
     }
 
     (user_factors, item_factors, global_bias, user_biases, item_biases)
@@ -925,9 +928,7 @@ pub(crate) fn top_n_items(
     user_biases: Option<&[f32]>,
     item_biases: Option<&[f32]>,
 ) -> (Vec<i32>, Vec<f32>) {
-    use ahash::AHashSet;
     let u = &uf[uid * k..(uid + 1) * k];
-    let excluded: AHashSet<i32> = exc[exc_start..exc_end].iter().copied().collect();
 
     let mut scores = vec![0.0f32; n_items];
     faer::linalg::matmul::matmul(
@@ -952,13 +953,19 @@ pub(crate) fn top_n_items(
         }
     }
 
+    // ponytail: write NEG_INFINITY straight from the exclusion slice instead of
+    // building an AHashSet and doing n_items lookups — |exc| is typically tiny
+    // next to n_items.
+    for &item_id in &exc[exc_start..exc_end] {
+        if let Some(sc) = scores.get_mut(item_id as usize) {
+            *sc = f32::NEG_INFINITY;
+        }
+    }
+
     let mut scored: Vec<(f32, i32)> = scores
         .into_iter()
         .enumerate()
-        .filter_map(|(i, sc)| {
-            let item_id = i as i32;
-            if excluded.contains(&item_id) { None } else { Some((sc, item_id)) }
-        })
+        .filter_map(|(i, sc)| if sc.is_finite() { Some((sc, i as i32)) } else { None })
         .collect();
     let take = n.min(scored.len());
     if take == 0 {
@@ -1191,11 +1198,9 @@ pub fn als_recalculate_user<'py>(
     if use_eals {
         solve_one_side_eals(&ip, ix, id, itf, &g_item, &mut out, k, regularization, alpha, eals_iters, ipw);
     } else if use_cholesky {
-        let res = solve_one_side_cholesky(&ip, ix, id, itf, &g_item, 1, k, regularization, alpha);
-        out.copy_from_slice(&res);
+        solve_one_side_cholesky(&ip, ix, id, itf, &g_item, k, regularization, alpha, &mut out);
     } else {
-        let res = solve_one_side_cg(&ip, ix, id, itf, &g_item, 1, k, regularization, alpha, cg_iters);
-        out.copy_from_slice(&res);
+        solve_one_side_cg(&ip, ix, id, itf, &g_item, k, regularization, alpha, cg_iters, &mut out);
     }
 
     Ok(out.into_pyarray(py))

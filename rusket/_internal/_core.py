@@ -47,7 +47,11 @@ def _run_dense(
     if verbose:
         print(f"[{time.strftime('%X')}] Converting dense DataFrame to C-contiguous uint8 array...")
         t0 = time.perf_counter()
-    data = np.ascontiguousarray(df.values, dtype=np.uint8)
+    # `to_numpy(..., copy=False)` avoids a forced copy when the frame is already a
+    # single uint8/bool block; `ascontiguousarray` then only copies (once) if the
+    # resulting array isn't already C-contiguous (pandas blocks are often
+    # column-major), instead of always copying via `.values` + a second copy here.
+    data = np.ascontiguousarray(df.to_numpy(dtype=np.uint8, copy=False))
     if verbose:
         t1 = time.perf_counter()
         print(f"[{time.strftime('%X')}] Done in {t1 - t0:.2f}s. Calling Rust backend ({method})...")
@@ -250,8 +254,14 @@ def dispatch(
     # Validate first so invalid values (e.g. 2) are caught before we coerce
     valid_input_check(df_pd, null_values)
 
-    # Coerce integer 0/1 DataFrames to bool to avoid DeprecationWarning on next use
-    if not hasattr(df_pd, "sparse") and not bool(df_pd.dtypes.apply(pd.api.types.is_bool_dtype).all()):
+    # Coerce integer 0/1 DataFrames to bool to avoid DeprecationWarning on next use.
+    # Skip the cast when the frame is already bool/uint8/int8 — valid_input_check()
+    # just confirmed the values are 0/1 (or True/False), so re-casting here would
+    # only be a wasted full-frame copy on top of the one _run_dense already does.
+    _already_01_dtype = bool(
+        df_pd.dtypes.apply(lambda d: pd.api.types.is_bool_dtype(d) or d in (np.dtype("uint8"), np.dtype("int8"))).all()
+    )
+    if not hasattr(df_pd, "sparse") and not _already_01_dtype:
         df_pd = df_pd.astype(bool)
 
     if hasattr(df_pd, "sparse"):

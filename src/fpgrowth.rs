@@ -2,8 +2,6 @@ use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-const PAR_ITEMS_CUTOFF: usize = 4;
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct FPNode {
     pub item: u32,
@@ -33,6 +31,9 @@ pub(crate) struct FPTree {
     pub original_items: Vec<u32>,
     pub cond_items: Vec<u32>,
     single_path: bool,
+    // ponytail: root's children indexed by item id (O(1) lookup) instead of a
+    // linear scan over children_arena, since the root fans out to ~all items.
+    root_children: Vec<u32>,
 }
 
 impl FPTree {
@@ -47,6 +48,7 @@ impl FPTree {
             original_items,
             cond_items: Vec::new(),
             single_path: true,
+            root_children: vec![u32::MAX; num_items],
         }
     }
 
@@ -57,6 +59,10 @@ impl FPTree {
 
     #[inline]
     fn find_child(&self, node_idx: u32, item: u32) -> Option<u32> {
+        if node_idx == 0 {
+            let v = self.root_children[item as usize];
+            return if v == u32::MAX { None } else { Some(v) };
+        }
         let node = &self.nodes[node_idx as usize];
         let start = node.children_start as usize;
         let end = node.children_end as usize;
@@ -71,6 +77,9 @@ impl FPTree {
 
     #[inline]
     fn add_child(&mut self, parent_idx: u32, item: u32, child_idx: u32) {
+        if parent_idx == 0 {
+            self.root_children[item as usize] = child_idx;
+        }
         let parent = &self.nodes[parent_idx as usize];
         let n_children = parent.children_end - parent.children_start;
 
@@ -122,7 +131,7 @@ impl FPTree {
         }
     }
 
-    pub fn conditional_tree(&self, item: u32, minsup: u64) -> FPTree {
+    pub fn conditional_tree(&self, item: u32, minsup: u64) -> (FPTree, u64) {
         let node_indices = &self.item_nodes[item as usize];
         let item_usize = item as usize;
         let mut counts = vec![0u64; item_usize];
@@ -133,6 +142,7 @@ impl FPTree {
         let mut branch_counts: Vec<u64> = Vec::with_capacity(node_indices.len());
         branch_offsets.push(0);
 
+        let mut item_support: u64 = 0;
         let mut branch_buf = Vec::with_capacity(32);
         for &ni in node_indices {
             branch_buf.clear();
@@ -143,6 +153,7 @@ impl FPTree {
             }
             branch_buf.reverse();
             let node_count = self.nodes[ni as usize].count;
+            item_support += node_count;
             for &i in &branch_buf {
                 counts[i as usize] += node_count;
             }
@@ -191,7 +202,7 @@ impl FPTree {
             filtered.sort_unstable();
             cond_tree.insert_itemset(&filtered, branch_counts[b]);
         }
-        cond_tree
+        (cond_tree, item_support)
     }
 }
 
@@ -291,17 +302,16 @@ pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>, resul
     } else if max_len.is_none_or(|ml| ml > cond_len) {
         let prefix = &tree.cond_items;
 
-        let use_par = num_items >= PAR_ITEMS_CUTOFF;
+        // ponytail: only parallelize at the top level or for big conditional
+        // trees — deep recursions with a handful of tiny items aren't worth
+        // rayon's scheduling overhead.
+        let use_par = cond_len == 0 || tree.nodes.len() > 2000;
         if use_par {
             let sub_results: Vec<FlatResults> = (0..num_items as u32)
                 .into_par_iter()
                 .rev()
                 .map(|local_id| {
-                    let support: u64 = tree.item_nodes[local_id as usize]
-                        .iter()
-                        .map(|&ni| tree.nodes[ni as usize].count)
-                        .sum();
-                    let cond_tree = tree.conditional_tree(local_id, minsup);
+                    let (cond_tree, support) = tree.conditional_tree(local_id, minsup);
                     let mut sub = FlatResults::new();
                     let mut iset = Vec::with_capacity(prefix.len() + 1);
                     iset.extend_from_slice(prefix);
@@ -317,11 +327,7 @@ pub(crate) fn fpg_step(tree: &FPTree, minsup: u64, max_len: Option<usize>, resul
             }
         } else {
             for local_id in (0..num_items as u32).rev() {
-                let support: u64 = tree.item_nodes[local_id as usize]
-                    .iter()
-                    .map(|&ni| tree.nodes[ni as usize].count)
-                    .sum();
-                let cond_tree = tree.conditional_tree(local_id, minsup);
+                let (cond_tree, support) = tree.conditional_tree(local_id, minsup);
                 let mut iset = Vec::with_capacity(prefix.len() + 1);
                 iset.extend_from_slice(prefix);
                 iset.push(tree.original_items[local_id as usize]);
