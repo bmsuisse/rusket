@@ -113,6 +113,80 @@ unsafe fn dot_avx2(a: &[f32], b: &[f32]) -> f32 {
     sum
 }
 
+/// `y += alpha * x`, with the same runtime AVX2+FMA dispatch as [`dot`].
+///
+/// `y` must be at least as long as `x`.
+#[inline(always)]
+pub(crate) fn axpy(alpha: f32, x: &[f32], y: &mut [f32]) {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if has_avx2_fma() {
+            // SAFETY: `has_avx2_fma()` returned true, so the CPU supports
+            // AVX2+FMA — the sole precondition of `axpy_avx2` beyond the
+            // length contract documented above.
+            unsafe { axpy_avx2(alpha, x, y) };
+            return;
+        }
+    }
+    axpy_portable(alpha, x, y);
+}
+
+/// Portable `y += alpha * x` (relies on autovectorization).
+#[inline(always)]
+fn axpy_portable(alpha: f32, x: &[f32], y: &mut [f32]) {
+    let n = x.len();
+    let chunks = n / 8;
+    let mut idx = 0;
+    for _ in 0..chunks {
+        unsafe {
+            *y.get_unchecked_mut(idx) += alpha * *x.get_unchecked(idx);
+            *y.get_unchecked_mut(idx + 1) += alpha * *x.get_unchecked(idx + 1);
+            *y.get_unchecked_mut(idx + 2) += alpha * *x.get_unchecked(idx + 2);
+            *y.get_unchecked_mut(idx + 3) += alpha * *x.get_unchecked(idx + 3);
+            *y.get_unchecked_mut(idx + 4) += alpha * *x.get_unchecked(idx + 4);
+            *y.get_unchecked_mut(idx + 5) += alpha * *x.get_unchecked(idx + 5);
+            *y.get_unchecked_mut(idx + 6) += alpha * *x.get_unchecked(idx + 6);
+            *y.get_unchecked_mut(idx + 7) += alpha * *x.get_unchecked(idx + 7);
+        }
+        idx += 8;
+    }
+    while idx < n {
+        unsafe { *y.get_unchecked_mut(idx) += alpha * *x.get_unchecked(idx); }
+        idx += 1;
+    }
+}
+
+/// AVX2+FMA `y += alpha * x`.
+///
+/// # Safety
+///
+/// Same contract as [`dot_avx2`]: the CPU must support `avx2` and `fma`, and
+/// `y` must be at least as long as `x`.
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[target_feature(enable = "avx2,fma")]
+unsafe fn axpy_avx2(alpha: f32, x: &[f32], y: &mut [f32]) {
+    #[cfg(target_arch = "x86")]
+    use std::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use std::arch::x86_64::*;
+
+    let n = x.len();
+    let chunks = n / 8;
+    let va = _mm256_set1_ps(alpha);
+    let mut idx = 0usize;
+    for _ in 0..chunks {
+        // SAFETY: idx + 8 <= n == x.len() <= y.len() per the contract.
+        let vx = _mm256_loadu_ps(x.as_ptr().add(idx));
+        let vy = _mm256_loadu_ps(y.as_ptr().add(idx));
+        _mm256_storeu_ps(y.as_mut_ptr().add(idx), _mm256_fmadd_ps(va, vx, vy));
+        idx += 8;
+    }
+    while idx < n {
+        *y.get_unchecked_mut(idx) += alpha * *x.get_unchecked(idx);
+        idx += 1;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

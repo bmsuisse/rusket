@@ -15,53 +15,15 @@ use crate::rng::random_factors;
 // iterator chain because we guarantee no loop‑carried dependency.
 #[inline(always)]
 fn dot_f32(a: &[f32], b: &[f32]) -> f32 {
-    let n = a.len();
-    let n8 = n / 8 * 8;
-    let (mut s0, mut s1, mut s2, mut s3) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
-    let (mut s4, mut s5, mut s6, mut s7) = (0.0f32, 0.0f32, 0.0f32, 0.0f32);
-    let mut i = 0;
-    while i < n8 {
-        unsafe {
-            s0 += *a.get_unchecked(i)     * *b.get_unchecked(i);
-            s1 += *a.get_unchecked(i + 1) * *b.get_unchecked(i + 1);
-            s2 += *a.get_unchecked(i + 2) * *b.get_unchecked(i + 2);
-            s3 += *a.get_unchecked(i + 3) * *b.get_unchecked(i + 3);
-            s4 += *a.get_unchecked(i + 4) * *b.get_unchecked(i + 4);
-            s5 += *a.get_unchecked(i + 5) * *b.get_unchecked(i + 5);
-            s6 += *a.get_unchecked(i + 6) * *b.get_unchecked(i + 6);
-            s7 += *a.get_unchecked(i + 7) * *b.get_unchecked(i + 7);
-        }
-        i += 8;
-    }
-    while i < n {
-        unsafe { s0 += *a.get_unchecked(i) * *b.get_unchecked(i); }
-        i += 1;
-    }
-    (s0 + s1) + (s2 + s3) + (s4 + s5) + (s6 + s7)
+    // ponytail: was a private 8-wide unroll identical to crate::simd::dot.
+    // Routed through simd so ALS gets the runtime AVX2+FMA dispatch too —
+    // the private copy never did, so x86 wheels ran ALS on the scalar path.
+    crate::simd::dot(a, b)
 }
 
 #[inline(always)]
 fn axpy_f32(alpha: f32, x: &[f32], y: &mut [f32]) {
-    let n = x.len();
-    let n8 = n / 8 * 8;
-    let mut i = 0;
-    while i < n8 {
-        unsafe {
-            *y.get_unchecked_mut(i)     += alpha * *x.get_unchecked(i);
-            *y.get_unchecked_mut(i + 1) += alpha * *x.get_unchecked(i + 1);
-            *y.get_unchecked_mut(i + 2) += alpha * *x.get_unchecked(i + 2);
-            *y.get_unchecked_mut(i + 3) += alpha * *x.get_unchecked(i + 3);
-            *y.get_unchecked_mut(i + 4) += alpha * *x.get_unchecked(i + 4);
-            *y.get_unchecked_mut(i + 5) += alpha * *x.get_unchecked(i + 5);
-            *y.get_unchecked_mut(i + 6) += alpha * *x.get_unchecked(i + 6);
-            *y.get_unchecked_mut(i + 7) += alpha * *x.get_unchecked(i + 7);
-        }
-        i += 8;
-    }
-    while i < n {
-        unsafe { *y.get_unchecked_mut(i) += alpha * *x.get_unchecked(i); }
-        i += 1;
-    }
+    crate::simd::axpy(alpha, x, y)
 }
 
 fn gramian(factors: &[f32], n: usize, k: usize) -> Vec<f32> {
