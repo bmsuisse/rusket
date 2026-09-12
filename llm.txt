@@ -943,7 +943,7 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
 | iterations | int | Number of ALS outer iterations. |
 | seed | int | Random seed. |
-| cg_iters | int, optional | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``). Reduce to 3 for very large datasets.  Defaults to ``None``, which resolves by rank: ``10`` at or below ``factors=128`` and ``15`` above it. CG is already converged at 10 for low rank, but under-converged at high rank -- measured on 3.8M real interactions (38k users x 47k items), NDCG@10 at ``factors=256`` was 0.0704 with 10 iterations versus 0.0716 for an exact Cholesky solve, while 15 iterations reached 0.0715 in 27% less time than Cholesky. At ``factors`` of 32 and 64 the three were identical, so raising it everywhere would cost ~38% runtime for nothing. An explicit value always wins over this rule. |
+| cg_iters | int, optional | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``). Defaults to ``5``.  Each outer iteration warm-starts CG from the previous iteration's factors, so only a few inner steps are needed to track the moving solution. Measured on 3.8M real interactions (38k users x 47k items, factors=256, 15 outer iterations), NDCG@10 by ``cg_iters``: 3 -> .0696, 5 -> .0721, 8 -> .0717, 15 -> .0716, i.e. converged by 5 and flat after it; the same holds at factors 32/64/128. Raising it only costs time. |
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
 | use_eals | bool | Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive. |
 | eals_iters | int | Number of inner iterations for eALS (default 1). |
@@ -2752,6 +2752,14 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### 🐛 Bug Fixes
+
+- EASE ranking orientation, Cholesky cold-entity factors, HUPM id blowup; perf: warm-start CG
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
 
 ### ⚡ Performance
 

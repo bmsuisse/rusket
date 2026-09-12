@@ -5633,7 +5633,7 @@ and faster execution out-of-the-box compared to classic algorithms on dense data
 <tr>
 <td>cg_iters</td>
 <td>int, optional</td>
-<td>Conjugate Gradient iterations per user/item solve (ignored when <code>use_cholesky=True</code>). Reduce to 3 for very large datasets.  Defaults to <code>None</code>, which resolves by rank: <code>10</code> at or below <code>factors=128</code> and <code>15</code> above it. CG is already converged at 10 for low rank, but under-converged at high rank -- measured on 3.8M real interactions (38k users x 47k items), NDCG@10 at <code>factors=256</code> was 0.0704 with 10 iterations versus 0.0716 for an exact Cholesky solve, while 15 iterations reached 0.0715 in 27% less time than Cholesky. At <code>factors</code> of 32 and 64 the three were identical, so raising it everywhere would cost ~38% runtime for nothing. An explicit value always wins over this rule.</td>
+<td>Conjugate Gradient iterations per user/item solve (ignored when <code>use_cholesky=True</code>). Defaults to <code>5</code>.  Each outer iteration warm-starts CG from the previous iteration's factors, so only a few inner steps are needed to track the moving solution. Measured on 3.8M real interactions (38k users x 47k items, factors=256, 15 outer iterations), NDCG@10 by <code>cg_iters</code>: 3 -&gt; .0696, 5 -&gt; .0721, 8 -&gt; .0717, 15 -&gt; .0716, i.e. converged by 5 and flat after it; the same holds at factors 32/64/128. Raising it only costs time.</td>
 </tr>
 <tr>
 <td>use_cholesky</td>
