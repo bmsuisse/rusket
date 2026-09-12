@@ -6374,7 +6374,7 @@ inference, particularly on datasets with strong item-item correlations.</p>
 <p>Fit the model to the user-item interaction matrix (Rust-accelerated).</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-72-1"><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">rusket.recommenders.ease</span><span class="w"> </span><span class="kn">import</span> <span class="n">EASE</span><span class="o">.</span><span class="n">fit</span>
 </span><span id="__span-72-2"><a id="__codelineno-72-2" name="__codelineno-72-2" href="#__codelineno-72-2"></a>
-</span><span id="__span-72-3"><a id="__codelineno-72-3" name="__codelineno-72-3" href="#__codelineno-72-3"></a><span class="n">EASE</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;EASE&#39;</span>
+</span><span id="__span-72-3"><a id="__codelineno-72-3" name="__codelineno-72-3" href="#__codelineno-72-3"></a><span class="n">EASE</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">interactions</span><span class="p">:</span> <span class="s1">&#39;Any&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_memory_gb</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span> <span class="o">=</span> <span class="mf">8.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;EASE&#39;</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong></p>
 <table>
@@ -6390,6 +6390,11 @@ inference, particularly on datasets with strong item-item correlations.</p>
 <td>interactions</td>
 <td>sparse matrix or numpy array, optional</td>
 <td>If None, uses the matrix prepared by <code>from_transactions()</code>.</td>
+</tr>
+<tr>
+<td>max_memory_gb</td>
+<td>float</td>
+<td>Safety cap on the estimated <em>peak transient</em> memory (GiB) EASE will need during the Cholesky solve, checked before any large allocation happens. EASE is inherently O(n_items^2) in memory: estimated peak bytes ~= 16 * n_items**2 (two dense n_items x n_items f64 matrices briefly alive at once inside the Rust solver). The default of 8 GiB caps this at ~22,000 items, which is safe on a typical dev machine and covers most catalogs. Raise this explicitly (e.g. to ~40 GiB) if you have a larger machine and truly need to fit EASE on a bigger catalog (the real 46,560-item production catalog needs ~32 GiB); on catalogs of that size, consider ItemKNN or ALS instead, which don't require a dense n_items^2 matrix.</td>
 </tr>
 </tbody>
 </table>

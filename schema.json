@@ -821,7 +821,8 @@
         },
         "fit": {
           "parameters": {
-            "interactions": "Any"
+            "interactions": "Any",
+            "max_memory_gb": "float"
           },
           "returns": "EASE",
           "doc": "Fit the model to the user-item interaction matrix (Rust-accelerated)."

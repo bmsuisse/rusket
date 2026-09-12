@@ -1603,11 +1603,15 @@
 </tr>
 <tr>
 <td><code>batch_recommend(n, exclude_seen, format)</code></td>
-<td>ALS, SVD</td>
+<td>ALS, SVD — ALS additionally accepts <code>exclude</code> (explicit per-user exclusion mask, wider than <code>exclude_seen</code>)</td>
 </tr>
 <tr>
 <td><code>user_factors</code> / <code>item_factors</code></td>
 <td>ALS, BPR, SVD, LightGCN</td>
+</tr>
+<tr>
+<td><code>from_factors(user_factors, item_factors, ...)</code></td>
+<td>ALS only — builds a scoring-only model (no <code>fit()</code>) from factors computed elsewhere</td>
 </tr>
 </tbody>
 </table>

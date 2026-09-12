@@ -1424,7 +1424,7 @@ Fit the model to the user-item interaction matrix (Rust-accelerated).
 ```python
 from rusket.recommenders.ease import EASE.fit
 
-EASE.fit(interactions: 'Any' = None) -> 'EASE'
+EASE.fit(interactions: 'Any' = None, max_memory_gb: 'float' = 8.0) -> 'EASE'
 ```
 
 **Parameters**
@@ -1432,6 +1432,7 @@ EASE.fit(interactions: 'Any' = None) -> 'EASE'
 | Parameter | Type | Description |
 | --- | --- | --- |
 | interactions | sparse matrix or numpy array, optional | If None, uses the matrix prepared by ``from_transactions()``. |
+| max_memory_gb | float | Safety cap on the estimated *peak transient* memory (GiB) EASE will need during the Cholesky solve, checked before any large allocation happens. EASE is inherently O(n_items^2) in memory: estimated peak bytes ~= 16 * n_items**2 (two dense n_items x n_items f64 matrices briefly alive at once inside the Rust solver). The default of 8 GiB caps this at ~22,000 items, which is safe on a typical dev machine and covers most catalogs. Raise this explicitly (e.g. to ~40 GiB) if you have a larger machine and truly need to fit EASE on a bigger catalog (the real 46,560-item production catalog needs ~32 GiB); on catalogs of that size, consider ItemKNN or ALS instead, which don't require a dense n_items^2 matrix. |
 
 ---
 
@@ -2756,6 +2757,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ### ⚡ Performance
 
+- fuse ItemKNN/UserKNN gram with top-k in Rust (30x); feat: batched metrics
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### ⚡ Performance
+
 - fuse the CG apply; feat: ALS.from_factors() and batch_recommend(exclude=)
 
 ### 📦 Miscellaneous
@@ -3773,8 +3782,9 @@ ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
 | `predict(user_id, item_id)` | SVD (rating prediction); others: alias for `recommend_items()` |
 | `recommend_items(user_id, n, exclude_seen)` | All recommenders |
 | `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
-| `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
+| `batch_recommend(n, exclude_seen, format)` | ALS, SVD — ALS additionally accepts `exclude` (explicit per-user exclusion mask, wider than `exclude_seen`) |
 | `user_factors` / `item_factors` | ALS, BPR, SVD, LightGCN |
+| `from_factors(user_factors, item_factors, ...)` | ALS only — builds a scoring-only model (no `fit()`) from factors computed elsewhere |
 
 ### Sequential recommenders (FPMC, SASRec)
 
