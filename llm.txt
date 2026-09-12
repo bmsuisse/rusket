@@ -931,7 +931,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.recommenders.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int | None' = None, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -943,7 +943,7 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
 | iterations | int | Number of ALS outer iterations. |
 | seed | int | Random seed. |
-| cg_iters | int | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``).  Reduce to 3 for very large datasets. |
+| cg_iters | int, optional | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``). Reduce to 3 for very large datasets.  Defaults to ``None``, which resolves by rank: ``10`` at or below ``factors=128`` and ``15`` above it. CG is already converged at 10 for low rank, but under-converged at high rank -- measured on 3.8M real interactions (38k users x 47k items), NDCG@10 at ``factors=256`` was 0.0704 with 10 iterations versus 0.0716 for an exact Cholesky solve, while 15 iterations reached 0.0715 in 27% less time than Cholesky. At ``factors`` of 32 and 64 the three were identical, so raising it everywhere would cost ~38% runtime for nothing. An explicit value always wins over this rule. |
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
 | use_eals | bool | Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive. |
 | eals_iters | int | Number of inner iterations for eALS (default 1). |
@@ -2752,6 +2752,30 @@ All notable changes are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
 ---
+
+### ⚡ Performance
+
+- make the CG inner-iteration default scale with rank
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### ⚡ Performance
+
+- route ALS's dot/axpy through the dispatched SIMD kernels
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
+### ⚡ Performance
+
+- AVX2 dispatch, blocked-gemm recommend_all, NMF f32/faer, EASE gram, parallel PaCMAP, GIL release
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
 
 ### ⚡ Performance
 

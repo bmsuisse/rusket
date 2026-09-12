@@ -559,7 +559,7 @@
             "iterations": "int",
             "seed": "int",
             "verbose": "int",
-            "cg_iters": "int",
+            "cg_iters": "int | None",
             "use_cholesky": "bool",
             "use_eals": "bool",
             "eals_iters": "int",
