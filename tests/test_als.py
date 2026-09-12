@@ -644,3 +644,19 @@ def test_vals_views_affect_results() -> None:
     m2 = rusket.ALS(factors=8, iterations=10, seed=42, alpha_view=15.0, view_target=0.5)
     m2.fit(purchases, view_matrix=views)
     assert not np.allclose(m1.user_factors, m2.user_factors, rtol=1e-3)
+
+
+def test_cg_iters_factors_aware_default():
+    """CG inner iterations scale with rank; an explicit value always wins.
+
+    Measured on 3.8M real interactions: cg_iters=10 is converged at
+    factors<=64 but ~1.7% short of an exact solve at factors=256.
+    """
+    import rusket
+
+    assert rusket.ALS(factors=64).cg_iters == 10
+    assert rusket.ALS(factors=128).cg_iters == 10
+    assert rusket.ALS(factors=256).cg_iters == 15
+    # explicit beats the rule, in both directions
+    assert rusket.ALS(factors=256, cg_iters=3).cg_iters == 3
+    assert rusket.ALS(factors=32, cg_iters=25).cg_iters == 25
