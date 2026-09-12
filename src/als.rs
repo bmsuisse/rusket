@@ -59,11 +59,10 @@ fn weighted_gramian(factors: &[f32], weights: &[f32], n: usize, k: usize) -> Vec
 }
 
 thread_local! {
-    // CG scratch: b, r, p, ap, yi_dense (item matrix), w_vec (weights), tmp
-    static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>,
-                             Vec<f32>, Vec<f32>, Vec<f32>)> =
-        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new(),
-                              Vec::new(), Vec::new(), Vec::new())) };
+    // CG scratch: b, r, p, ap, w_vec (per-item confidence weights).
+    // yi_dense/tmp are gone: apply_a reads item rows directly from `other`.
+    static SCRATCH: RefCell<(Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>)> =
+        const { RefCell::new((Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new())) };
 }
 
 fn solve_one_side_cg(
@@ -87,84 +86,51 @@ fn solve_one_side_cg(
 
         SCRATCH.with(|cell| {
             let mut borrow = cell.borrow_mut();
-            let (ref mut b, ref mut r, ref mut p, ref mut ap,
-                 ref mut yi_dense, ref mut w_vec, ref mut tmp) = *borrow;
+            let (ref mut b, ref mut r, ref mut p, ref mut ap, ref mut w_vec) = *borrow;
             b.clear(); b.resize(k, 0.0);
             r.clear(); r.resize(k, 0.0);
             p.clear(); p.resize(k, 0.0);
             ap.clear(); ap.resize(k, 0.0);
 
-            // Pre-collect interacted item vectors + weights
-            yi_dense.clear();
-            yi_dense.resize(nnz_u * k, 0.0);
+            // Build the right-hand side and the per-item confidence weights.
+            // apply_a reads the item rows straight out of `other`, so no dense
+            // gather is needed.
             w_vec.clear();
             w_vec.resize(nnz_u, 0.0);
-            tmp.clear();
-            tmp.resize(nnz_u, 0.0);
 
             for (local, idx) in (start..end).enumerate() {
                 let i = indices[idx] as usize;
                 let c = 1.0 + alpha * data[idx];
-                let yi = &other[i * k..(i + 1) * k];
-                axpy_f32(c, yi, b);
-
-                // Copy yi into dense matrix and store weight
-                yi_dense[local * k..(local + 1) * k].copy_from_slice(yi);
+                axpy_f32(c, &other[i * k..(i + 1) * k], b);
                 w_vec[local] = alpha * data[idx]; // = c - 1
             }
 
-            // apply_a: computes out = (Gram + lambda*I + Y^T diag(w) Y) * v
-            // using batch BLAS for the Y^T diag(w) Y * v part
-            let mut apply_a = |v: &[f32], out: &mut [f32]| {
-                // Part 1: Gram × v (8-wide unrolled)
-                let k8 = k / 8 * 8;
+            // apply_a: out = (Gram + lambda*I + Y^T diag(w) Y) * v
+            //
+            // Part 1 was a private 8-wide unroll — the one dot in the crate
+            // that still bypassed crate::simd, so on x86 it ran the SSE2
+            // autovec path while everything else got AVX2+FMA. Unlike the
+            // memory-bound kernels, this one re-reads an L2-resident Gram
+            // cg_iters times per entity, so the wider FMA actually pays.
+            //
+            // Part 2 used to materialise the entity's item rows into a dense
+            // `yi_dense` scratch matrix, then make two passes over it per CG
+            // step (a scalar dot pass, then a faer gemv). The rows are already
+            // contiguous k-slices of `other`, so the gather bought no
+            // locality; fusing dot+axpy into one pass halves the traffic, hits
+            // each row while it is still in L1, and drops the yi_dense/tmp
+            // scratch buffers (and the per-entity copy) entirely.
+            let apply_a = |v: &[f32], out: &mut [f32]| {
                 for a in 0..k {
-                    let gram_row = &gram[a * k..];
-                    let mut s0 = 0.0f32;
-                    let mut s1 = 0.0f32;
-                    let mut s2 = 0.0f32;
-                    let mut s3 = 0.0f32;
-                    let mut s4 = 0.0f32;
-                    let mut s5 = 0.0f32;
-                    let mut s6 = 0.0f32;
-                    let mut s7 = 0.0f32;
-                    let mut bb = 0;
-                    while bb < k8 {
-                        unsafe {
-                            s0 += *gram_row.get_unchecked(bb)   * *v.get_unchecked(bb);
-                            s1 += *gram_row.get_unchecked(bb+1) * *v.get_unchecked(bb+1);
-                            s2 += *gram_row.get_unchecked(bb+2) * *v.get_unchecked(bb+2);
-                            s3 += *gram_row.get_unchecked(bb+3) * *v.get_unchecked(bb+3);
-                            s4 += *gram_row.get_unchecked(bb+4) * *v.get_unchecked(bb+4);
-                            s5 += *gram_row.get_unchecked(bb+5) * *v.get_unchecked(bb+5);
-                            s6 += *gram_row.get_unchecked(bb+6) * *v.get_unchecked(bb+6);
-                            s7 += *gram_row.get_unchecked(bb+7) * *v.get_unchecked(bb+7);
-                        }
-                        bb += 8;
-                    }
-                    while bb < k {
-                        unsafe { s0 += *gram_row.get_unchecked(bb) * *v.get_unchecked(bb); }
-                        bb += 1;
-                    }
-                    out[a] = (s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7) + eff_lambda * v[a];
+                    out[a] = dot_f32(&gram[a * k..(a + 1) * k], v) + eff_lambda * v[a];
                 }
-
-                // Part 2: Y^T diag(w) Y * v  via two BLAS passes
-                // tmp[i] = w[i] * dot(yi, v) — scalar pass
-                if nnz_u > 0 {
-                    for i in 0..nnz_u {
-                        let yi = &yi_dense[i * k..(i + 1) * k];
-                        tmp[i] = w_vec[i] * dot_f32(yi, v);
+                for (local, idx) in (start..end).enumerate() {
+                    let i = indices[idx] as usize;
+                    let yi = &other[i * k..(i + 1) * k];
+                    let t = w_vec[local] * dot_f32(yi, v);
+                    if t != 0.0 {
+                        axpy_f32(t, yi, out);
                     }
-                    // out += Y^T * tmp  — single gemv (k × nnz_u) × (nnz_u × 1)
-                    let y_mat = MatRef::from_row_major_slice(
-                        &yi_dense[..nnz_u * k], nnz_u, k,
-                    );
-                    let t_mat = MatRef::from_column_major_slice(
-                        &tmp[..nnz_u], nnz_u, 1,
-                    );
-                    let mut o_mat = MatMut::from_column_major_slice_mut(out, k, 1);
-                    matmul(o_mat.as_mut(), Accum::Add, y_mat.transpose(), t_mat, 1.0f32, Par::Seq);
                 }
             };
 

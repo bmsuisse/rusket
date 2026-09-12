@@ -384,11 +384,85 @@ class ALS(ImplicitRecommender):
         )
         return np.asarray(ids), np.asarray(scores)
 
+    @classmethod
+    def from_factors(
+        cls,
+        user_factors: Any,
+        item_factors: Any,
+        *,
+        user_labels: Any = None,
+        item_labels: Any = None,
+        global_bias: float = 0.0,
+        user_biases: Any = None,
+        item_biases: Any = None,
+    ) -> ALS:
+        """Build a scoring-only ALS from factor matrices computed elsewhere.
+
+        Training and scoring are often separate jobs: one fits the model and
+        persists the factors (a Delta table, a feature store, a parquet file),
+        another loads them later to score. Without this, that second job has
+        no way to reach :meth:`batch_recommend` and ends up re-implementing
+        the blocked top-N in Python.
+
+        The returned model supports scoring (``batch_recommend``,
+        ``recommend_items``, ``similar_items``) but not ``fit`` -- there is no
+        interaction matrix behind it, so pass ``exclude=`` to
+        ``batch_recommend`` if items need suppressing.
+
+        Parameters
+        ----------
+        user_factors, item_factors : array-like
+            ``(n_users, factors)`` and ``(n_items, factors)``, row-major.
+        user_labels, item_labels : array-like, optional
+            External ids, so results come back in the caller's id space
+            instead of internal indices.
+        global_bias, user_biases, item_biases : optional
+            Bias terms, if the original model was fitted with them.
+
+        Examples
+        --------
+        >>> model = ALS.from_factors(u, i, user_labels=customer_sks, item_labels=article_sks)
+        >>> model.batch_recommend(n=20, exclude=already_bought, format="pandas")
+        """
+        import numpy as np
+
+        uf = np.ascontiguousarray(user_factors, dtype=np.float32)
+        itf = np.ascontiguousarray(item_factors, dtype=np.float32)
+        if uf.ndim != 2 or itf.ndim != 2:
+            raise ValueError("user_factors and item_factors must both be 2-D")
+        if uf.shape[1] != itf.shape[1]:
+            raise ValueError(
+                f"factor dimension mismatch: user_factors has {uf.shape[1]}, item_factors has {itf.shape[1]}"
+            )
+
+        model = cls(factors=uf.shape[1])
+        model._user_factors = uf
+        model._item_factors = itf
+        model._n_users, model._n_items = uf.shape[0], itf.shape[0]
+        model._global_bias = float(global_bias)
+        model._user_biases = None if user_biases is None else np.ascontiguousarray(user_biases, dtype=np.float32)
+        model._item_biases = None if item_biases is None else np.ascontiguousarray(item_biases, dtype=np.float32)
+        for name, labels, expected in (
+            ("user_labels", user_labels, model._n_users),
+            ("item_labels", item_labels, model._n_items),
+        ):
+            if labels is None:
+                continue
+            seq = list(labels)
+            if len(seq) != expected:
+                raise ValueError(f"{name} has {len(seq)} entries but there are {expected} rows")
+            setattr(model, f"_{name}", seq)
+        # ponytail: no _fit_indptr/_fit_indices — there is no training matrix,
+        # so exclude_seen has nothing to exclude; callers pass exclude=.
+        model.fitted = True
+        return model
+
     def batch_recommend(
         self,
         n: int = 10,
         exclude_seen: bool = True,
         format: Literal["pandas", "polars", "spark"] = "polars",
+        exclude: Any = None,
     ) -> Any:
         """Top-N items for all users efficiently computed in parallel.
 
@@ -397,9 +471,17 @@ class ALS(ImplicitRecommender):
         n : int, default=10
             The number of items to recommend per user.
         exclude_seen : bool, default=True
-            Whether to exclude items the user has already interacted with.
+            Whether to exclude items the user has already interacted with
+            during training.
         format : str, default="polars"
             The DataFrame format to return. One of "pandas", "polars", or "spark".
+        exclude : sparse matrix, optional
+            Explicit ``(n_users, n_items)`` mask of items to exclude per user,
+            in internal index space. Use this when the set to suppress is not
+            the training matrix -- e.g. scoring cross-sell potential against
+            "everything this customer has ever bought or been quoted", which is
+            a wider set than what the model was fitted on. Takes precedence
+            over ``exclude_seen``.
 
         Returns
         -------
@@ -409,7 +491,15 @@ class ALS(ImplicitRecommender):
         import numpy as np
 
         self._check_fitted()
-        if exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
+        if exclude is not None:
+            from scipy import sparse as sp
+
+            exc = exclude if sp.isspmatrix_csr(exclude) else sp.csr_matrix(exclude)
+            if exc.shape != (self._n_users, self._n_items):
+                raise ValueError(f"exclude must have shape ({self._n_users}, {self._n_items}), got {exc.shape}")
+            exc_indptr = np.asarray(exc.indptr, dtype=np.int64)
+            exc_indices = np.asarray(exc.indices, dtype=np.int32)
+        elif exclude_seen and self._fit_indptr is not None and self._fit_indices is not None:
             exc_indptr = self._fit_indptr
             exc_indices = self._fit_indices
         else:

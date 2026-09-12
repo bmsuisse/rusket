@@ -656,3 +656,65 @@ def test_cg_iters_default_and_override():
     assert rusket.ALS(factors=256).cg_iters == 5
     assert rusket.ALS(factors=256, cg_iters=3).cg_iters == 3
     assert rusket.ALS(factors=32, cg_iters=25).cg_iters == 25
+
+
+def test_batch_recommend_custom_exclude():
+    """`exclude=` masks an arbitrary per-user item set, not just the fit matrix.
+
+    Cross-sell scoring needs to suppress everything a customer ever bought or
+    was quoted, which is wider than the matrix the model was fitted on.
+    """
+    import numpy as np
+    from scipy import sparse as sp
+
+    import rusket
+
+    rng = np.random.default_rng(0)
+    X = sp.csr_matrix((rng.random((40, 25)) < 0.2).astype(np.float32))
+    model = rusket.ALS(factors=8, iterations=3, seed=0).fit(X)
+
+    # exclude the first 10 items for every user
+    mask = sp.csr_matrix(np.tile(np.r_[np.ones(10), np.zeros(15)], (40, 1)).astype(np.float32))
+    df = model.batch_recommend(n=5, format="pandas", exclude=mask)
+    assert (df["item_id"] >= 10).all(), "excluded items leaked into recommendations"
+
+    # and it overrides exclude_seen rather than being ignored
+    df2 = model.batch_recommend(n=5, exclude_seen=True, format="pandas", exclude=mask)
+    assert (df2["item_id"] >= 10).all()
+
+    with pytest.raises(ValueError, match="exclude must have shape"):
+        model.batch_recommend(n=5, format="pandas", exclude=sp.csr_matrix((3, 3)))
+
+
+def test_from_factors_scoring_only():
+    """Factors persisted by a training job can be scored by a separate job."""
+    import numpy as np
+    from scipy import sparse as sp
+
+    import rusket
+
+    rng = np.random.default_rng(1)
+    X = sp.csr_matrix((rng.random((30, 18)) < 0.25).astype(np.float32))
+    fitted = rusket.ALS(factors=6, iterations=3, seed=0).fit(X)
+
+    # round-trip the factors the way a Delta table would
+    reloaded = rusket.ALS.from_factors(
+        np.asarray(fitted.user_factors),
+        np.asarray(fitted.item_factors),
+        user_labels=[f"C{i}" for i in range(30)],
+        item_labels=[1000 + j for j in range(18)],
+    )
+    df = reloaded.batch_recommend(n=3, format="pandas")
+    assert len(df) == 30 * 3
+    assert df["user_id"].iloc[0].startswith("C")
+    assert df["item_id"].min() >= 1000  # external labels, not indices
+
+    # scores match the fitted model's own scoring
+    a = fitted.batch_recommend(n=3, exclude_seen=False, format="pandas")["score"].to_numpy()
+    b = df["score"].to_numpy()
+    assert np.allclose(np.sort(a), np.sort(b), atol=1e-5)
+
+    with pytest.raises(ValueError, match="factor dimension mismatch"):
+        rusket.ALS.from_factors(np.zeros((4, 5), np.float32), np.zeros((3, 6), np.float32))
+    with pytest.raises(ValueError, match="user_labels has"):
+        rusket.ALS.from_factors(np.zeros((4, 5), np.float32), np.zeros((3, 5), np.float32), user_labels=["a"])
