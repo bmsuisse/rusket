@@ -293,13 +293,83 @@ impl AdamState {
         let bc1 = 1.0 - self.beta1.powf(t);
         let bc2 = 1.0 - self.beta2.powf(t);
         let lr_t = lr * bc2.sqrt() / bc1;
+        let (beta1, beta2, eps) = (self.beta1, self.beta2, self.eps);
 
-        for i in 0..params.len() {
-            self.m[i] = self.beta1 * self.m[i] + (1.0 - self.beta1) * grad[i];
-            self.v[i] = self.beta2 * self.v[i] + (1.0 - self.beta2) * grad[i] * grad[i];
-            params[i] -= lr_t * self.m[i] / (self.v[i].sqrt() + self.eps);
+        // ponytail: parallel Adam update — each index is independent, so a
+        // plain par_iter_mut over the zipped (m, v, params, grad) removes the
+        // serial pass with no reduction needed.
+        self.m
+            .par_iter_mut()
+            .zip(self.v.par_iter_mut())
+            .zip(params.par_iter_mut())
+            .zip(grad.par_iter())
+            .for_each(|(((m, v), p), g)| {
+                *m = beta1 * *m + (1.0 - beta1) * g;
+                *v = beta2 * *v + (1.0 - beta2) * g * g;
+                *p -= lr_t * *m / (v.sqrt() + eps);
+            });
+    }
+}
+
+// ── Per-point pair adjacency (CSR-style, both directions) ──────────
+
+/// Pair type tag used to select the loss formula in the gradient kernel.
+const PAIR_NEAR: u8 = 0;
+const PAIR_MN: u8 = 1;
+const PAIR_FP: u8 = 2;
+
+/// Build a per-point adjacency list from the three pair lists, with BOTH
+/// directions of every pair represented (point `i` gets an entry for `j`
+/// and point `j` gets an entry for `i`). This lets the gradient be computed
+/// with each point owning exclusively its own output chunk — no write
+/// contention, no reduction buffers — while reproducing exactly the same
+/// per-term contributions the serial loop computed for `i` and for `j`.
+///
+/// Why this is equivalent to the serial pass: for a pair (i, j) the serial
+/// code computes `coeff` from `d2(i, j)` (symmetric in i/j) and does
+/// `grad[i] += coeff * (y_i - y_j)` and `grad[j] -= coeff * (y_i - y_j)`
+/// i.e. `grad[j] += coeff * (y_j - y_i)`. Both updates have the same shape:
+/// "the owning point's contribution is `coeff * (y_self - y_other)`". So
+/// storing `(other, type)` in each point's own adjacency list and evaluating
+/// that same formula from each point's own perspective reproduces the exact
+/// per-pair terms — only the summation order changes (grouped by point
+/// instead of pair-array order), which is the ~1e-6 float noise the task
+/// description calls out.
+fn build_adjacency(
+    n: usize,
+    near_pairs: &[(u32, u32)],
+    mn_pairs: &[(u32, u32)],
+    fp_pairs: &[(u32, u32)],
+) -> (Vec<u32>, Vec<(u32, u8)>) {
+    let groups: [(&[(u32, u32)], u8); 3] =
+        [(near_pairs, PAIR_NEAR), (mn_pairs, PAIR_MN), (fp_pairs, PAIR_FP)];
+
+    let mut degree = vec![0u32; n];
+    for (pairs, _) in groups.iter() {
+        for &(i, j) in *pairs {
+            degree[i as usize] += 1;
+            degree[j as usize] += 1;
         }
     }
+
+    let mut offsets = vec![0u32; n + 1];
+    for i in 0..n {
+        offsets[i + 1] = offsets[i] + degree[i];
+    }
+
+    let mut adj: Vec<(u32, u8)> = vec![(0u32, 0u8); offsets[n] as usize];
+    let mut cursor = offsets.clone();
+    for (pairs, tag) in groups.iter() {
+        for &(i, j) in *pairs {
+            let (ii, jj) = (i as usize, j as usize);
+            adj[cursor[ii] as usize] = (j, *tag);
+            cursor[ii] += 1;
+            adj[cursor[jj] as usize] = (i, *tag);
+            cursor[jj] += 1;
+        }
+    }
+
+    (offsets, adj)
 }
 
 // ── PaCMAP optimization ─────────────────────────────────────────────
@@ -331,6 +401,16 @@ fn pacmap_optimize(
     let inv_mn = if !mn_pairs.is_empty() { 1.0 / mn_pairs.len() as f32 } else { 0.0 };
     let inv_fp = if !fp_pairs.is_empty() { 1.0 / fp_pairs.len() as f32 } else { 0.0 };
 
+    // ponytail: build the per-point (both-directions) adjacency once, outside
+    // the iteration loop, instead of re-deriving anything from the pair lists
+    // every iteration. See build_adjacency's doc comment for why this
+    // reproduces the serial per-pair contributions exactly (just reordered).
+    let (offsets, adj) = build_adjacency(n, near_pairs, mn_pairs, fp_pairs);
+
+    // ponytail: hoist the gradient buffer above the loop; reused via fill(0.0)
+    // instead of reallocating `total` floats every iteration.
+    let mut grad = vec![0.0f32; total];
+
     for iter in 0..n_iters {
         // Dynamic per-phase weights (from PaCMAP paper, Table 2)
         let (w_near, w_mn, w_fp) = if iter < phase1_end {
@@ -345,58 +425,39 @@ fn pacmap_optimize(
             (1.0, 3.0, 1.0)
         };
 
-        let mut grad = vec![0.0f32; total];
+        grad.fill(0.0);
 
-        // ── Near pairs: L_near = d²/(10 + d²) ──
-        // ∂L/∂y_i = 2·10/(10+d²)² · (y_i - y_j)  [attraction]
-        for &(ii, jj) in near_pairs {
-            let i = ii as usize;
-            let j = jj as usize;
-            let d2 = embed_dist_sq(embedding, i, j, nc);
-            let denom = 10.0 + d2;
-            let coeff = w_near * inv_near * 20.0 / (denom * denom);
-
-            for c in 0..nc {
-                let diff = embedding[i * nc + c] - embedding[j * nc + c];
-                let g = coeff * diff;
-                grad[i * nc + c] += g;
-                grad[j * nc + c] -= g;
+        // Each point sums its own attractive (near/mid-near) and repulsive
+        // (further) terms into its own chunk — disjoint chunks, so no write
+        // contention and no per-thread reduction buffers are needed.
+        grad.par_chunks_mut(nc).enumerate().for_each(|(p, chunk)| {
+            let start = offsets[p] as usize;
+            let end = offsets[p + 1] as usize;
+            for &(q, tag) in &adj[start..end] {
+                let q = q as usize;
+                let d2 = embed_dist_sq(embedding, p, q, nc);
+                let coeff = match tag {
+                    PAIR_NEAR => {
+                        // L_near = d²/(10 + d²)
+                        let denom = 10.0 + d2;
+                        w_near * inv_near * 20.0 / (denom * denom)
+                    }
+                    PAIR_MN => {
+                        // L_mn = d²/(10000 + d²)
+                        let denom = 10000.0 + d2;
+                        w_mn * inv_mn * 20000.0 / (denom * denom)
+                    }
+                    _ => {
+                        // L_fp = 1/(1 + d²)
+                        let denom = 1.0 + d2;
+                        w_fp * inv_fp * -2.0 / (denom * denom)
+                    }
+                };
+                for c in 0..nc {
+                    chunk[c] += coeff * (embedding[p * nc + c] - embedding[q * nc + c]);
+                }
             }
-        }
-
-        // ── Mid-near pairs: L_mn = d²/(10000 + d²) ──
-        // ∂L/∂y_i = 2·10000/(10000+d²)² · (y_i - y_j)  [attraction]
-        for &(ii, jj) in mn_pairs {
-            let i = ii as usize;
-            let j = jj as usize;
-            let d2 = embed_dist_sq(embedding, i, j, nc);
-            let denom = 10000.0 + d2;
-            let coeff = w_mn * inv_mn * 20000.0 / (denom * denom);
-
-            for c in 0..nc {
-                let diff = embedding[i * nc + c] - embedding[j * nc + c];
-                let g = coeff * diff;
-                grad[i * nc + c] += g;
-                grad[j * nc + c] -= g;
-            }
-        }
-
-        // ── Further pairs: L_fp = 1/(1 + d²) ──
-        // ∂L/∂y_i = -2/(1+d²)² · (y_i - y_j)  [repulsion]
-        for &(ii, jj) in fp_pairs {
-            let i = ii as usize;
-            let j = jj as usize;
-            let d2 = embed_dist_sq(embedding, i, j, nc);
-            let denom = 1.0 + d2;
-            let coeff = w_fp * inv_fp * -2.0 / (denom * denom);
-
-            for c in 0..nc {
-                let diff = embedding[i * nc + c] - embedding[j * nc + c];
-                let g = coeff * diff;
-                grad[i * nc + c] += g;
-                grad[j * nc + c] -= g;
-            }
-        }
+        });
 
         // Adam update (no aggressive clipping — let Adam handle it)
         adam.step(&grad, lr, embedding);

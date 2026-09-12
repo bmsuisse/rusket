@@ -161,6 +161,7 @@ pub fn hupm_simple(
 #[pyfunction]
 #[pyo3(signature = (items_list, utils_list, min_utility, max_len=None))]
 pub fn hupm_mine_py(
+    py: Python<'_>,
     items_list: Vec<Vec<u32>>,
     utils_list: Vec<Vec<f32>>,
     min_utility: f32,
@@ -172,32 +173,34 @@ pub fn hupm_mine_py(
         ));
     }
 
-    let mut transactions = Vec::with_capacity(items_list.len());
-    for (items, utils) in items_list.into_iter().zip(utils_list.into_iter()) {
-        if items.len() != utils.len() {
-            return Err(pyo3::exceptions::PyValueError::new_err(
-                "Each inner list of items and utils must have the same length",
-            ));
+    py.detach(|| -> PyResult<_> {
+        let mut transactions = Vec::with_capacity(items_list.len());
+        for (items, utils) in items_list.into_iter().zip(utils_list.into_iter()) {
+            if items.len() != utils.len() {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    "Each inner list of items and utils must have the same length",
+                ));
+            }
+
+            let mut pairs: Vec<(u32, f32)> = items.into_iter().zip(utils.into_iter()).collect();
+            pairs.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+            let sorted_items: Vec<u32> = pairs.iter().map(|&(i, _)| i).collect();
+            let sorted_utils: Vec<f32> = pairs.iter().map(|&(_, u)| u).collect();
+
+            transactions.push((sorted_items, sorted_utils));
         }
 
-        let mut pairs: Vec<(u32, f32)> = items.into_iter().zip(utils.into_iter()).collect();
-        pairs.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+        let raw_res = hupm_simple(&transactions, min_utility, max_len);
 
-        let sorted_items: Vec<u32> = pairs.iter().map(|&(i, _)| i).collect();
-        let sorted_utils: Vec<f32> = pairs.iter().map(|&(_, u)| u).collect();
+        let mut utilities = Vec::with_capacity(raw_res.len());
+        let mut patterns = Vec::with_capacity(raw_res.len());
 
-        transactions.push((sorted_items, sorted_utils));
-    }
+        for (util, pat) in raw_res {
+            utilities.push(util);
+            patterns.push(pat);
+        }
 
-    let raw_res = hupm_simple(&transactions, min_utility, max_len);
-
-    let mut utilities = Vec::with_capacity(raw_res.len());
-    let mut patterns = Vec::with_capacity(raw_res.len());
-
-    for (util, pat) in raw_res {
-        utilities.push(util);
-        patterns.push(pat);
-    }
-
-    Ok((utilities, patterns))
+        Ok((utilities, patterns))
+    })
 }

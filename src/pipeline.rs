@@ -217,69 +217,73 @@ pub fn pipeline_batch_recommend<'py>(
     let ep = exclude_indptr.as_slice()?;
     let ex = exclude_indices.as_slice()?;
 
-    // Stage 1: BLAS bulk scoring per retriever (the big speedup!)
-    let all_topk: Vec<Vec<Vec<(i32, f32)>>> = (0..n_retrievers)
-        .map(|m| {
-            bulk_score_and_topk(
-                uf_slices[m],
-                if_slices[m],
-                n_users,
-                n_items_list[m],
-                k_factors_list[m],
-                retrieve_k,
-                ep,
-                ex,
-            )
-        })
-        .collect();
+    let (all_user_ids, all_item_ids, all_scores): (Vec<i32>, Vec<i32>, Vec<f32>) = py.detach(|| {
+        // Stage 1: BLAS bulk scoring per retriever (the big speedup!)
+        let all_topk: Vec<Vec<Vec<(i32, f32)>>> = (0..n_retrievers)
+            .map(|m| {
+                bulk_score_and_topk(
+                    uf_slices[m],
+                    if_slices[m],
+                    n_users,
+                    n_items_list[m],
+                    k_factors_list[m],
+                    retrieve_k,
+                    ep,
+                    ex,
+                )
+            })
+            .collect();
 
-    // Stage 2+3: Merge + Rerank per user (parallel)
-    let results: Vec<Vec<(i32, i32, f32)>> = (0..n_users)
-        .into_par_iter()
-        .map(|user_id| {
-            // Collect candidates from all retrievers for this user
-            let candidates_per_model: Vec<&Vec<(i32, f32)>> =
-                (0..n_retrievers).map(|m| &all_topk[m][user_id]).collect();
+        // Stage 2+3: Merge + Rerank per user (parallel)
+        let results: Vec<Vec<(i32, i32, f32)>> = (0..n_users)
+            .into_par_iter()
+            .map(|user_id| {
+                // Collect candidates from all retrievers for this user
+                let candidates_per_model: Vec<&Vec<(i32, f32)>> =
+                    (0..n_retrievers).map(|m| &all_topk[m][user_id]).collect();
 
-            // Single retriever fast path (skip merge overhead)
-            let mut candidates = if n_retrievers == 1 {
-                all_topk[0][user_id].clone()
-            } else {
-                let refs: Vec<Vec<(i32, f32)>> =
-                    candidates_per_model.into_iter().cloned().collect();
-                merge_candidates(&refs, merge_strategy)
-            };
+                // Single retriever fast path (skip merge overhead)
+                let mut candidates = if n_retrievers == 1 {
+                    all_topk[0][user_id].clone()
+                } else {
+                    let refs: Vec<Vec<(i32, f32)>> =
+                        candidates_per_model.into_iter().cloned().collect();
+                    merge_candidates(&refs, merge_strategy)
+                };
 
-            // Rerank
-            if let (Some(ruf), Some(rif)) = (reranker_uf, reranker_if) {
-                if k_rerank > 0 && user_id * k_rerank + k_rerank <= ruf.len() {
-                    let user_vec = &ruf[user_id * k_rerank..(user_id + 1) * k_rerank];
-                    candidates = rerank_user(&candidates, user_vec, rif, k_rerank, n_reranker_items);
+                // Rerank
+                if let (Some(ruf), Some(rif)) = (reranker_uf, reranker_if) {
+                    if k_rerank > 0 && user_id * k_rerank + k_rerank <= ruf.len() {
+                        let user_vec = &ruf[user_id * k_rerank..(user_id + 1) * k_rerank];
+                        candidates = rerank_user(&candidates, user_vec, rif, k_rerank, n_reranker_items);
+                    }
                 }
+
+                candidates.truncate(top_k);
+
+                candidates
+                    .into_iter()
+                    .map(|(item_id, score)| (user_id as i32, item_id, score))
+                    .collect()
+            })
+            .collect();
+
+        // Flatten
+        let total: usize = results.iter().map(|v| v.len()).sum();
+        let mut all_user_ids = Vec::with_capacity(total);
+        let mut all_item_ids = Vec::with_capacity(total);
+        let mut all_scores = Vec::with_capacity(total);
+
+        for triples in results {
+            for (uid, iid, sc) in triples {
+                all_user_ids.push(uid);
+                all_item_ids.push(iid);
+                all_scores.push(sc);
             }
-
-            candidates.truncate(top_k);
-
-            candidates
-                .into_iter()
-                .map(|(item_id, score)| (user_id as i32, item_id, score))
-                .collect()
-        })
-        .collect();
-
-    // Flatten
-    let total: usize = results.iter().map(|v| v.len()).sum();
-    let mut all_user_ids = Vec::with_capacity(total);
-    let mut all_item_ids = Vec::with_capacity(total);
-    let mut all_scores = Vec::with_capacity(total);
-
-    for triples in results {
-        for (uid, iid, sc) in triples {
-            all_user_ids.push(uid);
-            all_item_ids.push(iid);
-            all_scores.push(sc);
         }
-    }
+
+        (all_user_ids, all_item_ids, all_scores)
+    });
 
     Ok((
         all_user_ids.into_pyarray(py),

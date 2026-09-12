@@ -914,6 +914,59 @@ pub(crate) fn als_train(
     (user_factors, item_factors, global_bias, user_biases, item_biases)
 }
 
+// Applies bias terms + exclusion masking to a raw (unbiased) score row in
+// place, then extracts the top-`n` (id, score) pairs. Shared by the
+// single-user gemv path (`top_n_items`) and the blocked gemm path
+// (`als_recommend_all`) so both stay bit-for-bit identical in tie ordering,
+// bias handling and exclusion semantics.
+fn top_n_from_scores(
+    scores: &mut [f32],
+    n: usize,
+    exc: &[i32],
+    exc_start: usize,
+    exc_end: usize,
+    bias_offset: f32,
+    item_biases: Option<&[f32]>,
+) -> (Vec<i32>, Vec<f32>) {
+    if let Some(ib) = item_biases {
+        for (i, sc) in scores.iter_mut().enumerate() {
+            *sc += bias_offset + ib[i];
+        }
+    } else if bias_offset != 0.0 {
+        for sc in scores.iter_mut() {
+            *sc += bias_offset;
+        }
+    }
+
+    // ponytail: write NEG_INFINITY straight from the exclusion slice instead of
+    // building an AHashSet and doing n_items lookups — |exc| is typically tiny
+    // next to n_items.
+    for &item_id in &exc[exc_start..exc_end] {
+        if let Some(sc) = scores.get_mut(item_id as usize) {
+            *sc = f32::NEG_INFINITY;
+        }
+    }
+
+    let mut scored: Vec<(f32, i32)> = scores
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &sc)| if sc.is_finite() { Some((sc, i as i32)) } else { None })
+        .collect();
+    let take = n.min(scored.len());
+    if take == 0 {
+        return (vec![], vec![]);
+    }
+    scored.select_nth_unstable_by(take.saturating_sub(1), |a, b| {
+        b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    scored.truncate(take);
+    scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    (
+        scored.iter().map(|(_, i)| *i).collect(),
+        scored.iter().map(|(s, _)| *s).collect(),
+    )
+}
+
 pub(crate) fn top_n_items(
     uf: &[f32],
     itf: &[f32],
@@ -940,46 +993,9 @@ pub(crate) fn top_n_items(
         faer::Par::Seq,
     );
 
-    // Add bias terms if present
     let bu = user_biases.map_or(0.0, |b| b[uid]);
     let bias_offset = global_bias + bu;
-    if let Some(ib) = item_biases {
-        for (i, sc) in scores.iter_mut().enumerate() {
-            *sc += bias_offset + ib[i];
-        }
-    } else if bias_offset != 0.0 {
-        for sc in scores.iter_mut() {
-            *sc += bias_offset;
-        }
-    }
-
-    // ponytail: write NEG_INFINITY straight from the exclusion slice instead of
-    // building an AHashSet and doing n_items lookups — |exc| is typically tiny
-    // next to n_items.
-    for &item_id in &exc[exc_start..exc_end] {
-        if let Some(sc) = scores.get_mut(item_id as usize) {
-            *sc = f32::NEG_INFINITY;
-        }
-    }
-
-    let mut scored: Vec<(f32, i32)> = scores
-        .into_iter()
-        .enumerate()
-        .filter_map(|(i, sc)| if sc.is_finite() { Some((sc, i as i32)) } else { None })
-        .collect();
-    let take = n.min(scored.len());
-    if take == 0 {
-        return (vec![], vec![]);
-    }
-    scored.select_nth_unstable_by(take.saturating_sub(1), |a, b| {
-        b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
-    });
-    scored.truncate(take);
-    scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-    (
-        scored.iter().map(|(_, i)| *i).collect(),
-        scored.iter().map(|(s, _)| *s).collect(),
-    )
+    top_n_from_scores(&mut scores, n, exc, exc_start, exc_end, bias_offset, item_biases)
 }
 
 fn top_n_users(
@@ -1229,28 +1245,57 @@ pub fn als_recommend_all<'py>(
     let ub: Option<&[f32]> = user_biases.as_ref().and_then(|b| b.as_slice().ok());
     let ib: Option<&[f32]> = item_biases.as_ref().and_then(|b| b.as_slice().ok());
 
-    // Parallel processing across all users
-    let results: Vec<(Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_users)
-        .into_par_iter()
-        .map(|user_id| {
-            let es = ep[user_id] as usize;
-            let ee = ep[user_id + 1] as usize;
-            let (ids, scores) = top_n_items(uf, itf, user_id, n_items, k, n, ex, es, ee, global_bias, ub, ib);
-            
-            let user_ids = vec![user_id as i32; ids.len()];
-            (user_ids, ids, scores)
-        })
-        .collect();
+    // ponytail: fixed block size, not tuned per-machine — just big enough that
+    // the gemm below is compute-bound instead of memory-bound (see
+    // top_n_from_scores / the module doc for why per-user gemv was slow).
+    const RECOMMEND_BLOCK: usize = 256;
+
+    let item_mat = MatRef::from_row_major_slice(itf, n_items, k);
 
     // Flatten results
     let mut all_user_ids = Vec::with_capacity(n_users * n);
     let mut all_item_ids = Vec::with_capacity(n_users * n);
     let mut all_scores = Vec::with_capacity(n_users * n);
 
-    for (u_ids, i_ids, sc) in results {
-        all_user_ids.extend(u_ids);
-        all_item_ids.extend(i_ids);
-        all_scores.extend(sc);
+    let mut block_start = 0usize;
+    while block_start < n_users {
+        let bsize = RECOMMEND_BLOCK.min(n_users - block_start);
+        let users_block = &uf[block_start * k..(block_start + bsize) * k];
+
+        // One blocked gemm instead of `bsize` memory-bound gemvs: the item
+        // matrix (n_items x k) is streamed once per block rather than once
+        // per user, so it stays cache-resident across the block.
+        let mut scores_block = vec![0.0f32; bsize * n_items];
+        matmul(
+            MatMut::from_row_major_slice_mut(&mut scores_block, bsize, n_items).as_mut(),
+            Accum::Replace,
+            MatRef::from_row_major_slice(users_block, bsize, k),
+            item_mat.transpose(),
+            1.0f32,
+            Par::rayon(0),
+        );
+
+        let results: Vec<(Vec<i32>, Vec<f32>)> = scores_block
+            .par_chunks_mut(n_items)
+            .enumerate()
+            .map(|(local, row)| {
+                let user_id = block_start + local;
+                let es = ep[user_id] as usize;
+                let ee = ep[user_id + 1] as usize;
+                let bu = ub.map_or(0.0, |b| b[user_id]);
+                let bias_offset = global_bias + bu;
+                top_n_from_scores(row, n, ex, es, ee, bias_offset, ib)
+            })
+            .collect();
+
+        for (local, (ids, sc)) in results.into_iter().enumerate() {
+            let user_id = block_start + local;
+            all_user_ids.extend(std::iter::repeat(user_id as i32).take(ids.len()));
+            all_item_ids.extend(ids);
+            all_scores.extend(sc);
+        }
+
+        block_start += bsize;
     }
 
     Ok((

@@ -574,7 +574,7 @@ pub fn fpgrowth_from_dense<'py>(
     }
 
     let flat: &[u8] = arr.as_slice().unwrap();
-    let (supports, offsets, items) = _mine_dense(flat, n_cols, min_count, max_len)?;
+    let (supports, offsets, items) = py.detach(|| _mine_dense(flat, n_cols, min_count, max_len))?;
 
     Ok((
         supports.into_pyarray(py),
@@ -608,7 +608,7 @@ pub fn fpgrowth_from_csr<'py>(
         ));
     }
 
-    let (supports, offsets, items) = _mine_csr(ip, ix, n_cols, min_count, max_len)?;
+    let (supports, offsets, items) = py.detach(|| _mine_csr(ip, ix, n_cols, min_count, max_len))?;
 
     Ok((
         supports.into_pyarray(py),

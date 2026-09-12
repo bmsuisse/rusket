@@ -363,7 +363,8 @@ pub fn nn_descent_build<'py>(
         PyValueError::new_err("Input array must be C-contiguous.")
     })?;
 
-    let (indices, distances) = nn_descent_inner(data_slice, n, d, k, max_iters, delta, seed);
+    let (indices, distances) =
+        py.detach(|| nn_descent_inner(data_slice, n, d, k, max_iters, delta, seed));
 
     let idx_np = PyArray1::from_vec(py, indices)
         .reshape([n, k])

@@ -127,6 +127,8 @@ pub fn pca_fit<'py>(
         pyo3::exceptions::PyValueError::new_err("Input array must be C-contiguous.")
     })?;
 
+    let (components, explained_variance, explained_variance_ratio, singular_values, mean) =
+        py.detach(move || -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
     // ── 1. Compute column means (Parallel) ──────────────────────────────
     let mean_sum = data_slice.par_chunks(2048 * n_features).fold(
         || vec![0.0f64; n_features],
@@ -458,6 +460,9 @@ pub fn pca_fit<'py>(
     // Truncate singular values to top-k only for python return
     singular_values.truncate(k);
 
+    (components, explained_variance, explained_variance_ratio, singular_values, mean)
+    });
+
     // ── 8. Convert to numpy arrays ──────────────────────────────────────
     let components_np = numpy::PyArray1::from_vec(py, components)
         .reshape([k, n_features])
@@ -506,28 +511,32 @@ pub fn pca_transform<'py>(
         pyo3::exceptions::PyValueError::new_err("Components array must be C-contiguous.")
     })?;
 
-    // Result = X * components^T
-    let mut result = vec![0.0f32; n_samples * n_components];
-    gemm(
-        false, true,
-        n_samples, n_components, n_features,
-        1.0, data_s, n_features,
-        comp_s, n_features,
-        0.0, &mut result, n_components,
-    );
+    let result = py.detach(move || {
+        // Result = X * components^T
+        let mut result = vec![0.0f32; n_samples * n_components];
+        gemm(
+            false, true,
+            n_samples, n_components, n_features,
+            1.0, data_s, n_features,
+            comp_s, n_features,
+            0.0, &mut result, n_components,
+        );
 
-    // Subtract mu * W^T from every row
-    let mut mu_proj = vec![0.0f32; n_components];
-    for k in 0..n_components {
-        for p in 0..n_features {
-            mu_proj[k] += mean_s[p] * comp_s[k * n_features + p];
-        }
-    }
-
-    result.par_chunks_mut(n_components).for_each(|res_row| {
+        // Subtract mu * W^T from every row
+        let mut mu_proj = vec![0.0f32; n_components];
         for k in 0..n_components {
-            res_row[k] -= mu_proj[k];
+            for p in 0..n_features {
+                mu_proj[k] += mean_s[p] * comp_s[k * n_features + p];
+            }
         }
+
+        result.par_chunks_mut(n_components).for_each(|res_row| {
+            for k in 0..n_components {
+                res_row[k] -= mu_proj[k];
+            }
+        });
+
+        result
     });
 
     let result_np = numpy::PyArray1::from_vec(py, result)

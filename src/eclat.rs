@@ -133,79 +133,87 @@ pub fn eclat_from_dense(
     }
 
     let flat = array.as_slice().unwrap();
-    let item_count = (0..n_cols)
-        .into_par_iter()
-        .map(|c| {
-            let mut count = 0u64;
-            for r in 0..n_rows {
-                if flat[r * n_cols + c] != 0 {
-                    count += 1;
+
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| {
+        let item_count = (0..n_cols)
+            .into_par_iter()
+            .map(|c| {
+                let mut count = 0u64;
+                for r in 0..n_rows {
+                    if flat[r * n_cols + c] != 0 {
+                        count += 1;
+                    }
                 }
-            }
-            count
-        })
-        .collect::<Vec<u64>>();
+                count
+            })
+            .collect::<Vec<u64>>();
 
-    let (global_to_local, original_items, frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                ))
-            }
-        };
+        let (global_to_local, original_items, frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return None,
+            };
 
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for (r, row) in flat.chunks(n_cols).enumerate() {
-        for &c in &frequent_cols {
-            if row[c] != 0 {
-                let local_id = global_to_local[c];
-                bitsets[local_id as usize].set(r);
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for (r, row) in flat.chunks(n_cols).enumerate() {
+            for &c in &frequent_cols {
+                if row[c] != 0 {
+                    let local_id = global_to_local[c];
+                    bitsets[local_id as usize].set(r);
+                }
             }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results: Vec<(u64, Vec<u32>)> = active_items
-        .par_iter()
-        .enumerate()
-        .flat_map(|(i, (item_a, bs_a))| {
-            let mut sub_results = Vec::new();
-            let count = bs_a.count_ones();
-            if count >= min_count {
-                let iset = vec![*item_a];
-                sub_results.push((count, iset.clone()));
+        let results: Vec<(u64, Vec<u32>)> = active_items
+            .par_iter()
+            .enumerate()
+            .flat_map(|(i, (item_a, bs_a))| {
+                let mut sub_results = Vec::new();
+                let count = bs_a.count_ones();
+                if count >= min_count {
+                    let iset = vec![*item_a];
+                    sub_results.push((count, iset.clone()));
 
-                if max_len.is_none_or(|ml| ml > 1) {
-                    let n_blocks = bs_a.blocks.len();
-                    let mut scratch = BitSet {
-                        blocks: vec![0u128; n_blocks],
-                    };
-                    let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
-                    for (item_b, bs_b) in &active_items[i + 1..] {
-                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
-                        if c >= min_count {
-                            let mut fresh = BitSet {
-                                blocks: vec![0u128; n_blocks],
-                            };
-                            std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, c, fresh));
+                    if max_len.is_none_or(|ml| ml > 1) {
+                        let n_blocks = bs_a.blocks.len();
+                        let mut scratch = BitSet {
+                            blocks: vec![0u128; n_blocks],
+                        };
+                        let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                        for (item_b, bs_b) in &active_items[i + 1..] {
+                            let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                            if c >= min_count {
+                                let mut fresh = BitSet {
+                                    blocks: vec![0u128; n_blocks],
+                                };
+                                std::mem::swap(&mut scratch, &mut fresh);
+                                next_active.push((*item_b, c, fresh));
+                            }
+                        }
+                        if !next_active.is_empty() {
+                            sub_results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
                         }
                     }
-                    if !next_active.is_empty() {
-                        sub_results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
-                    }
                 }
-            }
-            sub_results
-        })
-        .collect();
+                sub_results
+            })
+            .collect();
 
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        Some(flatten_results(results))
+    });
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py).into(),
@@ -235,77 +243,84 @@ pub fn eclat_from_csr(
             vec![].into_pyarray(py).into(),
         ));
     }
-    let mut item_count = vec![0u64; n_cols];
-    for &col in indices {
-        if (col as usize) < n_cols {
-            item_count[col as usize] += 1;
-        }
-    }
-
-    let (global_to_local, original_items, _frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                ))
-            }
-        };
-
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for r in 0..n_rows {
-        let start = indptr[r] as usize;
-        let end = indptr[r + 1] as usize;
-        for &col in &indices[start..end] {
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| {
+        let mut item_count = vec![0u64; n_cols];
+        for &col in indices {
             if (col as usize) < n_cols {
-                let local_id = global_to_local[col as usize];
-                if local_id != u32::MAX {
-                    bitsets[local_id as usize].set(r);
+                item_count[col as usize] += 1;
+            }
+        }
+
+        let (global_to_local, original_items, _frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return None,
+            };
+
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for r in 0..n_rows {
+            let start = indptr[r] as usize;
+            let end = indptr[r + 1] as usize;
+            for &col in &indices[start..end] {
+                if (col as usize) < n_cols {
+                    let local_id = global_to_local[col as usize];
+                    if local_id != u32::MAX {
+                        bitsets[local_id as usize].set(r);
+                    }
                 }
             }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results: Vec<(u64, Vec<u32>)> = active_items
-        .par_iter()
-        .enumerate()
-        .flat_map(|(i, (item_a, bs_a))| {
-            let mut sub_results = Vec::new();
-            let count = bs_a.count_ones();
-            if count >= min_count {
-                let iset = vec![*item_a];
-                sub_results.push((count, iset.clone()));
+        let results: Vec<(u64, Vec<u32>)> = active_items
+            .par_iter()
+            .enumerate()
+            .flat_map(|(i, (item_a, bs_a))| {
+                let mut sub_results = Vec::new();
+                let count = bs_a.count_ones();
+                if count >= min_count {
+                    let iset = vec![*item_a];
+                    sub_results.push((count, iset.clone()));
 
-                if max_len.is_none_or(|ml| ml > 1) {
-                    let n_blocks = bs_a.blocks.len();
-                    let mut scratch = BitSet {
-                        blocks: vec![0u128; n_blocks],
-                    };
-                    let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
-                    for (item_b, bs_b) in &active_items[i + 1..] {
-                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
-                        if c >= min_count {
-                            let mut fresh = BitSet {
-                                blocks: vec![0u128; n_blocks],
-                            };
-                            std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, c, fresh));
+                    if max_len.is_none_or(|ml| ml > 1) {
+                        let n_blocks = bs_a.blocks.len();
+                        let mut scratch = BitSet {
+                            blocks: vec![0u128; n_blocks],
+                        };
+                        let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                        for (item_b, bs_b) in &active_items[i + 1..] {
+                            let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                            if c >= min_count {
+                                let mut fresh = BitSet {
+                                    blocks: vec![0u128; n_blocks],
+                                };
+                                std::mem::swap(&mut scratch, &mut fresh);
+                                next_active.push((*item_b, c, fresh));
+                            }
+                        }
+                        if !next_active.is_empty() {
+                            sub_results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
                         }
                     }
-                    if !next_active.is_empty() {
-                        sub_results.extend(eclat_mine(&iset, &next_active, min_count, max_len));
-                    }
                 }
-            }
-            sub_results
-        })
-        .collect();
+                sub_results
+            })
+            .collect();
 
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        Some(flatten_results(results))
+    });
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py).into(),

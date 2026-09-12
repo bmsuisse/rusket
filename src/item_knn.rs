@@ -149,7 +149,10 @@ pub fn itemknn_top_k<'a>(
     data: PyReadonlyArray1<'a, f32>,
     k: usize,
 ) -> PyResult<(Bound<'a, PyArray1<i64>>, Bound<'a, PyArray1<i32>>, Bound<'a, PyArray1<f32>>)> {
-    let (ip, ix, dt) = prune_top_k(indptr.as_slice()?, indices.as_slice()?, data.as_slice()?, k);
+    let ip_s = indptr.as_slice()?;
+    let ix_s = indices.as_slice()?;
+    let dt_s = data.as_slice()?;
+    let (ip, ix, dt) = py.detach(|| prune_top_k(ip_s, ix_s, dt_s, k));
     Ok((ip.into_pyarray(py), ix.into_pyarray(py), dt.into_pyarray(py)))
 }
 
@@ -182,8 +185,10 @@ pub fn itemknn_recommend_items<'py>(
     let es = ep[user_id] as usize;
     let ee = ep[user_id + 1] as usize;
     
-    let (ids, scores) = knn_top_n_items(
-        w_ip, w_ix, w_dt, u_ip, u_ix, u_data, user_id, n_items, n, ex, es, ee,
-    );
+    let (ids, scores) = py.detach(|| {
+        knn_top_n_items(
+            w_ip, w_ix, w_dt, u_ip, u_ix, u_data, user_id, n_items, n, ex, es, ee,
+        )
+    });
     Ok((ids.into_pyarray(py), scores.into_pyarray(py)))
 }

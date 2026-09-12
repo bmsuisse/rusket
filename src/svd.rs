@@ -1,3 +1,4 @@
+use faer::{linalg::matmul::matmul, Accum, MatMut, MatRef, Par};
 use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -326,6 +327,49 @@ fn top_n_items(
     )
 }
 
+// Applies bias terms + exclusion masking to a raw (dot-product-only) score
+// row in place, then extracts the top-`n` (id, score) pairs. Used by the
+// blocked-gemm path in `svd_recommend_all` — mirrors `top_n_items`'s bias
+// and exclusion handling exactly so tie ordering and masking stay identical.
+fn top_n_from_scores(
+    scores: &mut [f32],
+    n: usize,
+    exc: &[i32],
+    exc_start: usize,
+    exc_end: usize,
+    bias_offset: f32,
+    ib: &[f32],
+) -> (Vec<i32>, Vec<f32>) {
+    for (i, sc) in scores.iter_mut().enumerate() {
+        *sc += bias_offset + ib[i];
+    }
+    // ponytail: mask exclusions directly instead of an AHashSet + per-item lookup —
+    // |exc| is typically tiny next to n_items.
+    for &item_id in &exc[exc_start..exc_end] {
+        if let Some(sc) = scores.get_mut(item_id as usize) {
+            *sc = f32::NEG_INFINITY;
+        }
+    }
+    let mut scored: Vec<(f32, i32)> = scores
+        .iter()
+        .enumerate()
+        .filter_map(|(i, &sc)| if sc.is_finite() { Some((sc, i as i32)) } else { None })
+        .collect();
+    let take = n.min(scored.len());
+    if take == 0 {
+        return (vec![], vec![]);
+    }
+    scored.select_nth_unstable_by(take.saturating_sub(1), |a, b| {
+        b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    scored.truncate(take);
+    scored.sort_unstable_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    (
+        scored.iter().map(|(_, i)| *i).collect(),
+        scored.iter().map(|(s, _)| *s).collect(),
+    )
+}
+
 fn top_n_users(
     uf: &[f32],
     itf: &[f32],
@@ -494,26 +538,55 @@ pub fn svd_recommend_all<'py>(
     let ep = exclude_indptr.as_slice()?;
     let ex = exclude_indices.as_slice()?;
 
-    let results: Vec<(Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_users)
-        .into_par_iter()
-        .map(|user_id| {
-            let es = ep[user_id] as usize;
-            let ee = ep[user_id + 1] as usize;
-            let (ids, scores) =
-                top_n_items(uf, itf, ub, ib, global_mean, user_id, n_items, k, n, ex, es, ee);
-            let user_ids = vec![user_id as i32; ids.len()];
-            (user_ids, ids, scores)
-        })
-        .collect();
+    // ponytail: fixed block size, not tuned per-machine — big enough that the
+    // gemm below is compute-bound instead of the old memory-bound per-user
+    // scalar-dot loop over the whole item matrix.
+    const RECOMMEND_BLOCK: usize = 256;
+
+    let item_mat = MatRef::from_row_major_slice(itf, n_items, k);
 
     let mut all_user_ids = Vec::with_capacity(n_users * n);
     let mut all_item_ids = Vec::with_capacity(n_users * n);
     let mut all_scores = Vec::with_capacity(n_users * n);
 
-    for (u_ids, i_ids, sc) in results {
-        all_user_ids.extend(u_ids);
-        all_item_ids.extend(i_ids);
-        all_scores.extend(sc);
+    let mut block_start = 0usize;
+    while block_start < n_users {
+        let bsize = RECOMMEND_BLOCK.min(n_users - block_start);
+        let users_block = &uf[block_start * k..(block_start + bsize) * k];
+
+        // One blocked gemm instead of `bsize` memory-bound dot-product scans:
+        // the item matrix (n_items x k) is streamed once per block rather
+        // than once per user, so it stays cache-resident across the block.
+        let mut scores_block = vec![0.0f32; bsize * n_items];
+        matmul(
+            MatMut::from_row_major_slice_mut(&mut scores_block, bsize, n_items).as_mut(),
+            Accum::Replace,
+            MatRef::from_row_major_slice(users_block, bsize, k),
+            item_mat.transpose(),
+            1.0f32,
+            Par::rayon(0),
+        );
+
+        let results: Vec<(Vec<i32>, Vec<f32>)> = scores_block
+            .par_chunks_mut(n_items)
+            .enumerate()
+            .map(|(local, row)| {
+                let user_id = block_start + local;
+                let es = ep[user_id] as usize;
+                let ee = ep[user_id + 1] as usize;
+                let bias_offset = global_mean + ub[user_id];
+                top_n_from_scores(row, n, ex, es, ee, bias_offset, ib)
+            })
+            .collect();
+
+        for (local, (ids, sc)) in results.into_iter().enumerate() {
+            let user_id = block_start + local;
+            all_user_ids.extend(std::iter::repeat(user_id as i32).take(ids.len()));
+            all_item_ids.extend(ids);
+            all_scores.extend(sc);
+        }
+
+        block_start += bsize;
     }
 
     Ok((
@@ -1122,30 +1195,69 @@ pub fn svdpp_recommend_all<'py>(
     let ip = interact_indptr.as_slice()?;
     let ix = interact_indices.as_slice()?;
 
-    let results: Vec<(Vec<i32>, Vec<i32>, Vec<f32>)> = (0..n_users)
-        .into_par_iter()
-        .map(|user_id| {
-            let es = ep[user_id] as usize;
-            let ee = ep[user_id + 1] as usize;
+    // Precompute the effective user vector u_vec = p_u + |N(u)|^{-0.5} Σ y_j
+    // for every user up front. Once that's materialized as a dense (n_users
+    // x k) buffer, scoring is structurally identical to plain SVD/ALS, so we
+    // reuse the same blocked-gemm path instead of a per-user scalar-dot scan
+    // over the whole item matrix.
+    let mut u_vec_buf = vec![0.0f32; n_users * k];
+    u_vec_buf
+        .par_chunks_mut(k)
+        .enumerate()
+        .for_each(|(user_id, out)| {
+            let pu = &uf[user_id * k..(user_id + 1) * k];
             let is_ = ip[user_id] as usize;
             let ie = ip[user_id + 1] as usize;
             let user_rated: Vec<usize> = ix[is_..ie].iter().map(|&j| j as usize).collect();
-            let (ids, scores) = svdpp_top_n_items(
-                uf, itf, y, ub, ib, global_mean, user_id, n_items, k, n, &user_rated, ex, es, ee,
-            );
-            let user_ids = vec![user_id as i32; ids.len()];
-            (user_ids, ids, scores)
-        })
-        .collect();
+            out.copy_from_slice(&svdpp_user_vec(pu, y, &user_rated, k));
+        });
+
+    // ponytail: fixed block size, not tuned per-machine — big enough that the
+    // gemm below is compute-bound instead of the old memory-bound per-user
+    // scalar-dot loop over the whole item matrix.
+    const RECOMMEND_BLOCK: usize = 256;
+
+    let item_mat = MatRef::from_row_major_slice(itf, n_items, k);
 
     let mut all_user_ids = Vec::with_capacity(n_users * n);
     let mut all_item_ids = Vec::with_capacity(n_users * n);
     let mut all_scores = Vec::with_capacity(n_users * n);
 
-    for (u_ids, i_ids, sc) in results {
-        all_user_ids.extend(u_ids);
-        all_item_ids.extend(i_ids);
-        all_scores.extend(sc);
+    let mut block_start = 0usize;
+    while block_start < n_users {
+        let bsize = RECOMMEND_BLOCK.min(n_users - block_start);
+        let users_block = &u_vec_buf[block_start * k..(block_start + bsize) * k];
+
+        let mut scores_block = vec![0.0f32; bsize * n_items];
+        matmul(
+            MatMut::from_row_major_slice_mut(&mut scores_block, bsize, n_items).as_mut(),
+            Accum::Replace,
+            MatRef::from_row_major_slice(users_block, bsize, k),
+            item_mat.transpose(),
+            1.0f32,
+            Par::rayon(0),
+        );
+
+        let results: Vec<(Vec<i32>, Vec<f32>)> = scores_block
+            .par_chunks_mut(n_items)
+            .enumerate()
+            .map(|(local, row)| {
+                let user_id = block_start + local;
+                let es = ep[user_id] as usize;
+                let ee = ep[user_id + 1] as usize;
+                let bias_offset = global_mean + ub[user_id];
+                top_n_from_scores(row, n, ex, es, ee, bias_offset, ib)
+            })
+            .collect();
+
+        for (local, (ids, sc)) in results.into_iter().enumerate() {
+            let user_id = block_start + local;
+            all_user_ids.extend(std::iter::repeat(user_id as i32).take(ids.len()));
+            all_item_ids.extend(ids);
+            all_scores.extend(sc);
+        }
+
+        block_start += bsize;
     }
 
     Ok((

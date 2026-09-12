@@ -123,6 +123,7 @@ fn prefixspan_mine(
 #[pyfunction]
 #[pyo3(signature = (indptr, indices, min_count, max_len=None))]
 pub fn prefixspan_mine_py<'py>(
+    py: Python<'py>,
     indptr: PyReadonlyArray1<'py, usize>,
     indices: PyReadonlyArray1<'py, u32>,
     min_count: usize,
@@ -131,23 +132,25 @@ pub fn prefixspan_mine_py<'py>(
     let indptr_slice = indptr.as_slice()?;
     let indices_slice = indices.as_slice()?;
 
-    let mut sequences = Vec::with_capacity(indptr_slice.len().saturating_sub(1));
-    for i in 0..indptr_slice.len().saturating_sub(1) {
-        let start = indptr_slice[i];
-        let end = indptr_slice[i + 1];
-        let seq = indices_slice[start..end].to_vec();
-        sequences.push(seq);
-    }
+    py.detach(|| {
+        let mut sequences = Vec::with_capacity(indptr_slice.len().saturating_sub(1));
+        for i in 0..indptr_slice.len().saturating_sub(1) {
+            let start = indptr_slice[i];
+            let end = indptr_slice[i + 1];
+            let seq = indices_slice[start..end].to_vec();
+            sequences.push(seq);
+        }
 
-    let raw_res = prefixspan_simple(&sequences, min_count, max_len);
+        let raw_res = prefixspan_simple(&sequences, min_count, max_len);
 
-    let mut supports = Vec::with_capacity(raw_res.len());
-    let mut patterns = Vec::with_capacity(raw_res.len());
+        let mut supports = Vec::with_capacity(raw_res.len());
+        let mut patterns = Vec::with_capacity(raw_res.len());
 
-    for (sup, pat) in raw_res {
-        supports.push(sup);
-        patterns.push(pat);
-    }
+        for (sup, pat) in raw_res {
+            supports.push(sup);
+            patterns.push(pat);
+        }
 
-    Ok((supports, patterns))
+        Ok((supports, patterns))
+    })
 }

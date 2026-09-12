@@ -1,3 +1,4 @@
+use faer::{linalg::matmul::matmul, Accum, MatRef, Par};
 use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArray1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -7,12 +8,12 @@ use rayon::prelude::*;
 fn spmm_csr_dense(
     indptr: &[i64],
     indices: &[i32],
-    data: &[f64],
+    data: &[f32],
     n_rows: usize,
-    b: &[f64],
+    b: &[f32],
     b_cols: usize,
-) -> Vec<f64> {
-    let mut out = vec![0.0f64; n_rows * b_cols];
+) -> Vec<f32> {
+    let mut out = vec![0.0f32; n_rows * b_cols];
     out.par_chunks_mut(b_cols)
         .enumerate()
         .for_each(|(row, out_row)| {
@@ -30,91 +31,30 @@ fn spmm_csr_dense(
     out
 }
 
-/// Sparse CSR^T × dense matrix multiply: result = A^T (m×n sparse.T → n×m) × B (n×k dense)
-/// i.e. columns of A dot rows of B.
-/// Output: row-major flat Vec of length m*k
-fn spmm_csrt_dense(
-    indptr: &[i64],
-    indices: &[i32],
-    data: &[f64],
-    n_cols: usize,
-    b: &[f64],
-    b_cols: usize,
-) -> Vec<f64> {
-    // Parallel accumulation: each thread gets a partial buffer
-    let n_rows = indptr.len() - 1;
-    let num_threads = rayon::current_num_threads();
-    let chunk_size = (n_rows + num_threads - 1) / num_threads;
-
-    let partials: Vec<Vec<f64>> = (0..num_threads)
-        .into_par_iter()
-        .map(|t| {
-            let mut local = vec![0.0f64; n_cols * b_cols];
-            let row_start = t * chunk_size;
-            let row_end = (row_start + chunk_size).min(n_rows);
-            for row in row_start..row_end {
-                let start = indptr[row] as usize;
-                let end = indptr[row + 1] as usize;
-                let b_row = &b[row * b_cols..(row + 1) * b_cols];
-                for idx in start..end {
-                    let col = indices[idx] as usize;
-                    let val = data[idx];
-                    let local_row = &mut local[col * b_cols..(col + 1) * b_cols];
-                    for j in 0..b_cols {
-                        local_row[j] += val * b_row[j];
-                    }
-                }
-            }
-            local
-        })
-        .collect();
-
-    // Sum partials
-    let mut out = vec![0.0f64; n_cols * b_cols];
-    for partial in &partials {
-        for (o, p) in out.iter_mut().zip(partial.iter()) {
-            *o += *p;
+/// Gram matrix: A^T A for row-major A (n_rows × k) → (k × k) row-major.
+fn gram(a: &[f32], n_rows: usize, k: usize) -> Vec<f32> {
+    let y = MatRef::from_row_major_slice(a, n_rows, k);
+    let yt = y.transpose();
+    let mut g = faer::Mat::<f32>::zeros(k, k);
+    matmul(g.as_mut(), Accum::Replace, yt, y, 1.0f32, Par::rayon(0));
+    let mut out = vec![0.0f32; k * k];
+    for i in 0..k {
+        for j in 0..k {
+            out[i * k + j] = g[(i, j)];
         }
     }
     out
 }
 
-/// Dense matrix multiply: C = A^T (k×n) × B (k×m) = out(n×m)
-/// A is row-major (n_rows×n), B is row-major (n_rows×m)
-/// Result: row-major (n×m)
-fn dense_ata(a: &[f64], n_rows: usize, n: usize) -> Vec<f64> {
-    // A^T A where A is (n_rows × n) → result is (n × n)
-    let mut out = vec![0.0f64; n * n];
-    // Use parallel rows
-    out.par_chunks_mut(n)
-        .enumerate()
-        .for_each(|(i, out_row)| {
-            for j in 0..n {
-                let mut s = 0.0f64;
-                for r in 0..n_rows {
-                    s += a[r * n + i] * a[r * n + j];
-                }
-                out_row[j] = s;
-            }
-        });
-    out
-}
-
-/// Dense matmul: C(n×p) = A(n×m) × B(m×p), all row-major flat
-fn dense_mm(a: &[f64], b: &[f64], n: usize, m: usize, p: usize) -> Vec<f64> {
-    let mut out = vec![0.0f64; n * p];
-    out.par_chunks_mut(p)
-        .enumerate()
-        .for_each(|(i, out_row)| {
-            let a_row = &a[i * m..(i + 1) * m];
-            for k in 0..m {
-                let b_row = &b[k * p..(k + 1) * p];
-                let a_val = a_row[k];
-                for j in 0..p {
-                    out_row[j] += a_val * b_row[j];
-                }
-            }
-        });
+/// Dense matmul: C(n×p) = A(n×m) × B(m×p), all row-major flat.
+fn mm(a: &[f32], n: usize, m: usize, b: &[f32], p: usize) -> Vec<f32> {
+    let am = MatRef::from_row_major_slice(a, n, m);
+    let bm = MatRef::from_row_major_slice(b, m, p);
+    let mut out = vec![0.0f32; n * p];
+    {
+        let mut cm = faer::MatMut::from_row_major_slice_mut(&mut out, n, p);
+        matmul(cm.as_mut(), Accum::Replace, am, bm, 1.0f32, Par::rayon(0));
+    }
     out
 }
 
@@ -137,9 +77,9 @@ impl XorShift64 {
         self.state
     }
 
-    fn next_float(&mut self) -> f64 {
+    fn next_float(&mut self) -> f32 {
         let v = self.next() & 0xFFFFFF;
-        v as f64 / 0xFFFFFF as f64
+        v as f32 / 0xFFFFFF as f32
     }
 }
 
@@ -148,32 +88,40 @@ impl XorShift64 {
 /// Decomposes R ≈ W × H where W(n_users×k), H(k×n_items).
 /// Uses the standard Lee & Seung (2001) update rules with L2 regularization.
 ///
+/// `h_t` is stored as H^T (n_items × k, row-major) throughout — this is the
+/// canonical layout every consumer (numerator_h, numerator_w, output) wants,
+/// so no transposes are needed per iteration.
+///
 /// Returns (W as f32 user_factors, H^T as f32 item_factors)
 pub(crate) fn nmf_train(
     indptr: &[i64],
     indices: &[i32],
-    data: &[f64],
+    data: &[f32],
     n_users: usize,
     n_items: usize,
     k: usize,
     iterations: usize,
-    regularization: f64,
+    regularization: f32,
     seed: u64,
     verbose: bool,
 ) -> (Vec<f32>, Vec<f32>) {
-    let eps = 1e-12f64;
+    let eps = 1e-7f32;
 
     let mut rng = XorShift64::new(seed);
 
-    // Initialise W (n_users × k) and H (k × n_items) with small positive values
-    let mut w = vec![0.0f64; n_users * k];
+    // Initialise W (n_users × k) and H^T (n_items × k) with small positive values
+    let mut w = vec![0.0f32; n_users * k];
     for v in w.iter_mut() {
         *v = (rng.next_float() * 0.01 + eps).abs();
     }
-    let mut h = vec![0.0f64; k * n_items];
-    for v in h.iter_mut() {
+    let mut h_t = vec![0.0f32; n_items * k];
+    for v in h_t.iter_mut() {
         *v = (rng.next_float() * 0.01 + eps).abs();
     }
+
+    // Transpose the CSR matrix once, up front, instead of re-deriving V^T
+    // (via per-thread partial buffers) on every iteration.
+    let (t_indptr, t_indices, t_data) = crate::als::csr_transpose(indptr, indices, data, n_users, n_items);
 
     let start_time = std::time::Instant::now();
 
@@ -188,69 +136,41 @@ pub(crate) fn nmf_train(
     for it in 0..iterations {
         let iter_start = std::time::Instant::now();
 
-        // --- Update H ---
-        // numerator = W^T × V  (k × n_items)
-        // W is (n_users × k), V is sparse CSR (n_users × n_items)
-        // W^T V = transpose of W (k × n_users) × V (n_users × n_items, sparse)
-        // Equivalent to V^T W → transpose → but easier to do directly
-        // W^T is (k × n_users), we need (k × n_items)
-        // For each column j of V (each item), sum W[u,:] * V[u,j] for all u that rated j
-        // Rather: iterate CSR rows and accumulate.
+        // --- Update H (stored as h_t = H^T, n_items × k) ---
+        // numerator_h = V^T × W  (n_items × k) = W^T V transposed, computed
+        // directly from the precomputed CSR^T so no per-iteration transpose
+        // (of V or of the result) is needed.
+        let numerator_h = spmm_csr_dense(&t_indptr, &t_indices, &t_data, n_items, &w, k);
 
-        // W^T V: for each user u, for each item j in u's row: h_num[:, j] += W[u, :] * val
-        let wt_v = spmm_csrt_dense(indptr, indices, data, n_items, &w, k);
-        // wt_v is (n_items × k) but we need (k × n_items)
-        // Actually spmm_csrt_dense returns (n_cols × b_cols) = (n_items × k)
-        // We need the transpose of that → (k × n_items)
-        // Let's transpose it
-        let mut numerator_h = vec![0.0f64; k * n_items];
-        for item in 0..n_items {
-            for f in 0..k {
-                numerator_h[f * n_items + item] = wt_v[item * k + f];
-            }
-        }
+        // denominator = (W^T W × H)^T = H^T × (W^T W), since W^T W is symmetric.
+        let wtw = gram(&w, n_users, k);
+        let denom_h = mm(&h_t, n_items, k, &wtw, k);
 
-        // denominator = W^T W × H + reg * H
-        // W^T W is (k × k)
-        let wtw = dense_ata(&w, n_users, k);
-        // W^T W × H: (k×k) × (k×n_items) = (k×n_items)
-        let wtw_h = dense_mm(&wtw, &h, k, k, n_items);
-
-        // Apply update: H *= numerator / (denominator + eps)
-        h.par_iter_mut()
-            .enumerate()
-            .for_each(|(idx, h_val)| {
-                let denom = wtw_h[idx] + regularization * (*h_val) + eps;
-                *h_val *= numerator_h[idx] / denom;
+        // Apply update: H^T *= numerator / (denominator + eps)
+        h_t.par_iter_mut()
+            .zip(numerator_h.par_iter())
+            .zip(denom_h.par_iter())
+            .for_each(|((h_val, &num), &den)| {
+                let denom = den + regularization * (*h_val) + eps;
+                *h_val *= num / denom;
             });
 
         // --- Update W ---
-        // numerator = V × H^T  (n_users × k)
-        // V is sparse CSR (n_users × n_items), H is (k × n_items), H^T is (n_items × k)
-        // We need V × H^T where H^T(item, f) = H(f, item) = h[f * n_items + item]
-        // Build H^T explicitly
-        let mut ht = vec![0.0f64; n_items * k];
-        for f in 0..k {
-            for item in 0..n_items {
-                ht[item * k + f] = h[f * n_items + item];
-            }
-        }
+        // numerator_w = V × H^T  (n_users × k); h_t IS H^T already, so this
+        // is a direct sparse × dense product with no transpose built first.
+        let numerator_w = spmm_csr_dense(indptr, indices, data, n_users, &h_t, k);
 
-        // V × H^T: sparse (n_users × n_items) × dense (n_items × k) = (n_users × k)
-        let numerator_w = spmm_csr_dense(indptr, indices, data, n_users, &ht, k);
-
-        // denominator = W × H × H^T + reg * W = W × (H H^T) + reg * W
-        // H H^T: (k × n_items) × (n_items × k) = (k × k)
-        let hht = dense_mm(&h, &ht, k, n_items, k);
-        // W × HH^T: (n_users × k) × (k × k) = (n_users × k)
-        let w_hht = dense_mm(&w, &hht, n_users, k, k);
+        // denominator = W × (H H^T) + reg * W; H H^T = h_t^T h_t (a gramian).
+        let hht = gram(&h_t, n_items, k);
+        let w_hht = mm(&w, n_users, k, &hht, k);
 
         // Apply update: W *= numerator / (denominator + eps)
         w.par_iter_mut()
-            .enumerate()
-            .for_each(|(idx, w_val)| {
-                let denom = w_hht[idx] + regularization * (*w_val) + eps;
-                *w_val *= numerator_w[idx] / denom;
+            .zip(numerator_w.par_iter())
+            .zip(w_hht.par_iter())
+            .for_each(|((w_val, &num), &den)| {
+                let denom = den + regularization * (*w_val) + eps;
+                *w_val *= num / denom;
             });
 
         if verbose {
@@ -270,17 +190,7 @@ pub(crate) fn nmf_train(
         println!("  Total time: {:.1}s", start_time.elapsed().as_secs_f64());
     }
 
-    // Convert to f32
-    let user_factors: Vec<f32> = w.iter().map(|&v| v as f32).collect();
-    // H is (k × n_items), we want item_factors as (n_items × k)
-    let mut item_factors = vec![0.0f32; n_items * k];
-    for f in 0..k {
-        for item in 0..n_items {
-            item_factors[item * k + f] = h[f * n_items + item] as f32;
-        }
-    }
-
-    (user_factors, item_factors)
+    (w, h_t)
 }
 
 #[pyfunction]
@@ -301,9 +211,23 @@ pub fn nmf_fit<'py>(
     let ip = indptr.as_slice()?;
     let ix = indices.as_slice()?;
     let dt = data.as_slice()?;
+    // ponytail: cast f64 -> f32 once up front rather than threading a dtype
+    // generic through the whole module; the Python-side API keeps passing f64.
+    let dt_f32: Vec<f32> = dt.iter().map(|&v| v as f32).collect();
 
     let (uf, itf) = py.detach(|| {
-        nmf_train(ip, ix, dt, n_users, n_items, factors, iterations, regularization, seed, verbose)
+        nmf_train(
+            ip,
+            ix,
+            &dt_f32,
+            n_users,
+            n_items,
+            factors,
+            iterations,
+            regularization as f32,
+            seed,
+            verbose,
+        )
     });
 
     let ua = PyArray1::from_vec(py, uf);

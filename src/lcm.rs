@@ -194,45 +194,53 @@ pub fn lcm_from_dense<'py>(
     }
 
     let flat = array.as_slice().unwrap();
-    let item_count = (0..n_cols)
-        .into_par_iter()
-        .map(|c| {
-            let mut count = 0u64;
-            for r in 0..n_rows {
-                if unsafe { *flat.get_unchecked(r * n_cols + c) } != 0 {
-                    count += 1;
+
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| -> PyResult<_> {
+        let item_count = (0..n_cols)
+            .into_par_iter()
+            .map(|c| {
+                let mut count = 0u64;
+                for r in 0..n_rows {
+                    if unsafe { *flat.get_unchecked(r * n_cols + c) } != 0 {
+                        count += 1;
+                    }
+                }
+                count
+            })
+            .collect::<Vec<u64>>();
+
+        let (global_to_local, original_items, frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return Ok(None),
+            };
+
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for (r, row) in flat.chunks(n_cols).enumerate() {
+            for &c in &frequent_cols {
+                if unsafe { *row.get_unchecked(c) } != 0 {
+                    let local_id = global_to_local[c];
+                    bitsets[local_id as usize].set(r);
                 }
             }
-            count
-        })
-        .collect::<Vec<u64>>();
-
-    let (global_to_local, original_items, frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    Vec::<u64>::new().into_pyarray(py),
-                    Vec::<u32>::new().into_pyarray(py),
-                    Vec::<u32>::new().into_pyarray(py),
-                ))
-            }
-        };
-
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for (r, row) in flat.chunks(n_cols).enumerate() {
-        for &c in &frequent_cols {
-            if unsafe { *row.get_unchecked(c) } != 0 {
-                let local_id = global_to_local[c];
-                bitsets[local_id as usize].set(r);
-            }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results = mine_itemsets_lcm(active_items, global_to_local, min_count, max_len, n_rows)?;
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        let results = mine_itemsets_lcm(active_items, global_to_local, min_count, max_len, n_rows)?;
+        Ok(Some(flatten_results(results)))
+    })?;
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                Vec::<u64>::new().into_pyarray(py),
+                Vec::<u32>::new().into_pyarray(py),
+                Vec::<u32>::new().into_pyarray(py),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py),
@@ -267,62 +275,69 @@ pub fn lcm_from_csr<'py>(
         ));
     }
     
-    let item_count: Vec<u64> = (0..n_rows)
-        .into_par_iter()
-        .fold(
-            || vec![0u64; n_cols],
-            |mut acc, row| {
-                let start = indptr[row] as usize;
-                let end = indptr[row + 1] as usize;
-                for &col in &indices[start..end] {
-                    let c = col as usize;
-                    if c < n_cols {
-                        unsafe { *acc.get_unchecked_mut(c) += 1; }
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| -> PyResult<_> {
+        let item_count: Vec<u64> = (0..n_rows)
+            .into_par_iter()
+            .fold(
+                || vec![0u64; n_cols],
+                |mut acc, row| {
+                    let start = indptr[row] as usize;
+                    let end = indptr[row + 1] as usize;
+                    for &col in &indices[start..end] {
+                        let c = col as usize;
+                        if c < n_cols {
+                            unsafe { *acc.get_unchecked_mut(c) += 1; }
+                        }
                     }
-                }
-                acc
-            },
-        )
-        .reduce(
-            || vec![0u64; n_cols],
-            |mut a, b| {
-                for (x, y) in a.iter_mut().zip(b.iter()) {
-                    *x += y;
-                }
-                a
-            },
-        );
+                    acc
+                },
+            )
+            .reduce(
+                || vec![0u64; n_cols],
+                |mut a, b| {
+                    for (x, y) in a.iter_mut().zip(b.iter()) {
+                        *x += y;
+                    }
+                    a
+                },
+            );
 
-    let (global_to_local, original_items, _frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    Vec::<u64>::new().into_pyarray(py),
-                    Vec::<u32>::new().into_pyarray(py),
-                    Vec::<u32>::new().into_pyarray(py),
-                ))
-            }
-        };
+        let (global_to_local, original_items, _frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return Ok(None),
+            };
 
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for r in 0..n_rows {
-        let start = indptr[r] as usize;
-        let end = indptr[r + 1] as usize;
-        for &col in &indices[start..end] {
-            if (col as usize) < n_cols {
-                let local_id = global_to_local[col as usize];
-                if local_id != u32::MAX {
-                    bitsets[local_id as usize].set(r);
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for r in 0..n_rows {
+            let start = indptr[r] as usize;
+            let end = indptr[r + 1] as usize;
+            for &col in &indices[start..end] {
+                if (col as usize) < n_cols {
+                    let local_id = global_to_local[col as usize];
+                    if local_id != u32::MAX {
+                        bitsets[local_id as usize].set(r);
+                    }
                 }
             }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results = mine_itemsets_lcm(active_items, global_to_local, min_count, max_len, n_rows)?;
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        let results = mine_itemsets_lcm(active_items, global_to_local, min_count, max_len, n_rows)?;
+        Ok(Some(flatten_results(results)))
+    })?;
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                Vec::<u64>::new().into_pyarray(py),
+                Vec::<u32>::new().into_pyarray(py),
+                Vec::<u32>::new().into_pyarray(py),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py),

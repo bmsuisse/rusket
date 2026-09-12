@@ -131,128 +131,136 @@ pub fn negfin_from_dense(
     }
 
     let flat = array.as_slice().unwrap();
-    let item_count = (0..n_cols)
-        .into_par_iter()
-        .map(|c| {
-            let mut count = 0u64;
-            for r in 0..n_rows {
-                if flat[r * n_cols + c] != 0 {
-                    count += 1;
+
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| {
+        let item_count = (0..n_cols)
+            .into_par_iter()
+            .map(|c| {
+                let mut count = 0u64;
+                for r in 0..n_rows {
+                    if flat[r * n_cols + c] != 0 {
+                        count += 1;
+                    }
                 }
-            }
-            count
-        })
-        .collect::<Vec<u64>>();
+                count
+            })
+            .collect::<Vec<u64>>();
 
-    let (global_to_local, original_items, frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                ))
-            }
-        };
+        let (global_to_local, original_items, frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return None,
+            };
 
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for (r, row) in flat.chunks(n_cols).enumerate() {
-        for &c in &frequent_cols {
-            if row[c] != 0 {
-                let local_id = global_to_local[c];
-                bitsets[local_id as usize].set(r);
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for (r, row) in flat.chunks(n_cols).enumerate() {
+            for &c in &frequent_cols {
+                if row[c] != 0 {
+                    let local_id = global_to_local[c];
+                    bitsets[local_id as usize].set(r);
+                }
             }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results: Vec<(u64, Vec<u32>)> = active_items
-        .par_iter()
-        .enumerate()
-        .flat_map(|(i, (item_a, bs_a))| {
-            let mut sub_results = Vec::new();
-            let count = bs_a.count_ones();
-            if count >= min_count {
-                let mut promoted = Vec::new();
-                let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
-                let n_blocks = bs_a.blocks.len();
-                let mut scratch = BitSet {
-                    blocks: vec![0u128; n_blocks],
-                };
+        let results: Vec<(u64, Vec<u32>)> = active_items
+            .par_iter()
+            .enumerate()
+            .flat_map(|(i, (item_a, bs_a))| {
+                let mut sub_results = Vec::new();
+                let count = bs_a.count_ones();
+                if count >= min_count {
+                    let mut promoted = Vec::new();
+                    let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                    let n_blocks = bs_a.blocks.len();
+                    let mut scratch = BitSet {
+                        blocks: vec![0u128; n_blocks],
+                    };
 
-                for (item_b, bs_b) in &active_items[i + 1..] {
-                    let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
-                    if c >= min_count {
-                        if c == count {
-                            promoted.push(*item_b);
-                        } else {
-                            let mut fresh = BitSet {
-                                blocks: vec![0u128; n_blocks],
-                            };
-                            std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, c, fresh));
+                    for (item_b, bs_b) in &active_items[i + 1..] {
+                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                        if c >= min_count {
+                            if c == count {
+                                promoted.push(*item_b);
+                            } else {
+                                let mut fresh = BitSet {
+                                    blocks: vec![0u128; n_blocks],
+                                };
+                                std::mem::swap(&mut scratch, &mut fresh);
+                                next_active.push((*item_b, c, fresh));
+                            }
                         }
                     }
-                }
 
-                let base_iset = vec![*item_a];
-                let n_promoted = promoted.len();
-                let n_combinations = 1u64.checked_shl(n_promoted as u32).unwrap_or(u64::MAX);
+                    let base_iset = vec![*item_a];
+                    let n_promoted = promoted.len();
+                    let n_combinations = 1u64.checked_shl(n_promoted as u32).unwrap_or(u64::MAX);
 
-                for mask in 0..n_combinations {
-                    let mut combo = base_iset.clone();
-                    let mut valid = true;
-                    for (p_idx, &p_item) in promoted.iter().enumerate() {
-                        if (mask & (1u64 << p_idx)) != 0 {
-                            combo.push(p_item);
+                    for mask in 0..n_combinations {
+                        let mut combo = base_iset.clone();
+                        let mut valid = true;
+                        for (p_idx, &p_item) in promoted.iter().enumerate() {
+                            if (mask & (1u64 << p_idx)) != 0 {
+                                combo.push(p_item);
+                            }
+                        }
+                        if let Some(ml) = max_len {
+                            if combo.len() > ml {
+                                valid = false;
+                            }
+                        }
+                        if valid {
+                            sub_results.push((count, combo));
                         }
                     }
-                    if let Some(ml) = max_len {
-                        if combo.len() > ml {
-                            valid = false;
-                        }
-                    }
-                    if valid {
-                        sub_results.push((count, combo));
-                    }
-                }
 
-                if max_len.is_none() || 1 < max_len.unwrap() {
-                    if !next_active.is_empty() {
-                        let rec_results = negfin_mine(&base_iset, &next_active, min_count, max_len);
-                        if n_promoted == 0 {
-                            sub_results.extend(rec_results);
-                        } else {
-                            for (rc, s_iset) in rec_results {
-                                for mask in 0..n_combinations {
-                                    let mut combo = s_iset.clone();
-                                    let mut valid = true;
-                                    for (p_idx, &p_item) in promoted.iter().enumerate() {
-                                        if (mask & (1u64 << p_idx)) != 0 {
-                                            combo.push(p_item);
+                    if max_len.is_none() || 1 < max_len.unwrap() {
+                        if !next_active.is_empty() {
+                            let rec_results = negfin_mine(&base_iset, &next_active, min_count, max_len);
+                            if n_promoted == 0 {
+                                sub_results.extend(rec_results);
+                            } else {
+                                for (rc, s_iset) in rec_results {
+                                    for mask in 0..n_combinations {
+                                        let mut combo = s_iset.clone();
+                                        let mut valid = true;
+                                        for (p_idx, &p_item) in promoted.iter().enumerate() {
+                                            if (mask & (1u64 << p_idx)) != 0 {
+                                                combo.push(p_item);
+                                            }
                                         }
-                                    }
-                                    if let Some(ml) = max_len {
-                                        if combo.len() > ml {
-                                            valid = false;
+                                        if let Some(ml) = max_len {
+                                            if combo.len() > ml {
+                                                valid = false;
+                                            }
                                         }
-                                    }
-                                    if valid {
-                                        sub_results.push((rc, combo));
+                                        if valid {
+                                            sub_results.push((rc, combo));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-            sub_results
-        })
-        .collect();
+                sub_results
+            })
+            .collect();
 
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        Some(flatten_results(results))
+    });
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py).into(),
@@ -282,126 +290,133 @@ pub fn negfin_from_csr(
             vec![].into_pyarray(py).into(),
         ));
     }
-    let mut item_count = vec![0u64; n_cols];
-    for &col in indices {
-        if (col as usize) < n_cols {
-            item_count[col as usize] += 1;
-        }
-    }
-
-    let (global_to_local, original_items, _frequent_cols, frequent_len) =
-        match process_item_counts(item_count, min_count, n_cols) {
-            Some(v) => v,
-            None => {
-                return Ok((
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                    vec![].into_pyarray(py).into(),
-                ))
-            }
-        };
-
-    let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
-    for r in 0..n_rows {
-        let start = indptr[r] as usize;
-        let end = indptr[r + 1] as usize;
-        for &col in &indices[start..end] {
+    let computed: Option<(Vec<u64>, Vec<u32>, Vec<u32>)> = py.detach(|| {
+        let mut item_count = vec![0u64; n_cols];
+        for &col in indices {
             if (col as usize) < n_cols {
-                let local_id = global_to_local[col as usize];
-                if local_id != u32::MAX {
-                    bitsets[local_id as usize].set(r);
+                item_count[col as usize] += 1;
+            }
+        }
+
+        let (global_to_local, original_items, _frequent_cols, frequent_len) =
+            match process_item_counts(item_count, min_count, n_cols) {
+                Some(v) => v,
+                None => return None,
+            };
+
+        let mut bitsets = vec![BitSet::new(n_rows); frequent_len];
+        for r in 0..n_rows {
+            let start = indptr[r] as usize;
+            let end = indptr[r + 1] as usize;
+            for &col in &indices[start..end] {
+                if (col as usize) < n_cols {
+                    let local_id = global_to_local[col as usize];
+                    if local_id != u32::MAX {
+                        bitsets[local_id as usize].set(r);
+                    }
                 }
             }
         }
-    }
 
-    let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
+        let active_items: Vec<(u32, BitSet)> = original_items.into_iter().zip(bitsets).collect();
 
-    let results: Vec<(u64, Vec<u32>)> = active_items
-        .par_iter()
-        .enumerate()
-        .flat_map(|(i, (item_a, bs_a))| {
-            let mut sub_results = Vec::new();
-            let count = bs_a.count_ones();
-            if count >= min_count {
-                let mut promoted = Vec::new();
-                let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
-                let n_blocks = bs_a.blocks.len();
-                let mut scratch = BitSet {
-                    blocks: vec![0u128; n_blocks],
-                };
+        let results: Vec<(u64, Vec<u32>)> = active_items
+            .par_iter()
+            .enumerate()
+            .flat_map(|(i, (item_a, bs_a))| {
+                let mut sub_results = Vec::new();
+                let count = bs_a.count_ones();
+                if count >= min_count {
+                    let mut promoted = Vec::new();
+                    let mut next_active = Vec::with_capacity(active_items.len() - i - 1);
+                    let n_blocks = bs_a.blocks.len();
+                    let mut scratch = BitSet {
+                        blocks: vec![0u128; n_blocks],
+                    };
 
-                for (item_b, bs_b) in &active_items[i + 1..] {
-                    let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
-                    if c >= min_count {
-                        if c == count {
-                            promoted.push(*item_b);
-                        } else {
-                            let mut fresh = BitSet {
-                                blocks: vec![0u128; n_blocks],
-                            };
-                            std::mem::swap(&mut scratch, &mut fresh);
-                            next_active.push((*item_b, c, fresh));
+                    for (item_b, bs_b) in &active_items[i + 1..] {
+                        let c = bs_a.intersect_count_into(bs_b, &mut scratch, min_count);
+                        if c >= min_count {
+                            if c == count {
+                                promoted.push(*item_b);
+                            } else {
+                                let mut fresh = BitSet {
+                                    blocks: vec![0u128; n_blocks],
+                                };
+                                std::mem::swap(&mut scratch, &mut fresh);
+                                next_active.push((*item_b, c, fresh));
+                            }
                         }
                     }
-                }
 
-                let base_iset = vec![*item_a];
-                let n_promoted = promoted.len();
-                let n_combinations = 1u64.checked_shl(n_promoted as u32).unwrap_or(u64::MAX);
+                    let base_iset = vec![*item_a];
+                    let n_promoted = promoted.len();
+                    let n_combinations = 1u64.checked_shl(n_promoted as u32).unwrap_or(u64::MAX);
 
-                for mask in 0..n_combinations {
-                    let mut combo = base_iset.clone();
-                    let mut valid = true;
-                    for (p_idx, &p_item) in promoted.iter().enumerate() {
-                        if (mask & (1u64 << p_idx)) != 0 {
-                            combo.push(p_item);
+                    for mask in 0..n_combinations {
+                        let mut combo = base_iset.clone();
+                        let mut valid = true;
+                        for (p_idx, &p_item) in promoted.iter().enumerate() {
+                            if (mask & (1u64 << p_idx)) != 0 {
+                                combo.push(p_item);
+                            }
+                        }
+                        if let Some(ml) = max_len {
+                            if combo.len() > ml {
+                                valid = false;
+                            }
+                        }
+                        if valid {
+                            sub_results.push((count, combo));
                         }
                     }
-                    if let Some(ml) = max_len {
-                        if combo.len() > ml {
-                            valid = false;
-                        }
-                    }
-                    if valid {
-                        sub_results.push((count, combo));
-                    }
-                }
 
-                if max_len.is_none() || 1 < max_len.unwrap() {
-                    if !next_active.is_empty() {
-                        let rec_results = negfin_mine(&base_iset, &next_active, min_count, max_len);
-                        if n_promoted == 0 {
-                            sub_results.extend(rec_results);
-                        } else {
-                            for (rc, s_iset) in rec_results {
-                                for mask in 0..n_combinations {
-                                    let mut combo = s_iset.clone();
-                                    let mut valid = true;
-                                    for (p_idx, &p_item) in promoted.iter().enumerate() {
-                                        if (mask & (1u64 << p_idx)) != 0 {
-                                            combo.push(p_item);
+                    if max_len.is_none() || 1 < max_len.unwrap() {
+                        if !next_active.is_empty() {
+                            let rec_results = negfin_mine(&base_iset, &next_active, min_count, max_len);
+                            if n_promoted == 0 {
+                                sub_results.extend(rec_results);
+                            } else {
+                                for (rc, s_iset) in rec_results {
+                                    for mask in 0..n_combinations {
+                                        let mut combo = s_iset.clone();
+                                        let mut valid = true;
+                                        for (p_idx, &p_item) in promoted.iter().enumerate() {
+                                            if (mask & (1u64 << p_idx)) != 0 {
+                                                combo.push(p_item);
+                                            }
                                         }
-                                    }
-                                    if let Some(ml) = max_len {
-                                        if combo.len() > ml {
-                                            valid = false;
+                                        if let Some(ml) = max_len {
+                                            if combo.len() > ml {
+                                                valid = false;
+                                            }
                                         }
-                                    }
-                                    if valid {
-                                        sub_results.push((rc, combo));
+                                        if valid {
+                                            sub_results.push((rc, combo));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-            sub_results
-        })
-        .collect();
+                sub_results
+            })
+            .collect();
 
-    let (flat_supports, flat_offsets, flat_items) = flatten_results(results);
+        Some(flatten_results(results))
+    });
+
+    let (flat_supports, flat_offsets, flat_items) = match computed {
+        Some(v) => v,
+        None => {
+            return Ok((
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+                vec![].into_pyarray(py).into(),
+            ))
+        }
+    };
 
     Ok((
         flat_supports.into_pyarray(py).into(),

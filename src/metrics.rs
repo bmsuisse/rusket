@@ -66,22 +66,22 @@ pub(crate) fn ndcg_raw(actual: &[i32], predicted: &[i32], k: usize) -> f32 {
 // ── PyO3 wrappers ──────────────────────────────────────────────────
 
 #[pyfunction]
-pub fn precision_at_k(actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
-    precision_raw(&actual, &predicted, k)
+pub fn precision_at_k(py: Python<'_>, actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
+    py.detach(|| precision_raw(&actual, &predicted, k))
 }
 
 #[pyfunction]
-pub fn recall_at_k(actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
-    recall_raw(&actual, &predicted, k)
+pub fn recall_at_k(py: Python<'_>, actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
+    py.detach(|| recall_raw(&actual, &predicted, k))
 }
 
 #[pyfunction]
-pub fn hit_rate_at_k(actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
-    hit_rate_raw(&actual, &predicted, k)
+pub fn hit_rate_at_k(py: Python<'_>, actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
+    py.detach(|| hit_rate_raw(&actual, &predicted, k))
 }
 
 #[pyfunction]
-pub fn ndcg_at_k(actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
-    ndcg_raw(&actual, &predicted, k)
+pub fn ndcg_at_k(py: Python<'_>, actual: Vec<i32>, predicted: Vec<i32>, k: usize) -> f32 {
+    py.detach(|| ndcg_raw(&actual, &predicted, k))
 }
 

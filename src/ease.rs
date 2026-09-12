@@ -125,38 +125,84 @@ fn ease_compute_weights(
     let n_users = indptr.len() - 1;
 
     // Step 1: Build dense Gram matrix G = X^T X  (n_items × n_items)
-    // For each user u, accumulate outer products of their item vectors
-    let num_threads = rayon::current_num_threads();
-    let chunk_size = (n_users + num_threads - 1) / num_threads;
-
-    let partials: Vec<Vec<f64>> = (0..num_threads)
-        .into_par_iter()
-        .map(|t| {
-            let mut local = vec![0.0f64; n_items * n_items];
-            let row_start = t * chunk_size;
-            let row_end = (row_start + chunk_size).min(n_users);
-            for u in row_start..row_end {
-                let start = indptr[u] as usize;
-                let end = indptr[u + 1] as usize;
-                let u_ix = &indices[start..end];
-                let u_data = &data[start..end];
-                // Outer product contribution
-                for (idx_a, &val_a) in u_ix.iter().zip(u_data.iter()) {
-                    let a = *idx_a as usize;
-                    for (idx_b, &val_b) in u_ix.iter().zip(u_data.iter()) {
-                        let b = *idx_b as usize;
-                        local[a * n_items + b] += (val_a as f64) * (val_b as f64);
-                    }
-                }
+    //
+    // PERF FIX: the previous approach gave every rayon thread its own dense
+    // `n_items * n_items * 8` byte f64 buffer and reduced them serially at the
+    // end. At 20k items that is ~3.2 GB *per thread*, which was the practical
+    // ceiling on how many items EASE could handle. It also computed both
+    // (a, b) and (b, a) for every co-occurring pair even though G = X^T X is
+    // symmetric, doing 2x the necessary work.
+    //
+    // Fix: parallelize over item ROWS of a single shared `gram` buffer
+    // instead of over users with per-thread buffers. Row `a`'s slice
+    // `gram[a*n_items .. (a+1)*n_items]` is written by exactly one rayon task
+    // (via `par_chunks_mut(n_items)`), so no two tasks ever touch the same
+    // memory — no locks, no per-thread copies, no reduction pass. For row
+    // `a` we only need: which users rated item `a`, and for each such user,
+    // the rest of their item vector (to accumulate cross terms). That is a
+    // CSC (item -> users) lookup joined against the existing CSR (user ->
+    // items) structure. We only write `b >= a` (upper triangle, diagonal
+    // included), which halves the outer-product work; the lower triangle is
+    // filled by mirroring afterwards in one O(n^2) pass.
+    //
+    // CORRECTNESS: gram[a,b] = sum over users u of val_a(u) * val_b(u) for
+    // all u that rated both a and b. Fixing row a and iterating exactly the
+    // users who rated a (from the CSC), then for each such user iterating
+    // their *entire* item row (from the CSR) and keeping only b >= a,
+    // enumerates precisely those (u, b) pairs — nothing added or dropped
+    // relative to the original full double loop, just reordered and half of
+    // it deferred to the mirror step. Diagonal entries are naturally
+    // included because b >= a allows b == a.
+    let mut item_indptr = vec![0i64; n_items + 1];
+    for &it in indices {
+        item_indptr[it as usize + 1] += 1;
+    }
+    for i in 0..n_items {
+        item_indptr[i + 1] += item_indptr[i];
+    }
+    let nnz = indices.len();
+    let mut item_indices = vec![0i32; nnz];
+    let mut item_data = vec![0.0f32; nnz];
+    {
+        let mut cursor = item_indptr.clone();
+        for u in 0..n_users {
+            let start = indptr[u] as usize;
+            let end = indptr[u + 1] as usize;
+            for k in start..end {
+                let it = indices[k] as usize;
+                let pos = cursor[it] as usize;
+                item_indices[pos] = u as i32;
+                item_data[pos] = data[k];
+                cursor[it] += 1;
             }
-            local
-        })
-        .collect();
+        }
+    }
 
     let mut gram = vec![0.0f64; n_items * n_items];
-    for partial in &partials {
-        for (g, p) in gram.iter_mut().zip(partial.iter()) {
-            *g += *p;
+    gram.par_chunks_mut(n_items).enumerate().for_each(|(a, row)| {
+        let istart = item_indptr[a] as usize;
+        let iend = item_indptr[a + 1] as usize;
+        for k in istart..iend {
+            let u = item_indices[k] as usize;
+            let val_a = item_data[k] as f64;
+            let ustart = indptr[u] as usize;
+            let uend = indptr[u + 1] as usize;
+            for m in ustart..uend {
+                let b = indices[m] as usize;
+                if b >= a {
+                    row[b] += val_a * (data[m] as f64);
+                }
+            }
+        }
+    });
+
+    // Mirror the upper triangle (b >= a, just computed) into the lower
+    // triangle. Single O(n^2) serial pass — cheap relative to the Gram
+    // build/Cholesky steps, and simple enough to be obviously correct.
+    for a in 0..n_items {
+        for b in (a + 1)..n_items {
+            let v = gram[a * n_items + b];
+            gram[b * n_items + a] = v;
         }
     }
 
@@ -174,17 +220,39 @@ fn ease_compute_weights(
     let mut p_mat = faer::Mat::<f64>::identity(n_items, n_items);
     llt.solve_in_place(p_mat.as_mut());
 
-    // Step 4: Compute B = P / (-diag(P)), zero diagonal
-    let mut b = vec![0.0f32; n_items * n_items];
-    for i in 0..n_items {
-        let diag_val = p_mat[(i, i)];
-        let neg_diag = -diag_val;
-        for j in 0..n_items {
-            if i == j {
-                b[i * n_items + j] = 0.0;
+    // Step 4: Compute B = P / (-diag(P)), zero diagonal.
+    //
+    // PERF FIX: this was a serial loop over `i` (rows of the row-major output
+    // `b`) with `j` innermost reading `p_mat[(i, j)]`. faer's `Mat` is
+    // column-major, so fixing `i` and varying `j` strides through memory by a
+    // full column (`n_items` elements) on every read — the opposite of what
+    // the storage layout wants, and it was serial to boot.
+    //
+    // Fix: compute into a column-major scratch buffer `b_col` (same layout
+    // as `p_mat`) in parallel via `par_chunks_mut(n_items)` over its columns
+    // — column `j` is `b_col[j*n_items .. (j+1)*n_items]`, one task per
+    // column, disjoint memory, and `p_mat[(i, j)]` for fixed `j` varying `i`
+    // is now a contiguous read. Then transpose `b_col` into the final
+    // row-major `b` (the layout `ease_fit` reshapes into a numpy array) in a
+    // single O(n^2) pass, mirroring the same pattern used for the Gram
+    // mirror above.
+    let neg_diag: Vec<f64> = (0..n_items).map(|i| -p_mat[(i, i)]).collect();
+
+    let mut b_col = vec![0.0f32; n_items * n_items];
+    b_col.par_chunks_mut(n_items).enumerate().for_each(|(j, col)| {
+        for (i, slot) in col.iter_mut().enumerate() {
+            *slot = if i == j {
+                0.0
             } else {
-                b[i * n_items + j] = (p_mat[(i, j)] / neg_diag) as f32;
-            }
+                (p_mat[(i, j)] / neg_diag[i]) as f32
+            };
+        }
+    });
+
+    let mut b = vec![0.0f32; n_items * n_items];
+    for j in 0..n_items {
+        for i in 0..n_items {
+            b[i * n_items + j] = b_col[j * n_items + i];
         }
     }
 
