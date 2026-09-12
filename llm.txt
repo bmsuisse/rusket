@@ -2753,6 +2753,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+### ⚡ Performance
+
+- broad hot-path optimizations across miners, recommenders and the Python layer
+
+### 📦 Miscellaneous
+
+- auto-format code with Ruff [skip ci]
+
 ### 🐛 Bug Fixes
 
 - correct broken PrefixSpan import path in Spark integration
@@ -2762,11 +2770,9 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
-
-### 📦 Miscellaneous
-
 - auto-format code with Ruff [skip ci]
 - auto-format code with Ruff [skip ci]
+- bump version to 0.1.94
 
 ### 🔧 Refactoring
 
