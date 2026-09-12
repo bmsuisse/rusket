@@ -141,7 +141,9 @@ def test_item_knn_fused_gram_matches_old_scipy_path(method: str) -> None:
             # than scipy's gram, so equal-in-exact-arithmetic scores can differ
             # in the last f32 ulps.
             slack = 1e-4 * max(abs(cutoff), 1.0)
-            assert all(v >= cutoff - slack for v in new_pairs.values()), f"row {row} selected a worse-than-cutoff neighbour"
+            assert all(v >= cutoff - slack for v in new_pairs.values()), (
+                f"row {row} selected a worse-than-cutoff neighbour"
+            )
         # Any id present in BOTH must agree on its score.
         for idx in set(old_pairs) & set(new_pairs):
             assert new_pairs[idx] == pytest.approx(old_pairs[idx], rel=1e-4, abs=1e-5), (
