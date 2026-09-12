@@ -154,6 +154,34 @@ uv run pytest tests/test_benchmark.py -v -s
 
 ---
 
+## Recommender Benchmarks: rusket vs `implicit` (ALS)
+
+> **Measured on real production data** (38,467 users × 46,560 items, 3,831,114 interactions) on a **36-core AMD EPYC 74F3 Databricks single-node cluster**. Leave-one-out holdout; the identical numpy evaluator is applied to both libraries' factor matrices.
+
+| Model | Time | HR@10 | NDCG@10 |
+|---|:---:|:---:|:---:|
+| `implicit` ALS (factors=256, 15 iterations) | 556.3 s | 0.1299 | 0.0720 |
+| **rusket ALS**, same config | **5.4 s** | 0.1301 | 0.0721 |
+
+rusket ALS at the same settings is **~105×** faster than `implicit` on this dataset/hardware, with equal or better ranking quality.
+
+At `factors=256, iterations=100` — a real production config — rusket took **33.9 s** where `implicit` took **5479.8 s** (**~162×**, same hardware and dataset). ALS quality on this dataset plateaus at ~20–30 outer iterations; 100 iterations buys nothing beyond that point.
+
+### `batch_recommend()` vs. a hand-rolled Python loop
+
+Replacing a hand-written chunked-matmul + top-k Python loop with `ALS.batch_recommend()` (same hardware/dataset as above):
+
+| Workload | Before | After |
+|---|:---:|:---:|
+| Customer × article scoring | 9.6 s | **1.8 s** (byte-identical top-20 sets) |
+| Customer × customer similarity | 7.9 s | **1.4 s** |
+
+### Import time
+
+`import rusket` takes **~0.06 s** now that heavy dependencies are imported lazily, down from ~0.73 s before that change.
+
+---
+
 ## Benchmark vs PySpark
 
 PySpark is the industry standard for large-scale recommendation workloads. While `rusket` runs strictly single-machine (utilizing Rust Rayon threading), it relies on native memory and avoids the JVM serialization overhead, resulting in massive speedups over PySpark local mode.

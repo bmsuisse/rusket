@@ -94,6 +94,17 @@ recommendations = als.batch_recommend(n=20, exclude_seen=True, format="spark")
 recommendations.write.format("delta").mode("overwrite").saveAsTable("gold_layer.cross_sell_predictions")
 ```
 
+> **Excluding more than the training matrix:** `exclude_seen` only suppresses items in the
+> matrix the model was fitted on. If the set to suppress is wider — e.g. "everything this
+> customer has ever bought **or been quoted**" — pass an explicit `exclude` mask instead
+> (it takes precedence over `exclude_seen`):
+>
+> ```python
+> # `bought_or_quoted` is a (n_users, n_items) sparse matrix in the model's
+> # internal index space, wider than what `als` was trained on.
+> recommendations = als.batch_recommend(n=20, exclude=bought_or_quoted, format="spark")
+> ```
+
 ## 6. Business Value: "Potential" Clustering
 
 Using Databricks SQL or DataFrame APIs, we can categorize these recommendations into actionable tiers for email marketing queues (e.g. High / Medium / Low potential):

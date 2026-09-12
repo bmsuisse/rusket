@@ -3,7 +3,13 @@ import pandas as pd
 import pytest
 
 from rusket import ALS, evaluate
-from rusket._rusket import hit_rate_at_k, ndcg_at_k, precision_at_k, recall_at_k  # type: ignore
+from rusket._rusket import (  # type: ignore
+    hit_rate_at_k,
+    metrics_batch,
+    ndcg_at_k,
+    precision_at_k,
+    recall_at_k,
+)
 
 
 def test_rust_metrics():
@@ -211,3 +217,60 @@ def test_novelty_at_k():
 
     assert novelty_at_k([], item_popularity, total_users) == 0.0
     assert novelty_at_k(all_pred, item_popularity, 0) == 0.0
+
+
+def test_metrics_batch_matches_per_user_functions():
+    """metrics_batch must be numerically identical to calling the per-user
+    ndcg_at_k/hit_rate_at_k/precision_at_k/recall_at_k functions in a loop,
+    including edge cases: a user with zero relevant items, a user with
+    fewer than k predictions, and duplicate predictions."""
+    k = 4
+
+    all_actual = [
+        [1, 2, 3],  # normal case
+        [],  # zero relevant items
+        [4, 5],  # fewer predictions than k
+        [6],  # duplicate predictions
+    ]
+    all_pred = [
+        [1, 5, 3, 7],
+        [1, 2, 3],
+        [4],
+        [6, 6, 6, 7],
+    ]
+
+    # ── Reference: existing per-user Vec<i32> functions, called in a loop ──
+    expected_ndcg = [ndcg_at_k(a, p, k) for a, p in zip(all_actual, all_pred, strict=True)]
+    expected_hr = [hit_rate_at_k(a, p, k) for a, p in zip(all_actual, all_pred, strict=True)]
+    expected_precision = [precision_at_k(a, p, k) for a, p in zip(all_actual, all_pred, strict=True)]
+    expected_recall = [recall_at_k(a, p, k) for a, p in zip(all_actual, all_pred, strict=True)]
+
+    # ── Batched path ──
+    n_users = len(all_actual)
+    actual_indptr = np.zeros(n_users + 1, dtype=np.int64)
+    for idx, actual in enumerate(all_actual):
+        actual_indptr[idx + 1] = actual_indptr[idx] + len(actual)
+    actual_flat = np.fromiter(
+        (item for actual in all_actual for item in actual),
+        dtype=np.int32,
+        count=int(actual_indptr[-1]),
+    )
+    pred_arr = np.full((n_users, k), -1, dtype=np.int32)
+    for idx, pred in enumerate(all_pred):
+        pred_arr[idx, : len(pred)] = pred
+
+    ndcg, hit_rate, precision, recall = metrics_batch(actual_indptr, actual_flat, pred_arr, k)
+
+    assert np.allclose(ndcg, expected_ndcg, atol=1e-6)
+    assert np.allclose(hit_rate, expected_hr, atol=1e-6)
+    assert np.allclose(precision, expected_precision, atol=1e-6)
+    assert np.allclose(recall, expected_recall, atol=1e-6)
+
+    # ── Sanity: the zero-relevant-items user contributes exactly 0 everywhere ──
+    assert ndcg[1] == 0.0
+    assert hit_rate[1] == 0.0
+    assert precision[1] == 0.0
+    assert recall[1] == 0.0
+
+    # ── Sanity: mean matches what evaluate() would report ──
+    assert np.isclose(float(np.mean(ndcg)), sum(expected_ndcg) / n_users, atol=1e-6)

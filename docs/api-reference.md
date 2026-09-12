@@ -921,7 +921,7 @@ Implicit ALS collaborative filtering model.
 ```python
 from rusket.als import ALS
 
-ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int' = 10, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, **kwargs: 'Any') -> 'None'
+ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, iterations: 'int' = 15, seed: 'int' = 42, verbose: 'int' = 0, cg_iters: 'int | None' = None, use_cholesky: 'bool' = False, use_eals: 'bool' = False, eals_iters: 'int' = 1, anderson_m: 'int' = 0, popularity_weighting: 'str' = 'none', use_biases: 'bool' = False, alpha_view: 'float' = 10.0, view_target: 'float' = 0.5, use_cuda: 'bool | None' = None, **kwargs: 'Any') -> 'None'
 ```
 
 **Parameters**
@@ -933,11 +933,16 @@ ALS(factors: 'int' = 64, regularization: 'float' = 0.01, alpha: 'float' = 40.0, 
 | alpha | float | Confidence scaling: ``confidence = 1 + alpha * r``. |
 | iterations | int | Number of ALS outer iterations. |
 | seed | int | Random seed. |
-| cg_iters | int | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``).  Reduce to 3 for very large datasets. |
+| cg_iters | int, optional | Conjugate Gradient iterations per user/item solve (ignored when ``use_cholesky=True``). Defaults to **5**. Each outer iteration warm-starts CG from the previous iteration's factors, so only a few inner steps are needed to track the moving solution. Measured on 3.8M real interactions (38k users x 47k items, factors=256, 15 outer iterations), NDCG@10 by `cg_iters`: 3 → .0696, 5 → .0721, 8 → .0717, 15 → .0716 — i.e. converged by 5 and flat after it; the same holds at factors 32/64/128. Raising it only costs time. |
 | use_cholesky | bool | Use a direct Cholesky solve instead of iterative CG. Exact solution; faster when users have many interactions relative to ``factors``. |
 | use_eals | bool | Use element-wise ALS (eALS). Usually faster than Cholesky/CG and less memory intensive. |
 | eals_iters | int | Number of inner iterations for eALS (default 1). |
 | anderson_m | int | History window for **Anderson Acceleration** of the outer ALS loop (default 0 = disabled).  Recommended value: **5**.  ALS is a fixed-point iteration ``(U,V) → F(U,V)``.  Anderson mixing extrapolates over the last ``m`` residuals to reach the fixed point faster, typically reducing the number of outer iterations by 30–50 % at identical recommendation quality::  # Baseline: 15 iterations model = ALS(iterations=15, cg_iters=3)  # Anderson-accelerated: 10 iterations, ~2.5× faster, same quality model = ALS(iterations=10, cg_iters=3, anderson_m=5)  Memory overhead: ``m`` copies of the full ``(U ∥ V)`` matrix (~57 MB per copy at 25M ratings, k=64). |
+| popularity_weighting | str | Weighting scheme for missing data in **eALS**. Options: ``"none"`` (uniform, default), ``"sqrt"``, ``"log"``, ``"linear"``. Only used when ``use_eals=True``. |
+| use_biases | bool | If True, learn global bias (μ), user biases (b_u), and item biases (b_i) so that prediction becomes ``μ + b_u + b_i + w_u · h_i``. |
+| alpha_view | float | Confidence scaling for **view** interactions in VALS mode. Pass ``view_matrix`` to ``fit()`` to enable. Default 10.0. |
+| view_target | float | Target value for view interactions (between 0.0 and 1.0). Purchases always target 1.0. Default 0.5. |
+| use_cuda | bool | If True, use CUDA acceleration (CuPy or PyTorch) for batch recommendation. Falls back to CPU if no CUDA backend found. Default False. |
 
 **Examples**
 
@@ -954,14 +959,56 @@ Fold in a new user without retraining the entire model matrix:
 >>> # `latent_factors` is a 1D array of length `factors=8`
 ```
 
+#### `ALS.from_factors`
+
+Build a scoring-only ALS from factor matrices computed elsewhere.
+
+Training and scoring are often separate jobs: one fits the model and persists the
+factors (a Delta table, a feature store, a parquet file), another loads them later
+to score. Without this, that second job has no way to reach `batch_recommend` and
+ends up re-implementing the blocked top-N in Python.
+
+The returned model supports scoring (`batch_recommend`, `recommend_items`,
+`similar_items`) but not `fit` — there is no interaction matrix behind it, so pass
+`exclude=` to `batch_recommend` if items need suppressing.
+
+```python
+from rusket.als import ALS
+
+ALS.from_factors(user_factors: 'Any', item_factors: 'Any', *, user_labels: 'Any' = None, item_labels: 'Any' = None, global_bias: 'float' = 0.0, user_biases: 'Any' = None, item_biases: 'Any' = None) -> 'ALS'
+```
+
+**Parameters**
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| user_factors, item_factors | array-like | `(n_users, factors)` and `(n_items, factors)`, row-major. |
+| user_labels, item_labels | array-like, optional | External ids, so results come back in the caller's id space instead of internal indices. |
+| global_bias, user_biases, item_biases | optional | Bias terms, if the original model was fitted with them. |
+
+**Examples**
+
+```python
+>>> import numpy as np
+>>> from rusket import ALS
+>>> user_factors = np.random.rand(3, 8).astype("float32")
+>>> item_factors = np.random.rand(5, 8).astype("float32")
+>>> customer_sks = ["c1", "c2", "c3"]
+>>> article_sks = ["a1", "a2", "a3", "a4", "a5"]
+>>> model = ALS.from_factors(user_factors, item_factors, user_labels=customer_sks, item_labels=article_sks)
+>>> recs = model.batch_recommend(n=2, format="pandas")
+```
+
+---
+
 #### `ALS.batch_recommend`
 
 Top-N items for all users efficiently computed in parallel.
 
 ```python
-from rusket.als import ALS.batch_recommend
+from rusket.als import ALS
 
-ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars') -> 'Any'
+ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 'polars', exclude: 'Any' = None) -> 'Any'
 ```
 
 **Parameters**
@@ -969,14 +1016,23 @@ ALS.batch_recommend(n: 'int' = 10, exclude_seen: 'bool' = True, format: 'str' = 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | n | int, default=10 | The number of items to recommend per user. |
-| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with. |
+| exclude_seen | bool, default=True | Whether to exclude items the user has already interacted with during training. |
 | format | str, default="polars" | The DataFrame format to return. One of "pandas", "polars", or "spark". |
+| exclude | sparse matrix, optional | Explicit `(n_users, n_items)` mask of items to exclude per user, in internal index space. Use this when the set to suppress is not the training matrix — e.g. scoring cross-sell potential against "everything this customer has ever bought or been quoted", which is a wider set than what the model was fitted on. Takes precedence over `exclude_seen`. |
 
 **Returns**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | DataFrame |  | A DataFrame with columns `user_id`, `item_id`, and `score`. |
+
+**Examples**
+
+```python
+>>> # Suppress every item a customer has ever bought OR been quoted, not just
+>>> # what the model saw during training:
+>>> recs = als.batch_recommend(n=20, exclude=already_bought_or_quoted, format="pandas")
+```
 
 ---
 

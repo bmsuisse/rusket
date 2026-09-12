@@ -426,15 +426,45 @@ fn solve_one_side_eals(
     });
 }
 
-use faer::linalg::solvers::Solve;
+thread_local! {
+    // Reused MemBuffer for the low-level (allocation-free) Cholesky factor +
+    // solve calls below. Grown on demand, then kept for the life of the
+    // thread instead of allocating a fresh Mat + MemBuffer per call (as the
+    // old `.llt()` / `.solve_in_place()` high-level API did).
+    static CHOL_SCRATCH_MEM: RefCell<faer::dyn_stack::MemBuffer> =
+        RefCell::new(faer::dyn_stack::MemBuffer::new(faer::dyn_stack::StackReq::EMPTY));
+}
 
 fn cholesky_solve_inplace(a: &mut [f32], b: &mut [f32], k: usize) {
-    let a_mat = faer::MatMut::from_row_major_slice_mut(a, k, k);
-    let mut b_mat = faer::MatMut::from_column_major_slice_mut(b, k, 1);
+    use faer::dyn_stack::{MemBuffer, MemStack};
+    use faer::linalg::cholesky::llt::{
+        factor::{cholesky_in_place, cholesky_in_place_scratch},
+        solve::{solve_in_place_scratch, solve_in_place_with_conj},
+    };
+    use faer::{Conj, Par};
 
-    if let Ok(llt) = a_mat.as_ref().llt(faer::Side::Lower) {
-        llt.solve_in_place(b_mat.as_mut());
-    }
+    let par = Par::Seq;
+    // Only the lower triangle of `a` is read/written by either call below
+    // (both the recursive factorization and the triangular solves operate
+    // exclusively on the lower triangle / its transpose), so `a`'s upper
+    // triangle never needs to be filled or synced.
+    let req = cholesky_in_place_scratch::<f32>(k, par, Default::default())
+        .or(solve_in_place_scratch::<f32>(k, 1, par));
+
+    CHOL_SCRATCH_MEM.with(|cell| {
+        let mut mem = cell.borrow_mut();
+        if mem.len() < req.size_bytes() {
+            *mem = MemBuffer::new(req);
+        }
+        let stack = MemStack::new(&mut mem);
+
+        let mut a_mat = faer::MatMut::from_row_major_slice_mut(a, k, k);
+        let mut b_mat = faer::MatMut::from_column_major_slice_mut(b, k, 1);
+
+        if cholesky_in_place(a_mat.as_mut(), Default::default(), par, stack, Default::default()).is_ok() {
+            solve_in_place_with_conj(a_mat.as_ref(), Conj::No, b_mat.as_mut(), par, stack);
+        }
+    });
 }
 
 thread_local! {
@@ -535,7 +565,23 @@ fn solve_one_side_cholesky(
         let w_mat = MatRef::from_row_major_slice(&yi_buf[..nnz_u * k], nnz_u, k);
         let w_mat_t = w_mat.transpose();
         let mut a_mat = faer::MatMut::from_row_major_slice_mut(&mut a_buf, k, k);
-        matmul(a_mat.as_mut(), Accum::Add, w_mat_t, w_mat, 1.0f32, Par::Seq);
+        // Only the lower triangle of A is ever read by cholesky_solve_inplace,
+        // so compute only that half of W^T * W instead of the full k x k
+        // product (halves the flops of this step).
+        {
+            use faer::linalg::matmul::triangular::{matmul as triangular_matmul, BlockStructure};
+            triangular_matmul(
+                a_mat.as_mut(),
+                BlockStructure::TriangularLower,
+                Accum::Add,
+                w_mat_t,
+                BlockStructure::Rectangular,
+                w_mat,
+                BlockStructure::Rectangular,
+                1.0f32,
+                Par::Seq,
+            );
+        }
 
         cholesky_solve_inplace(&mut a_buf, &mut b_buf, k);
         xu.copy_from_slice(&b_buf);

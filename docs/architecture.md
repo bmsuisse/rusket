@@ -56,8 +56,9 @@ ids, scores = model.recommend_items(user_id=0, n=10, exclude_seen=True)
 | `predict(user_id, item_id)` | SVD (rating prediction); others: alias for `recommend_items()` |
 | `recommend_items(user_id, n, exclude_seen)` | All recommenders |
 | `recommend_users(item_id, n)` | ALS, SVD (others raise `NotImplementedError`) |
-| `batch_recommend(n, exclude_seen, format)` | ALS, SVD |
+| `batch_recommend(n, exclude_seen, format)` | ALS, SVD — ALS additionally accepts `exclude` (explicit per-user exclusion mask, wider than `exclude_seen`) |
 | `user_factors` / `item_factors` | ALS, BPR, SVD, LightGCN |
+| `from_factors(user_factors, item_factors, ...)` | ALS only — builds a scoring-only model (no `fit()`) from factors computed elsewhere |
 
 ### Sequential recommenders (FPMC, SASRec)
 

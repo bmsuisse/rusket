@@ -141,25 +141,34 @@ class ItemKNN(ImplicitRecommender):
         else:
             raise ValueError(f"Unknown method {self.method}")
 
-        # Compute item-item similarity W = X^T * X
-        # For Cosine, we should row-normalize before dot product, which X_weighted handles if method="cosine".
-        # But wait, cosine is X_normalized^T * X_normalized.
+        # Compute item-item similarity W = X^T * X (or X^T * interactions), fused with
+        # the top-K prune in Rust so the full n_items x n_items Gram matrix (which can
+        # be tens of GB dense-equivalent) is never materialised in Python/scipy.
+        # For Cosine, both operands are the row-normalized X_weighted; for the other
+        # methods, the right-hand operand is the raw (unweighted) interactions, same
+        # asymmetry as the old scipy path.
         if self.method == "cosine":
-            W = X_weighted.T.dot(X_weighted)
+            b = X_weighted
         else:
-            # BM25/TF-IDF is usually X_weighted.T * X
-            W = X_weighted.T.dot(interactions)
+            b = interactions
+        if not sp.isspmatrix_csr(b):
+            b = b.tocsr()
+        b.eliminate_zeros()
 
-        # Ensure it's CSR
-        W = W.tocsr()
-        W.eliminate_zeros()
-
-        # Optimize by pruning to Top-K neighbors per item in Rust
-        ip, ix, dt = _rust.itemknn_top_k(  # type: ignore[attr-defined]
-            W.indptr.astype(np.int64), W.indices.astype(np.int32), W.data.astype(np.float32), self.k
+        n_users, n_items = interactions.shape
+        ip, ix, dt = _rust.itemknn_gram_top_k(  # type: ignore[attr-defined]
+            X_weighted.indptr.astype(np.int64),
+            X_weighted.indices.astype(np.int32),
+            X_weighted.data.astype(np.float32),
+            b.indptr.astype(np.int64),
+            b.indices.astype(np.int32),
+            b.data.astype(np.float32),
+            n_users,
+            n_items,
+            self.k,
         )
 
-        # itemknn_top_k already returns exact dtypes (int64/int32/float32); no cast needed.
+        # itemknn_gram_top_k already returns exact dtypes (int64/int32/float32); no cast needed.
         self.w_indptr = ip
         self.w_indices = ix
         self.w_data = dt

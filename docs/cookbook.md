@@ -475,7 +475,7 @@ item_factors_df.write.format("delta").mode("overwrite").saveAsTable("silver_laye
 | `factors` | 64 | Higher → better quality, more RAM, slower |
 | `iterations` | 15 | 5–15 is typical |
 | `alpha` | 40.0 | Higher → stronger signal |
-| `cg_iters` | 3 | CG solver steps |
+| `cg_iters` | 5 | CG solver steps per outer iteration (warm-started from the previous iteration, so 5 is converged at every rank measured, 32–256) |
 | `use_eals` | False | Use eALS solver (faster, less memory) |
 | `eals_iters` | 1 | Inner iterations for eALS |
 | `anderson_m` | 0 | Anderson acceleration history (5 recommended) |

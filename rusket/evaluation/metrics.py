@@ -145,37 +145,79 @@ def evaluate(
     if not hasattr(model, "recommend_items"):
         raise TypeError("Model must support `recommend_items(user_id, n, exclude_seen)`.")
 
-    # Batch: collect predictions for all users
-    all_actual: list[list[int]] = []
-    all_pred: list[list[int]] = []
+    # Collect predictions for all users. Prefer a single `batch_recommend()`
+    # call (ALS, SVD) over one `recommend_items()` FFI round trip per user --
+    # ponytail: only taken when there's no label round-trip to redo (i.e. no
+    # _user_labels/_item_labels), keeping this fast path simple and provably
+    # index-safe rather than re-deriving label -> index maps from
+    # batch_recommend's external-id output.
+    all_pred: list[list[int]] | None = None
+    if not has_label_maps and hasattr(model, "batch_recommend"):
+        try:
+            all_pred = _predictions_via_batch_recommend(model, unique_users, k)
+        except (TypeError, ValueError, ImportError):
+            all_pred = None
 
-    for u in unique_users:
-        r_items, _r_scores = model.recommend_items(u, n=k, exclude_seen=True)
-        all_pred.append(r_items.tolist())
-        all_actual.append(user_test_items[u])
+    if all_pred is None:
+        all_pred = []
+        for u in unique_users:
+            r_items, _r_scores = model.recommend_items(u, n=k, exclude_seen=True)
+            all_pred.append(r_items.tolist())
+
+    all_actual: list[list[int]] = [user_test_items[u] for u in unique_users]
 
     n_users = len(all_actual)
     if n_users == 0:
         return dict.fromkeys(metrics, 0.0)
 
-    # Batch-compute metrics via Rust backend, one call per metric
-    results: dict[str, float] = {}
-    metric_fns: dict[str, Any] = {
-        "ndcg": _rusket.ndcg_at_k,
-        "hr": _rusket.hit_rate_at_k,
-        "precision": _rusket.precision_at_k,
-        "recall": _rusket.recall_at_k,
+    # Batch-compute all metrics for all users in a single FFI call.
+    actual_indptr = np.zeros(n_users + 1, dtype=np.int64)
+    for idx, actual in enumerate(all_actual):
+        actual_indptr[idx + 1] = actual_indptr[idx] + len(actual)
+    actual_flat = np.fromiter(
+        (item for actual in all_actual for item in actual),
+        dtype=np.int32,
+        count=int(actual_indptr[-1]),
+    )
+
+    pred_arr = np.full((n_users, k), -1, dtype=np.int32)
+    for idx, pred in enumerate(all_pred):
+        row = pred[:k]
+        if row:
+            pred_arr[idx, : len(row)] = row
+
+    ndcg, hit_rate, precision, recall = _rusket.metrics_batch(actual_indptr, actual_flat, pred_arr, k)
+    metric_arrays: dict[str, Any] = {
+        "ndcg": ndcg,
+        "hr": hit_rate,
+        "precision": precision,
+        "recall": recall,
     }
 
+    results: dict[str, float] = {}
     for m in metrics:
-        fn = metric_fns.get(m)
-        if fn is None:
-            results[m] = 0.0
-            continue
-        total = sum(fn(actual, pred, k) for actual, pred in zip(all_actual, all_pred, strict=False))  # type: ignore
-        results[m] = total / n_users
+        arr = metric_arrays.get(m)
+        results[m] = float(arr.mean()) if arr is not None else 0.0
 
     return results
+
+
+def _predictions_via_batch_recommend(model: Any, unique_users: list[int], k: int) -> list[list[int]]:
+    """Get top-k predictions for `unique_users` via a single `batch_recommend()` call.
+
+    Only called when the model has no label maps, so `user_id`/`item_id`
+    columns returned by `batch_recommend()` are already internal indices
+    (see `ALS.batch_recommend`/`SVD.batch_recommend`, which only remap
+    through `_user_labels`/`_item_labels` when those are set) -- no
+    label -> index round trip is needed here.
+    """
+    df = model.batch_recommend(n=k, exclude_seen=True, format="pandas")
+
+    preds: dict[int, list[int]] = {}
+    for u, i in zip(df["user_id"].to_numpy(), df["item_id"].to_numpy(), strict=False):
+        preds.setdefault(int(u), []).append(int(i))
+
+    return [preds.get(u, []) for u in unique_users]
 
 
 def coverage_at_k(all_pred: list[list[int]], n_unique_items: int) -> float:

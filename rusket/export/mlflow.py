@@ -64,17 +64,52 @@ def _get_rusket_wrapper_cls() -> type:
             else:
                 users = list(model_input)
 
+            # ``recommend_items`` expects an internal 0-based row index, but a
+            # model built via ``from_transactions()`` lives in an external
+            # label space (customer ids, SKUs, strings, ...). Resolve labels
+            # to indices the same way ``evaluate()`` does
+            # (rusket/evaluation/metrics.py), and map results back to
+            # external item labels via ``_item_labels``.
+            user_labels = getattr(self.model, "_user_labels", None)
+            item_labels = getattr(self.model, "_item_labels", None)
+
+            user_to_idx = None
+            if user_labels is not None:
+                user_to_idx = {}
+                for idx, lbl in enumerate(user_labels):
+                    user_to_idx[lbl] = idx
+                    try:
+                        user_to_idx[int(lbl)] = idx
+                    except (ValueError, TypeError):
+                        pass
+
             results = []
             for u in users:
+                if user_to_idx is not None:
+                    user_idx = user_to_idx.get(u)
+                    if user_idx is None:
+                        # Unknown/cold-start external user id — no recommendations
+                        # rather than a serving failure.
+                        results.append({"user": u, "items": [], "scores": []})
+                        continue
+                else:
+                    user_idx = u
+
                 try:
-                    items, scores = self.model.recommend_items(u, n=10, exclude_seen=True)  # type: ignore
-                    results.append({"user": u, "items": items.tolist(), "scores": scores.tolist()})
+                    items, scores = self.model.recommend_items(user_idx, n=10, exclude_seen=True)  # type: ignore
                 except ValueError:
                     # Unknown/out-of-range user id (e.g. cold-start) — recommend_items
                     # raises ValueError for this; treat it as "no recommendations"
                     # rather than a serving failure. Anything else (a genuine bug)
                     # is intentionally left to propagate.
                     results.append({"user": u, "items": [], "scores": []})
+                    continue
+
+                item_list: list[Any] = items.tolist()
+                if item_labels is not None and len(item_labels) == self.model._n_items:  # type: ignore
+                    item_list = [item_labels[i] for i in item_list]
+
+                results.append({"user": u, "items": item_list, "scores": scores.tolist()})
 
             return pd.DataFrame(results)
 

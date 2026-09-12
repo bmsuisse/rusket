@@ -101,21 +101,31 @@ class UserKNN(ImplicitRecommender):
         else:
             raise ValueError(f"Unknown method {self.method}")
 
-        # Compute user-user similarity W = X * X^T  (note: ItemKNN uses X^T * X)
+        # Compute user-user similarity W = X * X^T (note: ItemKNN uses X^T * X), fused
+        # with the top-K prune in Rust so the full n_users x n_users Gram matrix is
+        # never materialised in Python/scipy.
         if self.method == "cosine":
-            W = X_weighted.dot(X_weighted.T)
+            b = X_weighted
         else:
-            W = X_weighted.dot(interactions.T)
+            b = interactions
+        if not sp.isspmatrix_csr(b):
+            b = b.tocsr()
+        b.eliminate_zeros()
 
-        W = W.tocsr()
-        W.eliminate_zeros()
-
-        # Prune to Top-K neighbors per user in Rust
-        ip, ix, dt = _rust.userknn_top_k(  # type: ignore[attr-defined]
-            W.indptr.astype(np.int64), W.indices.astype(np.int32), W.data.astype(np.float32), self.k
+        n_users, n_items = interactions.shape
+        ip, ix, dt = _rust.userknn_gram_top_k(  # type: ignore[attr-defined]
+            X_weighted.indptr.astype(np.int64),
+            X_weighted.indices.astype(np.int32),
+            X_weighted.data.astype(np.float32),
+            b.indptr.astype(np.int64),
+            b.indices.astype(np.int32),
+            b.data.astype(np.float32),
+            n_users,
+            n_items,
+            self.k,
         )
 
-        # userknn_top_k already returns exact dtypes (int64/int32/float32); no cast needed.
+        # userknn_gram_top_k already returns exact dtypes (int64/int32/float32); no cast needed.
         self.w_indptr = ip
         self.w_indices = ix
         self.w_data = dt

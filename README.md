@@ -548,6 +548,28 @@ users, scores = als.recommend_users(item_id="T05", n=50)
 bpr = BPR(factors=64, learning_rate=0.05, iterations=150).fit(user_item_csr)
 ```
 
+#### Scoring-only ALS from persisted factors
+
+Training and scoring are often separate jobs — one job fits the model and persists
+`user_factors` / `item_factors` (a Delta table, a feature store, a parquet file);
+another loads them later purely to score. `ALS.from_factors` builds a model for
+that second job without needing the original interaction matrix:
+
+```python
+from rusket import ALS
+
+# `user_factors`, `item_factors` and the id lists were loaded from wherever
+# the training job persisted them.
+model = ALS.from_factors(
+    user_factors, item_factors,
+    user_labels=customer_sks, item_labels=article_sks,
+)
+
+# Explicit exclusion mask — e.g. "everything this customer has ever bought
+# or been quoted", which can be wider than what the model was trained on.
+recs = model.batch_recommend(n=20, exclude=already_bought_or_quoted, format="pandas")
+```
+
 ### 🎯 Hybrid Recommender API
 
 Combine **Collaborative Filtering** (ALS/BPR) with **Frequent Pattern Mining** to cover every placement surface — personalised homepage ("For You") and active cart ("Frequently Bought Together") — in a single engine.
@@ -949,6 +971,21 @@ uv run pytest benchmarks/bench_scale.py -v -s   # Scale benchmark
 uv run python benchmarks/bench_realworld.py     # Real-world datasets
 uv run pytest tests/test_benchmark.py -v -s      # pytest-benchmark
 ```
+
+### Recommender Benchmarks vs `implicit` (ALS)
+
+> **Measured on real production data** (38,467 users × 46,560 items, 3,831,114 interactions) on a **36-core AMD EPYC 74F3 Databricks single-node cluster**. Leave-one-out holdout; the identical numpy evaluator is applied to both libraries' factor matrices.
+
+| Model | Time | HR@10 | NDCG@10 |
+|---|:---:|:---:|:---:|
+| `implicit` ALS (factors=256, 15 iterations) | 556.3 s | 0.1299 | 0.0720 |
+| **rusket ALS**, same config | **5.4 s** | 0.1301 | 0.0721 |
+
+rusket ALS at the same settings is **~105×** faster than `implicit` on this dataset/hardware, with equal or better ranking quality. At `factors=256, iterations=100` (a real production config), rusket took **33.9 s** where `implicit` took **5479.8 s** (**~162×**, same hardware/dataset) — ALS quality on this dataset plateaus at ~20–30 outer iterations, so 100 buys nothing extra.
+
+Replacing a hand-written chunked-matmul + top-k Python loop with `ALS.batch_recommend()` (same hardware/dataset) took a customer×article scoring step from 9.6 s to **1.8 s** (byte-identical top-20 sets) and a customer×customer similarity step from 7.9 s to **1.4 s**.
+
+`import rusket` takes **~0.06 s** now that heavy dependencies are imported lazily, down from ~0.73 s before that change.
 
 ### Recommender Benchmarks vs LibRecommender
 

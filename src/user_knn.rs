@@ -3,6 +3,113 @@ use numpy::{
 };
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::cell::RefCell;
+
+// ponytail: same fused-scratch idea as item_knn.rs, kept as a separate thread_local
+// since this one is sized by n_users rather than n_items.
+thread_local! {
+    static GRAM_SCRATCH: RefCell<(Vec<f32>, Vec<bool>, Vec<u32>)> =
+        RefCell::new((Vec::new(), Vec::new(), Vec::new()));
+}
+
+/// Fused user-user Gram + top-K, never materialising the full n_users x n_users matrix.
+///
+/// Computes W = A * B^T (A, B are both n_users x n_items CSR, already weighted per
+/// `method`) row-by-row for each user `u`: transpose B once to BT (items x users),
+/// then for each user row accumulate `A[u, i] * BT[i, :]` into a reusable dense
+/// scratch vector, and keep only the top-K per row. See item_knn.rs's
+/// `fused_item_gram_top_k` for the mirror-image derivation.
+fn fused_user_gram_top_k(
+    a_indptr: &[i64],
+    a_indices: &[i32],
+    a_data: &[f32],
+    b_indptr: &[i64],
+    b_indices: &[i32],
+    b_data: &[f32],
+    n_users: usize,
+    n_items: usize,
+    k: usize,
+) -> (Vec<i64>, Vec<i32>, Vec<f32>) {
+    let (bt_indptr, bt_indices, bt_data) =
+        crate::als::csr_transpose(b_indptr, b_indices, b_data, n_users, n_items);
+
+    let row_results: Vec<(Vec<i32>, Vec<f32>)> = (0..n_users)
+        .into_par_iter()
+        .map(|u| {
+            GRAM_SCRATCH.with(|cell| {
+                let (scores, seen, touched) = &mut *cell.borrow_mut();
+                if scores.len() < n_users {
+                    scores.resize(n_users, 0.0);
+                    seen.resize(n_users, false);
+                }
+                touched.clear();
+
+                let a_start = a_indptr[u] as usize;
+                let a_end = a_indptr[u + 1] as usize;
+                for (&i, &val_a) in a_indices[a_start..a_end].iter().zip(a_data[a_start..a_end].iter()) {
+                    let i = i as usize;
+                    let bt_start = bt_indptr[i] as usize;
+                    let bt_end = bt_indptr[i + 1] as usize;
+                    for (&v, &val_b) in bt_indices[bt_start..bt_end].iter().zip(bt_data[bt_start..bt_end].iter()) {
+                        let v = v as usize;
+                        if !seen[v] {
+                            seen[v] = true;
+                            touched.push(v as u32);
+                        }
+                        scores[v] += val_a * val_b;
+                    }
+                }
+
+                let mut row_data: Vec<(f32, i32)> = touched
+                    .iter()
+                    .filter_map(|&v| {
+                        let v = v as usize;
+                        if v != u && scores[v] != 0.0 {
+                            Some((scores[v], v as i32))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                for &v in touched.iter() {
+                    scores[v as usize] = 0.0;
+                    seen[v as usize] = false;
+                }
+
+                let take = k.min(row_data.len());
+                if take == 0 {
+                    return (vec![], vec![]);
+                }
+                row_data.select_nth_unstable_by(take.saturating_sub(1), |a, b| {
+                    b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal)
+                });
+                row_data.truncate(take);
+                row_data.sort_unstable_by_key(|&(_, idx)| idx);
+
+                let out_idx: Vec<i32> = row_data.iter().map(|&(_, idx)| idx).collect();
+                let out_val: Vec<f32> = row_data.iter().map(|&(val, _)| val).collect();
+                (out_idx, out_val)
+            })
+        })
+        .collect();
+
+    let mut new_indptr = Vec::with_capacity(n_users + 1);
+    new_indptr.push(0);
+    let mut total_nnz = 0i64;
+    for (idx, _) in &row_results {
+        total_nnz += idx.len() as i64;
+        new_indptr.push(total_nnz);
+    }
+    let mut new_indices = Vec::with_capacity(total_nnz as usize);
+    let mut new_data = Vec::with_capacity(total_nnz as usize);
+    for (idx, val) in row_results {
+        new_indices.extend(idx);
+        new_data.extend(val);
+    }
+
+    (new_indptr, new_indices, new_data)
+}
 
 /// Prune a user-user similarity CSR matrix to keep only the top-K neighbors per user.
 fn prune_top_k(
@@ -152,6 +259,32 @@ pub fn userknn_top_k<'a>(
     let ix_s = indices.as_slice()?;
     let dt_s = data.as_slice()?;
     let (ip, ix, dt) = py.detach(|| prune_top_k(ip_s, ix_s, dt_s, k));
+    Ok((ip.into_pyarray(py), ix.into_pyarray(py), dt.into_pyarray(py)))
+}
+
+#[pyfunction]
+#[pyo3(signature = (a_indptr, a_indices, a_data, b_indptr, b_indices, b_data, n_users, n_items, k))]
+pub fn userknn_gram_top_k<'py>(
+    py: Python<'py>,
+    a_indptr: PyReadonlyArray1<'py, i64>,
+    a_indices: PyReadonlyArray1<'py, i32>,
+    a_data: PyReadonlyArray1<'py, f32>,
+    b_indptr: PyReadonlyArray1<'py, i64>,
+    b_indices: PyReadonlyArray1<'py, i32>,
+    b_data: PyReadonlyArray1<'py, f32>,
+    n_users: usize,
+    n_items: usize,
+    k: usize,
+) -> PyResult<(Bound<'py, PyArray1<i64>>, Bound<'py, PyArray1<i32>>, Bound<'py, PyArray1<f32>>)> {
+    let a_ip = a_indptr.as_slice()?;
+    let a_ix = a_indices.as_slice()?;
+    let a_dt = a_data.as_slice()?;
+    let b_ip = b_indptr.as_slice()?;
+    let b_ix = b_indices.as_slice()?;
+    let b_dt = b_data.as_slice()?;
+    let (ip, ix, dt) = py.detach(|| {
+        fused_user_gram_top_k(a_ip, a_ix, a_dt, b_ip, b_ix, b_dt, n_users, n_items, k)
+    });
     Ok((ip.into_pyarray(py), ix.into_pyarray(py), dt.into_pyarray(py)))
 }
 

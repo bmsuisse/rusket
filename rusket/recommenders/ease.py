@@ -8,6 +8,29 @@ from typing import Any
 from .. import _rusket as _rust  # type: ignore
 from ..model import ImplicitRecommender
 
+# ponytail: peak-memory guard for EASE.fit(). EASE builds a dense
+# n_items x n_items Gram matrix and Cholesky-inverts it -- O(n_items^2)
+# in both time and memory, which is the algorithm, not a bug. During the
+# Rust solve, two n_items x n_items f64 buffers are briefly alive at once
+# (see the `drop()` calls in `ease_compute_weights` in src/ease.rs), so
+# peak transient bytes is ~= 2 * 8 * n_items**2 = 16 * n_items**2.
+# At the real production catalog size of 46,560 items that is
+# 16 * 46560**2 / 1024**3 ~= 32.3 GiB -- before even counting the f32
+# output matrix retained afterward. Rather than let that OOM-kill the
+# process 10 minutes into a Cholesky solve, we estimate this up front and
+# fail immediately with a clear, actionable error.
+_EASE_PEAK_BYTES_PER_ITEM_SQUARED = 16.0
+# Default cap chosen so the default is safe on a typical dev machine
+# (~16-32 GB RAM) while still covering catalogs up to ~22k items
+# (16 * 22000**2 / 1024**3 ~= 8.0 GiB), comfortably above what EASE is
+# normally applied to. Pass a larger `max_memory_gb` explicitly to opt in
+# on a bigger machine.
+_EASE_DEFAULT_MAX_MEMORY_GB = 8.0
+
+
+def _estimate_peak_bytes(n_items: int) -> float:
+    return _EASE_PEAK_BYTES_PER_ITEM_SQUARED * float(n_items) ** 2
+
 
 class EASE(ImplicitRecommender):
     """Embarrassingly Shallow Autoencoders for Sparse Data (EASE).
@@ -56,13 +79,26 @@ class EASE(ImplicitRecommender):
     def __repr__(self) -> str:
         return f"EASE(regularization={self.regularization})"
 
-    def fit(self, interactions: Any = None) -> EASE:
+    def fit(self, interactions: Any = None, max_memory_gb: float = _EASE_DEFAULT_MAX_MEMORY_GB) -> EASE:
         """Fit the model to the user-item interaction matrix (Rust-accelerated).
 
         Parameters
         ----------
         interactions : sparse matrix or numpy array, optional
             If None, uses the matrix prepared by ``from_transactions()``.
+        max_memory_gb : float
+            Safety cap on the estimated *peak transient* memory (GiB) EASE
+            will need during the Cholesky solve, checked before any large
+            allocation happens. EASE is inherently O(n_items^2) in memory:
+            estimated peak bytes ~= 16 * n_items**2 (two dense
+            n_items x n_items f64 matrices briefly alive at once inside the
+            Rust solver). The default of 8 GiB caps this at ~22,000 items,
+            which is safe on a typical dev machine and covers most
+            catalogs. Raise this explicitly (e.g. to ~40 GiB) if you have a
+            larger machine and truly need to fit EASE on a bigger catalog
+            (the real 46,560-item production catalog needs ~32 GiB); on
+            catalogs of that size, consider ItemKNN or ALS instead, which
+            don't require a dense n_items^2 matrix.
         """
         if interactions is None:
             interactions = getattr(self, "_prepared_interactions", None)
@@ -85,6 +121,19 @@ class EASE(ImplicitRecommender):
             csr = csr.tocsr()
 
         n_users, n_items = typing.cast(tuple[int, int], csr.shape)
+
+        estimated_gb = _estimate_peak_bytes(n_items) / (1024**3)
+        if estimated_gb > max_memory_gb:
+            raise MemoryError(
+                f"EASE.fit() refused to start: {n_items} items would need an estimated "
+                f"{estimated_gb:.1f} GiB of peak memory for the dense n_items x n_items "
+                f"Gram matrix and Cholesky solve, which exceeds the max_memory_gb="
+                f"{max_memory_gb:.1f} safety cap. EASE is O(n_items^2) in memory, so this "
+                "only gets worse with more items. Options: (1) reduce the item catalog "
+                "(e.g. drop long-tail items), (2) use ItemKNN or ALS instead, which scale "
+                "far better with item count, or (3) if you have enough RAM and really need "
+                "EASE at this size, pass a larger max_memory_gb explicitly to opt in."
+            )
 
         indptr = np.asarray(csr.indptr, dtype=np.int64)
         indices = np.asarray(csr.indices, dtype=np.int32)

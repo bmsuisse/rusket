@@ -231,9 +231,7 @@ class ALS(ImplicitRecommender):
         # Compute item popularity weights for eALS
         item_pop_weights = None
         if self.use_eals and self.popularity_weighting != "none":
-            col_sums = np.zeros(n_items, dtype=np.float64)
-            for i in range(len(indices)):
-                col_sums[indices[i]] += 1.0
+            col_sums = np.bincount(indices, minlength=n_items).astype(np.float64)
             col_sums /= max(col_sums.sum(), 1.0)  # normalize to probabilities
             if self.popularity_weighting == "sqrt":
                 item_pop_weights = np.sqrt(col_sums).astype(np.float32)

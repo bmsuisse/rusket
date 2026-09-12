@@ -68,8 +68,10 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(ease::ease_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(ease::ease_fit, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_top_k, m)?)?;
+    m.add_function(wrap_pyfunction!(item_knn::itemknn_gram_top_k, m)?)?;
     m.add_function(wrap_pyfunction!(item_knn::itemknn_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(user_knn::userknn_top_k, m)?)?;
+    m.add_function(wrap_pyfunction!(user_knn::userknn_gram_top_k, m)?)?;
     m.add_function(wrap_pyfunction!(user_knn::userknn_recommend_items, m)?)?;
     m.add_function(wrap_pyfunction!(fpmc::fpmc_fit, m)?)?;
     m.add_function(wrap_pyfunction!(fm::fm_fit, m)?)?;
@@ -83,6 +85,7 @@ fn _rusket(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(metrics::precision_at_k, m)?)?;
     m.add_function(wrap_pyfunction!(metrics::recall_at_k, m)?)?;
     m.add_function(wrap_pyfunction!(metrics::hit_rate_at_k, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics::metrics_batch, m)?)?;
     m.add_function(wrap_pyfunction!(model_selection::leave_one_out, m)?)?;
     m.add_function(wrap_pyfunction!(model_selection::train_test_split, m)?)?;
     m.add_function(wrap_pyfunction!(svd::svd_fit, m)?)?;

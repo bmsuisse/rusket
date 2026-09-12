@@ -7,13 +7,20 @@ fn rule_combinations(itemset: &[u32]) -> Vec<(Vec<u32>, Vec<u32>)> {
     for ant_size in 1..n {
         let mut indices: Vec<usize> = (0..ant_size).collect();
         loop {
+            // `indices` is always strictly increasing and `itemset` arrives sorted
+            // (guaranteed by the miners), so both `ant` (indices in increasing order)
+            // and `con` (remaining positions walked in order) come out sorted for free.
+            // No set/hash needed to compute the complement.
             let ant: Vec<u32> = indices.iter().map(|&i| itemset[i]).collect();
-            let ant_set: std::collections::HashSet<u32> = ant.iter().copied().collect();
-            let con: Vec<u32> = itemset
-                .iter()
-                .filter(|&&x| !ant_set.contains(&x))
-                .copied()
-                .collect();
+            let mut con: Vec<u32> = Vec::with_capacity(n - ant_size);
+            let mut idx_ptr = 0usize;
+            for (i, &v) in itemset.iter().enumerate() {
+                if idx_ptr < indices.len() && indices[idx_ptr] == i {
+                    idx_ptr += 1;
+                } else {
+                    con.push(v);
+                }
+            }
             rules.push((ant, con));
 
             let mut i = ant_size as isize - 1;
@@ -51,6 +58,9 @@ const METRIC_NAMES: &[&str] = &[
     "kulczynski",
 ];
 
+// ponytail: kept the dis_* params (all zero at every call site today) rather than
+// stripping them, since compute_metrics is exercised directly by unit tests below
+// with an explicit param list; trimming the signature is out of scope for this pass.
 #[inline]
 fn compute_metrics(
     s_ac: f64,
@@ -62,8 +72,7 @@ fn compute_metrics(
     dis_int: f64,
     dis_int_: f64,
     num_itemsets: f64,
-    return_metrics: &[usize],
-) -> Vec<f64> {
+) -> [f64; 12] {
     let conf_denom = s_a * (num_itemsets - dis_a) - dis_int;
     let confidence = if conf_denom == 0.0 {
         f64::INFINITY
@@ -100,7 +109,7 @@ fn compute_metrics(
         (confidence - s_c) / cd
     };
     let kulczynski = (confidence + conf_ca) / 2.0;
-    let all = [
+    [
         s_a,
         s_c,
         support,
@@ -113,8 +122,7 @@ fn compute_metrics(
         jaccard,
         certainty,
         kulczynski,
-    ];
-    return_metrics.iter().map(|&idx| all[idx]).collect()
+    ]
 }
 
 #[inline]
@@ -178,60 +186,48 @@ pub fn association_rules_inner(
             continue;
         }
         for (ant, con) in rule_combinations(iset) {
-            let score = if support_only {
-                s_ac
+            // ant/con come back sorted from rule_combinations, and Vec<u32>: Borrow<[u32]>,
+            // so we can look each side's support up directly by slice — no key allocation,
+            // no re-hash, and each side's support is fetched exactly once per rule.
+            let (score, metrics) = if support_only {
+                (s_ac, None)
             } else {
-                let ant_key = make_key(&ant);
-                let con_key = make_key(&con);
-                let s_a = *support_map.get(&ant_key).ok_or_else(|| {
+                let s_a = *support_map.get(ant.as_slice()).ok_or_else(|| {
                     pyo3::exceptions::PyKeyError::new_err(format!(
                         "Missing support for antecedent {:?}. \
                          You are likely getting this error because the DataFrame is missing \
                          antecedent and/or consequent information. \
                          You can try using the `support_only=True` option",
-                        ant_key
+                        ant
                     ))
                 })?;
-                let s_c = *support_map.get(&con_key).ok_or_else(|| {
+                let s_c = *support_map.get(con.as_slice()).ok_or_else(|| {
                     pyo3::exceptions::PyKeyError::new_err(format!(
                         "Missing support for consequent {:?}. \
                          You are likely getting this error because the DataFrame is missing \
                          antecedent and/or consequent information. \
                          You can try using the `support_only=True` option",
-                        con_key
+                        con
                     ))
                 })?;
-                compute_metrics(
-                    s_ac,
-                    s_a,
-                    s_c,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    n,
-                    &[filter_metric_idx],
-                )[0]
+                let all = compute_metrics(s_ac, s_a, s_c, 0.0, 0.0, 0.0, 0.0, 0.0, n);
+                (all[filter_metric_idx], Some(all))
             };
 
             if score >= min_threshold {
-                let vals = if support_only {
-                    let mut v = vec![nan; n_ret];
-                    for (idx, &ri) in return_indices.iter().enumerate() {
-                        if ri == 2 {
-                            v[idx] = s_ac;
-                        }
-                    }
-                    v
-                } else {
-                    let s_a = support_map[&make_key(&ant)];
-                    let s_c = support_map[&make_key(&con)];
-                    compute_metrics(s_ac, s_a, s_c, 0.0, 0.0, 0.0, 0.0, 0.0, n, &return_indices)
-                };
                 ant_out.push(ant);
                 con_out.push(con);
-                for (col, v) in metric_cols.iter_mut().zip(vals.into_iter()) {
+                for (col, &ri) in metric_cols.iter_mut().zip(return_indices.iter()) {
+                    let v = match metrics {
+                        Some(all) => all[ri],
+                        None => {
+                            if ri == 2 {
+                                s_ac
+                            } else {
+                                nan
+                            }
+                        }
+                    };
                     col.push(v);
                 }
             }
@@ -331,10 +327,9 @@ mod tests {
             0.4,  // s_c
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &[3, 4], // confidence (idx 3), lift (idx 4)
         );
-        assert!(approx_eq(result[0], 0.6), "confidence should be 0.6, got {}", result[0]);
-        assert!(approx_eq(result[1], 1.5), "lift should be 1.5, got {}", result[1]);
+        assert!(approx_eq(result[3], 0.6), "confidence should be 0.6, got {}", result[3]);
+        assert!(approx_eq(result[4], 1.5), "lift should be 1.5, got {}", result[4]);
     }
 
     #[test]
@@ -345,9 +340,8 @@ mod tests {
             0.3, 0.5, 0.4,
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &[6], // leverage (idx 6)
         );
-        assert!(approx_eq(result[0], 0.1), "leverage should be 0.1, got {}", result[0]);
+        assert!(approx_eq(result[6], 0.1), "leverage should be 0.1, got {}", result[6]);
     }
 
     #[test]
@@ -357,9 +351,8 @@ mod tests {
             0.3, 0.5, 0.4,
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &[7], // conviction (idx 7)
         );
-        assert!(approx_eq(result[0], 1.5), "conviction should be 1.5, got {}", result[0]);
+        assert!(approx_eq(result[7], 1.5), "conviction should be 1.5, got {}", result[7]);
     }
 
     #[test]
@@ -370,9 +363,8 @@ mod tests {
             0.5, 0.5, 0.5,
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &[7], // conviction
         );
-        assert!(result[0].is_infinite(), "conviction should be inf when confidence=1.0");
+        assert!(result[7].is_infinite(), "conviction should be inf when confidence=1.0");
     }
 
     #[test]
@@ -382,20 +374,17 @@ mod tests {
             0.3, 0.5, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &[4], // lift
         );
-        assert!(result[0].is_infinite(), "lift should be inf when s_c=0");
+        assert!(result[4].is_infinite(), "lift should be inf when s_c=0");
     }
 
     #[test]
     fn test_compute_metrics_all_returned() {
-        // Request all 12 metrics at once
-        let indices: Vec<usize> = (0..12).collect();
+        // All 12 metrics are always computed now (fixed-size array, no allocation)
         let result = compute_metrics(
             0.3, 0.5, 0.4,
             0.0, 0.0, 0.0, 0.0, 0.0,
             100.0,
-            &indices,
         );
         assert_eq!(result.len(), 12);
         // Spot-check: support (idx 2) == s_ac

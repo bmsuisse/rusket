@@ -209,13 +209,31 @@ fn ease_compute_weights(
     }
 
     // Step 3: Invert via faer Cholesky
+    //
+    // PEAK-MEMORY FIX: `gram` (n^2 f64), `gram_mat` (another n^2 f64 copy),
+    // `llt` (which owns its own internal n^2 f64 factor `L`, per faer's
+    // `Llt<T> { L: Mat<T> }`), and `p_mat` (another n^2 f64) used to all stay
+    // alive simultaneously until the function returned, because Rust only
+    // drops locals at end-of-scope, not at last-use. That is up to four
+    // n_items^2 * 8-byte buffers alive at once. `gram` and `gram_mat` hold
+    // identical data at the point `gram_mat` is built (same for `gram_mat`
+    // vs. `llt`'s internal factor once `llt` is computed, and `llt` vs.
+    // `p_mat` once the solve is done) so each predecessor is dead weight the
+    // instant its successor exists. Explicit `drop()` calls below free each
+    // one as soon as it is superseded, capping the peak at two coexisting
+    // n_items^2 f64 buffers (16 bytes/item^2) instead of four (32
+    // bytes/item^2) -- see ease.py's `_estimate_peak_bytes` for the same
+    // arithmetic used in the pre-flight memory guard.
     use faer::linalg::solvers::Solve;
     let gram_mat = faer::Mat::<f64>::from_fn(n_items, n_items, |r, c| gram[r * n_items + c]);
+    drop(gram);
     let llt = gram_mat.as_ref().llt(faer::Side::Lower).expect("Cholesky decomposition failed");
-    
+    drop(gram_mat);
+
     // Solve G * P = I to get P = G^-1
     let mut p_mat = faer::Mat::<f64>::identity(n_items, n_items);
     llt.solve_in_place(p_mat.as_mut());
+    drop(llt);
 
     // Step 4: Compute B = P / (-diag(P)), zero diagonal.
     //
@@ -251,6 +269,7 @@ fn ease_compute_weights(
             };
         }
     });
+    drop(p_mat);
 
     let mut b = vec![0.0f32; n_items * n_items];
     for j in 0..n_items {
@@ -258,6 +277,7 @@ fn ease_compute_weights(
             b[i * n_items + j] = b_col[j * n_items + i];
         }
     }
+    drop(b_col);
 
     b
 }
